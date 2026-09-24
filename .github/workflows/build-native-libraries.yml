@@ -1,0 +1,119 @@
+name: Build native libraries
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: windows
+            arch: x64
+            runner: windows-2022
+            library: easytier_ffi.dll
+            rust_target: x86_64-pc-windows-msvc
+          - platform: linux
+            arch: x86_64
+            runner: ubuntu-22.04
+            library: libeasytier_ffi.so
+            rust_target: x86_64-unknown-linux-gnu
+          - platform: linux
+            arch: arm64
+            runner: ubuntu-22.04
+            library: libeasytier_ffi.so
+            rust_target: aarch64-unknown-linux-gnu
+          - platform: android
+            arch: arm64-v8a
+            runner: ubuntu-22.04
+            library: libeasytier_ffi.so
+            rust_target: aarch64-linux-android
+          - platform: android
+            arch: x86_64
+            runner: ubuntu-22.04
+            library: libeasytier_ffi.so
+            rust_target: x86_64-linux-android
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: xmake-io/github-action-setup-xmake@v1
+        with:
+          xmake-version: latest
+      - name: Install Rust target
+        shell: bash
+        run: |
+          rustup toolchain install 1.95.0 --profile minimal
+          rustup target add '${{ matrix.rust_target }}' --toolchain 1.95.0
+      - name: Install Linux build dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang libclang-dev libssl-dev pkg-config
+      - name: Install Linux ARM64 cross compiler
+        if: matrix.platform == 'linux' && matrix.arch == 'arm64'
+        run: sudo apt-get install -y gcc-aarch64-linux-gnu g++-aarch64-linux-gnu
+      - name: Configure MSVC
+        if: runner.os == 'Windows'
+        uses: ilammy/msvc-dev-cmd@v1
+      - name: Configure Windows build
+        if: matrix.platform == 'windows'
+        shell: pwsh
+        run: xmake f -p windows -a x64 -m release -y
+      - name: Configure Linux build
+        if: matrix.platform == 'linux'
+        shell: bash
+        run: |
+          if [ '${{ matrix.arch }}' = 'arm64' ]; then
+            xmake f -p linux -a arm64 -m release --cross=aarch64-linux-gnu- -y
+          else
+            xmake f -p linux -a x86_64 -m release -y
+          fi
+      - name: Configure Android build
+        if: matrix.platform == 'android'
+        shell: bash
+        run: xmake f -p android -a '${{ matrix.arch }}' -m release --ndk="$ANDROID_NDK_HOME" -y
+      - name: Build library
+        shell: bash
+        run: xmake -r
+      - name: Stage library
+        shell: bash
+        run: |
+          library='build/${{ matrix.platform }}/${{ matrix.arch }}/release/${{ matrix.library }}'
+          test -s "$library"
+          mkdir -p dist
+          cp "$library" 'dist/${{ matrix.platform }}-${{ matrix.arch }}-${{ matrix.library }}'
+      - uses: actions/upload-artifact@v4
+        with:
+          name: natives-${{ matrix.platform }}-${{ matrix.arch }}
+          path: dist/*
+          if-no-files-found: error
+
+  release:
+    needs: build
+    runs-on: ubuntu-22.04
+    permissions:
+      contents: write
+    concurrency:
+      group: natives-release
+      cancel-in-progress: false
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: natives-*
+          path: dist
+          merge-multiple: true
+      - name: Publish prerelease
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          if gh release view natives >/dev/null 2>&1; then
+            gh release edit natives --prerelease --title natives
+          else
+            gh release create natives --target "$GITHUB_SHA" --prerelease --title natives --notes 'Native libraries'
+          fi
+          gh release upload natives dist/* --clobber
