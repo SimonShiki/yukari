@@ -5,15 +5,15 @@ extension NetworkPageActions on NetworkPageController {
 
   Future<void> importFromFile() async {
     try {
-      final result = await FilePicker.platform.pickFiles(
+      final result = await FilePicker.pickFiles(
         type: FileType.custom,
         allowedExtensions: ['toml'],
         dialogTitle: 'Select EasyTier Config File',
       );
 
-      if (result == null || result.files.isEmpty) return;
+      if (result.isEmpty) return;
 
-      final file = result.files.first;
+      final file = result.first;
       if (file.path == null) {
         showMessage('Could not access the selected file.');
         return;
