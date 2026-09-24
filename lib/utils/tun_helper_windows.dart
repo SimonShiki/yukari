@@ -11,49 +11,26 @@ import 'package:win32/win32.dart';
 bool checkWindowsElevation() {
   if (!Platform.isWindows) return false;
 
-  final processHandle = GetCurrentProcess();
-  final tokenHandle = calloc<HANDLE>();
+  return using((arena) {
+    // OpenProcessToken writes the token into a raw pointer slot.
+    final tokenSlot = arena<Pointer>();
+    final opened = OpenProcessToken(GetCurrentProcess(), TOKEN_QUERY, tokenSlot);
+    if (!opened.value) return false;
 
-  try {
-    // Open the process token
-    final result = OpenProcessToken(
-      processHandle,
-      TOKEN_QUERY,
-      tokenHandle,
-    );
-
-    if (result != TRUE) {
-      return false;
-    }
-
-    final token = tokenHandle.value;
-    final elevationType = calloc<DWORD>();
-    final returnLength = calloc<DWORD>();
-
+    final token = HANDLE(tokenSlot.value);
     try {
-      // Query token elevation information (TokenElevation = 20)
-      final queryResult = GetTokenInformation(
-        token,
-        20, // TokenElevation
-        elevationType.cast(),
-        sizeOf<DWORD>(),
-        returnLength,
-      );
+      final elevation = arena<Uint32>();
+      final returnLength = arena<Uint32>();
 
-      if (queryResult != TRUE) {
-        return false;
-      }
+      // TokenElevation fills a TOKEN_ELEVATION struct (a single DWORD).
+      final queried = GetTokenInformation(token, TokenElevation, elevation, sizeOf<Uint32>(), returnLength);
 
       // Non-zero value means elevated
-      return elevationType.value != 0;
+      return queried.value && elevation.value != 0;
     } finally {
-      calloc.free(elevationType);
-      calloc.free(returnLength);
       CloseHandle(token);
     }
-  } finally {
-    calloc.free(tokenHandle);
-  }
+  });
 }
 
 /// Requests elevation by restarting the application with administrator privileges.
@@ -64,27 +41,19 @@ bool requestWindowsElevation() {
   if (!Platform.isWindows) return false;
 
   try {
-    final executablePath = Platform.resolvedExecutable;
-    final lpFile = executablePath.toNativeUtf16();
-    final lpVerb = 'runas'.toNativeUtf16();
-
-    try {
-      // ShellExecuteW with "runas" triggers UAC elevation
+    return using((arena) {
       final result = ShellExecute(
-        NULL,
-        lpVerb,
-        lpFile,
-        nullptr,
-        nullptr,
+        null,
+        arena.pcwstr('runas'),
+        arena.pcwstr(Platform.resolvedExecutable),
+        null,
+        null,
         SW_SHOWNORMAL,
       );
 
       // ShellExecute returns a value > 32 on success
-      return result > 32;
-    } finally {
-      calloc.free(lpFile);
-      calloc.free(lpVerb);
-    }
+      return result.address > 32;
+    });
   } catch (e) {
     return false;
   }
