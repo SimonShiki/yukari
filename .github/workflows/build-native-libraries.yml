@@ -10,7 +10,6 @@ on:
 jobs:
   build:
     strategy:
-      fail-fast: false
       matrix:
         include:
           - platform: windows
@@ -24,6 +23,12 @@ jobs:
             runner: ubuntu-latest
             library: libeasytier_ffi.so
             rust_targets: x86_64-unknown-linux-gnu
+
+          - platform: linux
+            arch: arm64
+            runner: ubuntu-24.04-arm
+            library: libeasytier_ffi.so
+            rust_targets: aarch64-unknown-linux-gnu
 
           - platform: android
             arch: arm64-v8a
@@ -66,12 +71,6 @@ jobs:
           sudo ln -sf /usr/bin/clang-18 /usr/bin/clang
           sudo ln -sf /usr/bin/clang++-18 /usr/bin/clang++
 
-      - name: Install cross-compilation toolchain
-        if: matrix.apt_packages
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y ${{ matrix.apt_packages }}
-
       - name: Setup Android NDK
         if: matrix.ndk_version
         uses: nttld/setup-ndk@v1
@@ -88,9 +87,6 @@ jobs:
         if: runner.os != 'Windows'
         run: |
           args="-p ${{ matrix.platform }} -a ${{ matrix.arch }} -m release -y"
-          if [ -n "${{ matrix.cross }}" ]; then
-            args="$args --cross=${{ matrix.cross }}"
-          fi
           if [ -n "${{ matrix.ndk_version }}" ]; then
             args="$args --ndk=${{ steps.setup-ndk.outputs.ndk-path }}"
           fi
@@ -104,12 +100,6 @@ jobs:
         env:
           LIBCLANG_PATH: ${{ runner.os == 'Linux' && '/usr/lib/llvm-18/lib' || '' }}
 
-      - name: Verify build output
-        run: |
-          ls -lah build/${{ matrix.platform }}/${{ matrix.arch }}/release/
-          test -f build/${{ matrix.platform }}/${{ matrix.arch }}/release/${{ matrix.library }}
-        shell: bash
-
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
@@ -120,7 +110,6 @@ jobs:
   publish:
     needs: build
     runs-on: ubuntu-latest
-    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
     permissions:
       contents: write
 
@@ -130,20 +119,99 @@ jobs:
         with:
           path: artifacts
 
-      - name: List downloaded artifacts
-        run: |
-          echo "Downloaded artifacts:"
-          find artifacts -type f
 
-      - name: Create release and upload assets
-        uses: softprops/action-gh-release@v2
+      - name: Upload Windows x64 library
+        uses: svenstaro/upload-release-action@v2
         with:
-          tag_name: natives
-          name: Native Libraries
-          body: Prebuilt easytier FFI libraries for all supported platforms
-          files: |
-            artifacts/**/*.dll
-            artifacts/**/*.so
-            artifacts/**/*.sys
-          fail_on_unmatched_files: true
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: artifacts/windows-x64-easytier_ffi.dll/easytier_ffi.dll
+          asset_name: windows-x64-easytier_ffi.dll
+          tag: natives
+          release_name: Native Libraries
+          overwrite: true
+          prerelease: true
+          make_latest: false
+
+      - name: Upload Linux x86_64 library
+        uses: svenstaro/upload-release-action@v2
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: artifacts/linux-x86_64-libeasytier_ffi.so/libeasytier_ffi.so
+          asset_name: linux-x86_64-libeasytier_ffi.so
+          tag: natives
+          release_name: Native Libraries
+          overwrite: true
+          prerelease: true
+          make_latest: false
+
+      - name: Upload Linux arm64 library
+        uses: svenstaro/upload-release-action@v2
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: artifacts/linux-arm64-libeasytier_ffi.so/libeasytier_ffi.so
+          asset_name: linux-arm64-libeasytier_ffi.so
+          tag: natives
+          release_name: Native Libraries
+          overwrite: true
+          prerelease: true
+          make_latest: false
+
+      - name: Upload Android arm64-v8a library
+        uses: svenstaro/upload-release-action@v2
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: artifacts/android-arm64-v8a-libeasytier_ffi.so/libeasytier_ffi.so
+          asset_name: android-arm64-v8a-libeasytier_ffi.so
+          tag: natives
+          release_name: Native Libraries
+          overwrite: true
+          prerelease: true
+          make_latest: false
+
+      - name: Upload Android x86_64 library
+        uses: svenstaro/upload-release-action@v2
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: artifacts/android-x86_64-libeasytier_ffi.so/libeasytier_ffi.so
+          asset_name: android-x86_64-libeasytier_ffi.so
+          tag: natives
+          release_name: Native Libraries
+          overwrite: true
+          prerelease: true
+          make_latest: false
+
+      - name: Upload Windows Packet.dll
+        uses: svenstaro/upload-release-action@v2
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: artifacts/windows-x64-easytier_ffi.dll/Packet.dll
+          asset_name: Packet.dll
+          tag: natives
+          release_name: Native Libraries
+          overwrite: true
+          prerelease: true
+          make_latest: false
+
+      - name: Upload Windows wintun.dll
+        uses: svenstaro/upload-release-action@v2
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: artifacts/windows-x64-easytier_ffi.dll/wintun.dll
+          asset_name: wintun.dll
+          tag: natives
+          release_name: Native Libraries
+          overwrite: true
+          prerelease: true
+          make_latest: false
+
+      - name: Upload Windows WinDivert64.sys
+        uses: svenstaro/upload-release-action@v2
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: artifacts/windows-x64-easytier_ffi.dll/WinDivert64.sys
+          asset_name: WinDivert64.sys
+          tag: natives
+          release_name: Native Libraries
+          overwrite: true
+          prerelease: true
           make_latest: false
