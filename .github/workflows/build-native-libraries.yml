@@ -1,10 +1,11 @@
-name: Build native libraries
+name: Build Native Libraries
 
 on:
   workflow_dispatch:
-
-permissions:
-  contents: read
+  push:
+    paths:
+      - 'xmake.lua'
+      - '.github/workflows/build-native-libraries.yml'
 
 jobs:
   build:
@@ -14,106 +15,141 @@ jobs:
         include:
           - platform: windows
             arch: x64
-            runner: windows-2022
+            runner: windows-latest
             library: easytier_ffi.dll
-            rust_target: x86_64-pc-windows-msvc
+            rust_targets: x86_64-pc-windows-msvc
+
           - platform: linux
             arch: x86_64
-            runner: ubuntu-22.04
+            runner: ubuntu-latest
             library: libeasytier_ffi.so
-            rust_target: x86_64-unknown-linux-gnu
-          - platform: linux
-            arch: arm64
-            runner: ubuntu-22.04
-            library: libeasytier_ffi.so
-            rust_target: aarch64-unknown-linux-gnu
+            rust_targets: x86_64-unknown-linux-gnu
+
           - platform: android
             arch: arm64-v8a
-            runner: ubuntu-22.04
+            runner: ubuntu-latest
             library: libeasytier_ffi.so
-            rust_target: aarch64-linux-android
+            rust_targets: aarch64-linux-android
+            ndk_version: r26d
+
           - platform: android
             arch: x86_64
-            runner: ubuntu-22.04
+            runner: ubuntu-latest
             library: libeasytier_ffi.so
-            rust_target: x86_64-linux-android
+            rust_targets: x86_64-linux-android
+            ndk_version: r26d
+
     runs-on: ${{ matrix.runner }}
+
     steps:
-      - uses: actions/checkout@v4
-      - uses: xmake-io/github-action-setup-xmake@v1
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Setup xmake
+        uses: xmake-io/github-action-setup-xmake@v1
         with:
           xmake-version: latest
-      - name: Install Rust target
-        shell: bash
-        run: |
-          rustup toolchain install 1.95.0 --profile minimal
-          rustup target add '${{ matrix.rust_target }}' --toolchain 1.95.0
-      - name: Install Linux build dependencies
+
+      - name: Setup Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: "1.95.0"
+          targets: ${{ matrix.rust_targets }}
+
+      - name: Install LLVM and Clang
         if: runner.os == 'Linux'
         run: |
           sudo apt-get update
-          sudo apt-get install -y clang libclang-dev libssl-dev pkg-config
-      - name: Install Linux ARM64 cross compiler
-        if: matrix.platform == 'linux' && matrix.arch == 'arm64'
-        run: sudo apt-get install -y gcc-aarch64-linux-gnu g++-aarch64-linux-gnu
-      - name: Configure MSVC
-        if: runner.os == 'Windows'
-        uses: ilammy/msvc-dev-cmd@v1
-      - name: Configure Windows build
-        if: matrix.platform == 'windows'
-        shell: pwsh
-        run: xmake f -p windows -a x64 -m release -y
-      - name: Configure Linux build
-        if: matrix.platform == 'linux'
-        shell: bash
+          sudo apt-get install -y llvm-18 clang-18 libclang-18-dev
+          sudo ln -sf /usr/bin/clang-18 /usr/bin/clang
+          sudo ln -sf /usr/bin/clang++-18 /usr/bin/clang++
+
+      - name: Install cross-compilation toolchain
+        if: matrix.apt_packages
         run: |
-          if [ '${{ matrix.arch }}' = 'arm64' ]; then
-            xmake f -p linux -a arm64 -m release --cross=aarch64-linux-gnu- -y
-          else
-            xmake f -p linux -a x86_64 -m release -y
-          fi
-      - name: Configure Android build
-        if: matrix.platform == 'android'
-        shell: bash
-        run: xmake f -p android -a '${{ matrix.arch }}' -m release --ndk="$ANDROID_NDK_HOME" -y
-      - name: Build library
-        shell: bash
-        run: xmake -r
-      - name: Stage library
-        shell: bash
-        run: |
-          library='build/${{ matrix.platform }}/${{ matrix.arch }}/release/${{ matrix.library }}'
-          test -s "$library"
-          mkdir -p dist
-          cp "$library" 'dist/${{ matrix.platform }}-${{ matrix.arch }}-${{ matrix.library }}'
-      - uses: actions/upload-artifact@v4
+          sudo apt-get update
+          sudo apt-get install -y ${{ matrix.apt_packages }}
+
+      - name: Setup Android NDK
+        if: matrix.ndk_version
+        uses: nttld/setup-ndk@v1
         with:
-          name: natives-${{ matrix.platform }}-${{ matrix.arch }}
-          path: dist/*
+          ndk-version: ${{ matrix.ndk_version }}
+        id: setup-ndk
+
+      - name: Configure xmake (Windows)
+        if: runner.os == 'Windows'
+        run: xmake f -p ${{ matrix.platform }} -a ${{ matrix.arch }} -m release -y
+        shell: cmd
+
+      - name: Configure xmake (Linux/Android)
+        if: runner.os != 'Windows'
+        run: |
+          args="-p ${{ matrix.platform }} -a ${{ matrix.arch }} -m release -y"
+          if [ -n "${{ matrix.cross }}" ]; then
+            args="$args --cross=${{ matrix.cross }}"
+          fi
+          if [ -n "${{ matrix.ndk_version }}" ]; then
+            args="$args --ndk=${{ steps.setup-ndk.outputs.ndk-path }}"
+          fi
+          xmake f $args
+        shell: bash
+        env:
+          LLVM_ROOT: /usr/lib/llvm-18
+
+      - name: Build with xmake
+        run: xmake -r
+        env:
+          LIBCLANG_PATH: ${{ runner.os == 'Linux' && '/usr/lib/llvm-18/lib' || '' }}
+
+      - name: Verify build output
+        run: |
+          ls -lah build/${{ matrix.platform }}/${{ matrix.arch }}/release/
+          test -f build/${{ matrix.platform }}/${{ matrix.arch }}/release/${{ matrix.library }}
+        shell: bash
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.platform }}-${{ matrix.arch }}-${{ matrix.library }}
+          path: build/${{ matrix.platform }}/${{ matrix.arch }}/release/*
           if-no-files-found: error
 
-  release:
+  publish:
     needs: build
-    runs-on: ubuntu-22.04
-    permissions:
-      contents: write
-    concurrency:
-      group: natives-release
-      cancel-in-progress: false
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+
     steps:
-      - uses: actions/download-artifact@v4
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
         with:
-          pattern: natives-*
-          path: dist
-          merge-multiple: true
-      - name: Publish prerelease
+          path: artifacts
+
+      - name: List downloaded artifacts
+        run: |
+          echo "Downloaded artifacts:"
+          find artifacts -type f
+
+      - name: Create or update release
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
         run: |
-          if gh release view natives >/dev/null 2>&1; then
-            gh release edit natives --prerelease --title natives
-          else
-            gh release create natives --target "$GITHUB_SHA" --prerelease --title natives --notes 'Native libraries'
-          fi
-          gh release upload natives dist/* --clobber
+          gh release create natives \
+            --title "Native Libraries" \
+            --notes "Prebuilt easytier FFI libraries for all supported platforms" \
+            --target ${{ github.sha }} \
+            2>/dev/null || echo "Release already exists"
+
+      - name: Upload libraries to release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          find artifacts -type f \( -name "*.dll" -o -name "*.so" -o -name "*.sys" \) | while read file; do
+            echo "Uploading $file"
+            gh release upload natives "$file" --clobber || echo "Failed to upload $file"
+          done
