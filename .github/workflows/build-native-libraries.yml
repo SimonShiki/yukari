@@ -133,23 +133,15 @@ jobs:
           echo "Downloaded artifacts:"
           find artifacts -type f
 
-      - name: Create or update release
-        env:
-          GH_TOKEN: ${{ github.token }}
-          GH_REPO: ${{ github.repository }}
-        run: |
-          gh release create natives \
-            --title "Native Libraries" \
-            --notes "Prebuilt easytier FFI libraries for all supported platforms" \
-            --target ${{ github.sha }} \
-            2>/dev/null || echo "Release already exists"
-
-      - name: Upload libraries to release
-        env:
-          GH_TOKEN: ${{ github.token }}
-          GH_REPO: ${{ github.repository }}
-        run: |
-          find artifacts -type f \( -name "*.dll" -o -name "*.so" -o -name "*.sys" \) | while read file; do
-            echo "Uploading $file"
-            gh release upload natives "$file" --clobber || echo "Failed to upload $file"
-          done
+      - name: Create release and upload assets
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: natives
+          name: Native Libraries
+          body: Prebuilt easytier FFI libraries for all supported platforms
+          files: |
+            artifacts/**/*.dll
+            artifacts/**/*.so
+            artifacts/**/*.sys
+          fail_on_unmatched_files: true
+          make_latest: false
