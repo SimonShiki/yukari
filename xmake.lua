@@ -67,7 +67,7 @@ package("protobuf-tools")
 package_end()
 
 package("easytier-ffi")
-    set_kind("binary")
+    set_kind("library")
     set_homepage("https://github.com/EasyTier/EasyTier")
     set_license("LGPL-3.0")
     add_urls("https://github.com/EasyTier/EasyTier.git", {submodules = false})
@@ -85,6 +85,7 @@ package("easytier-ffi")
 
     on_install("windows|x64", "linux|x86_64", "linux|arm64", "android|arm64-v8a", "android|x86_64", function (package)
         import("lib.detect.find_tool")
+        import("core.project.config", {alias = "project_config"})
 
         local config = assert(build_targets[package:plat()] and build_targets[package:plat()][package:arch()],
             "unsupported target: %s|%s", package:plat(), package:arch())
@@ -163,7 +164,8 @@ package("easytier-ffi")
             envs.CXX = assert(package:tool("cxx"), "g++ was not found")
             envs.RUSTFLAGS = "-C target-cpu=generic"
         else
-            local ndk = assert(package:toolchain("ndk"):sdkdir(), "Android NDK was not found")
+            local ndk = assert(project_config.get("ndk") or os.getenv("ANDROID_NDK_HOME"),
+                "Android NDK was not found; configure xmake with --ndk or set ANDROID_NDK_HOME")
 
             -- Detect host architecture for NDK prebuilt path
             local ndk_host_arch = os.arch()
