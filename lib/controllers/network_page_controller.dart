@@ -8,6 +8,8 @@ import 'package:signals/signals.dart';
 import '../bindings/easytier_ffi_native.dart' as native;
 import '../models/instance.dart';
 import '../models/network.dart';
+import '../models/backend.dart';
+import  '../signals/backend.dart';
 import '../signals/networks.dart';
 import '../utils/easytier_config_parser.dart';
 import '../utils/network_runner_android.dart';
@@ -82,6 +84,8 @@ class NetworkPageController {
     return [for (final entry in saved.entries) _card(entry.key, entry.value)];
   });
 
+  late final hasRunningNetwork = computed(() => instances.value.isNotEmpty);
+
   Key keyForIndex(int index) =>
       _keys.putIfAbsent(networks.value.keys.elementAt(index), UniqueKey.new);
 
@@ -99,6 +103,12 @@ class NetworkPageController {
         transition == InstanceStatus.starting ||
         transition == InstanceStatus.stopping;
     final running = instance != null;
+
+    // On Android, disable toggle if another network is running (VPN limitation)
+    final androidVpnLimited = Platform.isAndroid && backend.value.kind == BackendKind.ffi &&
+        hasRunningNetwork.value &&
+        !running;
+
     return NetworkCardData(
       name: network.networkName,
       status:
@@ -112,7 +122,7 @@ class NetworkPageController {
       onEdit: () => edit(name),
       onLog: () => log(name),
       onDelete: () => delete(name),
-      onToggle: busy || error.value != null || !loaded.value
+      onToggle: busy || error.value != null || !loaded.value || androidVpnLimited
           ? null
           : (value) => toggle(name, value),
     );
@@ -124,7 +134,11 @@ class NetworkPageController {
     _timer?.cancel();
     if (active) {
       unawaited(refresh());
-      _timer = Timer.periodic(refreshInterval, (_) => unawaited(refresh()));
+      _timer = Timer.periodic(refreshInterval, (_) {
+        if (hasRunningNetwork.peek()) {
+          unawaited(refresh());
+        }
+      });
     }
   }
 

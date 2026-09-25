@@ -1,4 +1,4 @@
-enum BackendKind { ffi }
+enum BackendKind { ffi, rpc }
 
 enum BackendStatus { stopped, starting, running, stopping, failed, closed }
 

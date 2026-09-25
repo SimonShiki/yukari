@@ -82,6 +82,12 @@ extension NetworkPageActions on NetworkPageController {
     }
     if (running == instances.value.containsKey(id)) return;
 
+    // On Android, only one VPN network can run at a time
+    if (Platform.isAndroid && running && instances.value.isNotEmpty) {
+      showMessage('Only one network can run at a time on Android.');
+      return;
+    }
+
     // Check TUN permission before starting a network that requires it
     if (running && !network.flags.noTun) {
       if (Platform.isAndroid) {
@@ -103,12 +109,16 @@ extension NetworkPageActions on NetworkPageController {
     } else {
       try {
         await _stop([network.networkName]);
+        // Clear transition immediately after successful stop
+        transitions.value.remove(id);
+        transitions.set(transitions.value);
+        // Refresh to update instance list
+        if (_active) await refresh();
       } catch (_) {
         transitions.value.remove(id);
         transitions.set(transitions.value);
         if (!_disposed) showMessage('Could not stop ${network.networkName}.');
       }
-      if (_active) await refresh();
     }
   }
 

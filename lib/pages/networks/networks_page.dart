@@ -143,7 +143,13 @@ class _NetworksPageState extends State<NetworksPage>
                                                 busy: card.busy,
                                                 onOpen: isLargeScreen
                                                     ? card.onOpen
-                                                    : () => context.go('/networks/edit/${card.name}'),
+                                                    : () {
+                                                        if (card.running) {
+                                                          context.go('/networks/instance/${card.name}');
+                                                        } else {
+                                                          context.go('/networks/edit/${card.name}');
+                                                        }
+                                                      },
                                                 onEdit: card.onEdit,
                                                 onLog: card.onLog,
                                                 onDelete: card.onDelete,
@@ -156,10 +162,13 @@ class _NetworksPageState extends State<NetworksPage>
                                             selectedIndex: isLargeScreen && selectedIndex != null && selectedIndex != -1 ? selectedIndex : null,
                                             onSelectionChanged: (index) {
                                               if (index != null) {
+                                                final card = cards[index];
                                                 if (isLargeScreen) {
-                                                  cards[index].onOpen();
+                                                  card.onOpen();
+                                                } else if (card.running) {
+                                                  context.go('/networks/instance/${card.name}');
                                                 } else {
-                                                  context.go('/networks/edit/${cards[index].name}');
+                                                  context.go('/networks/edit/${card.name}');
                                                 }
                                               }
                                             },
