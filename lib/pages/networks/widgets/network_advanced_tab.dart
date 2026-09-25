@@ -137,6 +137,13 @@ class _NetworkAdvancedTabState extends State<NetworkAdvancedTab> {
                 ),
                 onChanged: (v) => builder.netNamespace = v.isEmpty ? null : v,
               ),
+              const SizedBox(height: 16),
+              SwitchListTile(
+                title: const Text('Disable TUN Mode'),
+                subtitle: const Text('Run without TUN/TAP virtual network device'),
+                value: builder.flags.noTun,
+                onChanged: (v) => builder.flags.noTun = v,
+              ),
             ],
           ),
           const SizedBox(height: 16),
