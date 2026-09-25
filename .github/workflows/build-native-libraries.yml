@@ -35,14 +35,14 @@ jobs:
             runner: ubuntu-latest
             library: libeasytier_ffi.so
             rust_targets: aarch64-linux-android
-            ndk_version: r26d
+            ndk_version: r28c
 
           - platform: android
             arch: x86_64
             runner: ubuntu-latest
             library: libeasytier_ffi.so
             rust_targets: x86_64-linux-android
-            ndk_version: r26d
+            ndk_version: r28c
 
     runs-on: ${{ matrix.runner }}
 
