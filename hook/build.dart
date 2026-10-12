@@ -85,7 +85,7 @@ Future<List<Uri>> _windowsRuntimeLibraries(
   Uri outputDirectory,
   Directory localDirectory,
 ) async {
-  const revision = '7223677264f1d99f55b9c30888d09ccbf55671c3';
+  const revision = '1649ec00135e12103e05bf543e0ed313d7e190f8';
   const names = ['Packet.dll', 'wintun.dll', 'WinDivert64.sys'];
   final result = <Uri>[];
   for (final name in names) {
