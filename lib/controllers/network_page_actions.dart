@@ -60,8 +60,7 @@ extension NetworkPageActions on NetworkPageController {
   }
 
   void log(String id) {
-    final instance = instances.value[id];
-    if (instance != null) showLog(instance);
+    if (instances.value.containsKey(id)) navigate('network-logs', id);
   }
 
   Future<void> reorder(int oldIndex, int newIndex) async {
@@ -107,6 +106,7 @@ extension NetworkPageActions on NetworkPageController {
         : InstanceStatus.stopping;
     transitions.set(transitions.value);
     if (running) {
+      clearInstanceLogs(id);
       // The native run future completes when the instance exits, not on startup.
       unawaited(_runUntilStopped(id, network));
     } else {
@@ -157,6 +157,7 @@ extension NetworkPageActions on NetworkPageController {
       if (current.containsKey(id)) await _stop([network.networkName]);
       if (_disposed) return;
       await deleteNetwork(id);
+      clearInstanceLogs(id);
       instances.value.remove(id);
       instances.set(instances.value);
       transitions.value.remove(id);

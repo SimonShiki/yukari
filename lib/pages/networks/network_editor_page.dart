@@ -3,6 +3,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:signals_flutter/signals_flutter.dart';
 
 import '../../controllers/network_editor_controller.dart';
+import '../../widgets/empty_state/empty_state.dart';
 import 'editor_exit_guard.dart';
 import 'widgets/network_basic_tab.dart';
 import 'widgets/network_advanced_tab.dart';
@@ -55,19 +56,13 @@ class _NetworkEditorPageState extends State<NetworkEditorPage> {
     if (_controller.network.peek() == null) {
       return Scaffold(
         appBar: AppBar(title: const Text('Edit Network')),
-        body: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(Icons.error_outline, size: 48),
-              const SizedBox(height: 16),
-              const Text('Network not found'),
-              const SizedBox(height: 16),
-              FilledButton(
-                onPressed: () => context.pop(),
-                child: const Text('Go Back'),
-              ),
-            ],
+        body: EmptyState(
+          icon: Icons.error_outline,
+          title: 'Network not found',
+          message: 'It may have been deleted.',
+          action: FilledButton(
+            onPressed: () => context.pop(),
+            child: const Text('Go Back'),
           ),
         ),
       );

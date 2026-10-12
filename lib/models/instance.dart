@@ -38,6 +38,7 @@ final class Instance {
             protocols: const [],
             natType: NatType.unknown,
             connectionType: PeerConnectionType.local,
+            virtualIpv4: Peer.ipv4FromInet(myNodeInfo['virtual_ipv4']),
           )
         : null;
     final pairs = (json['peer_route_pairs'] as List<Object?>?)

@@ -10,7 +10,9 @@ import '../bindings/easytier_ffi_native.dart' as native;
 import '../models/instance.dart';
 import '../models/network.dart';
 import '../models/backend.dart';
+import 'network_instance_controller.dart';
 import  '../signals/backend.dart';
+import '../signals/instance_logs.dart';
 import '../signals/networks.dart';
 import '../utils/easytier_config_parser.dart';
 import '../utils/network_runner_android.dart';
@@ -25,7 +27,6 @@ class NetworkPageController {
     required this.navigate,
     required this.showMessage,
     required this.confirmDelete,
-    required this.showLog,
     required this.showTunPermissionWarning,
     FutureOr<Map<String, Instance>> Function(Map<String, Network>)? collect,
     Future<void> Function(Network)? run,
@@ -45,7 +46,6 @@ class NetworkPageController {
   final void Function(String route, String? id) navigate;
   final ValueChanged<String> showMessage;
   final Future<bool> Function(Network) confirmDelete;
-  final ValueChanged<Instance> showLog;
   final Future<bool> Function(Network) showTunPermissionWarning;
   final Duration refreshInterval;
   final Map<String, Key> _keys = {};
@@ -64,6 +64,10 @@ class NetworkPageController {
   final loaded = signal(false);
   final refreshError = signal<String?>(null);
   final selectedNetwork = signal<String?>(null);
+
+  /// Tab of the selected running network, when it is shown beside the list.
+  /// The shown page keeps it in sync with the user's own tab switches.
+  final selectedTab = signal(InstanceTab.peers);
 
   late final error = computed(() => refreshError.value);
   late final selectedNetworkRunning = computed(() =>
@@ -91,10 +95,11 @@ class NetworkPageController {
   Key keyForIndex(int index) =>
       _keys.putIfAbsent(networks.value.keys.elementAt(index), UniqueKey.new);
 
-  void selectNetwork(String id) {
-    if (selectedNetwork.value != id) {
+  void selectNetwork(String id, {InstanceTab tab = InstanceTab.peers}) {
+    batch(() {
       selectedNetwork.value = id;
-    }
+      selectedTab.value = tab;
+    });
   }
 
   NetworkCardData _card(String id, Network network) {
@@ -152,6 +157,9 @@ class NetworkPageController {
       final snapshot = Map<String, Network>.of(networks.value);
       final newInstances = await _collect(snapshot);
       if (_disposed) return;
+      for (final MapEntry(:key, :value) in newInstances.entries) {
+        recordInstanceEvents(key, value.events);
+      }
       instances.value = newInstances;
       loaded.value = true;
       refreshError.value = null;

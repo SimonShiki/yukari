@@ -2,13 +2,14 @@ import 'package:go_router/go_router.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:signals/signals_flutter.dart';
 
+import '../../controllers/network_instance_controller.dart';
 import '../../controllers/network_page_controller.dart';
 import '../../widgets/network_card/network_card_list.dart';
 import '../../widgets/network_card/network_card_data.dart';
+import '../../widgets/empty_state/empty_state.dart';
 import 'editor_exit_guard.dart';
 import 'network_editor_page.dart';
 import 'network_page_dialogs.dart';
-import 'network_page_empty_state.dart';
 import 'network_create_menu.dart';
 import 'network_instance_page.dart';
 
@@ -50,7 +51,6 @@ class _NetworksPageState extends State<NetworksPage>
                 .showSnackBar(SnackBar(content: Text(message)));
           },
           confirmDelete: (network) => confirmNetworkDeletion(context, network),
-          showLog: (instance) => showNetworkLog(context, instance),
           showTunPermissionWarning: (network) => showTunPermissionWarning(context, network),
         );
   }
@@ -131,7 +131,11 @@ class _NetworksPageState extends State<NetworksPage>
                             ),
                           Expanded(
                             child: cards.isEmpty
-                                ? const NetworkPageEmptyState()
+                                ? const EmptyState(
+                                    icon: Icons.hub_outlined,
+                                    title: 'No networks yet',
+                                    message: 'Add a network to get connected.',
+                                  )
                                 : Align(
                                     alignment: Alignment.topCenter,
                                     child: ConstrainedBox(
@@ -163,7 +167,9 @@ class _NetworksPageState extends State<NetworksPage>
                                                         }
                                                       },
                                                 onEdit: card.onEdit,
-                                                onLog: card.onLog,
+                                                onLog: isLargeScreen
+                                                    ? () => _leaveEditor(() => _controller.selectNetwork(card.id, tab: InstanceTab.logs))
+                                                    : card.onLog,
                                                 onDelete: card.onDelete,
                                                 onToggle: isLargeScreen && card.id == selectedNetwork && card.onToggle != null
                                                     ? (value) => _leaveEditor(() => card.onToggle!(value))
@@ -219,7 +225,7 @@ class _NetworksPageState extends State<NetworksPage>
                         ),
                       ),
                       child: selectedNetworkRunning
-                          ? NetworkInstancePage(id: selectedNetwork)
+                          ? NetworkInstancePage(key: ValueKey(selectedNetwork), id: selectedNetwork, tab: _controller.selectedTab)
                           : NetworkEditorPage(key: ValueKey(selectedNetwork), id: selectedNetwork),
                     ),
                   ),

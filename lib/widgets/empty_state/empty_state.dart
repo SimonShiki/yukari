@@ -1,7 +1,18 @@
 import 'package:material_ui/material_ui.dart';
 
-class NetworkPageEmptyState extends StatelessWidget {
-  const NetworkPageEmptyState({super.key});
+class EmptyState extends StatelessWidget {
+  const EmptyState({
+    super.key,
+    required this.icon,
+    required this.title,
+    required this.message,
+    this.action,
+  });
+
+  final IconData icon;
+  final String title;
+  final String message;
+  final Widget? action;
 
   @override
   Widget build(BuildContext context) {
@@ -12,25 +23,22 @@ class NetworkPageEmptyState extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(
-              Icons.hub_outlined,
-              size: 64,
-              color: theme.colorScheme.primary,
-            ),
+            Icon(icon, size: 64, color: theme.colorScheme.primary),
             const SizedBox(height: 24),
             Text(
-              'No networks yet',
+              title,
               style: theme.textTheme.headlineSmall,
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 8),
             Text(
-              'Add a network to get connected.',
+              message,
               textAlign: TextAlign.center,
               style: theme.textTheme.bodyLarge?.copyWith(
                 color: theme.colorScheme.onSurfaceVariant,
               ),
             ),
+            if (action != null) ...[const SizedBox(height: 24), action!],
           ],
         ),
       ),

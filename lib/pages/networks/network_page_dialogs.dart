@@ -2,7 +2,6 @@ import 'dart:io';
 
 import 'package:material_ui/material_ui.dart';
 
-import '../../models/instance.dart';
 import '../../models/network.dart';
 import '../../utils/tun_helper.dart';
 
@@ -36,25 +35,6 @@ Future<bool> confirmNetworkDeletion(
       ),
     ) ??
     false;
-
-void showNetworkLog(BuildContext context, Instance instance) {
-  showDialog<void>(
-    context: context,
-    builder: (context) => AlertDialog(
-      title: Text('${instance.network.networkName} log'),
-      scrollable: true,
-      content: SelectableText(
-        instance.events.isEmpty ? 'No events yet.' : instance.events.join('\n'),
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: const Text('Close'),
-        ),
-      ],
-    ),
-  );
-}
 
 Future<bool> showTunPermissionWarning(
   BuildContext context,

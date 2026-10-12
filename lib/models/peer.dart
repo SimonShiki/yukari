@@ -38,6 +38,7 @@ final class Peer {
     required this.protocols,
     required this.natType,
     required this.connectionType,
+    this.virtualIpv4,
   });
 
   final String id;
@@ -52,6 +53,9 @@ final class Peer {
   final List<NodeProtocol> protocols;
   final NatType natType;
   final PeerConnectionType connectionType;
+
+  /// Address in the virtual network, such as `10.144.0.1`, once assigned.
+  final String? virtualIpv4;
 
   factory Peer.fromJson(Map<String, Object?> json) {
     final route = json['route'] as Map<String, Object?>?;
@@ -69,29 +73,82 @@ final class Peer {
 
     return Peer(
       id: '${route['peer_id']}',
-      identityType:
-          IdentityType.values[(connection['peer_identity_type'] as int?) ?? 0],
-      hostname: route['hostname'] as String,
-      latency: stats?['latency_us'] as int? ?? 0,
-      rxBytes: stats?['rx_bytes'] as int? ?? 0,
-      txBytes: stats?['tx_bytes'] as int? ?? 0,
-      rxPackets: stats?['rx_packets'] as int? ?? 0,
-      txPackets: stats?['tx_packets'] as int? ?? 0,
-      secureAuthLevel: SecureAuthLevel
-          .values[(connection['secure_auth_level'] as int?) ?? 0],
+      identityType: _enum(
+        IdentityType.values,
+        _identityTypeNames,
+        connection['peer_identity_type'],
+      ),
+      hostname: route['hostname'] as String? ?? '',
+      latency: _int(stats?['latency_us']),
+      rxBytes: _int(stats?['rx_bytes']),
+      txBytes: _int(stats?['tx_bytes']),
+      rxPackets: _int(stats?['rx_packets']),
+      txPackets: _int(stats?['tx_packets']),
+      secureAuthLevel: _enum(
+        SecureAuthLevel.values,
+        _secureAuthLevelNames,
+        connection['secure_auth_level'],
+      ),
       protocols: [
         ...connections
             .map((connection) => connection['tunnel'] as Map<String, Object?>?)
             .whereType<Map<String, Object?>>()
-            .map((tunnel) => tunnel['tunnel_type'] as String)
+            .map((tunnel) => tunnel['tunnel_type'] as String? ?? '')
             .map(_protocolFromName)
             .whereType<NodeProtocol>(),
       ],
-      natType: NatType.values[stunInfo?['udp_nat_type'] as int? ?? 0],
+      natType: _enum(NatType.values, _natTypeNames, stunInfo?['udp_nat_type']),
       connectionType: route['next_hop_peer_id'] == route['peer_id']
           ? PeerConnectionType.direct
           : PeerConnectionType.relay,
+      virtualIpv4: ipv4FromInet(route['ipv4_addr']),
     );
+  }
+
+  /// Formats an `Ipv4Inet` message, whose address is a big-endian integer.
+  static String? ipv4FromInet(Object? inet) {
+    if (inet case {'address': {'addr': final int addr}}) {
+      return [24, 16, 8, 0].map((shift) => (addr >> shift) & 0xff).join('.');
+    }
+    return null;
+  }
+
+  // EasyTier serializes protobuf messages with serde: 64-bit integers become
+  // strings, enums become variant names, and default values are omitted.
+  static const _identityTypeNames = ['Admin', 'Credential', 'SharedNode'];
+  static const _secureAuthLevelNames = [
+    'None',
+    'EncryptedUnauthenticated',
+    'PeerVerified',
+    'NetworkSecretConfirmed',
+  ];
+  static const _natTypeNames = [
+    'Unknown',
+    'OpenInternet',
+    'NoPAT',
+    'FullCone',
+    'Restricted',
+    'PortRestricted',
+    'Symmetric',
+    'SymUdpFirewall',
+    'SymmetricEasyInc',
+    'SymmetricEasyDec',
+  ];
+
+  static int _int(Object? value) => switch (value) {
+    int value => value,
+    String value => int.tryParse(value) ?? 0,
+    _ => 0,
+  };
+
+  /// [values] must follow the order of the protobuf enum's [names].
+  static T _enum<T>(List<T> values, List<String> names, Object? value) {
+    final index = switch (value) {
+      int value => value,
+      String value => names.indexOf(value),
+      _ => 0,
+    };
+    return index >= 0 && index < values.length ? values[index] : values.first;
   }
 
   static NodeProtocol? _protocolFromName(String name) {
