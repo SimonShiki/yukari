@@ -4,6 +4,7 @@ import '../../models/instance.dart';
 
 class NetworkCardData {
   const NetworkCardData({
+    required this.id,
     required this.name,
     required this.status,
     required this.running,
@@ -15,6 +16,8 @@ class NetworkCardData {
     this.busy = false,
   });
 
+  /// Key of the network in the saved network collection.
+  final String id;
   final String name;
   final InstanceStatus status;
   final bool running;

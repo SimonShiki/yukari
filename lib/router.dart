@@ -38,13 +38,13 @@ final GoRouter appRouter = GoRouter(
           routes: [
             GoRoute(
               name: 'network-instance',
-              path: 'instance/:name',
-              builder: (context, state) => NetworkInstancePage(name: state.pathParameters['name']!),
+              path: 'instance/:id',
+              builder: (context, state) => NetworkInstancePage(id: state.pathParameters['id']!),
             ),
             GoRoute(
               name: 'network-edit',
-              path: 'edit/:name',
-              builder: (context, state) => NetworkEditorPage(name: state.pathParameters['name']!),
+              path: 'edit/:id',
+              builder: (context, state) => NetworkEditorPage(id: state.pathParameters['id']!),
             ),
             GoRoute(name: 'network-create', path: 'create', builder: (context, state) => const NetworkCreatorPage()),
           ],

@@ -79,6 +79,12 @@ Future<void> _optimistic(
   }
 }
 
+/// Names of saved networks, excluding the one stored under [exceptId].
+Iterable<String> networkNames({String? exceptId}) => [
+  for (final entry in _networks.peek().entries)
+    if (entry.key != exceptId) entry.value.networkName,
+];
+
 /// Add a new network to the collection.
 ///
 /// Throws [StateError] if a network with [key] already exists.

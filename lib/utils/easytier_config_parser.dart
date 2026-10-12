@@ -6,155 +6,155 @@ Network parseEasyTierConfig(String tomlContent) {
   final doc = TomlDocument.parse(tomlContent);
   final config = doc.toMap();
 
-  final builder = NetworkBuilder();
+  final network = Network();
 
   if (config['hostname'] is String) {
-    builder.hostname = config['hostname'] as String;
+    network.hostname = config['hostname'] as String;
   }
 
   if (config['network_identity'] is Map) {
     final identity = config['network_identity'] as Map;
     if (identity['network_name'] is String) {
-      builder.networkName = identity['network_name'] as String;
+      network.networkName = identity['network_name'] as String;
     }
     if (identity['network_secret'] is String) {
-      builder.networkSecret = identity['network_secret'] as String;
+      network.networkSecret = identity['network_secret'] as String;
     }
   }
 
   if (config['netns'] is String) {
-    builder.netNamespace = config['netns'] as String;
+    network.netNamespace = config['netns'] as String;
   }
 
   if (config['ipv4'] is String) {
-    builder.ipv4 = config['ipv4'] as String;
+    network.ipv4 = config['ipv4'] as String;
   }
 
   if (config['ipv6'] is String) {
-    builder.ipv6 = config['ipv6'] as String;
+    network.ipv6 = config['ipv6'] as String;
   }
 
   if (config['ipv6_public_addr_provider'] is bool) {
-    builder.ipv6PublicAddressProvider = config['ipv6_public_addr_provider'] as bool;
+    network.ipv6PublicAddressProvider = config['ipv6_public_addr_provider'] as bool;
   }
 
   if (config['ipv6_public_addr_auto'] is bool) {
-    builder.ipv6PublicAddressAuto = config['ipv6_public_addr_auto'] as bool;
+    network.ipv6PublicAddressAuto = config['ipv6_public_addr_auto'] as bool;
   }
 
   if (config['ipv6_public_addr_prefix'] is String) {
-    builder.ipv6PublicAddressPrefix = config['ipv6_public_addr_prefix'] as String;
+    network.ipv6PublicAddressPrefix = config['ipv6_public_addr_prefix'] as String;
   }
 
   if (config['dhcp'] is bool) {
-    builder.dhcp = config['dhcp'] as bool;
+    network.dhcp = config['dhcp'] as bool;
   }
 
   if (config['listeners'] is List) {
-    builder.listeners = (config['listeners'] as List)
+    network.listeners = (config['listeners'] as List)
         .map((e) => Uri.parse(e.toString()))
         .toList();
   }
 
   if (config['mapped_listeners'] is List) {
-    builder.mappedListeners = (config['mapped_listeners'] as List)
+    network.mappedListeners = (config['mapped_listeners'] as List)
         .map((e) => Uri.parse(e.toString()))
         .toList();
   }
 
   if (config['exit_nodes'] is List) {
-    builder.exitNodes = (config['exit_nodes'] as List)
+    network.exitNodes = (config['exit_nodes'] as List)
         .map((e) => e.toString())
         .toList();
   }
 
   if (config['peer'] is List) {
-    builder.nodes = _parsePeers(config['peer'] as List);
+    network.nodes = _parsePeers(config['peer'] as List);
   }
 
   if (config['proxy_network'] is List) {
-    builder.proxyNetworks = (config['proxy_network'] as List)
+    network.proxyNetworks = (config['proxy_network'] as List)
         .map((e) => _parseProxyNetwork(e as Map))
         .toList();
   }
 
   if (config['routes'] is List) {
-    builder.routes = (config['routes'] as List)
+    network.routes = (config['routes'] as List)
         .map((e) => e.toString())
         .toList();
   }
 
   if (config['socks5_proxy'] is String) {
-    builder.socks5Proxy = Uri.parse(config['socks5_proxy'] as String);
+    network.socks5Proxy = Uri.parse(config['socks5_proxy'] as String);
   }
 
   if (config['port_forward'] is List) {
-    builder.portForwards = (config['port_forward'] as List)
+    network.portForwards = (config['port_forward'] as List)
         .map((e) => _parsePortForward(e as Map))
         .toList();
   }
 
   if (config['vpn_portal_config'] is Map) {
-    builder.vpnPortal = _parseVpnPortal(config['vpn_portal_config'] as Map);
+    network.vpnPortal = _parseVpnPortal(config['vpn_portal_config'] as Map);
   }
 
   if (config['secure_mode'] is Map) {
-    builder.secureMode = _parseSecureMode(config['secure_mode'] as Map);
+    network.secureMode = _parseSecureMode(config['secure_mode'] as Map);
   }
 
   if (config['acl'] is Map) {
-    builder.acl = Map<String, Object?>.from(config['acl'] as Map);
+    network.acl = Map<String, Object?>.from(config['acl'] as Map);
   }
 
   if (config['tcp_whitelist'] is List) {
-    builder.tcpWhitelist = (config['tcp_whitelist'] as List)
+    network.tcpWhitelist = (config['tcp_whitelist'] as List)
         .map((e) => e.toString())
         .toList();
   }
 
   if (config['udp_whitelist'] is List) {
-    builder.udpWhitelist = (config['udp_whitelist'] as List)
+    network.udpWhitelist = (config['udp_whitelist'] as List)
         .map((e) => e.toString())
         .toList();
   }
 
   if (config['stun_servers'] is List) {
-    builder.stunServers = (config['stun_servers'] as List)
+    network.stunServers = (config['stun_servers'] as List)
         .map((e) => e.toString())
         .toList();
   }
 
   if (config['tcp_stun_servers'] is List) {
-    builder.tcpStunServers = (config['tcp_stun_servers'] as List)
+    network.tcpStunServers = (config['tcp_stun_servers'] as List)
         .map((e) => e.toString())
         .toList();
   }
 
   if (config['stun_servers_v6'] is List) {
-    builder.stunServersV6 = (config['stun_servers_v6'] as List)
+    network.stunServersV6 = (config['stun_servers_v6'] as List)
         .map((e) => e.toString())
         .toList();
   }
 
   if (config['credential_file'] is String) {
-    builder.credentialFile = config['credential_file'] as String;
+    network.credentialFile = config['credential_file'] as String;
   }
 
   if (config['managed_credentials'] is List) {
-    builder.managedCredentials = (config['managed_credentials'] as List)
+    network.managedCredentials = (config['managed_credentials'] as List)
         .map((e) => _parseManagedCredential(e as Map))
         .toList();
   }
 
   if (config['flags'] is Map) {
-    builder.flags = _parseFlags(config['flags'] as Map);
+    network.flags = _parseFlags(config['flags'] as Map);
   }
 
-  return builder.build();
+  return network;
 }
 
 List<Node> _parsePeers(List<dynamic> peers) {
-  final nodeMap = <String, _NodeBuilder>{};
+  final nodes = <String, Node>{};
 
   for (final peer in peers) {
     if (peer is! Map) continue;
@@ -170,34 +170,22 @@ List<Node> _parsePeers(List<dynamic> peers) {
 
     if (protocol == null || host.isEmpty || port == 0) continue;
 
+    // EasyTier lists one peer per protocol; group them by address.
     final nodeId = '$host:$port';
-    final nodeBuilder = nodeMap.putIfAbsent(
+    final node = nodes.putIfAbsent(
       nodeId,
-      () => _NodeBuilder(host: host, port: port, publicKey: publicKey),
+      () => Node(
+        id: nodeId,
+        url: Uri(host: host),
+        port: port,
+        protocols: [],
+        publicKey: publicKey,
+      ),
     );
-
-    nodeBuilder.protocols.add(protocol);
+    if (!node.protocols.contains(protocol)) node.protocols.add(protocol);
   }
 
-  return nodeMap.entries.map((entry) {
-    final builder = entry.value;
-    return Node(
-      id: entry.key,
-      url: Uri(host: builder.host),
-      port: builder.port,
-      protocols: builder.protocols,
-      publicKey: builder.publicKey,
-    );
-  }).toList();
-}
-
-class _NodeBuilder {
-  _NodeBuilder({required this.host, required this.port, this.publicKey});
-
-  final String host;
-  final int port;
-  final String? publicKey;
-  final Set<NodeProtocol> protocols = {};
+  return nodes.values.toList();
 }
 
 NodeProtocol? _parseNodeProtocol(String scheme) => switch (scheme.toLowerCase()) {

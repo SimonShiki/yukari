@@ -36,11 +36,11 @@ class _NetworksPageState extends State<NetworksPage>
     _controller =
         widget.controller ??
         NetworkPageController(
-          navigate: (route, name) {
+          navigate: (route, id) {
             if (route.startsWith('/')) {
               context.go(route);
             } else {
-              context.goNamed(route, pathParameters: {'name': name!});
+              context.goNamed(route, pathParameters: {'id': id!});
             }
           },
           showMessage: (message) {
@@ -132,11 +132,12 @@ class _NetworksPageState extends State<NetworksPage>
                                       child: LayoutBuilder(
                                         builder: (context, constraints) {
                                           final selectedIndex = selectedNetwork != null
-                                              ? cards.indexWhere((card) => card.name == selectedNetwork)
+                                              ? cards.indexWhere((card) => card.id == selectedNetwork)
                                               : null;
                                           return NetworkCardList(
                                             networks: cards.map((card) {
                                               return NetworkCardData(
+                                                id: card.id,
                                                 name: card.name,
                                                 status: card.status,
                                                 running: card.running,
@@ -145,9 +146,9 @@ class _NetworksPageState extends State<NetworksPage>
                                                     ? card.onOpen
                                                     : () {
                                                         if (card.running) {
-                                                          context.go('/networks/instance/${card.name}');
+                                                          context.go('/networks/instance/${card.id}');
                                                         } else {
-                                                          context.go('/networks/edit/${card.name}');
+                                                          context.go('/networks/edit/${card.id}');
                                                         }
                                                       },
                                                 onEdit: card.onEdit,
@@ -166,9 +167,9 @@ class _NetworksPageState extends State<NetworksPage>
                                                 if (isLargeScreen) {
                                                   card.onOpen();
                                                 } else if (card.running) {
-                                                  context.go('/networks/instance/${card.name}');
+                                                  context.go('/networks/instance/${card.id}');
                                                 } else {
-                                                  context.go('/networks/edit/${card.name}');
+                                                  context.go('/networks/edit/${card.id}');
                                                 }
                                               }
                                             },
@@ -205,8 +206,8 @@ class _NetworksPageState extends State<NetworksPage>
                         ),
                       ),
                       child: selectedNetworkRunning
-                          ? NetworkInstancePage(name: selectedNetwork)
-                          : NetworkEditorPage(name: selectedNetwork),
+                          ? NetworkInstancePage(id: selectedNetwork)
+                          : NetworkEditorPage(key: ValueKey(selectedNetwork), id: selectedNetwork),
                     ),
                   ),
               ],

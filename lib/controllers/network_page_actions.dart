@@ -20,16 +20,19 @@ extension NetworkPageActions on NetworkPageController {
       }
 
       final content = await File(file.path!).readAsString();
+      // Imported files are untrusted: let EasyTier reject invalid configs.
+      native.parseConfig(content);
       final network = parseEasyTierConfig(content);
-      final key = network.networkName;
 
-      if (networks.value.containsKey(key)) {
-        showMessage('A network with the name "${network.networkName}" already exists.');
+      final error =
+          validateNetworkName(network.networkName, networkNames()) ??
+          validateNetwork(network);
+      if (error != null) {
+        showMessage('Cannot import "${network.networkName}": $error');
         return;
       }
 
-      await addNetwork(key, network);
-      showMessage('Network "${network.networkName}" imported successfully.');
+      await addNetwork(const Uuid().v4(), network);
     } catch (e) {
       showMessage('Failed to import config: ${e.toString()}');
     }
@@ -42,7 +45,7 @@ extension NetworkPageActions on NetworkPageController {
     if (network == null || transitions.value[id] == InstanceStatus.starting) return;
     navigate(
       instances.value.containsKey(id) ? 'network-instance' : 'network-edit',
-      network.networkName,
+      id,
     );
   }
 
@@ -53,7 +56,7 @@ extension NetworkPageActions on NetworkPageController {
         transitions.value[id] == InstanceStatus.starting) {
       return;
     }
-    navigate('network-edit', network.networkName);
+    navigate('network-edit', id);
   }
 
   void log(String id) {

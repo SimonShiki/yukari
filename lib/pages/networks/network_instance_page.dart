@@ -1,9 +1,9 @@
 import 'package:material_ui/material_ui.dart';
 
 class NetworkInstancePage extends StatelessWidget {
-  const NetworkInstancePage({super.key, required this.name});
+  const NetworkInstancePage({super.key, required this.id});
 
-  final String name;
+  final String id;
 
   @override
   Widget build(BuildContext context) {

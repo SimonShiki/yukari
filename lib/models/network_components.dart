@@ -1,25 +1,14 @@
 import 'package:json_annotation/json_annotation.dart';
 
-import '../utils/validator.dart';
-
 part 'network_components.g.dart';
 
 @JsonSerializable()
 final class ProxyNetwork {
-  ProxyNetwork({
-    required this.cidr,
-    this.mappedCidr,
-    Iterable<String> allow = const [],
-  }) : allow = List.unmodifiable(allow) {
-    validateCidr(cidr, 'cidr');
-    if (mappedCidr != null) {
-      validateCidr(mappedCidr!, 'mappedCidr');
-    }
-  }
+  ProxyNetwork({required this.cidr, this.mappedCidr, this.allow = const []});
 
-  final String cidr;
-  final String? mappedCidr;
-  final List<String> allow;
+  String cidr;
+  String? mappedCidr;
+  List<String> allow;
 
   factory ProxyNetwork.fromJson(Map<String, dynamic> json) =>
       _$ProxyNetworkFromJson(json);
@@ -33,22 +22,11 @@ final class PortForward {
     required this.protocol,
     required this.bindAddress,
     required this.destinationAddress,
-  }) {
-    final normalizedProtocol = protocol.toLowerCase();
-    if (normalizedProtocol != 'tcp' && normalizedProtocol != 'udp') {
-      throw ArgumentError.value(
-        protocol,
-        'protocol',
-        'Only supports "tcp" or "udp"',
-      );
-    }
-    validateSocketAddress(bindAddress, 'bindAddress');
-    validateSocketAddress(destinationAddress, 'destinationAddress');
-  }
+  });
 
-  final String protocol;
-  final String bindAddress;
-  final String destinationAddress;
+  String protocol;
+  String bindAddress;
+  String destinationAddress;
 
   factory PortForward.fromJson(Map<String, dynamic> json) =>
       _$PortForwardFromJson(json);
@@ -61,17 +39,12 @@ final class VpnPortalClient {
   VpnPortalClient({
     required this.name,
     required this.virtualIp,
-    Iterable<String> groups = const [],
-  }) : groups = List.unmodifiable(groups) {
-    if (name.trim().isEmpty) {
-      throw ArgumentError.value(name, 'name', 'Cannot be empty');
-    }
-    validateCidr(virtualIp, 'virtualIp');
-  }
+    this.groups = const [],
+  });
 
-  final String name;
-  final String virtualIp;
-  final List<String> groups;
+  String name;
+  String virtualIp;
+  List<String> groups;
 
   factory VpnPortalClient.fromJson(Map<String, dynamic> json) =>
       _$VpnPortalClientFromJson(json);
@@ -84,21 +57,12 @@ final class VpnPortal {
   VpnPortal({
     required this.wireguardListen,
     this.wireguardPrivateKey,
-    Iterable<VpnPortalClient> clients = const [],
-  }) : clients = List.unmodifiable(clients) {
-    validateSocketAddress(wireguardListen, 'wireguardListen');
-    if (wireguardPrivateKey != null && wireguardPrivateKey!.isEmpty) {
-      throw ArgumentError.value(
-        wireguardPrivateKey,
-        'wireguardPrivateKey',
-        'Cannot be an empty string',
-      );
-    }
-  }
+    this.clients = const [],
+  });
 
-  final String wireguardListen;
-  final String? wireguardPrivateKey;
-  final List<VpnPortalClient> clients;
+  String wireguardListen;
+  String? wireguardPrivateKey;
+  List<VpnPortalClient> clients;
 
   factory VpnPortal.fromJson(Map<String, dynamic> json) =>
       _$VpnPortalFromJson(json);
@@ -110,9 +74,9 @@ final class VpnPortal {
 final class SecureMode {
   SecureMode({this.enabled = true, this.localPrivateKey, this.localPublicKey});
 
-  final bool enabled;
-  final String? localPrivateKey;
-  final String? localPublicKey;
+  bool enabled;
+  String? localPrivateKey;
+  String? localPublicKey;
 
   factory SecureMode.fromJson(Map<String, dynamic> json) =>
       _$SecureModeFromJson(json);
@@ -126,26 +90,19 @@ final class ManagedCredential {
     required this.id,
     required this.secret,
     required this.expiryUnix,
-    Iterable<String> groups = const [],
+    this.groups = const [],
     this.allowRelay = false,
-    Iterable<String> allowedProxyCidrs = const [],
+    this.allowedProxyCidrs = const [],
     this.reusable = true,
-  }) : groups = List.unmodifiable(groups),
-       allowedProxyCidrs = List.unmodifiable(allowedProxyCidrs) {
-    if (id.trim().isEmpty || secret.isEmpty) {
-      throw ArgumentError(
-        'The id and secret of a managed credential cannot be empty.',
-      );
-    }
-  }
+  });
 
-  final String id;
-  final String secret;
-  final int expiryUnix;
-  final List<String> groups;
-  final bool allowRelay;
-  final List<String> allowedProxyCidrs;
-  final bool reusable;
+  String id;
+  String secret;
+  int expiryUnix;
+  List<String> groups;
+  bool allowRelay;
+  List<String> allowedProxyCidrs;
+  bool reusable;
 
   factory ManagedCredential.fromJson(Map<String, dynamic> json) =>
       _$ManagedCredentialFromJson(json);

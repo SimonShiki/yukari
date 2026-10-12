@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:file_picker/file_picker.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:signals/signals.dart';
+import 'package:uuid/uuid.dart';
 
 import '../bindings/easytier_ffi_native.dart' as native;
 import '../models/instance.dart';
@@ -14,6 +15,7 @@ import '../signals/networks.dart';
 import '../utils/easytier_config_parser.dart';
 import '../utils/network_runner_android.dart';
 import '../utils/tun_helper.dart';
+import '../utils/validator.dart';
 import '../widgets/network_card/network_card_data.dart';
 
 part 'network_page_actions.dart';
@@ -40,7 +42,7 @@ class NetworkPageController {
     });
   }
 
-  final void Function(String route, String? name) navigate;
+  final void Function(String route, String? id) navigate;
   final ValueChanged<String> showMessage;
   final Future<bool> Function(Network) confirmDelete;
   final ValueChanged<Instance> showLog;
@@ -95,11 +97,11 @@ class NetworkPageController {
     }
   }
 
-  NetworkCardData _card(String name, Network network) {
-    final instance = instances.value[name];
-    final transition = transitions.value[name];
+  NetworkCardData _card(String id, Network network) {
+    final instance = instances.value[id];
+    final transition = transitions.value[id];
     final busy =
-        deleting.value.contains(name) ||
+        deleting.value.contains(id) ||
         transition == InstanceStatus.starting ||
         transition == InstanceStatus.stopping;
     final running = instance != null;
@@ -110,6 +112,7 @@ class NetworkPageController {
         !running;
 
     return NetworkCardData(
+      id: id,
       name: network.networkName,
       status:
           transition ??
@@ -118,13 +121,13 @@ class NetworkPageController {
               : instance?.status ?? InstanceStatus.stopped),
       running: running,
       busy: busy,
-      onOpen: () => selectNetwork(name),
-      onEdit: () => edit(name),
-      onLog: () => log(name),
-      onDelete: () => delete(name),
+      onOpen: () => selectNetwork(id),
+      onEdit: () => edit(id),
+      onLog: () => log(id),
+      onDelete: () => delete(id),
       onToggle: busy || error.value != null || !loaded.value || androidVpnLimited
           ? null
-          : (value) => toggle(name, value),
+          : (value) => toggle(id, value),
     );
   }
 

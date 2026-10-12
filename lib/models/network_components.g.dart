@@ -9,7 +9,9 @@ part of 'network_components.dart';
 ProxyNetwork _$ProxyNetworkFromJson(Map<String, dynamic> json) => ProxyNetwork(
   cidr: json['cidr'] as String,
   mappedCidr: json['mappedCidr'] as String?,
-  allow: (json['allow'] as List<dynamic>?)?.map((e) => e as String) ?? const [],
+  allow:
+      (json['allow'] as List<dynamic>?)?.map((e) => e as String).toList() ??
+      const [],
 );
 
 Map<String, dynamic> _$ProxyNetworkToJson(ProxyNetwork instance) =>
@@ -37,7 +39,9 @@ VpnPortalClient _$VpnPortalClientFromJson(Map<String, dynamic> json) =>
       name: json['name'] as String,
       virtualIp: json['virtualIp'] as String,
       groups:
-          (json['groups'] as List<dynamic>?)?.map((e) => e as String) ??
+          (json['groups'] as List<dynamic>?)
+              ?.map((e) => e as String)
+              .toList() ??
           const [],
     );
 
@@ -52,9 +56,9 @@ VpnPortal _$VpnPortalFromJson(Map<String, dynamic> json) => VpnPortal(
   wireguardListen: json['wireguardListen'] as String,
   wireguardPrivateKey: json['wireguardPrivateKey'] as String?,
   clients:
-      (json['clients'] as List<dynamic>?)?.map(
-        (e) => VpnPortalClient.fromJson(e as Map<String, dynamic>),
-      ) ??
+      (json['clients'] as List<dynamic>?)
+          ?.map((e) => VpnPortalClient.fromJson(e as Map<String, dynamic>))
+          .toList() ??
       const [],
 );
 
@@ -77,20 +81,24 @@ Map<String, dynamic> _$SecureModeToJson(SecureMode instance) =>
       'localPublicKey': instance.localPublicKey,
     };
 
-ManagedCredential _$ManagedCredentialFromJson(
-  Map<String, dynamic> json,
-) => ManagedCredential(
-  id: json['id'] as String,
-  secret: json['secret'] as String,
-  expiryUnix: (json['expiryUnix'] as num).toInt(),
-  groups:
-      (json['groups'] as List<dynamic>?)?.map((e) => e as String) ?? const [],
-  allowRelay: json['allowRelay'] as bool? ?? false,
-  allowedProxyCidrs:
-      (json['allowedProxyCidrs'] as List<dynamic>?)?.map((e) => e as String) ??
-      const [],
-  reusable: json['reusable'] as bool? ?? true,
-);
+ManagedCredential _$ManagedCredentialFromJson(Map<String, dynamic> json) =>
+    ManagedCredential(
+      id: json['id'] as String,
+      secret: json['secret'] as String,
+      expiryUnix: (json['expiryUnix'] as num).toInt(),
+      groups:
+          (json['groups'] as List<dynamic>?)
+              ?.map((e) => e as String)
+              .toList() ??
+          const [],
+      allowRelay: json['allowRelay'] as bool? ?? false,
+      allowedProxyCidrs:
+          (json['allowedProxyCidrs'] as List<dynamic>?)
+              ?.map((e) => e as String)
+              .toList() ??
+          const [],
+      reusable: json['reusable'] as bool? ?? true,
+    );
 
 Map<String, dynamic> _$ManagedCredentialToJson(ManagedCredential instance) =>
     <String, dynamic>{

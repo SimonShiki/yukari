@@ -10,9 +10,9 @@ Node _$NodeFromJson(Map<String, dynamic> json) => Node(
   id: json['id'] as String,
   url: Uri.parse(json['url'] as String),
   port: (json['port'] as num).toInt(),
-  protocols: (json['protocols'] as List<dynamic>).map(
-    (e) => $enumDecode(_$NodeProtocolEnumMap, e),
-  ),
+  protocols: (json['protocols'] as List<dynamic>)
+      .map((e) => $enumDecode(_$NodeProtocolEnumMap, e))
+      .toList(),
   publicKey: json['publicKey'] as String?,
 );
 

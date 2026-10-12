@@ -1,0 +1,208 @@
+import 'package:flutter_test/flutter_test.dart';
+import 'package:material_ui/material_ui.dart';
+import 'package:yukari/pages/networks/network_editor_page.dart';
+import 'package:yukari/signals/networks.dart';
+
+import '../networks_fixture.dart';
+
+void main() {
+  setUp(seedNetworks);
+
+  Future<void> pumpEditor(WidgetTester tester, [String id = 'n1']) async {
+    tester.view.physicalSize = const Size(1200, 4000);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    await tester.pumpWidget(MaterialApp(home: NetworkEditorPage(id: id)));
+  }
+
+  Finder field(String label) => find.widgetWithText(TextFormField, label);
+
+  // The save queue outlives each test's fake-async zone, so trigger saves
+  // from the real zone and give them a turn of the real event loop.
+  Future<void> act(WidgetTester tester, void Function() action) async {
+    await tester.runAsync(() async {
+      action();
+      await Future<void>.delayed(const Duration(milliseconds: 10));
+    });
+    await tester.pump();
+  }
+
+  Future<void> type(WidgetTester tester, String label, String text) async {
+    await tester.showKeyboard(field(label));
+    await act(tester, () => tester.testTextInput.enterText(text));
+  }
+
+  Future<void> toggle(WidgetTester tester, String title) {
+    final tile = tester.widget<SwitchListTile>(
+      find.widgetWithText(SwitchListTile, title),
+    );
+    return act(tester, () => tile.onChanged!(!tile.value));
+  }
+
+  Future<void> openAdvanced(WidgetTester tester) async {
+    await tester.tap(find.text('Advanced'));
+    await tester.pumpAndSettle();
+  }
+
+  testWidgets('shows the saved configuration', (tester) async {
+    await pumpEditor(tester);
+    expect(find.text('Edit alpha'), findsOneWidget);
+    expect(find.text('alpha'), findsOneWidget);
+  });
+
+  testWidgets('unknown network shows not found', (tester) async {
+    await pumpEditor(tester, 'missing');
+    expect(find.text('Network not found'), findsOneWidget);
+  });
+
+  testWidgets('valid name is saved immediately and retitles the page', (
+    tester,
+  ) async {
+    await pumpEditor(tester);
+    await type(tester, 'Network Name', 'gamma');
+
+    expect(networks.value['n1']!.networkName, 'gamma');
+    expect((await persisted('n1')).networkName, 'gamma');
+    expect(find.text('Edit gamma'), findsOneWidget);
+  });
+
+  testWidgets('duplicate or empty name is flagged and never saved', (
+    tester,
+  ) async {
+    await pumpEditor(tester);
+
+    await type(tester, 'Network Name', 'beta');
+    expect(find.text('Network name already exists'), findsOneWidget);
+
+    await type(tester, 'Network Name', '');
+    expect(find.text('Network name cannot be empty'), findsOneWidget);
+
+    expect(networks.value['n1']!.networkName, 'alpha');
+    expect((await persisted('n1')).networkName, 'alpha');
+  });
+
+  testWidgets('DHCP switch saves immediately and unlocks IPv4', (tester) async {
+    await pumpEditor(tester);
+    TextField ipv4() => tester.widget<TextField>(
+      find.descendant(
+        of: field('IPv4 Address (CIDR)'),
+        matching: find.byType(TextField),
+      ),
+    );
+    expect(ipv4().enabled, isFalse);
+
+    await toggle(tester, 'Enable DHCP');
+
+    expect(networks.value['n1']!.dhcp, isFalse);
+    expect(ipv4().enabled, isTrue);
+  });
+
+  testWidgets('invalid IPv4 is highlighted and rejected; fixing it saves', (
+    tester,
+  ) async {
+    await pumpEditor(tester);
+    await toggle(tester, 'Enable DHCP');
+
+    await type(tester, 'IPv4 Address (CIDR)', '10.0.0.1');
+    expect(
+      find.text('Must be an IPv4 CIDR, e.g. 10.144.144.1/24'),
+      findsOneWidget,
+    );
+    expect(networks.value['n1']!.ipv4, isNull);
+
+    await type(tester, 'IPv4 Address (CIDR)', '10.0.0.1/24');
+    expect(
+      find.text('Must be an IPv4 CIDR, e.g. 10.144.144.1/24'),
+      findsNothing,
+    );
+    expect(networks.value['n1']!.ipv4, '10.0.0.1/24');
+  });
+
+  testWidgets('out-of-range MTU is rejected', (tester) async {
+    await pumpEditor(tester);
+    await openAdvanced(tester);
+
+    await type(tester, 'MTU', '100');
+    expect(
+      find.text('MTU must be a number between 576 and 65535'),
+      findsOneWidget,
+    );
+    expect(networks.value['n1']!.flags.mtu, 1380);
+
+    await type(tester, 'MTU', '1400');
+    expect(networks.value['n1']!.flags.mtu, 1400);
+  });
+
+  testWidgets('invalid input and its error survive switching tabs', (
+    tester,
+  ) async {
+    await pumpEditor(tester);
+    await type(tester, 'Network Name', 'beta');
+
+    await openAdvanced(tester);
+    await tester.tap(find.text('Basic'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('beta'), findsOneWidget);
+    expect(find.text('Network name already exists'), findsOneWidget);
+  });
+
+  testWidgets('invalid private key never enables secure mode', (tester) async {
+    await pumpEditor(tester);
+    await openAdvanced(tester);
+
+    await type(tester, 'Node Private Key (Base64)', 'AAAA');
+    expect(find.text('Must be a base64-encoded 32-byte key'), findsOneWidget);
+    expect(networks.value['n1']!.secureMode, isNull);
+  });
+
+  testWidgets('peer dialog highlights every invalid field', (tester) async {
+    await pumpEditor(tester);
+    await tester.tap(find.text('Add Peer'));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(field('URL'), 'example.com:11010');
+    await tester.tap(find.text('Save'));
+    await tester.pump();
+
+    expect(find.text('Peer ID cannot be empty'), findsOneWidget);
+    expect(
+      find.text('Must be an address without port, query or fragment'),
+      findsOneWidget,
+    );
+    expect(
+      find.text('Port must be a number between 1 and 65535'),
+      findsOneWidget,
+    );
+    expect(find.text('At least one protocol must be selected'), findsOneWidget);
+    expect(find.byType(AlertDialog), findsOneWidget);
+    expect(networks.value['n1']!.nodes, isEmpty);
+  });
+
+  testWidgets('valid peer is added and saved', (tester) async {
+    await pumpEditor(tester);
+    await tester.tap(find.text('Add Peer'));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(field('Peer ID'), 'relay');
+    await tester.enterText(field('URL'), 'example.com');
+    await tester.enterText(field('Port'), '11010');
+    await tester.tap(find.text('TCP'));
+    await tester.pump();
+    await act(
+      tester,
+      () => tester
+          .widget<FilledButton>(find.widgetWithText(FilledButton, 'Save'))
+          .onPressed!(),
+    );
+    await tester.pumpAndSettle();
+
+    final nodes = networks.value['n1']!.nodes;
+    expect(nodes.single.id, 'relay');
+    expect(
+      nodes.single.endpoint(nodes.single.protocols.single).toString(),
+      'tcp://example.com:11010',
+    );
+    expect(find.text('relay'), findsOneWidget);
+  });
+}

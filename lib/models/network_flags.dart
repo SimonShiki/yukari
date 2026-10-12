@@ -54,18 +54,7 @@ class NetworkFlags {
     this.preferPeerRelay = false,
     this.enableUdpBroadcastRelay = false,
     this.socketMark,
-  }) {
-    if (mtu < 576 || mtu > 65535) {
-      throw RangeError.range(mtu, 576, 65535, 'mtu');
-    }
-    if (multiThreadCount < 1) {
-      throw RangeError.range(multiThreadCount, 1, null, 'multiThreadCount');
-    }
-    if (quicListenPort != null &&
-        (quicListenPort! < 1 || quicListenPort! > 65535)) {
-      throw RangeError.range(quicListenPort!, 1, 65535, 'quicListenPort');
-    }
-  }
+  });
 
   NodeProtocol defaultProtocol;
   String deviceName;
