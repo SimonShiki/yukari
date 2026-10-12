@@ -5,6 +5,8 @@ import '../../../controllers/network_editor_controller.dart';
 import '../../../models/network_components.dart';
 import '../../../utils/crypto_utils.dart';
 import '../../../utils/validator.dart';
+import 'form_segments.dart';
+import 'network_form_section.dart';
 import 'validated_text_field.dart';
 
 /// Secure mode key pair; the public key is derived from the private key.
@@ -56,23 +58,13 @@ class _SecureModeFieldsState extends State<SecureModeFields> {
   }
 
   @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        const Divider(height: 32),
-        Text('Secure Mode Keys', style: theme.textTheme.titleSmall),
-        const SizedBox(height: 8),
-        Text(
-          'Configure cryptographic keys for secure mode',
-          style: theme.textTheme.bodySmall?.copyWith(
-            color: theme.colorScheme.onSurfaceVariant,
-          ),
-        ),
-        const SizedBox(height: 16),
-        SignalBuilder(
+  Widget build(BuildContext context) => NetworkFormSection(
+    title: 'Secure Mode Keys',
+    icon: Icons.key,
+    description: 'Configure cryptographic keys for secure mode',
+    children: [
+      FieldSegment(
+        child: SignalBuilder(
           builder: (context) => ValidatedTextField(
             controller: _privateKeyController,
             decoration: InputDecoration(
@@ -83,9 +75,11 @@ class _SecureModeFieldsState extends State<SecureModeFields> {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   IconButton(
-                    icon: Icon(_privateKeyVisible.value
-                        ? Icons.visibility_off
-                        : Icons.visibility),
+                    icon: Icon(
+                      _privateKeyVisible.value
+                          ? Icons.visibility_off
+                          : Icons.visibility,
+                    ),
                     tooltip: _privateKeyVisible.value
                         ? 'Hide private key'
                         : 'Show private key',
@@ -108,8 +102,9 @@ class _SecureModeFieldsState extends State<SecureModeFields> {
             onValid: _setPrivateKey,
           ),
         ),
-        const SizedBox(height: 16),
-        SignalBuilder(
+      ),
+      FieldSegment(
+        child: SignalBuilder(
           builder: (context) => TextField(
             controller: _publicKeyController,
             decoration: InputDecoration(
@@ -117,9 +112,11 @@ class _SecureModeFieldsState extends State<SecureModeFields> {
               helperText: 'Derived from private key',
               border: const OutlineInputBorder(),
               suffixIcon: IconButton(
-                icon: Icon(_publicKeyVisible.value
-                    ? Icons.visibility_off
-                    : Icons.visibility),
+                icon: Icon(
+                  _publicKeyVisible.value
+                      ? Icons.visibility_off
+                      : Icons.visibility,
+                ),
                 tooltip: _publicKeyVisible.value
                     ? 'Hide public key'
                     : 'Show public key',
@@ -131,7 +128,7 @@ class _SecureModeFieldsState extends State<SecureModeFields> {
             readOnly: true,
           ),
         ),
-      ],
-    );
-  }
+      ),
+    ],
+  );
 }

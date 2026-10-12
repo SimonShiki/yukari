@@ -80,11 +80,13 @@ Future<bool> showTunPermissionWarning(
       context: context,
       builder: (context) => AlertDialog(
         icon: const Icon(Icons.warning_outlined),
-        title: const Text('Root privileges required'),
+        title: const Text('Privileges required'),
         content: Text(
-          'Network "${network.networkName}" requires root privileges '
-          'to create a TUN device.\n\n'
-          'Please restart the application with sudo or as root and try again.',
+          'Network "${network.networkName}" requires privileges '
+          'to create a TUN device. You need to do either:\n\n'
+          '1. Restart the application with sudo or as root.\n'
+          '2. Turn on "Disable TUN mode" to use the network without TUN.\n'
+          '3. Using RPC mode in global settings.'
         ),
         actions: [
           FilledButton(

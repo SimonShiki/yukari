@@ -1,8 +1,12 @@
+import 'package:m3e_core/m3e_core.dart';
 import 'package:material_ui/material_ui.dart';
 
 import '../../../models/node.dart';
+import 'list_editor_segments.dart';
+import 'network_form_section.dart';
 import 'node_editor_dialog.dart';
 
+/// The "Initial Peers" section. Tapping a peer edits it.
 class NodeListEditor extends StatelessWidget {
   const NodeListEditor({
     super.key,
@@ -15,114 +19,63 @@ class NodeListEditor extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (nodes.isEmpty) {
-      return _buildEmptyState(context);
-    }
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        ...nodes.asMap().entries.map((entry) {
-          final index = entry.key;
-          final node = entry.value;
-          return _buildNodeCard(context, node, index);
-        }),
-        const SizedBox(height: 8),
-        OutlinedButton.icon(
-          icon: const Icon(Icons.add),
-          label: const Text('Add Peer'),
-          onPressed: () => _showNodeDialog(context, null),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildEmptyState(BuildContext context) {
     final theme = Theme.of(context);
     final colors = theme.colorScheme;
 
-    return Column(
-      children: [
-        Icon(
-          Icons.person_add,
-          size: 48,
-          color: colors.onSurfaceVariant.withValues(alpha: 0.5),
-        ),
-        const SizedBox(height: 8),
-        Text(
-          'No peers configured',
-          style: theme.textTheme.bodyMedium?.copyWith(
-            color: colors.onSurfaceVariant.withValues(alpha: 0.7),
-          ),
-        ),
-        const SizedBox(height: 16),
-        OutlinedButton.icon(
-          icon: const Icon(Icons.add),
-          label: const Text('Add Peer'),
-          onPressed: () => _showNodeDialog(context, null),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildNodeCard(BuildContext context, Node node, int index) {
-    final theme = Theme.of(context);
-    final colors = theme.colorScheme;
-
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      decoration: BoxDecoration(
-        border: Border.all(
-          color: colors.outlineVariant,
-          width: 1,
-        ),
-        borderRadius: BorderRadius.circular(12),
+    return NetworkFormSection(
+      title: 'Initial Peers',
+      icon: Icons.people,
+      description: 'Configure nodes to connect when starting the network',
+      footer: M3EButton.icon(
+        style: M3EButtonStyle.tonal,
+        icon: const Icon(Icons.add),
+        label: const Text('Add Peer'),
+        onPressed: () => _showNodeDialog(context, null),
       ),
-      child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        leading: CircleAvatar(
-          backgroundColor: colors.primaryContainer,
-          foregroundColor: colors.onPrimaryContainer,
-          child: const Icon(Icons.person),
-        ),
-        title: Text(node.id),
-        subtitle: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const SizedBox(height: 4),
-            Text('${node.url.host}:${node.port}'),
-            const SizedBox(height: 8),
-            Wrap(
-              spacing: 4,
-              runSpacing: 4,
-              children: node.protocols.map((p) => Chip(
-                label: Text(
-                  p.name.toUpperCase(),
-                  style: theme.textTheme.labelSmall,
+      onTap: nodes.isEmpty ? null : (i) => _showNodeDialog(context, nodes[i]),
+      semanticLabelBuilder: nodes.isEmpty
+          ? null
+          : (i) => 'Edit peer ${nodes[i].id}',
+      children: nodes.isEmpty
+          ? const [
+              EmptyListSegment(
+                icon: Icons.person_add,
+                text: 'No peers configured',
+              ),
+            ]
+          : [
+              for (final (index, node) in nodes.indexed)
+                ListEntrySegment(
+                  icon: Icons.person,
+                  shape: Shapes.c9SidedCookie,
+                  color: colors.primaryContainer,
+                  onColor: colors.onPrimaryContainer,
+                  headline: node.id,
+                  supporting: Wrap(
+                    spacing: 6,
+                    runSpacing: 4,
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    children: [
+                      Text('${node.url.host}:${node.port}'),
+                      for (final p in node.protocols)
+                        Badge(
+                          backgroundColor: colors.secondaryContainer,
+                          textColor: colors.onSecondaryContainer,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 6,
+                            vertical: 2,
+                          ),
+                          label: Text(
+                            p.name.toUpperCase(),
+                            style: theme.textTheme.labelSmall,
+                          ),
+                        ),
+                    ],
+                  ),
+                  deleteTooltip: 'Delete peer',
+                  onDelete: () => _deleteNode(index),
                 ),
-                visualDensity: VisualDensity.compact,
-                padding: EdgeInsets.zero,
-              )).toList(),
-            ),
-          ],
-        ),
-        trailing: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            IconButton(
-              icon: const Icon(Icons.edit),
-              onPressed: () => _showNodeDialog(context, node),
-              tooltip: 'Edit peer',
-            ),
-            IconButton(
-              icon: const Icon(Icons.delete),
-              onPressed: () => _deleteNode(index),
-              tooltip: 'Delete peer',
-            ),
-          ],
-        ),
-        isThreeLine: true,
-      ),
+            ],
     );
   }
 

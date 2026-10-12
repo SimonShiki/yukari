@@ -6,7 +6,9 @@ import '../../../models/network.dart';
 import '../../../models/network_flags.dart';
 import '../../../utils/validator.dart';
 import 'listener_list_editor.dart';
+import 'form_segments.dart';
 import 'network_form_section.dart';
+import 'network_form_tab.dart';
 import 'secure_mode_fields.dart';
 import 'validated_text_field.dart';
 
@@ -39,9 +41,9 @@ class _NetworkAdvancedTabState extends State<NetworkAdvancedTab>
     bool Function(NetworkFlags flags) read,
     void Function(NetworkFlags flags, bool value) write,
   ) => SignalBuilder(
-    builder: (context) => SwitchListTile(
-      title: Text(title),
-      subtitle: Text(subtitle),
+    builder: (context) => SwitchSegment(
+      title: title,
+      subtitle: subtitle,
       value: read(_editor.network.value!.flags),
       onChanged: (v) => _editor.update((n) => write(n.flags, v)),
     ),
@@ -50,88 +52,66 @@ class _NetworkAdvancedTabState extends State<NetworkAdvancedTab>
   @override
   Widget build(BuildContext context) {
     super.build(context);
-    final theme = Theme.of(context);
-    final descriptionStyle = theme.textTheme.bodySmall?.copyWith(
-      color: theme.colorScheme.onSurfaceVariant,
-    );
 
-    return Form(
-      key: widget.formKey,
-      autovalidateMode: AutovalidateMode.onUserInteraction,
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
+    return NetworkFormTab(
+      formKey: widget.formKey,
+      children: [
+        NetworkFormSection(
+          title: 'Network Services',
+          icon: Icons.dns,
+          description: 'Configure network-level services and routing',
+          children: [
+            FieldSegment(
+              child: ValidatedTextField(
+                initialValue: _network.socks5Proxy?.toString(),
+                decoration: const InputDecoration(
+                  labelText: 'SOCKS5 Proxy (Optional)',
+                  hintText: 'socks5://host:port',
+                  helperText: 'SOCKS5 proxy address for outbound traffic',
+                  border: OutlineInputBorder(),
+                ),
+                validator: validateSocks5Proxy,
+                onValid: (v) => _editor.update(
+                  (n) => n.socks5Proxy = v.isEmpty ? null : Uri.parse(v),
+                ),
+              ),
+            ),
+            FieldSegment(
+              child: ValidatedTextField(
+                initialValue: _network.netNamespace,
+                decoration: const InputDecoration(
+                  labelText: 'Network Namespace (Optional)',
+                  helperText: 'Linux network namespace name',
+                  border: OutlineInputBorder(),
+                ),
+                onValid: (v) => _editor.update(
+                  (n) => n.netNamespace = v.isEmpty ? null : v,
+                ),
+              ),
+            ),
+            _flagSwitch(
+              'Disable TUN Mode',
+              'Run without TUN/TAP virtual network device',
+              (f) => f.noTun,
+              (f, v) => f.noTun = v,
+            ),
+          ],
+        ),
+        SignalBuilder(
+          builder: (context) => ListenerListEditor(
+            listeners: _editor.network.value!.listeners,
+            onListenersChanged: (list) =>
+                _editor.update((n) => n.listeners = list),
+          ),
+        ),
+        Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // Network Services at TOP per user requirement
-            NetworkFormSection(
-              title: 'Network Services',
-              icon: Icons.dns,
-              children: [
-                Text(
-                  'Configure network-level services and routing',
-                  style: descriptionStyle,
-                ),
-                const SizedBox(height: 16),
-                ValidatedTextField(
-                  initialValue: _network.socks5Proxy?.toString(),
-                  decoration: const InputDecoration(
-                    labelText: 'SOCKS5 Proxy (Optional)',
-                    hintText: 'socks5://host:port',
-                    helperText: 'SOCKS5 proxy address for outbound traffic',
-                    border: OutlineInputBorder(),
-                  ),
-                  validator: validateSocks5Proxy,
-                  onValid: (v) => _editor.update(
-                    (n) => n.socks5Proxy = v.isEmpty ? null : Uri.parse(v),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                ValidatedTextField(
-                  initialValue: _network.netNamespace,
-                  decoration: const InputDecoration(
-                    labelText: 'Network Namespace (Optional)',
-                    helperText: 'Linux network namespace name',
-                    border: OutlineInputBorder(),
-                  ),
-                  onValid: (v) =>
-                      _editor.update((n) => n.netNamespace = v.isEmpty ? null : v),
-                ),
-                const SizedBox(height: 16),
-                _flagSwitch(
-                  'Disable TUN Mode',
-                  'Run without TUN/TAP virtual network device',
-                  (f) => f.noTun,
-                  (f, v) => f.noTun = v,
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            NetworkFormSection(
-              title: 'Listeners',
-              icon: Icons.podcasts,
-              children: [
-                Text(
-                  'Local addresses for incoming connections',
-                  style: descriptionStyle,
-                ),
-                const SizedBox(height: 16),
-                SignalBuilder(
-                  builder: (context) => ListenerListEditor(
-                    listeners: _editor.network.value!.listeners,
-                    onListenersChanged: (list) =>
-                        _editor.update((n) => n.listeners = list),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
             NetworkFormSection(
               title: 'Network Flags',
               icon: Icons.flag,
+              description: 'Protocol and performance settings',
               children: [
-                Text('Protocol and performance settings', style: descriptionStyle),
-                const SizedBox(height: 16),
                 _flagSwitch(
                   'Enable Encryption',
                   'Encrypt network traffic',
@@ -156,59 +136,67 @@ class _NetworkAdvancedTabState extends State<NetworkAdvancedTab>
                   (f) => f.multiThread,
                   (f, v) => f.multiThread = v,
                 ),
-                const SizedBox(height: 16),
-                ValidatedTextField(
-                  initialValue: _network.flags.mtu.toString(),
-                  decoration: const InputDecoration(
-                    labelText: 'MTU',
-                    helperText: 'Maximum Transmission Unit (576-65535)',
-                    border: OutlineInputBorder(),
-                  ),
-                  keyboardType: TextInputType.number,
-                  validator: (v) => validateIntRange(v, 'MTU', 576, 65535),
-                  onValid: (v) =>
-                      _editor.update((n) => n.flags.mtu = int.parse(v.trim())),
-                ),
-                const SizedBox(height: 16),
-                SignalBuilder(
-                  builder: (context) =>
-                      _editor.network.value!.flags.enableEncryption
-                      ? SecureModeFields(controller: _editor)
-                      : const SizedBox.shrink(),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            NetworkFormSection(
-              title: 'STUN Servers',
-              icon: Icons.cloud_sync,
-              children: [
-                Text('STUN servers for NAT traversal', style: descriptionStyle),
-                const SizedBox(height: 16),
-                ValidatedTextField(
-                  initialValue: _network.stunServers.join('\n'),
-                  decoration: const InputDecoration(
-                    labelText: 'STUN Servers',
-                    hintText: 'stun.example.com:3478',
-                    helperText: 'One server per line',
-                    border: OutlineInputBorder(),
-                  ),
-                  maxLines: 3,
-                  validator: validateStunServers,
-                  onValid: (v) => _editor.update(
-                    (n) => n.stunServers = v
-                        .split('\n')
-                        .map((s) => s.trim())
-                        .where((s) => s.isNotEmpty)
-                        .toList(),
+                FieldSegment(
+                  child: ValidatedTextField(
+                    initialValue: _network.flags.mtu.toString(),
+                    decoration: const InputDecoration(
+                      labelText: 'MTU',
+                      helperText: 'Maximum Transmission Unit (576-65535)',
+                      border: OutlineInputBorder(),
+                    ),
+                    keyboardType: TextInputType.number,
+                    validator: (v) => validateIntRange(v, 'MTU', 576, 65535),
+                    onValid: (v) => _editor.update(
+                      (n) => n.flags.mtu = int.parse(v.trim()),
+                    ),
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 80),
+            // Secure mode keys only apply while encryption is enabled.
+            SignalBuilder(
+              builder: (context) => AnimatedSize(
+                duration: Durations.medium4,
+                curve: Easing.emphasizedDecelerate,
+                alignment: Alignment.topCenter,
+                child: _editor.network.value!.flags.enableEncryption
+                    ? Padding(
+                        padding: const EdgeInsets.only(top: 32),
+                        child: SecureModeFields(controller: _editor),
+                      )
+                    : const SizedBox(width: double.infinity),
+              ),
+            ),
           ],
         ),
-      ),
+        NetworkFormSection(
+          title: 'STUN Servers',
+          icon: Icons.cloud_sync,
+          description: 'STUN servers for NAT traversal',
+          children: [
+            FieldSegment(
+              child: ValidatedTextField(
+                initialValue: _network.stunServers.join('\n'),
+                decoration: const InputDecoration(
+                  labelText: 'STUN Servers',
+                  hintText: 'stun.example.com:3478',
+                  helperText: 'One server per line',
+                  border: OutlineInputBorder(),
+                ),
+                maxLines: 3,
+                validator: validateStunServers,
+                onValid: (v) => _editor.update(
+                  (n) => n.stunServers = v
+                      .split('\n')
+                      .map((s) => s.trim())
+                      .where((s) => s.isNotEmpty)
+                      .toList(),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ],
     );
   }
 }

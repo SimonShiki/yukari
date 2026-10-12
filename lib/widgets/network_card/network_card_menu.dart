@@ -1,5 +1,6 @@
-import 'package:flutter/services.dart';
 import 'package:material_ui/material_ui.dart';
+
+import '../context_menu/m3e_context_menu.dart';
 
 class NetworkCardMenu extends StatelessWidget {
   const NetworkCardMenu({
@@ -22,44 +23,26 @@ class NetworkCardMenu extends StatelessWidget {
   final Widget Function(BuildContext, Widget) builder;
 
   @override
-  Widget build(BuildContext context) => MenuAnchor(
-    consumeOutsideTap: true,
-    menuChildren: [
-      MenuItemButton(
+  Widget build(BuildContext context) => M3EContextMenu(
+    tooltip: 'More options for $name',
+    actions: [
+      M3EMenuAction(
+        icon: Icons.edit_outlined,
+        label: 'Edit',
         onPressed: running || busy ? null : onEdit,
-        leadingIcon: const Icon(Icons.edit_outlined),
-        child: const Text('Edit'),
       ),
-      MenuItemButton(
+      M3EMenuAction(
+        icon: Icons.article_outlined,
+        label: 'Log',
         onPressed: running ? onLog : null,
-        leadingIcon: const Icon(Icons.article_outlined),
-        child: const Text('Log'),
       ),
-      MenuItemButton(
+      M3EMenuAction(
+        icon: Icons.delete_outline,
+        label: 'Delete',
         onPressed: busy ? null : onDelete,
-        style: MenuItemButton.styleFrom(
-          foregroundColor: Theme.of(context).colorScheme.error,
-          iconColor: Theme.of(context).colorScheme.error,
-        ),
-        leadingIcon: const Icon(Icons.delete_outline),
-        child: const Text('Delete'),
+        destructive: true,
       ),
     ],
-    builder: (context, controller, child) => CallbackShortcuts(
-      bindings: {
-        const SingleActivator(LogicalKeyboardKey.contextMenu): controller.open,
-        const SingleActivator(LogicalKeyboardKey.f10, shift: true):
-            controller.open,
-      },
-      child: GestureDetector(
-        behavior: HitTestBehavior.opaque,
-        onSecondaryTapDown: (details) =>
-            controller.open(position: details.localPosition),
-        child: builder(
-          context,
-          SizedBox(),
-        ),
-      ),
-    ),
+    builder: builder,
   );
 }

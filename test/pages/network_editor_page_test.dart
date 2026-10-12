@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:yukari/pages/networks/editor_exit_guard.dart';
 import 'package:yukari/pages/networks/network_editor_page.dart';
+import 'package:yukari/pages/networks/widgets/form_segments.dart';
 import 'package:yukari/signals/networks.dart';
 
 import '../networks_fixture.dart';
@@ -35,10 +36,10 @@ void main() {
   }
 
   Future<void> toggle(WidgetTester tester, String title) {
-    final tile = tester.widget<SwitchListTile>(
-      find.widgetWithText(SwitchListTile, title),
+    final tile = tester.widget<SwitchSegment>(
+      find.widgetWithText(SwitchSegment, title),
     );
-    return act(tester, () => tile.onChanged!(!tile.value));
+    return act(tester, () => tile.onChanged(!tile.value));
   }
 
   Future<void> openAdvanced(WidgetTester tester) async {
@@ -206,6 +207,19 @@ void main() {
       'tcp://example.com:11010',
     );
     expect(find.text('relay'), findsOneWidget);
+
+    // Tapping the peer opens it for editing.
+    await tester.tap(find.text('relay'));
+    await tester.pumpAndSettle();
+    expect(find.byType(AlertDialog), findsOneWidget);
+    expect(find.widgetWithText(TextFormField, 'relay'), findsOneWidget);
+    await tester.tap(find.text('Cancel'));
+    await tester.pumpAndSettle();
+
+    await act(tester, () => tester.tap(find.byTooltip('Delete peer')));
+    await tester.pumpAndSettle();
+    expect(networks.value['n1']!.nodes, isEmpty);
+    expect(find.text('No peers configured'), findsOneWidget);
   });
 
   group('leaving with invalid input', () {
