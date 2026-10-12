@@ -5,6 +5,7 @@ import 'package:signals/signals_flutter.dart';
 import '../../controllers/network_page_controller.dart';
 import '../../widgets/network_card/network_card_list.dart';
 import '../../widgets/network_card/network_card_data.dart';
+import 'editor_exit_guard.dart';
 import 'network_editor_page.dart';
 import 'network_page_dialogs.dart';
 import 'network_page_empty_state.dart';
@@ -75,6 +76,14 @@ class _NetworksPageState extends State<NetworksPage>
     super.dispose();
   }
 
+  /// Runs [action], which replaces the embedded editor, once any invalid
+  /// input shown there may be discarded.
+  Future<void> _leaveEditor(VoidCallback action) async {
+    if (await confirmLeavingPage(context, pageKeyOf(context)) && mounted) {
+      action();
+    }
+  }
+
   @override
   Widget build(BuildContext context) => SignalBuilder(
     builder: (context) {
@@ -143,7 +152,9 @@ class _NetworksPageState extends State<NetworksPage>
                                                 running: card.running,
                                                 busy: card.busy,
                                                 onOpen: isLargeScreen
-                                                    ? card.onOpen
+                                                    ? () {
+                                                        if (card.id != selectedNetwork) _leaveEditor(card.onOpen);
+                                                      }
                                                     : () {
                                                         if (card.running) {
                                                           context.go('/networks/instance/${card.id}');
@@ -154,7 +165,9 @@ class _NetworksPageState extends State<NetworksPage>
                                                 onEdit: card.onEdit,
                                                 onLog: card.onLog,
                                                 onDelete: card.onDelete,
-                                                onToggle: card.onToggle,
+                                                onToggle: isLargeScreen && card.id == selectedNetwork && card.onToggle != null
+                                                    ? (value) => _leaveEditor(() => card.onToggle!(value))
+                                                    : card.onToggle,
                                               );
                                             }).toList(),
                                             onReorder: _controller.reorder,
@@ -165,7 +178,7 @@ class _NetworksPageState extends State<NetworksPage>
                                               if (index != null) {
                                                 final card = cards[index];
                                                 if (isLargeScreen) {
-                                                  card.onOpen();
+                                                  if (card.id != selectedNetwork) _leaveEditor(card.onOpen);
                                                 } else if (card.running) {
                                                   context.go('/networks/instance/${card.id}');
                                                 } else {

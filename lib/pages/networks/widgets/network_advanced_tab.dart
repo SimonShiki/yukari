@@ -11,8 +11,13 @@ import 'secure_mode_fields.dart';
 import 'validated_text_field.dart';
 
 class NetworkAdvancedTab extends StatefulWidget {
-  const NetworkAdvancedTab({super.key, required this.controller});
+  const NetworkAdvancedTab({
+    super.key,
+    required this.formKey,
+    required this.controller,
+  });
 
+  final GlobalKey<FormState> formKey;
   final NetworkEditorController controller;
 
   @override
@@ -51,6 +56,7 @@ class _NetworkAdvancedTabState extends State<NetworkAdvancedTab>
     );
 
     return Form(
+      key: widget.formKey,
       autovalidateMode: AutovalidateMode.onUserInteraction,
       child: SingleChildScrollView(
         padding: const EdgeInsets.all(16),

@@ -3,6 +3,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:signals_flutter/signals_flutter.dart';
 
 import '../../controllers/network_editor_controller.dart';
+import 'editor_exit_guard.dart';
 import 'widgets/network_basic_tab.dart';
 import 'widgets/network_advanced_tab.dart';
 
@@ -17,6 +18,8 @@ class NetworkEditorPage extends StatefulWidget {
 }
 
 class _NetworkEditorPageState extends State<NetworkEditorPage> {
+  final _basicForm = GlobalKey<FormState>();
+  final _advancedForm = GlobalKey<FormState>();
   late final _controller = NetworkEditorController(
     id: widget.id,
     showMessage: (message) {
@@ -27,8 +30,22 @@ class _NetworkEditorPageState extends State<NetworkEditorPage> {
     },
   );
 
+  // Unbuilt tabs have no input yet; validating also highlights any errors.
+  bool _hasInvalidInput() {
+    final basicValid = _basicForm.currentState?.validate() ?? true;
+    final advancedValid = _advancedForm.currentState?.validate() ?? true;
+    return !(basicValid && advancedValid);
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    registerEditor(this, pageKeyOf(context), _hasInvalidInput);
+  }
+
   @override
   void dispose() {
+    unregisterEditor(this);
     _controller.dispose();
     super.dispose();
   }
@@ -73,8 +90,11 @@ class _NetworkEditorPageState extends State<NetworkEditorPage> {
         ),
         body: TabBarView(
           children: [
-            NetworkBasicTab(controller: _controller),
-            NetworkAdvancedTab(controller: _controller),
+            NetworkBasicTab(formKey: _basicForm, controller: _controller),
+            NetworkAdvancedTab(
+              formKey: _advancedForm,
+              controller: _controller,
+            ),
           ],
         ),
       ),

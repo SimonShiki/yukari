@@ -12,8 +12,13 @@ import 'node_list_editor.dart';
 import 'validated_text_field.dart';
 
 class NetworkBasicTab extends StatefulWidget {
-  const NetworkBasicTab({super.key, required this.controller});
+  const NetworkBasicTab({
+    super.key,
+    required this.formKey,
+    required this.controller,
+  });
 
+  final GlobalKey<FormState> formKey;
   final NetworkEditorController controller;
 
   @override
@@ -50,6 +55,7 @@ class _NetworkBasicTabState extends State<NetworkBasicTab>
     final theme = Theme.of(context);
 
     return Form(
+      key: widget.formKey,
       autovalidateMode: AutovalidateMode.onUserInteraction,
       child: SingleChildScrollView(
         padding: const EdgeInsets.all(16),

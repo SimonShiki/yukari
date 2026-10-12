@@ -5,6 +5,7 @@ import 'pages/networks/networks_page.dart';
 import 'pages/networks/network_editor_page.dart';
 import 'pages/networks/network_instance_page.dart';
 import 'pages/networks/network_creator_page.dart';
+import 'pages/networks/editor_exit_guard.dart';
 import 'pages/bookmarks/bookmarks_page.dart';
 import 'pages/settings/settings_page.dart';
 
@@ -34,7 +35,8 @@ final GoRouter appRouter = GoRouter(
         ),
         GoRoute(
           path: '/networks',
-          pageBuilder: (context, state) => const NoTransitionPage(child: NetworksPage()),
+          pageBuilder: (context, state) => NoTransitionPage(key: state.pageKey, child: const NetworksPage()),
+          onExit: (context, state) => confirmLeavingPage(context, state.pageKey),
           routes: [
             GoRoute(
               name: 'network-instance',
@@ -45,6 +47,7 @@ final GoRouter appRouter = GoRouter(
               name: 'network-edit',
               path: 'edit/:id',
               builder: (context, state) => NetworkEditorPage(id: state.pathParameters['id']!),
+              onExit: (context, state) => confirmLeavingPage(context, state.pageKey),
             ),
             GoRoute(name: 'network-create', path: 'create', builder: (context, state) => const NetworkCreatorPage()),
           ],

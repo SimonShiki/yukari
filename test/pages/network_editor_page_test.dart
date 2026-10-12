@@ -1,5 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 import 'package:material_ui/material_ui.dart';
+import 'package:yukari/pages/networks/editor_exit_guard.dart';
 import 'package:yukari/pages/networks/network_editor_page.dart';
 import 'package:yukari/signals/networks.dart';
 
@@ -204,5 +206,77 @@ void main() {
       'tcp://example.com:11010',
     );
     expect(find.text('relay'), findsOneWidget);
+  });
+
+  group('leaving with invalid input', () {
+    Future<void> pumpRoutedEditor(WidgetTester tester) async {
+      tester.view.physicalSize = const Size(1200, 4000);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      final router = GoRouter(
+        initialLocation: '/edit/n1',
+        routes: [
+          GoRoute(
+            path: '/',
+            builder: (context, state) => const Text('Home'),
+            routes: [
+              GoRoute(
+                path: 'edit/:id',
+                builder: (context, state) =>
+                    NetworkEditorPage(id: state.pathParameters['id']!),
+                onExit: (context, state) =>
+                    confirmLeavingPage(context, state.pageKey),
+              ),
+            ],
+          ),
+        ],
+      );
+      addTearDown(router.dispose);
+      await tester.pumpWidget(MaterialApp.router(routerConfig: router));
+      await tester.pumpAndSettle();
+    }
+
+    Future<void> goBack(WidgetTester tester) async {
+      await tester.tap(find.byType(BackButton));
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('valid edits leave without asking', (tester) async {
+      await pumpRoutedEditor(tester);
+      await type(tester, 'Network Name', 'gamma');
+      await goBack(tester);
+
+      expect(find.text('Discard invalid changes?'), findsNothing);
+      expect(find.text('Home'), findsOneWidget);
+    });
+
+    testWidgets('asks before discarding, and can keep editing', (tester) async {
+      await pumpRoutedEditor(tester);
+      await type(tester, 'Network Name', 'beta');
+
+      await goBack(tester);
+      expect(find.text('Discard invalid changes?'), findsOneWidget);
+      await tester.tap(find.text('Keep Editing'));
+      await tester.pumpAndSettle();
+      expect(find.text('Edit alpha'), findsOneWidget);
+      expect(find.text('Network name already exists'), findsOneWidget);
+
+      await goBack(tester);
+      await tester.tap(find.text('Discard'));
+      await tester.pumpAndSettle();
+      expect(find.text('Home'), findsOneWidget);
+      expect(networks.value['n1']!.networkName, 'alpha');
+    });
+
+    testWidgets('also asks for invalid input on the other tab', (tester) async {
+      await pumpRoutedEditor(tester);
+      await openAdvanced(tester);
+      await type(tester, 'MTU', '1');
+      await tester.tap(find.text('Basic'));
+      await tester.pumpAndSettle();
+
+      await goBack(tester);
+      expect(find.text('Discard invalid changes?'), findsOneWidget);
+    });
   });
 }
