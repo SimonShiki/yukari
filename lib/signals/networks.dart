@@ -5,7 +5,9 @@ import '../storage/network_store.dart';
 
 /// Private backing signal for the global network collection.
 /// Use [networks] for readonly access.
-final Signal<Map<String, Network>> _networks = signal(const <String, Network>{});
+final Signal<Map<String, Network>> _networks = signal(
+  const <String, Network>{},
+);
 
 /// Global network collection state.
 ///
@@ -119,7 +121,10 @@ Future<void> reorderNetworks(int oldIndex, int newIndex) => _enqueue(() async {
   final saved = _networks.peek();
   final keys = saved.keys.toList();
 
-  if (oldIndex < 0 || oldIndex >= keys.length || newIndex < 0 || newIndex > keys.length) {
+  if (oldIndex < 0 ||
+      oldIndex >= keys.length ||
+      newIndex < 0 ||
+      newIndex > keys.length) {
     return;
   }
 

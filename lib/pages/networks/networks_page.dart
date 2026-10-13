@@ -51,7 +51,8 @@ class _NetworksPageState extends State<NetworksPage>
                 .showSnackBar(SnackBar(content: Text(message)));
           },
           confirmDelete: (network) => confirmNetworkDeletion(context, network),
-          showTunPermissionWarning: (network) => showTunPermissionWarning(context, network),
+          showTunPermissionWarning: (network) =>
+              showTunPermissionWarning(context, network),
         );
   }
 
@@ -92,148 +93,201 @@ class _NetworksPageState extends State<NetworksPage>
       final selectedNetworkRunning = _controller.selectedNetworkRunning.value;
 
       return LayoutBuilder(
-      builder: (context, constraints) {
-        final isLargeScreen = constraints.maxWidth >= 840;
-        final showDetail = isLargeScreen && selectedNetwork != null;
+        builder: (context, constraints) {
+          final isLargeScreen = constraints.maxWidth >= 840;
+          final showDetail = isLargeScreen && selectedNetwork != null;
 
-        return Scaffold(
-          appBar: AppBar(
-            title: const Text('Networks'),
-            actions: [
-              IconButton(
-                tooltip: 'Refresh network status',
-                onPressed: _controller.refreshing.value ? null : _controller.refresh,
-                icon: const Icon(Icons.refresh_rounded),
-              ),
-            ],
-          ),
-          body: SafeArea(
-            child: Row(
-              children: [
-                Expanded(
-                  flex: 1,
-                  child: Stack(
-                    children: [
-                      Column(
-                        children: [
-                          if (_controller.error.value case final error?)
-                            MaterialBanner(
-                              content: Text(error),
-                              leading: const Icon(Icons.cloud_off_outlined),
-                              actions: [
-                                TextButton(
-                                  onPressed: _controller.refreshing.value
-                                      ? null
-                                      : _controller.refresh,
-                                  child: const Text('Retry'),
-                                ),
-                              ],
-                            ),
-                          Expanded(
-                            child: cards.isEmpty
-                                ? const EmptyState(
-                                    icon: Icons.hub_outlined,
-                                    title: 'No networks yet',
-                                    message: 'Add a network to get connected.',
-                                  )
-                                : Align(
-                                    alignment: Alignment.topCenter,
-                                    child: ConstrainedBox(
-                                      constraints: BoxConstraints(
-                                        maxWidth: isLargeScreen ? 500 : 1000,
-                                      ),
-                                      child: LayoutBuilder(
-                                        builder: (context, constraints) {
-                                          final selectedIndex = selectedNetwork != null
-                                              ? cards.indexWhere((card) => card.id == selectedNetwork)
-                                              : null;
-                                          return NetworkCardList(
-                                            networks: cards.map((card) {
-                                              return NetworkCardData(
-                                                id: card.id,
-                                                name: card.name,
-                                                status: card.status,
-                                                running: card.running,
-                                                busy: card.busy,
-                                                onOpen: isLargeScreen
-                                                    ? () {
-                                                        if (card.id != selectedNetwork) _leaveEditor(card.onOpen);
-                                                      }
-                                                    : () {
-                                                        if (card.running) {
-                                                          context.go('/networks/instance/${card.id}');
-                                                        } else {
-                                                          context.go('/networks/edit/${card.id}');
-                                                        }
-                                                      },
-                                                onEdit: card.onEdit,
-                                                onLog: isLargeScreen
-                                                    ? () => _leaveEditor(() => _controller.selectNetwork(card.id, tab: InstanceTab.logs))
-                                                    : card.onLog,
-                                                onDelete: card.onDelete,
-                                                onToggle: isLargeScreen && card.id == selectedNetwork && card.onToggle != null
-                                                    ? (value) => _leaveEditor(() => card.onToggle!(value))
-                                                    : card.onToggle,
-                                              );
-                                            }).toList(),
-                                            onReorder: _controller.reorder,
-                                            keyBuilder: _controller.keyForIndex,
-                                            showDragHandles: false,
-                                            selectedIndex: isLargeScreen && selectedIndex != null && selectedIndex != -1 ? selectedIndex : null,
-                                            onSelectionChanged: (index) {
-                                              if (index != null) {
-                                                final card = cards[index];
-                                                if (isLargeScreen) {
-                                                  if (card.id != selectedNetwork) _leaveEditor(card.onOpen);
-                                                } else if (card.running) {
-                                                  context.go('/networks/instance/${card.id}');
-                                                } else {
-                                                  context.go('/networks/edit/${card.id}');
-                                                }
-                                              }
-                                            },
-                                          );
-                                        },
-                                      ),
-                                    ),
-                                  ),
-                          ),
-                        ],
-                      ),
-                      Positioned(
-                        right: 16,
-                        bottom: 16,
-                        child: NetworkCreateMenu(
-                          onCreate: _controller.createManually,
-                          onImport: _controller.importFromFile,
-                          onScan: _controller.scanQrCode,
-                        ),
-                      ),
-                    ],
-                  ),
+          return Scaffold(
+            appBar: AppBar(
+              title: const Text('Networks'),
+              actions: [
+                IconButton(
+                  tooltip: 'Refresh network status',
+                  onPressed: _controller.refreshing.value
+                      ? null
+                      : _controller.refresh,
+                  icon: const Icon(Icons.refresh_rounded),
                 ),
-                if (showDetail)
-                  Expanded(
-                    flex: 2,
-                    child: Container(
-                      decoration: BoxDecoration(
-                        border: Border(
-                          left: BorderSide(
-                            color: Theme.of(context).colorScheme.outlineVariant,
-                            width: 1,
-                          ),
-                        ),
-                      ),
-                      child: selectedNetworkRunning
-                          ? NetworkInstancePage(key: ValueKey(selectedNetwork), id: selectedNetwork, tab: _controller.selectedTab)
-                          : NetworkEditorPage(key: ValueKey(selectedNetwork), id: selectedNetwork),
-                    ),
-                  ),
               ],
             ),
-          ),
-        );
-      },
-    );
-  });
+            body: SafeArea(
+              child: Row(
+                children: [
+                  Expanded(
+                    flex: 1,
+                    child: Stack(
+                      children: [
+                        Column(
+                          children: [
+                            if (_controller.error.value case final error?)
+                              MaterialBanner(
+                                content: Text(error),
+                                leading: const Icon(Icons.cloud_off_outlined),
+                                actions: [
+                                  TextButton(
+                                    onPressed: _controller.refreshing.value
+                                        ? null
+                                        : _controller.refresh,
+                                    child: const Text('Retry'),
+                                  ),
+                                ],
+                              ),
+                            Expanded(
+                              child: cards.isEmpty
+                                  ? const EmptyState(
+                                      icon: Icons.hub_outlined,
+                                      title: 'No networks yet',
+                                      message:
+                                          'Add a network to get connected.',
+                                    )
+                                  : Align(
+                                      alignment: Alignment.topCenter,
+                                      child: ConstrainedBox(
+                                        constraints: BoxConstraints(
+                                          maxWidth: isLargeScreen ? 500 : 1000,
+                                        ),
+                                        child: LayoutBuilder(
+                                          builder: (context, constraints) {
+                                            final selectedIndex =
+                                                selectedNetwork != null
+                                                ? cards.indexWhere(
+                                                    (card) =>
+                                                        card.id ==
+                                                        selectedNetwork,
+                                                  )
+                                                : null;
+                                            return NetworkCardList(
+                                              networks: cards.map((card) {
+                                                return NetworkCardData(
+                                                  id: card.id,
+                                                  name: card.name,
+                                                  status: card.status,
+                                                  running: card.running,
+                                                  busy: card.busy,
+                                                  onOpen: isLargeScreen
+                                                      ? () {
+                                                          if (card.id !=
+                                                              selectedNetwork)
+                                                            _leaveEditor(
+                                                              card.onOpen,
+                                                            );
+                                                        }
+                                                      : () {
+                                                          if (card.running) {
+                                                            context.go(
+                                                              '/networks/instance/${card.id}',
+                                                            );
+                                                          } else {
+                                                            context.go(
+                                                              '/networks/edit/${card.id}',
+                                                            );
+                                                          }
+                                                        },
+                                                  onEdit: card.onEdit,
+                                                  onLog: isLargeScreen
+                                                      ? () => _leaveEditor(
+                                                          () => _controller
+                                                              .selectNetwork(
+                                                                card.id,
+                                                                tab: InstanceTab
+                                                                    .logs,
+                                                              ),
+                                                        )
+                                                      : card.onLog,
+                                                  onDelete: card.onDelete,
+                                                  onToggle:
+                                                      isLargeScreen &&
+                                                          card.id ==
+                                                              selectedNetwork &&
+                                                          card.onToggle != null
+                                                      ? (value) => _leaveEditor(
+                                                          () => card.onToggle!(
+                                                            value,
+                                                          ),
+                                                        )
+                                                      : card.onToggle,
+                                                );
+                                              }).toList(),
+                                              onReorder: _controller.reorder,
+                                              keyBuilder:
+                                                  _controller.keyForIndex,
+                                              showDragHandles: false,
+                                              selectedIndex:
+                                                  isLargeScreen &&
+                                                      selectedIndex != null &&
+                                                      selectedIndex != -1
+                                                  ? selectedIndex
+                                                  : null,
+                                              onSelectionChanged: (index) {
+                                                if (index != null) {
+                                                  final card = cards[index];
+                                                  if (isLargeScreen) {
+                                                    if (card.id !=
+                                                        selectedNetwork)
+                                                      _leaveEditor(card.onOpen);
+                                                  } else if (card.running) {
+                                                    context.go(
+                                                      '/networks/instance/${card.id}',
+                                                    );
+                                                  } else {
+                                                    context.go(
+                                                      '/networks/edit/${card.id}',
+                                                    );
+                                                  }
+                                                }
+                                              },
+                                            );
+                                          },
+                                        ),
+                                      ),
+                                    ),
+                            ),
+                          ],
+                        ),
+                        Positioned(
+                          right: 16,
+                          bottom: 16,
+                          child: NetworkCreateMenu(
+                            onCreate: _controller.createManually,
+                            onImport: _controller.importFromFile,
+                            onScan: _controller.scanQrCode,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  if (showDetail)
+                    Expanded(
+                      flex: 2,
+                      child: Container(
+                        decoration: BoxDecoration(
+                          border: Border(
+                            left: BorderSide(
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .outlineVariant,
+                              width: 1,
+                            ),
+                          ),
+                        ),
+                        child: selectedNetworkRunning
+                            ? NetworkInstancePage(
+                                key: ValueKey(selectedNetwork),
+                                id: selectedNetwork,
+                                tab: _controller.selectedTab,
+                              )
+                            : NetworkEditorPage(
+                                key: ValueKey(selectedNetwork),
+                                id: selectedNetwork,
+                              ),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          );
+        },
+      );
+    },
+  );
 }

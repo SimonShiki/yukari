@@ -41,8 +41,10 @@ final class Instance {
             virtualIpv4: Peer.ipv4FromInet(myNodeInfo['virtual_ipv4']),
           )
         : null;
-    final pairs = (json['peer_route_pairs'] as List<Object?>?)
-        ?.whereType<Map<String, Object?>>() ?? [];
+    final pairs =
+        (json['peer_route_pairs'] as List<Object?>?)
+            ?.whereType<Map<String, Object?>>() ??
+        [];
     final running = json['running'] as bool? ?? false;
     final error = json['error_msg'] as String?;
 

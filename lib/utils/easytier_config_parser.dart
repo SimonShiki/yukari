@@ -35,7 +35,8 @@ Network parseEasyTierConfig(String tomlContent) {
   }
 
   if (config['ipv6_public_addr_provider'] is bool) {
-    network.ipv6PublicAddressProvider = config['ipv6_public_addr_provider'] as bool;
+    network.ipv6PublicAddressProvider =
+        config['ipv6_public_addr_provider'] as bool;
   }
 
   if (config['ipv6_public_addr_auto'] is bool) {
@@ -43,7 +44,8 @@ Network parseEasyTierConfig(String tomlContent) {
   }
 
   if (config['ipv6_public_addr_prefix'] is String) {
-    network.ipv6PublicAddressPrefix = config['ipv6_public_addr_prefix'] as String;
+    network.ipv6PublicAddressPrefix =
+        config['ipv6_public_addr_prefix'] as String;
   }
 
   if (config['dhcp'] is bool) {
@@ -188,15 +190,16 @@ List<Node> _parsePeers(List<dynamic> peers) {
   return nodes.values.toList();
 }
 
-NodeProtocol? _parseNodeProtocol(String scheme) => switch (scheme.toLowerCase()) {
-  'tcp' => NodeProtocol.tcp,
-  'udp' => NodeProtocol.udp,
-  'ws' => NodeProtocol.ws,
-  'wss' => NodeProtocol.wss,
-  'quic' => NodeProtocol.quic,
-  'wg' => NodeProtocol.wg,
-  _ => null,
-};
+NodeProtocol? _parseNodeProtocol(String scheme) =>
+    switch (scheme.toLowerCase()) {
+      'tcp' => NodeProtocol.tcp,
+      'udp' => NodeProtocol.udp,
+      'ws' => NodeProtocol.ws,
+      'wss' => NodeProtocol.wss,
+      'quic' => NodeProtocol.quic,
+      'wg' => NodeProtocol.wg,
+      _ => null,
+    };
 
 ProxyNetwork _parseProxyNetwork(Map<dynamic, dynamic> data) => ProxyNetwork(
   cidr: data['cidr'].toString(),
@@ -217,17 +220,20 @@ VpnPortal _parseVpnPortal(Map<dynamic, dynamic> data) => VpnPortal(
   wireguardListen: data['wireguard_listen'].toString(),
   wireguardPrivateKey: data['wireguard_private_key']?.toString(),
   clients: data['clients'] is List
-      ? (data['clients'] as List).map((e) => _parseVpnPortalClient(e as Map<dynamic, dynamic>)).toList()
+      ? (data['clients'] as List)
+            .map((e) => _parseVpnPortalClient(e as Map<dynamic, dynamic>))
+            .toList()
       : [],
 );
 
-VpnPortalClient _parseVpnPortalClient(Map<dynamic, dynamic> data) => VpnPortalClient(
-  name: data['name'].toString(),
-  virtualIp: data['virtual_ip'].toString(),
-  groups: data['groups'] is List
-      ? (data['groups'] as List).map((e) => e.toString()).toList()
-      : [],
-);
+VpnPortalClient _parseVpnPortalClient(Map<dynamic, dynamic> data) =>
+    VpnPortalClient(
+      name: data['name'].toString(),
+      virtualIp: data['virtual_ip'].toString(),
+      groups: data['groups'] is List
+          ? (data['groups'] as List).map((e) => e.toString()).toList()
+          : [],
+    );
 
 SecureMode _parseSecureMode(Map<dynamic, dynamic> data) => SecureMode(
   enabled: data['enabled'] as bool? ?? true,
@@ -235,39 +241,43 @@ SecureMode _parseSecureMode(Map<dynamic, dynamic> data) => SecureMode(
   localPublicKey: data['local_public_key']?.toString(),
 );
 
-ManagedCredential _parseManagedCredential(Map<dynamic, dynamic> data) => ManagedCredential(
-  id: data['credential_id'].toString(),
-  secret: data['credential_secret'].toString(),
-  expiryUnix: data['expiry_unix'] as int,
-  groups: data['groups'] is List
-      ? (data['groups'] as List).map((e) => e.toString()).toList()
-      : [],
-  allowRelay: data['allow_relay'] as bool? ?? false,
-  allowedProxyCidrs: data['allowed_proxy_cidrs'] is List
-      ? (data['allowed_proxy_cidrs'] as List).map((e) => e.toString()).toList()
-      : [],
-  reusable: data['reusable'] as bool? ?? true,
-);
+ManagedCredential _parseManagedCredential(Map<dynamic, dynamic> data) =>
+    ManagedCredential(
+      id: data['credential_id'].toString(),
+      secret: data['credential_secret'].toString(),
+      expiryUnix: data['expiry_unix'] as int,
+      groups: data['groups'] is List
+          ? (data['groups'] as List).map((e) => e.toString()).toList()
+          : [],
+      allowRelay: data['allow_relay'] as bool? ?? false,
+      allowedProxyCidrs: data['allowed_proxy_cidrs'] is List
+          ? (data['allowed_proxy_cidrs'] as List)
+                .map((e) => e.toString())
+                .toList()
+          : [],
+      reusable: data['reusable'] as bool? ?? true,
+    );
 
 NetworkFlags _parseFlags(Map<dynamic, dynamic> data) {
   CompressionAlgorithm parseCompressionAlgorithm(String value) =>
       switch (value.toLowerCase()) {
-    'zstd' => CompressionAlgorithm.zstd,
-    _ => CompressionAlgorithm.none,
-  };
+        'zstd' => CompressionAlgorithm.zstd,
+        _ => CompressionAlgorithm.none,
+      };
 
   EncryptionAlgorithm parseEncryptionAlgorithm(String value) =>
       switch (value.toLowerCase()) {
-    'aes-gcm' => EncryptionAlgorithm.aesGcm,
-    'aes-256-gcm' => EncryptionAlgorithm.aes256Gcm,
-    'chacha20' => EncryptionAlgorithm.chacha20,
-    'xor' => EncryptionAlgorithm.xor,
-    _ => EncryptionAlgorithm.aesGcm,
-  };
+        'aes-gcm' => EncryptionAlgorithm.aesGcm,
+        'aes-256-gcm' => EncryptionAlgorithm.aes256Gcm,
+        'chacha20' => EncryptionAlgorithm.chacha20,
+        'xor' => EncryptionAlgorithm.xor,
+        _ => EncryptionAlgorithm.aesGcm,
+      };
 
   return NetworkFlags(
     defaultProtocol: data['default_protocol'] is String
-        ? _parseNodeProtocol(data['default_protocol'] as String) ?? NodeProtocol.tcp
+        ? _parseNodeProtocol(data['default_protocol'] as String) ??
+              NodeProtocol.tcp
         : NodeProtocol.tcp,
     deviceName: data['dev_name']?.toString() ?? '',
     enableEncryption: data['enable_encryption'] as bool? ?? true,
@@ -293,13 +303,15 @@ NetworkFlags _parseFlags(Map<dynamic, dynamic> data) {
     enableKcpProxy: data['enable_kcp_proxy'] as bool? ?? false,
     disableKcpInput: data['disable_kcp_input'] as bool? ?? false,
     disableRelayKcp: data['disable_relay_kcp'] as bool? ?? false,
-    enableRelayForeignNetworkKcp: data['enable_relay_foreign_network_kcp'] as bool? ?? false,
+    enableRelayForeignNetworkKcp:
+        data['enable_relay_foreign_network_kcp'] as bool? ?? false,
     acceptDns: data['accept_dns'] as bool? ?? false,
     privateMode: data['private_mode'] as bool? ?? false,
     enableQuicProxy: data['enable_quic_proxy'] as bool? ?? false,
     disableQuicInput: data['disable_quic_input'] as bool? ?? false,
     disableRelayQuic: data['disable_relay_quic'] as bool? ?? false,
-    enableRelayForeignNetworkQuic: data['enable_relay_foreign_network_quic'] as bool? ?? false,
+    enableRelayForeignNetworkQuic:
+        data['enable_relay_foreign_network_quic'] as bool? ?? false,
     foreignRelayBpsLimit: data['foreign_relay_bps_limit'] is String
         ? int.tryParse(data['foreign_relay_bps_limit'] as String)
         : data['foreign_relay_bps_limit'] as int?,
@@ -307,7 +319,8 @@ NetworkFlags _parseFlags(Map<dynamic, dynamic> data) {
     encryptionAlgorithm: data['encryption_algorithm'] is String
         ? parseEncryptionAlgorithm(data['encryption_algorithm'] as String)
         : EncryptionAlgorithm.aesGcm,
-    disableSymmetricHolePunching: data['disable_sym_hole_punching'] as bool? ?? false,
+    disableSymmetricHolePunching:
+        data['disable_sym_hole_punching'] as bool? ?? false,
     dnsZone: data['tld_dns_zone']?.toString() ?? 'et.net.',
     quicListenPort: data['quic_listen_port'] as int?,
     needP2p: data['need_p2p'] as bool? ?? false,
@@ -317,7 +330,8 @@ NetworkFlags _parseFlags(Map<dynamic, dynamic> data) {
     disableUpnp: data['disable_upnp'] as bool? ?? false,
     disableRelayData: data['disable_relay_data'] as bool? ?? false,
     preferPeerRelay: data['prefer_peer_relay'] as bool? ?? false,
-    enableUdpBroadcastRelay: data['enable_udp_broadcast_relay'] as bool? ?? false,
+    enableUdpBroadcastRelay:
+        data['enable_udp_broadcast_relay'] as bool? ?? false,
     socketMark: data['socket_mark'] as int?,
   );
 }

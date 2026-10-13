@@ -25,7 +25,10 @@ String? validateCidr(String value, InternetAddressType type) {
   final address = parts.length == 2 ? InternetAddress.tryParse(parts[0]) : null;
   final prefix = parts.length == 2 ? int.tryParse(parts[1]) : null;
   final maxPrefix = type == InternetAddressType.IPv4 ? 32 : 128;
-  if (address?.type == type && prefix != null && prefix >= 0 && prefix <= maxPrefix) {
+  if (address?.type == type &&
+      prefix != null &&
+      prefix >= 0 &&
+      prefix <= maxPrefix) {
     return null;
   }
   return type == InternetAddressType.IPv4
@@ -43,13 +46,16 @@ String? validateIntRange(String value, String label, int min, int max) {
 
 String? validatePort(String value) => validateIntRange(value, 'Port', 1, 65535);
 
-final _hostnamePattern = RegExp(r'^[A-Za-z0-9]([A-Za-z0-9-]*[A-Za-z0-9])?(\.[A-Za-z0-9]([A-Za-z0-9-]*[A-Za-z0-9])?)*\.?$');
+final _hostnamePattern = RegExp(
+  r'^[A-Za-z0-9]([A-Za-z0-9-]*[A-Za-z0-9])?(\.[A-Za-z0-9]([A-Za-z0-9-]*[A-Za-z0-9])?)*\.?$',
+);
 
 /// An IP address or a DNS name.
 String? validateHost(String value) {
   final host = value.trim();
   if (host.isEmpty) return 'Host cannot be empty';
-  if (InternetAddress.tryParse(host) == null && !_hostnamePattern.hasMatch(host)) {
+  if (InternetAddress.tryParse(host) == null &&
+      !_hostnamePattern.hasMatch(host)) {
     return 'Must be a valid IP address or hostname';
   }
   return null;

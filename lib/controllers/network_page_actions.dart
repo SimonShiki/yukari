@@ -42,7 +42,8 @@ extension NetworkPageActions on NetworkPageController {
 
   void openInNewRoute(String id) {
     final network = networks.value[id];
-    if (network == null || transitions.value[id] == InstanceStatus.starting) return;
+    if (network == null || transitions.value[id] == InstanceStatus.starting)
+      return;
     navigate(
       instances.value.containsKey(id) ? 'network-instance' : 'network-edit',
       id,

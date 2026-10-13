@@ -3,10 +3,7 @@ import 'package:material_ui/material_ui.dart';
 import 'peer_card_data.dart';
 
 class PeerCard extends StatelessWidget {
-  const PeerCard({
-    super.key,
-    required this.data,
-  });
+  const PeerCard({super.key, required this.data});
 
   final PeerCardData data;
 
@@ -85,7 +82,7 @@ class PeerCard extends StatelessWidget {
                                 style: textTheme.labelSmall,
                               ),
                             ),
-                          for (final tag in data.tags) _PeerTagChip(tag: tag)
+                          for (final tag in data.tags) _PeerTagChip(tag: tag),
                         ],
                       ),
                     ),
@@ -104,10 +101,7 @@ class PeerCard extends StatelessWidget {
                   horizontal: 10,
                   vertical: 4,
                 ),
-                label: Text(
-                  data.connectionStatus,
-                  style: textTheme.labelSmall,
-                ),
+                label: Text(data.connectionStatus, style: textTheme.labelSmall),
               ),
             ],
           ),

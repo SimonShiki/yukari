@@ -29,7 +29,9 @@ Future<String> derivePublicKey(String privateKeyBase64) async {
   try {
     final privateBytes = base64.decode(privateKeyBase64);
     if (privateBytes.length != 32) {
-      throw ArgumentError('Private key must be 32 bytes, got ${privateBytes.length}');
+      throw ArgumentError(
+        'Private key must be 32 bytes, got ${privateBytes.length}',
+      );
     }
 
     // Create X25519 algorithm instance
@@ -50,7 +52,11 @@ Future<String> derivePublicKey(String privateKeyBase64) async {
 /// Returns a cryptographically secure random string suitable for use
 /// as a network secret.
 String generateSecretKey({int length = 32}) {
-  const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+  const chars =
+      'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
   final random = Random.secure();
-  return List.generate(length, (_) => chars[random.nextInt(chars.length)]).join();
+  return List.generate(
+    length,
+    (_) => chars[random.nextInt(chars.length)],
+  ).join();
 }

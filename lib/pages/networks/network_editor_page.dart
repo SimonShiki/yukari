@@ -25,9 +25,8 @@ class _NetworkEditorPageState extends State<NetworkEditorPage> {
     id: widget.id,
     showMessage: (message) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(message)),
-      );
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(message)));
     },
   );
 
@@ -73,8 +72,7 @@ class _NetworkEditorPageState extends State<NetworkEditorPage> {
       child: Scaffold(
         appBar: AppBar(
           title: SignalBuilder(
-            builder: (context) =>
-                Text('Edit ${_controller.networkName.value}'),
+            builder: (context) => Text('Edit ${_controller.networkName.value}'),
           ),
           bottom: const TabBar(
             tabs: [
@@ -86,10 +84,7 @@ class _NetworkEditorPageState extends State<NetworkEditorPage> {
         body: TabBarView(
           children: [
             NetworkBasicTab(formKey: _basicForm, controller: _controller),
-            NetworkAdvancedTab(
-              formKey: _advancedForm,
-              controller: _controller,
-            ),
+            NetworkAdvancedTab(formKey: _advancedForm, controller: _controller),
           ],
         ),
       ),

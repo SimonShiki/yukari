@@ -65,8 +65,8 @@ final class Peer {
       throw ArgumentError('Invalid JSON for Peer: $json');
     }
 
-    final connections = (peer['conns'] as List<Object?>?)
-        ?.cast<Map<String, Object?>>() ?? [];
+    final connections =
+        (peer['conns'] as List<Object?>?)?.cast<Map<String, Object?>>() ?? [];
     final connection = connections.firstOrNull ?? const <String, Object?>{};
     final stats = connection['stats'] as Map<String, Object?>?;
     final stunInfo = route['stun_info'] as Map<String, Object?>?;

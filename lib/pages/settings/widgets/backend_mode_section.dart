@@ -54,9 +54,7 @@ class BackendModeSection extends StatelessWidget {
                   enabled: false,
                   leading: Icon(icon),
                   headline: Text(title),
-                  supportingText: const Text(
-                    'Needs root.',
-                  ),
+                  supportingText: const Text('Needs root.'),
                   trailing: Radio(value: kind, enabled: false),
                 )
               else

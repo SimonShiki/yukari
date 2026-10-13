@@ -62,8 +62,11 @@ class NetworkPageController {
   final selectedTab = signal(InstanceTab.peers);
 
   late final error = computed(() => refreshError.value);
-  late final selectedNetworkRunning = computed(() =>
-      selectedNetwork.value != null && instances.value.containsKey(selectedNetwork.value));
+  late final selectedNetworkRunning = computed(
+    () =>
+        selectedNetwork.value != null &&
+        instances.value.containsKey(selectedNetwork.value),
+  );
 
   late final cards = computed(() {
     final saved = networks.value;
@@ -74,7 +77,8 @@ class NetworkPageController {
       selectedNetwork.value = saved.keys.first;
     } else if (saved.isEmpty) {
       selectedNetwork.value = null;
-    } else if (selectedNetwork.value != null && !saved.containsKey(selectedNetwork.value)) {
+    } else if (selectedNetwork.value != null &&
+        !saved.containsKey(selectedNetwork.value)) {
       // Selected network was deleted, select first available
       selectedNetwork.value = saved.keys.first;
     }

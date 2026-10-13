@@ -109,8 +109,9 @@ class _NodeEditorDialogState extends State<NodeEditorDialog> {
                 const SizedBox(height: 8),
                 FormField<Set<NodeProtocol>>(
                   initialValue: _selectedProtocols,
-                  validator: (v) =>
-                      v!.isEmpty ? 'At least one protocol must be selected' : null,
+                  validator: (v) => v!.isEmpty
+                      ? 'At least one protocol must be selected'
+                      : null,
                   builder: (field) => Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -164,10 +165,7 @@ class _NodeEditorDialogState extends State<NodeEditorDialog> {
           onPressed: () => Navigator.of(context).pop(),
           child: const Text('Cancel'),
         ),
-        FilledButton(
-          onPressed: _handleSave,
-          child: const Text('Save'),
-        ),
+        FilledButton(onPressed: _handleSave, child: const Text('Save')),
       ],
     );
   }
@@ -175,13 +173,15 @@ class _NodeEditorDialogState extends State<NodeEditorDialog> {
   void _handleSave() {
     if (!_formKey.currentState!.validate()) return;
     final publicKey = _publicKeyController.text.trim();
-    widget.onSave(Node(
-      id: _idController.text.trim(),
-      url: Uri.parse(_urlController.text.trim()),
-      port: int.parse(_portController.text.trim()),
-      protocols: _selectedProtocols.toList(),
-      publicKey: publicKey.isEmpty ? null : publicKey,
-    ));
+    widget.onSave(
+      Node(
+        id: _idController.text.trim(),
+        url: Uri.parse(_urlController.text.trim()),
+        port: int.parse(_portController.text.trim()),
+        protocols: _selectedProtocols.toList(),
+        publicKey: publicKey.isEmpty ? null : publicKey,
+      ),
+    );
     Navigator.of(context).pop();
   }
 }

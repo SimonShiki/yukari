@@ -28,7 +28,9 @@ class _ListenerEditorDialogState extends State<ListenerEditorDialog> {
     super.initState();
     final listener = widget.initialListener;
     _hostController = TextEditingController(text: listener?.host ?? '0.0.0.0');
-    _portController = TextEditingController(text: listener?.port.toString() ?? '11010');
+    _portController = TextEditingController(
+      text: listener?.port.toString() ?? '11010',
+    );
     _selectedProtocol = listener != null
         ? NodeProtocol.values.firstWhere(
             (p) => p.name == listener.scheme,
@@ -47,7 +49,9 @@ class _ListenerEditorDialogState extends State<ListenerEditorDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: Text(widget.initialListener == null ? 'Add Listener' : 'Edit Listener'),
+      title: Text(
+        widget.initialListener == null ? 'Add Listener' : 'Edit Listener',
+      ),
       content: SingleChildScrollView(
         child: SizedBox(
           width: MediaQuery.of(context).size.width * 0.8,
@@ -105,21 +109,20 @@ class _ListenerEditorDialogState extends State<ListenerEditorDialog> {
           onPressed: () => Navigator.of(context).pop(),
           child: const Text('Cancel'),
         ),
-        FilledButton(
-          onPressed: _handleSave,
-          child: const Text('Save'),
-        ),
+        FilledButton(onPressed: _handleSave, child: const Text('Save')),
       ],
     );
   }
 
   void _handleSave() {
     if (!_formKey.currentState!.validate()) return;
-    widget.onSave(Uri(
-      scheme: _selectedProtocol.name,
-      host: _hostController.text.trim(),
-      port: int.parse(_portController.text.trim()),
-    ));
+    widget.onSave(
+      Uri(
+        scheme: _selectedProtocol.name,
+        host: _hostController.text.trim(),
+        port: int.parse(_portController.text.trim()),
+      ),
+    );
     Navigator.of(context).pop();
   }
 }

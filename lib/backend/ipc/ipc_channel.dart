@@ -22,7 +22,9 @@ const accessDenied = -32001;
 /// make the other side buffer without bound.
 StreamChannel<Object?> frameChannel(Socket socket, FrameReader reader) {
   final outgoing = StreamController<Object?>();
-  outgoing.stream.map<List<int>>(encodeFrame).pipe(socket).catchError((Object _) {
+  outgoing.stream.map<List<int>>(encodeFrame).pipe(socket).catchError((
+    Object _,
+  ) {
     socket.destroy();
   });
   final incoming = socket.transform(

@@ -1,4 +1,5 @@
 import 'package:go_router/go_router.dart';
+
 import 'widgets/navigation/app_shell.dart';
 import 'pages/home/home_page.dart';
 import 'pages/networks/networks_page.dart';
@@ -32,17 +33,21 @@ final GoRouter appRouter = GoRouter(
       routes: [
         GoRoute(
           path: '/',
-          pageBuilder: (context, state) => const NoTransitionPage(child: HomePage()),
+          pageBuilder: (context, state) =>
+              const NoTransitionPage(child: HomePage()),
         ),
         GoRoute(
           path: '/networks',
-          pageBuilder: (context, state) => NoTransitionPage(key: state.pageKey, child: const NetworksPage()),
-          onExit: (context, state) => confirmLeavingPage(context, state.pageKey),
+          pageBuilder: (context, state) =>
+              NoTransitionPage(key: state.pageKey, child: const NetworksPage()),
+          onExit: (context, state) =>
+              confirmLeavingPage(context, state.pageKey),
           routes: [
             GoRoute(
               name: 'network-instance',
               path: 'instance/:id',
-              builder: (context, state) => NetworkInstancePage(id: state.pathParameters['id']!),
+              builder: (context, state) =>
+                  NetworkInstancePage(id: state.pathParameters['id']!),
             ),
             GoRoute(
               name: 'network-logs',
@@ -55,20 +60,28 @@ final GoRouter appRouter = GoRouter(
             GoRoute(
               name: 'network-edit',
               path: 'edit/:id',
-              builder: (context, state) => NetworkEditorPage(id: state.pathParameters['id']!),
-              onExit: (context, state) => confirmLeavingPage(context, state.pageKey),
+              builder: (context, state) =>
+                  NetworkEditorPage(id: state.pathParameters['id']!),
+              onExit: (context, state) =>
+                  confirmLeavingPage(context, state.pageKey),
             ),
-            GoRoute(name: 'network-create', path: 'create', builder: (context, state) => const NetworkCreatorPage()),
+            GoRoute(
+              name: 'network-create',
+              path: 'create',
+              builder: (context, state) => const NetworkCreatorPage(),
+            ),
           ],
         ),
         GoRoute(
           path: '/bookmarks',
-          pageBuilder: (context, state) => const NoTransitionPage(child: BookmarksPage()),
+          pageBuilder: (context, state) =>
+              const NoTransitionPage(child: BookmarksPage()),
           routes: [],
         ),
         GoRoute(
           path: '/settings',
-          pageBuilder: (context, state) => const NoTransitionPage(child: SettingsPage()),
+          pageBuilder: (context, state) =>
+              const NoTransitionPage(child: SettingsPage()),
           routes: [],
         ),
       ],

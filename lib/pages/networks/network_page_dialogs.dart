@@ -56,7 +56,7 @@ Future<void> showTunPermissionWarning(
         '• Restart Yukari ${Platform.isWindows ? 'as administrator' : 'as root'}.\n'
         '• Turn on "Disable TUN mode" for this network.'
         '${serviceSupported ? '\n• Use service mode in Settings, which runs '
-            'networks in the background with full privileges.' : ''}',
+                  'networks in the background with full privileges.' : ''}',
       ),
       actions: [
         TextButton(

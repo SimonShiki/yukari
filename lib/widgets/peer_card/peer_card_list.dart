@@ -5,11 +5,7 @@ import 'peer_card.dart';
 import 'peer_card_data.dart';
 
 class PeerCardList extends StatelessWidget {
-  const PeerCardList({
-    super.key,
-    required this.peers,
-    this.listPadding,
-  });
+  const PeerCardList({super.key, required this.peers, this.listPadding});
 
   final List<PeerCardData> peers;
   final EdgeInsets? listPadding;
