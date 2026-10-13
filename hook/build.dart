@@ -9,7 +9,9 @@ void main(List<String> args) async {
 
     final targetOS = input.config.code.targetOS;
     final targetArchitecture = input.config.code.targetArchitecture;
-    final (platform, arch, library) = _target(targetOS, targetArchitecture);
+    final target = _target(targetOS, targetArchitecture);
+    if (target == null) return;
+    final (platform, arch, library) = target;
     final packageRoot = input.packageRoot;
     final localLibrary = File.fromUri(
       packageRoot.resolve('build/$platform/$arch/release/$library'),
@@ -109,7 +111,7 @@ Future<List<Uri>> _windowsRuntimeLibraries(
   return result;
 }
 
-(String, String, String) _target(OS os, Architecture architecture) {
+(String, String, String)? _target(OS os, Architecture architecture) {
   if (os == OS.windows && architecture == Architecture.x64) {
     return ('windows', 'x64', 'easytier_ffi.dll');
   }
@@ -125,6 +127,10 @@ Future<List<Uri>> _windowsRuntimeLibraries(
   if (os == OS.android && architecture == Architecture.x64) {
     return ('android', 'x86_64', 'libeasytier_ffi.so');
   }
+  // EasyTier ships no 32-bit ARM Android build, but Flutter still runs this hook
+  // for `android/arm` because that is one of its default Android target platforms,
+  // no matter which ABIs the APK keeps. Bundle nothing for such a target.
+  if (os == OS.android && architecture == Architecture.arm) return null;
   throw UnsupportedError('Unsupported EasyTier target: $os/$architecture');
 }
 
