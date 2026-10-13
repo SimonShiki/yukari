@@ -20,6 +20,8 @@ void main() {
     expect(peer.hostname, 'host-a');
     expect(peer.virtualIpv4, '10.144.0.1');
     expect(instance.myself!.virtualIpv4, '10.144.0.2');
+    expect(instance.myself!.natType, NatType.symmetric);
+    expect(instance.version, '2.7.0-1649ec00');
     expect(peer.latency, 172);
     expect(peer.rxBytes, 1848);
     expect(peer.protocols, [NodeProtocol.tcp]);

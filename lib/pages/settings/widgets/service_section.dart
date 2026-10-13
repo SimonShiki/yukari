@@ -44,7 +44,7 @@ class ServiceSection extends StatelessWidget {
         ServiceState.running when outdated => (
           Icons.upgrade_rounded,
           'Update available',
-          'Runs version $version; this app brings version $serviceVersion',
+          'Running Version $version; The latest is $serviceVersion',
         ),
         ServiceState.running => (
           Icons.check_circle_outline_rounded,

@@ -10,6 +10,7 @@ final class Instance {
     required this.events,
     required this.myself,
     required this.peers,
+    this.version,
   });
 
   /// The network that this instance spawned from.
@@ -18,6 +19,9 @@ final class Instance {
   final List<String> events;
   final Peer? myself;
   final List<Peer> peers;
+
+  /// The EasyTier version running the instance, such as `2.7.0-1649ec00`.
+  final String? version;
 
   factory Instance.fromJsonAndNetwork(
     Map<String, Object?> json,
@@ -36,7 +40,7 @@ final class Instance {
             txPackets: 0,
             secureAuthLevel: SecureAuthLevel.networkSecretConfirmed,
             protocols: const [],
-            natType: NatType.unknown,
+            natType: Peer.natTypeOf(myNodeInfo['stun_info']),
             connectionType: PeerConnectionType.local,
             virtualIpv4: Peer.ipv4FromInet(myNodeInfo['virtual_ipv4']),
           )
@@ -57,6 +61,7 @@ final class Instance {
           : InstanceStatus.stopped,
       events: (json['events'] as List<Object?>?)?.cast<String>() ?? [],
       myself: myPeer,
+      version: myNodeInfo?['version'] as String?,
       peers: pairs
           .map((pair) {
             try {

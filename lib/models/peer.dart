@@ -69,7 +69,6 @@ final class Peer {
         (peer['conns'] as List<Object?>?)?.cast<Map<String, Object?>>() ?? [];
     final connection = connections.firstOrNull ?? const <String, Object?>{};
     final stats = connection['stats'] as Map<String, Object?>?;
-    final stunInfo = route['stun_info'] as Map<String, Object?>?;
 
     return Peer(
       id: '${route['peer_id']}',
@@ -97,13 +96,20 @@ final class Peer {
             .map(_protocolFromName)
             .whereType<NodeProtocol>(),
       ],
-      natType: _enum(NatType.values, _natTypeNames, stunInfo?['udp_nat_type']),
+      natType: natTypeOf(route['stun_info']),
       connectionType: route['next_hop_peer_id'] == route['peer_id']
           ? PeerConnectionType.direct
           : PeerConnectionType.relay,
       virtualIpv4: ipv4FromInet(route['ipv4_addr']),
     );
   }
+
+  /// The UDP NAT type a `StunInfo` message reports.
+  static NatType natTypeOf(Object? stunInfo) => _enum(
+    NatType.values,
+    _natTypeNames,
+    (stunInfo as Map<String, Object?>?)?['udp_nat_type'],
+  );
 
   /// Formats an `Ipv4Inet` message, whose address is a big-endian integer.
   static String? ipv4FromInet(Object? inet) {
