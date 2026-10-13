@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:m3e_core/m3e_core.dart';
 import 'package:material_ui/material_ui.dart';
@@ -42,7 +43,7 @@ void main() {
     messages = [];
     final controller = BackendSettingsController(
       showMessage: messages.add,
-      confirmStopNetworks: () async => true,
+      confirmStopNetworks: (_, _) async => true,
       probeVersion: () async => version,
       control: SystemServiceControl(
         dataDir: '/data',
@@ -112,6 +113,18 @@ void main() {
     await tester.tap(service);
     await tester.pump();
     expect(messages, ['Grant Yukari root access first.']);
+  });
+
+  testWidgets('wraps long mode descriptions', (tester) async {
+    tester.view.physicalSize = const Size(360, 800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    await pump(tester, ServiceState.running);
+    final detail = find.textContaining('Run networks as system service');
+    final paragraph = tester.renderObject<RenderParagraph>(detail);
+    expect(paragraph.didExceedMaxLines, isFalse);
+    // Taller than one line of text, so it wrapped.
+    expect(paragraph.size.height, greaterThan(paragraph.preferredLineHeight));
   });
 
   testWidgets('explains a platform without a service', (tester) async {

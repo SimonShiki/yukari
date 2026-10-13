@@ -61,12 +61,14 @@ class BackendModeSection extends StatelessWidget {
                 M3EListItem(
                   leading: Icon(icon),
                   headline: Text(title),
-                  supportingText: kind == BackendKind.service && unreachable
-                      ? Text(
-                          'Cannot reach the service. Start or reinstall it.',
-                          style: TextStyle(color: error),
-                        )
-                      : Text(detail),
+                  supportingText: _Wrapping(
+                    kind == BackendKind.service && unreachable
+                        ? Text(
+                            'Cannot reach the service. Start or reinstall it.',
+                            style: TextStyle(color: error),
+                          )
+                        : Text(detail),
+                  ),
                   trailing: Radio(value: kind),
                 ),
           ],
@@ -74,4 +76,16 @@ class BackendModeSection extends StatelessWidget {
       );
     },
   );
+}
+
+/// Lets [child] wrap onto as many lines as it needs, where [M3EListItem]
+/// cuts supporting text off after one.
+class _Wrapping extends StatelessWidget {
+  const _Wrapping(this.child);
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) =>
+      DefaultTextStyle(style: DefaultTextStyle.of(context).style, child: child);
 }

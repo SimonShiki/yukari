@@ -29,7 +29,10 @@ void main() {
       log: logs.add,
     );
     await daemon.start(await ServerSocket.bind(address, 0));
-    client = ServiceBackend(() async => IpcEndpoint(address, 0));
+    client = ServiceBackend(
+      () async => IpcEndpoint(address, 0),
+      retryInterval: const Duration(milliseconds: 20),
+    );
     addTearDown(() async {
       await client.dispose();
       await daemon.stop();
@@ -95,6 +98,35 @@ void main() {
     );
     await daemon.stop();
     expect(await runningServiceVersion(IpcEndpoint(address, 0)), isNull);
+  });
+
+  test('reconnects by itself once a restarted service is back', () async {
+    await serve();
+    await client.collectInfos();
+    final socket = File(p.join(p.dirname(store.file.path), 'service.sock'));
+    Future<void> until(BackendStatus status) async {
+      for (var i = 0; client.status.value != status; i++) {
+        if (i == 100) fail('Status stayed ${client.status.value}');
+        await Future<void>.delayed(const Duration(milliseconds: 10));
+      }
+    }
+
+    await daemon.stop();
+    await until(BackendStatus.unavailable);
+    if (await socket.exists()) await socket.delete();
+    final restarted = ServiceDaemon(
+      store: NetworkStore(store.file, readOnly: true),
+      backend: FakeBackend(),
+      log: logs.add,
+    );
+    await restarted.start(
+      await ServerSocket.bind(
+        InternetAddress(socket.path, type: InternetAddressType.unix),
+        0,
+      ),
+    );
+    addTearDown(restarted.stop);
+    await until(BackendStatus.ready);
   });
 
   test('reports the service as unavailable when it is not running', () async {

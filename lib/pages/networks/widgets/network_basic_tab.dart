@@ -4,7 +4,9 @@ import 'package:material_ui/material_ui.dart';
 import 'package:signals_flutter/signals_flutter.dart';
 
 import '../../../controllers/network_editor_controller.dart';
+import '../../../models/backend.dart';
 import '../../../models/network.dart';
+import '../../../signals/backend.dart';
 import '../../../utils/crypto_utils.dart';
 import '../../../utils/validator.dart';
 import '../../../widgets/form_section/form_segments.dart';
@@ -176,8 +178,10 @@ class _NetworkBasicTabState extends State<NetworkBasicTab>
             ),
           ],
         ),
-        // Android has no background service to start networks on boot.
-        if (!Platform.isAndroid) StartupSection(controller: _editor),
+        // On Android only the root service, if chosen, starts networks on
+        // boot; the app itself cannot.
+        if (!Platform.isAndroid || backend.peek().kind == BackendKind.service)
+          StartupSection(controller: _editor),
         SignalBuilder(
           builder: (context) => NodeListEditor(
             nodes: _editor.network.value!.nodes,

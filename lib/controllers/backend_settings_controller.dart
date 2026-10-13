@@ -20,8 +20,10 @@ class BackendSettingsController {
 
   final void Function(String message) showMessage;
 
-  /// Asks whether networks running in the app may stop.
-  final Future<bool> Function() confirmStopNetworks;
+  /// Asks whether the [running] networks may stop for the switch to
+  /// [target].
+  final Future<bool> Function(BackendKind target, int running)
+  confirmStopNetworks;
   final ServiceControl control;
 
   /// Asks the running service its version; null when it cannot be reached.
@@ -73,12 +75,19 @@ class BackendSettingsController {
       }
     }
     final active = backend.value;
-    // Networks running in the app stop with it; the service's keep running.
-    if (active.kind == BackendKind.ffi) {
-      final running = await active.collectInfos().catchError(
-        (Object _) => <String, String>{},
-      );
-      if (running.isNotEmpty && !await confirmStopNetworks()) return;
+    // Stop what runs where networks ran so far, so that none keeps running
+    // unseen; an unreachable service has nothing to stop.
+    final running = await active.collectInfos().catchError(
+      (Object _) => <String, String>{},
+    );
+    if (running.isNotEmpty) {
+      if (!await confirmStopNetworks(kind, running.length)) return;
+      try {
+        await active.stop(running.keys.toList());
+      } catch (e) {
+        showMessage('Could not stop the running networks: $e');
+        return;
+      }
     }
     await switchBackend(kind);
   }

@@ -21,19 +21,24 @@ final class ServiceUnavailableException implements Exception {
 /// Runs instances in the privileged background service, reached over IPC.
 ///
 /// The service reads networks from the shared store itself, so starting one
-/// sends only its id. Connects lazily, and reconnects on the next request
-/// after the service restarts.
+/// sends only its id. While the service is unreachable, such as when an
+/// update restarts it, tries again every [retryInterval] until it answers.
 class ServiceBackend extends NetworkBackend {
-  ServiceBackend(this._locate) {
+  ServiceBackend(
+    this._locate, {
+    this.retryInterval = const Duration(seconds: 2),
+  }) {
     _connect().ignore();
   }
 
   /// Finds the running service; see [IpcEndpoint.locate].
   final Future<IpcEndpoint> Function() _locate;
+  final Duration retryInterval;
 
   final _status = signal(BackendStatus.connecting);
   Client? _client;
   Future<Client>? _connecting;
+  Timer? _retry;
   bool _disposed = false;
 
   @override
@@ -60,6 +65,7 @@ class ServiceBackend extends NetworkBackend {
   @override
   Future<void> dispose() async {
     _disposed = true;
+    _retry?.cancel();
     await _client?.close();
   }
 
@@ -83,6 +89,7 @@ class ServiceBackend extends NetworkBackend {
       client = await connectIpc(await _locate());
     } catch (error) {
       _status.value = BackendStatus.unavailable;
+      _retryLater();
       throw ServiceUnavailableException(error);
     }
     if (_disposed) {
@@ -92,9 +99,18 @@ class ServiceBackend extends NetworkBackend {
     client.done.whenComplete(() {
       if (!_disposed && identical(_client, client)) {
         _status.value = BackendStatus.unavailable;
+        _retryLater();
       }
     }).ignore();
     _status.value = BackendStatus.ready;
     return _client = client;
+  }
+
+  void _retryLater() {
+    if (_disposed || _retry != null) return;
+    _retry = Timer(retryInterval, () {
+      _retry = null;
+      _connect().ignore();
+    });
   }
 }
