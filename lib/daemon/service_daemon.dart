@@ -4,6 +4,7 @@ import 'package:json_rpc_2/json_rpc_2.dart';
 
 import '../backend/backend.dart';
 import '../backend/ipc/ipc_server.dart';
+import '../backend/service_version.dart';
 import '../models/models.dart';
 import '../storage/network_store.dart';
 
@@ -56,6 +57,7 @@ final class ServiceDaemon {
   }
 
   Map<String, IpcMethod> get _methods => {
+    'version': (_) => serviceVersion,
     'collect': (_) => backend.collectInfos(),
     'start': (params) => _start(params['id'].asString),
     'stop': (params) => backend.stop([

@@ -62,7 +62,7 @@ class PeerCardData {
     hostname: self.hostname,
     latencyMs: 0,
     protocols: const [],
-    connectionStatus: 'This device',
+    connectionStatus: 'Local',
     virtualIpv4: self.virtualIpv4,
     isSelf: true,
   );

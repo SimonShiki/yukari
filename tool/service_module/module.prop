@@ -1,0 +1,6 @@
+id=yukari_service
+name=Yukari
+version=@VERSION@
+versionCode=@VERSION_CODE@
+author=SimonShiki
+description=Yukari Service Module for KernelSU or Magisk.

@@ -8,6 +8,7 @@ import '../backend/backend.dart';
 import '../backend/ffi_backend.dart';
 import '../backend/ipc/ipc_endpoint.dart';
 import '../backend/service_backend.dart';
+import '../backend/system/module_service_control.dart';
 import '../backend/system/service_control.dart';
 import '../models/models.dart';
 
@@ -32,7 +33,9 @@ const _kindKey = 'backend';
 
 /// Restores the backend the user chose, for the app data directory [dataDir].
 Future<void> initBackend(String dataDir) async {
-  serviceControl = ServiceControl(dataDir: dataDir);
+  serviceControl = Platform.isAndroid
+      ? ModuleServiceControl(dataDir: dataDir)
+      : SystemServiceControl(dataDir: dataDir);
   final saved = (await SharedPreferences.getInstance()).getString(_kindKey);
   final kind = BackendKind.values.asNameMap()[saved] ?? BackendKind.ffi;
   _backend.value = _create(

@@ -6,7 +6,16 @@ enum BackendKind { ffi, service }
 enum BackendStatus { connecting, ready, unavailable }
 
 /// Installation state of the background system service.
-enum ServiceState { unsupported, notInstalled, stopped, running }
+enum ServiceState {
+  unsupported,
+
+  /// Android only: Yukari has not been granted root, which the service's
+  /// KernelSU or Magisk module needs to be installed and controlled.
+  rootRequired,
+  notInstalled,
+  stopped,
+  running,
+}
 
 /// Whether a network may create its TUN device under the active backend.
 enum TunAccess {

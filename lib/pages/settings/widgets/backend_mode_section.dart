@@ -17,15 +17,15 @@ class BackendModeSection extends StatelessWidget {
       BackendKind.ffi,
       Icons.apps_rounded,
       'App',
-      'Networks stop when Yukari closes. TUN devices need Yukari itself to '
-          'run with administrator or root privileges.',
+      'Run networks inside Yukari. '
+          'requires administrator or root privileges.',
     ),
     (
       BackendKind.service,
       Icons.dns_outlined,
       'Service',
-      'Networks run with full privileges, keep running after Yukari closes, '
-          'and can start on boot.',
+      'Run networks as system service. '
+          'Can start on boot and work without Yukari app.',
     ),
   ];
 
@@ -35,6 +35,8 @@ class BackendModeSection extends StatelessWidget {
       final unreachable =
           controller.kind.value == BackendKind.service &&
           controller.status.value == BackendStatus.unavailable;
+      final rootRequired =
+          controller.serviceState.value == ServiceState.rootRequired;
       final error = Theme.of(context).colorScheme.error;
       return RadioGroup<BackendKind>(
         groupValue: controller.kind.value,
@@ -42,22 +44,33 @@ class BackendModeSection extends StatelessWidget {
           if (kind != null) controller.select(kind);
         },
         child: FormSection(
-          title: 'Run networks in',
+          title: 'Working mode',
           icon: Icons.lan_outlined,
           onTap: (index) => controller.select(_modes[index].$1),
           children: [
             for (final (kind, icon, title, detail) in _modes)
-              M3EListItem(
-                leading: Icon(icon),
-                headline: Text(title),
-                supportingText: kind == BackendKind.service && unreachable
-                    ? Text(
-                        'Cannot reach the service. Start or reinstall it.',
-                        style: TextStyle(color: error),
-                      )
-                    : Text(detail),
-                trailing: Radio(value: kind),
-              ),
+              if (kind == BackendKind.service && rootRequired)
+                M3EListItem(
+                  enabled: false,
+                  leading: Icon(icon),
+                  headline: Text(title),
+                  supportingText: const Text(
+                    'Needs root.',
+                  ),
+                  trailing: Radio(value: kind, enabled: false),
+                )
+              else
+                M3EListItem(
+                  leading: Icon(icon),
+                  headline: Text(title),
+                  supportingText: kind == BackendKind.service && unreachable
+                      ? Text(
+                          'Cannot reach the service. Start or reinstall it.',
+                          style: TextStyle(color: error),
+                        )
+                      : Text(detail),
+                  trailing: Radio(value: kind),
+                ),
           ],
         ),
       );

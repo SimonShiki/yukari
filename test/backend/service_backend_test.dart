@@ -2,8 +2,10 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:path/path.dart' as p;
+import 'package:yukari/backend/ipc/ipc_client.dart';
 import 'package:yukari/backend/ipc/ipc_endpoint.dart';
 import 'package:yukari/backend/service_backend.dart';
+import 'package:yukari/backend/service_version.dart';
 import 'package:yukari/daemon/service_daemon.dart';
 import 'package:yukari/models/models.dart';
 import 'package:yukari/storage/network_store.dart';
@@ -81,6 +83,18 @@ void main() {
     await client.stop(['beta']);
     expect(runtime.stopped, ['beta']);
     expect(await client.collectInfos(), isEmpty);
+  });
+
+  test('reports its version, or none when it is unreachable', () async {
+    await serve();
+    final path = p.join(p.dirname(store.file.path), 'service.sock');
+    final address = InternetAddress(path, type: InternetAddressType.unix);
+    expect(
+      await runningServiceVersion(IpcEndpoint(address, 0)),
+      serviceVersion,
+    );
+    await daemon.stop();
+    expect(await runningServiceVersion(IpcEndpoint(address, 0)), isNull);
   });
 
   test('reports the service as unavailable when it is not running', () async {

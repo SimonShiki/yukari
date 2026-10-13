@@ -1,5 +1,8 @@
 import 'package:signals/signals.dart';
 
+import '../backend/ipc/ipc_client.dart';
+import '../backend/ipc/ipc_endpoint.dart';
+import '../backend/service_version.dart';
 import '../backend/system/service_control.dart';
 import '../models/backend.dart';
 import '../signals/backend.dart';
@@ -10,7 +13,10 @@ class BackendSettingsController {
     required this.showMessage,
     required this.confirmStopNetworks,
     ServiceControl? control,
-  }) : control = control ?? serviceControl;
+    Future<int?> Function()? probeVersion,
+  }) : control = control ?? serviceControl {
+    _probeVersion = probeVersion ?? _probeRunningVersion;
+  }
 
   final void Function(String message) showMessage;
 
@@ -18,14 +24,35 @@ class BackendSettingsController {
   final Future<bool> Function() confirmStopNetworks;
   final ServiceControl control;
 
+  /// Asks the running service its version; null when it cannot be reached.
+  late final Future<int?> Function() _probeVersion;
+
   final serviceState = signal(ServiceState.unsupported);
   final busy = signal(false);
+
+  /// The version the running service reports, or null when unknown.
+  final runningVersion = signal<int?>(null);
+
+  /// Whether an install is underway, and how much of its download is done,
+  /// from 0 to 1; null while that is unknown or the download is over.
+  final installing = signal(false);
+  final installProgress = signal<double?>(null);
+
   late final kind = computed(() => backend.value.kind);
   late final status = computed(() => backend.value.status.value);
 
+  /// Whether the running service is older than this app.
+  late final outdated = computed(
+    () => (runningVersion.value ?? serviceVersion) < serviceVersion,
+  );
+
   Future<void> refresh() async {
     try {
-      serviceState.value = await control.state();
+      final state = await control.state();
+      serviceState.value = state;
+      runningVersion.value = state == ServiceState.running
+          ? await _probeVersion()
+          : null;
     } catch (e) {
       showMessage('Could not check the service: $e');
     }
@@ -33,13 +60,17 @@ class BackendSettingsController {
 
   Future<void> select(BackendKind kind) async {
     if (busy.value || kind == this.kind.value) return;
-    final installed = switch (serviceState.value) {
-      ServiceState.running || ServiceState.stopped => true,
-      ServiceState.unsupported || ServiceState.notInstalled => false,
-    };
-    if (kind == BackendKind.service && !installed) {
-      showMessage('Install the background service first.');
-      return;
+    if (kind == BackendKind.service) {
+      switch (serviceState.value) {
+        case ServiceState.running || ServiceState.stopped:
+          break;
+        case ServiceState.rootRequired:
+          showMessage('Grant Yukari root access first.');
+          return;
+        case ServiceState.unsupported || ServiceState.notInstalled:
+          showMessage('Install the background service first.');
+          return;
+      }
     }
     final active = backend.value;
     // Networks running in the app stop with it; the service's keep running.
@@ -52,7 +83,18 @@ class BackendSettingsController {
     await switchBackend(kind);
   }
 
-  Future<void> install() => _change(control.install, 'install');
+  /// Installs the service, or updates it to this app's version.
+  Future<void> install() => _change(() async {
+    installing.value = true;
+    installProgress.value = null;
+    try {
+      await control.install(
+        onProgress: (progress) => installProgress.value = progress,
+      );
+    } finally {
+      installing.value = false;
+    }
+  }, 'install');
 
   Future<void> start() => _change(control.start, 'start');
 
@@ -79,8 +121,25 @@ class BackendSettingsController {
     }
   }
 
+  /// Tries for a few seconds, as a service just (re)started takes a moment
+  /// to listen.
+  Future<int?> _probeRunningVersion() async {
+    for (var attempt = 1; ; attempt++) {
+      try {
+        final version = await runningServiceVersion(
+          await IpcEndpoint.locate(control.dataDir),
+        );
+        if (version != null || attempt == 6) return version;
+      } catch (_) {
+        if (attempt == 6) return null;
+      }
+      await Future<void>.delayed(const Duration(milliseconds: 500));
+    }
+  }
+
   void dispose() {
     kind.dispose();
     status.dispose();
+    outdated.dispose();
   }
 }
