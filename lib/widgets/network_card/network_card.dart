@@ -1,5 +1,6 @@
 import 'package:material_ui/material_ui.dart';
 
+import '../../l10n/l10n.dart';
 import '../../models/instance.dart';
 
 class NetworkCard extends StatelessWidget {
@@ -23,12 +24,12 @@ class NetworkCard extends StatelessWidget {
     final theme = Theme.of(context);
     final colors = theme.colorScheme;
     final status = switch (this.status) {
-      InstanceStatus.stopped => 'Stopped',
-      InstanceStatus.running => 'Running',
-      InstanceStatus.starting => 'Starting',
-      InstanceStatus.stopping => 'Stopping',
-      InstanceStatus.failed => 'Failed',
-      InstanceStatus.unknown => 'Unknown',
+      InstanceStatus.stopped => context.l10n.cardStopped,
+      InstanceStatus.running => context.l10n.cardRunning,
+      InstanceStatus.starting => context.l10n.cardStarting,
+      InstanceStatus.stopping => context.l10n.cardStopping,
+      InstanceStatus.failed => context.l10n.cardFailed,
+      InstanceStatus.unknown => context.l10n.cardUnknown,
     };
     final badge = Badge(
       backgroundColor: this.status == InstanceStatus.failed
@@ -46,7 +47,9 @@ class NetworkCard extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         IconButton.filledTonal(
-          tooltip: '${running ? 'Stop' : 'Start'} $name',
+          tooltip: running
+              ? context.l10n.cardStop(name)
+              : context.l10n.cardStart(name),
           isSelected: running,
           onPressed: onToggle == null ? null : () => onToggle!(!running),
           icon: const Icon(Icons.play_arrow_rounded),

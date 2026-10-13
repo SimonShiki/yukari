@@ -1,5 +1,6 @@
 import 'package:material_ui/material_ui.dart';
 
+import '../../../l10n/l10n.dart';
 import '../../../models/node.dart';
 import '../../../utils/validator.dart';
 
@@ -50,7 +51,9 @@ class _ListenerEditorDialogState extends State<ListenerEditorDialog> {
   Widget build(BuildContext context) {
     return AlertDialog(
       title: Text(
-        widget.initialListener == null ? 'Add Listener' : 'Edit Listener',
+        widget.initialListener == null
+            ? context.l10n.networkAddListener
+            : context.l10n.networkEditListener,
       ),
       content: SingleChildScrollView(
         child: SizedBox(
@@ -64,7 +67,7 @@ class _ListenerEditorDialogState extends State<ListenerEditorDialog> {
               children: [
                 DropdownMenu<NodeProtocol>(
                   initialSelection: _selectedProtocol,
-                  label: const Text('Protocol'),
+                  label: Text(context.l10n.networkProtocol),
                   expandedInsets: EdgeInsets.zero,
                   dropdownMenuEntries: NodeProtocol.values.map((p) {
                     return DropdownMenuEntry(
@@ -79,10 +82,10 @@ class _ListenerEditorDialogState extends State<ListenerEditorDialog> {
                 const SizedBox(height: 16),
                 TextFormField(
                   controller: _hostController,
-                  decoration: const InputDecoration(
-                    labelText: 'Host',
+                  decoration: InputDecoration(
+                    labelText: context.l10n.networkHost,
                     hintText: '0.0.0.0',
-                    helperText: 'IP address or hostname to listen on',
+                    helperText: context.l10n.networkListenHostHelper,
                     border: OutlineInputBorder(),
                   ),
                   validator: (v) => validateHost(v!),
@@ -90,10 +93,10 @@ class _ListenerEditorDialogState extends State<ListenerEditorDialog> {
                 const SizedBox(height: 16),
                 TextFormField(
                   controller: _portController,
-                  decoration: const InputDecoration(
-                    labelText: 'Port',
+                  decoration: InputDecoration(
+                    labelText: context.l10n.networkPort,
                     hintText: '11010',
-                    helperText: 'Port number (1-65535)',
+                    helperText: context.l10n.networkPortHelper,
                     border: OutlineInputBorder(),
                   ),
                   keyboardType: TextInputType.number,
@@ -107,9 +110,12 @@ class _ListenerEditorDialogState extends State<ListenerEditorDialog> {
       actions: [
         TextButton(
           onPressed: () => Navigator.of(context).pop(),
-          child: const Text('Cancel'),
+          child: Text(context.l10n.commonCancel),
         ),
-        FilledButton(onPressed: _handleSave, child: const Text('Save')),
+        FilledButton(
+          onPressed: _handleSave,
+          child: Text(context.l10n.commonSave),
+        ),
       ],
     );
   }

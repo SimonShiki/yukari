@@ -81,44 +81,6 @@ final class LogEntry {
     _ => LogSeverity.info,
   };
 
-  /// A one-line, human readable description of the event.
-  late final String summary = switch (kind) {
-    'TunDeviceReady' => 'TUN device ready: ${_arg(0)}',
-    'TunDeviceError' => 'TUN device error: ${_arg(0)}',
-    'PeerAdded' => 'Peer ${_arg(0)} joined',
-    'PeerRemoved' => 'Peer ${_arg(0)} left',
-    'PeerConnAdded' => 'Connected to peer ${_conn()}',
-    'PeerConnRemoved' => 'Disconnected from peer ${_conn()}',
-    'ListenerAdded' => 'Listening on ${_arg(0)}',
-    'ListenerAddFailed' => 'Cannot listen on ${_arg(0)}: ${_arg(1)}',
-    'ListenerAcceptFailed' => 'Listener ${_arg(0)} failed: ${_arg(1)}',
-    'ListenerPortMappingEstablished' =>
-      'Mapped ${_field('local_listener')} to ${_field('mapped_listener')} '
-          'via ${_field('backend')}',
-    'Connecting' => 'Connecting to ${_arg(0)}',
-    'ConnectError' => 'Cannot connect to ${_arg(0)} (${_arg(1)}): ${_arg(2)}',
-    'ConnectionAccepted' => 'Accepted ${_arg(1)} on ${_arg(0)}',
-    'ConnectionError' =>
-      'Connection ${_arg(1)} on ${_arg(0)} failed: ${_arg(2)}',
-    'VpnPortalStarted' => 'VPN portal started: ${_arg(0)}',
-    'VpnPortalClientConnected' => 'VPN client ${_arg(1)} connected',
-    'VpnPortalClientDisconnected' => 'VPN client ${_arg(1)} disconnected',
-    'DhcpIpv4Changed' => 'DHCP IPv4 changed from ${_arg(0)} to ${_arg(1)}',
-    'DhcpIpv4Conflicted' => 'DHCP IPv4 ${_arg(0)} conflicted',
-    'PublicIpv6Changed' => 'Public IPv6 changed from ${_arg(0)} to ${_arg(1)}',
-    'PublicIpv6RoutesUpdated' => 'IPv6 routes updated: +${_arg(0)} −${_arg(1)}',
-    'ProxyCidrsUpdated' => 'Proxy CIDRs updated: +${_arg(0)} −${_arg(1)}',
-    'PortForwardAdded' => 'Port forward added',
-    'ConfigPatched' => 'Configuration patched',
-    'CredentialChanged' => 'Credential changed',
-    'UdpBroadcastRelayStartResult' =>
-      _field('error') == null
-          ? 'UDP broadcast relay started via ${_field('capture_backend')}'
-          : 'UDP broadcast relay failed: ${_field('error')}',
-    'Unknown' => 'Unrecognized log entry',
-    _ => kind,
-  };
-
   /// The payload flattened to `path: value` pairs, such as
   /// `tunnel.remote_addr.url: tcp://…`.
   late final List<(String, String)> details = [
@@ -127,22 +89,19 @@ final class LogEntry {
     if (payload != null) ..._flatten('', payload),
   ];
 
-  String _arg(int index) => _text(switch (payload) {
-    List<Object?> list => index < list.length ? list[index] : null,
-    final value => index == 0 ? value : null,
-  });
-
-  String? _field(String key) => switch (_path([key])) {
+  String? _field(String key) => switch (path([key])) {
     null => null,
-    final value => _text(value),
+    final value => text(value),
   };
 
-  String _conn() =>
-      '${_text(_path(['peer_id']))} via '
-      '${_text(_path(['tunnel', 'tunnel_type']))} '
-      '${_text(_path(['tunnel', 'remote_addr']))}';
+  /// The positional argument at [index] of a tuple variant's payload.
+  Object? arg(int index) => switch (payload) {
+    List<Object?> list => index < list.length ? list[index] : null,
+    final value => index == 0 ? value : null,
+  };
 
-  Object? _path(List<String> keys) {
+  /// The payload value under the map [keys].
+  Object? path(List<String> keys) {
     Object? value = payload;
     for (final key in keys) {
       value = value is Map ? value[key] : null;
@@ -150,12 +109,13 @@ final class LogEntry {
     return value;
   }
 
-  /// Renders protobuf `Url` wrappers, CIDR lists and absent options.
-  static String _text(Object? value) => switch (value) {
-    null => 'none',
+  /// Renders protobuf `Url` wrappers, CIDR lists and absent options, the
+  /// latter as [none].
+  static String text(Object? value, {String none = 'none'}) => switch (value) {
+    null => none,
     {'url': final Object url} => '$url',
-    List<Object?> list when list.isEmpty => 'none',
-    List<Object?> list => list.map(_text).join(', '),
+    List<Object?> list when list.isEmpty => none,
+    List<Object?> list => list.map((item) => text(item, none: none)).join(', '),
     _ => '$value',
   };
 
@@ -174,7 +134,7 @@ final class LogEntry {
           yield* _flatten('$path[$index]', list[index]);
         }
       default:
-        yield (path.isEmpty ? 'value' : path, _text(value));
+        yield (path.isEmpty ? 'value' : path, text(value));
     }
   }
 }

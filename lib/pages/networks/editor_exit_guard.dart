@@ -1,5 +1,7 @@
 import 'package:material_ui/material_ui.dart';
 
+import '../../l10n/l10n.dart';
+
 /// Mounted network editors with the key of the page each is shown on, and a
 /// check for input that failed validation and therefore was never saved.
 final _editors = <Object, (LocalKey?, bool Function())>{};
@@ -27,23 +29,20 @@ Future<bool> confirmLeavingPage(BuildContext context, LocalKey? pageKey) async {
         context: context,
         builder: (context) => AlertDialog(
           icon: const Icon(Icons.warning_amber_rounded),
-          title: const Text('Discard invalid changes?'),
-          content: const Text(
-            'Some fields contain invalid values that were not saved. '
-            'Leaving will discard them.',
-          ),
+          title: Text(context.l10n.networkDiscardTitle),
+          content: Text(context.l10n.networkDiscardDescription),
           actions: [
             TextButton(
               autofocus: true,
               onPressed: () => Navigator.pop(context, false),
-              child: const Text('Keep Editing'),
+              child: Text(context.l10n.networkKeepEditing),
             ),
             TextButton(
               style: TextButton.styleFrom(
                 foregroundColor: Theme.of(context).colorScheme.error,
               ),
               onPressed: () => Navigator.pop(context, true),
-              child: const Text('Discard'),
+              child: Text(context.l10n.networkDiscard),
             ),
           ],
         ),

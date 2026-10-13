@@ -2,7 +2,9 @@ import 'package:flutter/services.dart';
 import 'package:m3e_core/m3e_core.dart';
 import 'package:material_ui/material_ui.dart';
 
+import '../../l10n/l10n.dart';
 import '../../models/log_entry.dart';
+import 'log_summary.dart';
 
 /// A log entry in a segmented list that expands to show its details.
 class LogEntryTile extends StatelessWidget {
@@ -68,7 +70,7 @@ class LogEntryTile extends StatelessWidget {
           child: Icon(_icon, size: 20, color: onContainer),
         ),
         headline: Text(
-          entry.summary,
+          formatLogSummary(entry, context.l10n),
           maxLines: 2,
           overflow: TextOverflow.ellipsis,
         ),
@@ -136,7 +138,7 @@ class LogEntryTile extends StatelessWidget {
             ),
           ),
           IconButton(
-            tooltip: 'Copy as JSON',
+            tooltip: context.l10n.logCopyJson,
             onPressed: () => Clipboard.setData(ClipboardData(text: entry.raw)),
             icon: const Icon(Icons.content_copy_rounded),
           ),

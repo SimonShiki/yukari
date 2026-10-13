@@ -3,6 +3,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:signals_flutter/signals_flutter.dart';
 
 import '../../controllers/network_editor_controller.dart';
+import '../../l10n/l10n.dart';
 import '../../widgets/empty_state/empty_state.dart';
 import 'editor_exit_guard.dart';
 import 'widgets/network_basic_tab.dart';
@@ -52,16 +53,17 @@ class _NetworkEditorPageState extends State<NetworkEditorPage> {
 
   @override
   Widget build(BuildContext context) {
-    if (_controller.network.peek() == null) {
+    final network = _controller.network.peek();
+    if (network == null) {
       return Scaffold(
-        appBar: AppBar(title: const Text('Edit Network')),
+        appBar: AppBar(title: Text(context.l10n.networkEdit)),
         body: EmptyState(
           icon: Icons.error_outline,
-          title: 'Network not found',
-          message: 'It may have been deleted.',
+          title: context.l10n.networkMissing,
+          message: context.l10n.networkMissingDescription,
           action: FilledButton(
             onPressed: () => context.pop(),
-            child: const Text('Go Back'),
+            child: Text(context.l10n.commonGoBack),
           ),
         ),
       );
@@ -72,12 +74,16 @@ class _NetworkEditorPageState extends State<NetworkEditorPage> {
       child: Scaffold(
         appBar: AppBar(
           title: SignalBuilder(
-            builder: (context) => Text('Edit ${_controller.networkName.value}'),
+            builder: (context) => Text(
+              context.l10n.networkEditNamed(
+                _controller.networkName.value ?? network.networkName,
+              ),
+            ),
           ),
-          bottom: const TabBar(
+          bottom: TabBar(
             tabs: [
-              Tab(text: 'Basic'),
-              Tab(text: 'Advanced'),
+              Tab(text: context.l10n.networkBasic),
+              Tab(text: context.l10n.networkAdvanced),
             ],
           ),
         ),

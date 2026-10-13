@@ -12,15 +12,11 @@ import '../signals/networks.dart';
 enum InstanceTab { peers, logs }
 
 enum LogFilter {
-  all('All'),
-  errors('Errors'),
-  peers('Peers'),
-  connections('Connections'),
-  listeners('Listeners');
-
-  const LogFilter(this.label);
-
-  final String label;
+  all,
+  errors,
+  peers,
+  connections,
+  listeners;
 
   bool matches(LogEntry entry) => switch (this) {
     all => true,

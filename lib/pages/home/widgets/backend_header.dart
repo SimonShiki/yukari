@@ -4,6 +4,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:signals_flutter/signals_flutter.dart';
 
 import '../../../controllers/home_controller.dart';
+import '../../../l10n/l10n.dart';
 import '../../../models/backend.dart';
 
 /// Where networks run, whether that backend can take requests, and the
@@ -20,8 +21,11 @@ class BackendHeader extends StatelessWidget {
       final colors = theme.colorScheme;
       final status = controller.status.value;
       final (icon, title) = switch (controller.kind.value) {
-        BackendKind.ffi => (Icons.apps_rounded, 'Running in app'),
-        BackendKind.service => (Icons.dns_rounded, 'Running as service'),
+        BackendKind.ffi => (Icons.apps_rounded, context.l10n.homeRunningInApp),
+        BackendKind.service => (
+          Icons.dns_rounded,
+          context.l10n.homeRunningAsService,
+        ),
       };
       final (
         container,
@@ -35,28 +39,28 @@ class BackendHeader extends StatelessWidget {
           colors.onPrimaryContainer,
           colors.primary,
           colors.onPrimary,
-          'Ready',
+          context.l10n.homeReady,
         ),
         BackendStatus.connecting => (
           colors.secondaryContainer,
           colors.onSecondaryContainer,
           colors.secondary,
           colors.onSecondary,
-          'Connecting',
+          context.l10n.homeConnecting,
         ),
         BackendStatus.unavailable => (
           colors.errorContainer,
           colors.onErrorContainer,
           colors.error,
           colors.onError,
-          'Unreachable',
+          context.l10n.homeUnreachable,
         ),
       };
       final versions = [
         if (controller.easyTierVersion.value case final version?)
           'EasyTier $version',
         if (controller.serviceVersion.value case final version?)
-          'Service v$version',
+          context.l10n.homeServiceVersion(version),
       ];
 
       return Material(
@@ -117,7 +121,7 @@ class BackendHeader extends StatelessWidget {
                 TextButton(
                   style: TextButton.styleFrom(foregroundColor: onContainer),
                   onPressed: () => context.go('/settings'),
-                  child: const Text('Settings'),
+                  child: Text(context.l10n.navSettings),
                 ),
             ],
           ),

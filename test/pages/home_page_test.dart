@@ -5,6 +5,7 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:yukari/controllers/home_controller.dart';
+import 'package:yukari/l10n/l10n.dart';
 import 'package:yukari/models/models.dart';
 import 'package:yukari/pages/home/home_page.dart';
 import 'package:yukari/pages/home/widgets/address_card.dart';
@@ -46,7 +47,10 @@ void main() {
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
     await tester.pumpWidget(
-      MaterialApp(home: HomePage(controller: controller)),
+      MaterialApp(
+        localizationsDelegates: const [AppLocalizations.delegate],
+        home: HomePage(controller: controller),
+      ),
     );
     if (refresh) {
       await tester.runAsync(controller.refresh);

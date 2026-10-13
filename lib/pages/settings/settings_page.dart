@@ -1,9 +1,11 @@
 import 'package:material_ui/material_ui.dart';
 
 import '../../controllers/backend_settings_controller.dart';
+import '../../l10n/l10n.dart';
 import '../../models/backend.dart';
 import '../../widgets/form_section/section_list.dart';
 import 'widgets/backend_mode_section.dart';
+import 'widgets/interface_section.dart';
 import 'widgets/service_section.dart';
 
 class SettingsPage extends StatefulWidget {
@@ -40,29 +42,27 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 
   Future<bool> _confirmStopNetworks(BackendKind target, int running) async {
-    final (from, to) = switch (target) {
-      BackendKind.service => ('the app', 'the service'),
-      BackendKind.ffi => ('the service', 'the app'),
-    };
-    final networks = running == 1 ? '1 network' : '$running networks';
+    final title = target == BackendKind.service
+        ? context.l10n.settingsSwitchToService
+        : context.l10n.settingsSwitchToApp;
+    final message = target == BackendKind.service
+        ? context.l10n.settingsSwitchToServiceMessage(running)
+        : context.l10n.settingsSwitchToAppMessage(running);
     return await showDialog<bool>(
           context: context,
           builder: (context) => AlertDialog(
             icon: const Icon(Icons.swap_horiz_rounded),
-            title: Text('Switch to $to?'),
-            content: Text(
-              '$networks running in $from will stop. Start them again to run '
-              'them in $to.',
-            ),
+            title: Text(title),
+            content: Text(message),
             actions: [
               TextButton(
                 autofocus: true,
                 onPressed: () => Navigator.pop(context, false),
-                child: const Text('Cancel'),
+                child: Text(context.l10n.commonCancel),
               ),
               TextButton(
                 onPressed: () => Navigator.pop(context, true),
-                child: const Text('Switch'),
+                child: Text(context.l10n.settingsSwitch),
               ),
             ],
           ),
@@ -72,12 +72,13 @@ class _SettingsPageState extends State<SettingsPage> {
 
   @override
   Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(title: const Text('Settings')),
+    appBar: AppBar(title: Text(context.l10n.navSettings)),
     body: SafeArea(
       child: SectionList(
         children: [
           BackendModeSection(controller: _controller),
           ServiceSection(controller: _controller),
+          const InterfaceSection(),
         ],
       ),
     ),

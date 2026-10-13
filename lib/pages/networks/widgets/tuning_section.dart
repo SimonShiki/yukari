@@ -1,6 +1,7 @@
 import 'package:material_ui/material_ui.dart';
 
 import '../../../controllers/network_editor_controller.dart';
+import '../../../l10n/l10n.dart';
 import '../../../models/network_flags.dart';
 import '../../../models/node.dart';
 import '../../../utils/validator.dart';
@@ -18,88 +19,89 @@ class TuningSection extends StatelessWidget {
   NetworkFlags get _flags => controller.network.peek()!.flags;
 
   @override
-  Widget build(BuildContext context) => FormSection(
-    title: 'Tuning',
-    icon: Icons.tune,
-    description: 'Protocols, algorithms and resource limits',
-    collapsible: true,
-    children: [
-      NetworkChoice<NodeProtocol>(
-        controller: controller,
-        label: 'Default Protocol',
-        helper: 'Used for peers given without a protocol',
-        options: {for (final p in NodeProtocol.values) p: p.name.toUpperCase()},
-        read: (n) => n.flags.defaultProtocol,
-        write: (n, v) => n.flags.defaultProtocol = v,
-      ),
-      NetworkChoice<EncryptionAlgorithm>(
-        controller: controller,
-        label: 'Encryption Algorithm',
-        helper: 'Must match on every peer',
-        options: const {
-          EncryptionAlgorithm.aesGcm: 'AES-128-GCM',
-          EncryptionAlgorithm.aes256Gcm: 'AES-256-GCM',
-          EncryptionAlgorithm.chacha20: 'ChaCha20-Poly1305',
-          EncryptionAlgorithm.xor: 'XOR (insecure)',
-        },
-        read: (n) => n.flags.encryptionAlgorithm,
-        write: (n, v) => n.flags.encryptionAlgorithm = v,
-      ),
-      NetworkChoice<CompressionAlgorithm>(
-        controller: controller,
-        label: 'Compression',
-        helper: 'Compress traffic sent to peers',
-        options: const {
-          CompressionAlgorithm.none: 'None',
-          CompressionAlgorithm.zstd: 'Zstandard',
-        },
-        read: (n) => n.flags.compressionAlgorithm,
-        write: (n, v) => n.flags.compressionAlgorithm = v,
-      ),
-      FieldSegment(
-        child: ValidatedTextField(
-          initialValue: _flags.multiThreadCount.toString(),
-          decoration: const InputDecoration(
-            labelText: 'Thread Count',
-            helperText: 'Worker threads when multi-threading is on',
-            border: OutlineInputBorder(),
-          ),
-          keyboardType: TextInputType.number,
-          validator: (v) => validateIntRange(v, 'Thread count', 1, 256),
-          onValid: (v) => controller.update(
-            (n) => n.flags.multiThreadCount = int.parse(v.trim()),
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    return FormSection(
+      title: l10n.advancedTuning,
+      icon: Icons.tune,
+      description: l10n.advancedTuningDescription,
+      collapsible: true,
+      children: [
+        NetworkChoice<NodeProtocol>(
+          controller: controller,
+          label: l10n.advancedDefaultProtocol,
+          helper: l10n.advancedDefaultProtocolHelper,
+          options: {
+            for (final p in NodeProtocol.values) p: p.name.toUpperCase(),
+          },
+          read: (n) => n.flags.defaultProtocol,
+          write: (n, v) => n.flags.defaultProtocol = v,
+        ),
+        NetworkChoice<EncryptionAlgorithm>(
+          controller: controller,
+          label: l10n.advancedEncryptionAlgorithm,
+          helper: l10n.advancedEncryptionAlgorithmHelper,
+          options: {
+            EncryptionAlgorithm.aesGcm: 'AES-128-GCM',
+            EncryptionAlgorithm.aes256Gcm: 'AES-256-GCM',
+            EncryptionAlgorithm.chacha20: 'ChaCha20-Poly1305',
+            EncryptionAlgorithm.xor: l10n.advancedXorInsecure,
+          },
+          read: (n) => n.flags.encryptionAlgorithm,
+          write: (n, v) => n.flags.encryptionAlgorithm = v,
+        ),
+        NetworkChoice<CompressionAlgorithm>(
+          controller: controller,
+          label: l10n.advancedCompression,
+          helper: l10n.advancedCompressionHelper,
+          options: {
+            CompressionAlgorithm.none: l10n.advancedCompressionNone,
+            CompressionAlgorithm.zstd: 'Zstandard',
+          },
+          read: (n) => n.flags.compressionAlgorithm,
+          write: (n, v) => n.flags.compressionAlgorithm = v,
+        ),
+        FieldSegment(
+          child: ValidatedTextField(
+            initialValue: _flags.multiThreadCount.toString(),
+            decoration: InputDecoration(
+              labelText: l10n.advancedThreadCount,
+              helperText: l10n.advancedThreadCountHelper,
+              border: const OutlineInputBorder(),
+            ),
+            keyboardType: TextInputType.number,
+            validator: (v) =>
+                validateIntRange(v, l10n.advancedThreadCountName, 1, 256),
+            onValid: (v) => controller.update(
+              (n) => n.flags.multiThreadCount = int.parse(v.trim()),
+            ),
           ),
         ),
-      ),
-      OptionalIntField(
-        label: 'Receive Limit',
-        helper:
-            'Bytes per second this node receives in total. Leave empty for no '
-            'limit',
-        initial: _flags.instanceReceiveBpsLimit,
-        min: 1,
-        max: 0x7fffffffffffffff,
-        onValid: (v) =>
-            controller.update((n) => n.flags.instanceReceiveBpsLimit = v),
-      ),
-      FlagSwitch(
-        controller: controller,
-        title: 'User-Space Network Stack',
-        subtitle:
-            'Use smoltcp when system firewalls block subnet or KCP proxying',
-        read: (f) => f.useSmoltcp,
-        write: (f, v) => f.useSmoltcp = v,
-      ),
-      OptionalIntField(
-        label: 'Socket Mark',
-        helper:
-            'Linux only: SO_MARK for policy routing of underlay sockets. '
-            'Needs CAP_NET_ADMIN',
-        initial: _flags.socketMark,
-        min: 0,
-        max: 0xffffffff,
-        onValid: (v) => controller.update((n) => n.flags.socketMark = v),
-      ),
-    ],
-  );
+        OptionalIntField(
+          label: l10n.advancedReceiveLimit,
+          helper: l10n.advancedReceiveLimitHelper,
+          initial: _flags.instanceReceiveBpsLimit,
+          min: 1,
+          max: 0x7fffffffffffffff,
+          onValid: (v) =>
+              controller.update((n) => n.flags.instanceReceiveBpsLimit = v),
+        ),
+        FlagSwitch(
+          controller: controller,
+          title: l10n.advancedSmoltcp,
+          subtitle: l10n.advancedSmoltcpSubtitle,
+          read: (f) => f.useSmoltcp,
+          write: (f, v) => f.useSmoltcp = v,
+        ),
+        OptionalIntField(
+          label: l10n.advancedSocketMark,
+          helper: l10n.advancedSocketMarkHelper,
+          initial: _flags.socketMark,
+          min: 0,
+          max: 0xffffffff,
+          onValid: (v) => controller.update((n) => n.flags.socketMark = v),
+        ),
+      ],
+    );
+  }
 }

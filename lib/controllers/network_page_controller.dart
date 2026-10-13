@@ -9,6 +9,7 @@ import 'package:uuid/uuid.dart';
 import '../backend/backend.dart';
 import '../bindings/easytier_ffi_native.dart' as native;
 import '../models/models.dart';
+import '../signals/locale.dart';
 import 'network_instance_controller.dart';
 import '../signals/backend.dart';
 import '../signals/instance_logs.dart';
@@ -176,7 +177,7 @@ class NetworkPageController {
       transitions.set(transitions.value);
     } catch (e) {
       if (!_disposed) {
-        refreshError.value = 'Failed to refresh networks: $e';
+        refreshError.value = l10n.value.controllerRefresh(e.toString());
       }
     } finally {
       refreshing.value = false;

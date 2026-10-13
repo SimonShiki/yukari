@@ -1,8 +1,10 @@
 import 'package:json_annotation/json_annotation.dart';
 
-import '../utils/validator.dart';
-
 part 'node.g.dart';
+
+/// The host of a peer address, which has no scheme when written bare, such
+/// as `example.com`.
+String nodeHost(Uri uri) => uri.host.isNotEmpty ? uri.host : uri.path;
 
 enum NodeProtocol { tcp, udp, ws, wss, quic, wg }
 

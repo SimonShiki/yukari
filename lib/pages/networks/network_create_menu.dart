@@ -1,6 +1,8 @@
 import 'package:m3e_core/m3e_core.dart';
 import 'package:material_ui/material_ui.dart';
 
+import '../../l10n/l10n.dart';
+
 class NetworkCreateMenu extends StatelessWidget {
   const NetworkCreateMenu({
     super.key,
@@ -15,25 +17,25 @@ class NetworkCreateMenu extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => M3EFabMenu(
-    icon: const Icon(Icons.add_rounded, semanticLabel: 'Add network'),
-    closeIcon: const Icon(
+    icon: Icon(Icons.add_rounded, semanticLabel: context.l10n.networkAdd),
+    closeIcon: Icon(
       Icons.close_rounded,
-      semanticLabel: 'Close network menu',
+      semanticLabel: context.l10n.networkCloseMenu,
     ),
     items: [
       M3EFabMenuItem(
         icon: const Icon(Icons.edit_outlined),
-        label: 'Create manually',
+        label: context.l10n.networkCreateManually,
         onPressed: onCreate,
       ),
       M3EFabMenuItem(
         icon: const Icon(Icons.file_open_outlined),
-        label: 'Import from file',
+        label: context.l10n.networkImportFile,
         onPressed: onImport,
       ),
       M3EFabMenuItem(
         icon: const Icon(Icons.qr_code_scanner_rounded),
-        label: 'Scan QR code',
+        label: context.l10n.networkScanQr,
         onPressed: onScan,
       ),
     ],

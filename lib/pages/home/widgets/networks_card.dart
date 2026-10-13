@@ -4,6 +4,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:signals_flutter/signals_flutter.dart';
 
 import '../../../controllers/home_controller.dart';
+import '../../../l10n/l10n.dart';
 import '../../../signals/networks.dart';
 import 'dashboard_card.dart';
 
@@ -24,19 +25,19 @@ class NetworksCard extends StatelessWidget {
       return DashboardCard(
         icon: Icons.hub_rounded,
         shape: Shapes.c9SidedCookie,
-        title: 'Networks',
+        title: context.l10n.navNetworks,
         onTap: () => context.go(saved == 0 ? '/networks/create' : '/networks'),
         child: !controller.refreshed.value
             ? const DashboardValue.loading()
             : saved == 0
-            ? const DashboardValue(
-                value: 'No networks',
-                supporting: 'Tap to create one.',
+            ? DashboardValue(
+                value: context.l10n.homeNoNetworks,
+                supporting: context.l10n.homeCreateNetworkHint,
               )
             : DashboardValue(
-                value: '${running.length} of $saved running',
+                value: context.l10n.homeRunningNetworks(running.length, saved),
                 supporting: running.isEmpty
-                    ? 'Start one to connect.'
+                    ? context.l10n.homeStartNetworkHint
                     : running.join(', '),
                 tooltip: running.length > 1 ? running.join('\n') : null,
               ),

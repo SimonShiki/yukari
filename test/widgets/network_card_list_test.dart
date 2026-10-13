@@ -1,6 +1,7 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
+import 'package:yukari/l10n/l10n.dart';
 import 'package:yukari/models/instance.dart';
 import 'package:yukari/widgets/network_card/network_card_data.dart';
 import 'package:yukari/widgets/network_card/network_card_list.dart';
@@ -12,6 +13,7 @@ void main() {
     deleted = 0;
     await tester.pumpWidget(
       MaterialApp(
+        localizationsDelegates: const [AppLocalizations.delegate],
         home: Scaffold(
           body: NetworkCardList(
             networks: [

@@ -1,6 +1,7 @@
 import 'package:material_ui/material_ui.dart';
 
 import '../../../controllers/network_editor_controller.dart';
+import '../../../l10n/l10n.dart';
 import '../../../models/network.dart';
 import '../../../utils/validator.dart';
 import 'network_fields.dart';
@@ -15,37 +16,38 @@ class AccessSection extends StatelessWidget {
   Network get _network => controller.network.peek()!;
 
   @override
-  Widget build(BuildContext context) => FormSection(
-    title: 'Access Control',
-    icon: Icons.shield,
-    description: 'Restrict other networks and open ports',
-    collapsible: true,
-    children: [
-      FlagSwitch(
-        controller: controller,
-        title: 'Private Mode',
-        subtitle:
-            'Refuse handshakes and relaying for nodes of other networks or '
-            'with another secret',
-        read: (f) => f.privateMode,
-        write: (f, v) => f.privateMode = v,
-      ),
-      LineListField(
-        label: 'TCP Port Whitelist',
-        hint: '80 or 8000-9000',
-        helper: 'TCP ports peers may reach. Leave empty to allow all',
-        initial: _network.tcpWhitelist,
-        validateLine: validatePortRange,
-        onValid: (lines) => controller.update((n) => n.tcpWhitelist = lines),
-      ),
-      LineListField(
-        label: 'UDP Port Whitelist',
-        hint: '53 or 5000-6000',
-        helper: 'UDP ports peers may reach. Leave empty to allow all',
-        initial: _network.udpWhitelist,
-        validateLine: validatePortRange,
-        onValid: (lines) => controller.update((n) => n.udpWhitelist = lines),
-      ),
-    ],
-  );
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    return FormSection(
+      title: l10n.advancedAccessControl,
+      icon: Icons.shield,
+      description: l10n.advancedAccessControlDescription,
+      collapsible: true,
+      children: [
+        FlagSwitch(
+          controller: controller,
+          title: l10n.advancedPrivateMode,
+          subtitle: l10n.advancedPrivateModeSubtitle,
+          read: (f) => f.privateMode,
+          write: (f, v) => f.privateMode = v,
+        ),
+        LineListField(
+          label: l10n.advancedTcpWhitelist,
+          hint: l10n.advancedTcpWhitelistHint,
+          helper: l10n.advancedTcpWhitelistHelper,
+          initial: _network.tcpWhitelist,
+          validateLine: validatePortRange,
+          onValid: (lines) => controller.update((n) => n.tcpWhitelist = lines),
+        ),
+        LineListField(
+          label: l10n.advancedUdpWhitelist,
+          hint: l10n.advancedUdpWhitelistHint,
+          helper: l10n.advancedUdpWhitelistHelper,
+          initial: _network.udpWhitelist,
+          validateLine: validatePortRange,
+          onValid: (lines) => controller.update((n) => n.udpWhitelist = lines),
+        ),
+      ],
+    );
+  }
 }

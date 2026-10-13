@@ -8,14 +8,14 @@ extension NetworkPageActions on NetworkPageController {
       final result = await FilePicker.pickFiles(
         type: FileType.custom,
         allowedExtensions: ['toml'],
-        dialogTitle: 'Select EasyTier Config File',
+        dialogTitle: l10n.value.controllerSelectConfig,
       );
 
       if (result.isEmpty) return;
 
       final file = result.first;
       if (file.path == null) {
-        showMessage('Could not access the selected file.');
+        showMessage(l10n.value.controllerFileUnavailable);
         return;
       }
 
@@ -28,17 +28,19 @@ extension NetworkPageActions on NetworkPageController {
           validateNetworkName(network.networkName, networkNames()) ??
           validateNetwork(network);
       if (error != null) {
-        showMessage('Cannot import "${network.networkName}": $error');
+        showMessage(
+          l10n.value.controllerImportInvalid(network.networkName, error),
+        );
         return;
       }
 
       await addNetwork(const Uuid().v4(), network);
     } catch (e) {
-      showMessage('Failed to import config: ${e.toString()}');
+      showMessage(l10n.value.controllerImportFailed(e.toString()));
     }
   }
 
-  void scanQrCode() => showMessage('QR code scanning is coming soon.');
+  void scanQrCode() => showMessage(l10n.value.controllerQrComing);
 
   void openInNewRoute(String id) {
     final network = networks.value[id];
@@ -68,7 +70,7 @@ extension NetworkPageActions on NetworkPageController {
     try {
       await reorderNetworks(oldIndex, newIndex);
     } catch (_) {
-      if (!_disposed) showMessage('Could not reorder networks. Try again.');
+      if (!_disposed) showMessage(l10n.value.controllerReorderFailed);
     }
   }
 
@@ -91,8 +93,8 @@ extension NetworkPageActions on NetworkPageController {
           when instances.value.length >= limit) {
         showMessage(
           limit == 1
-              ? 'Only one network can run at a time.'
-              : 'Only $limit networks can run at a time.',
+              ? l10n.value.controllerOneNetwork
+              : l10n.value.controllerNetworkLimit(limit.toString()),
         );
         return;
       }
@@ -130,7 +132,15 @@ extension NetworkPageActions on NetworkPageController {
       transitions.set(transitions.value);
       if (!_disposed) {
         showMessage(
-          'Could not ${running ? 'run' : 'stop'} ${network.networkName}: $e',
+          running
+              ? l10n.value.controllerNetworkRun(
+                  network.networkName,
+                  e.toString(),
+                )
+              : l10n.value.controllerNetworkStop(
+                  network.networkName,
+                  e.toString(),
+                ),
         );
       }
     }
@@ -162,7 +172,7 @@ extension NetworkPageActions on NetworkPageController {
       transitions.set(transitions.value);
     } catch (_) {
       if (!_disposed) {
-        showMessage('Could not delete ${network.networkName}. Try again.');
+        showMessage(l10n.value.controllerDeleteFailed(network.networkName));
       }
     } finally {
       deleting.value.remove(id);

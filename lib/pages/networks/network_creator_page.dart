@@ -4,6 +4,7 @@ import 'package:signals_flutter/signals_flutter.dart';
 
 import 'package:uuid/uuid.dart';
 
+import '../../l10n/l10n.dart';
 import '../../models/network.dart';
 import '../../signals/networks.dart';
 import '../../utils/validator.dart';
@@ -49,9 +50,11 @@ class _NetworkCreatorPageState extends State<NetworkCreatorPage> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Failed to create network: $e')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(context.l10n.networkCreateFailed(e.toString())),
+          ),
+        );
       }
     } finally {
       if (mounted) {
@@ -63,7 +66,7 @@ class _NetworkCreatorPageState extends State<NetworkCreatorPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Create Network')),
+      appBar: AppBar(title: Text(context.l10n.networkCreate)),
       body: Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 500),
@@ -79,12 +82,12 @@ class _NetworkCreatorPageState extends State<NetworkCreatorPage> {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     Text(
-                      'Create a new network',
+                      context.l10n.networkCreateHeading,
                       style: Theme.of(context).textTheme.headlineSmall,
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      'You\'ll be able to configure all settings after creation',
+                      context.l10n.networkCreateDescription,
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                         color: Theme.of(context).colorScheme.onSurfaceVariant,
                       ),
@@ -92,9 +95,9 @@ class _NetworkCreatorPageState extends State<NetworkCreatorPage> {
                     const SizedBox(height: 24),
                     TextFormField(
                       controller: _nameController,
-                      decoration: const InputDecoration(
-                        labelText: 'Network Name',
-                        helperText: 'Unique identifier for this network',
+                      decoration: InputDecoration(
+                        labelText: context.l10n.networkName,
+                        helperText: context.l10n.networkNameHelper,
                         border: OutlineInputBorder(),
                       ),
                       enabled: !creating.value,
@@ -104,9 +107,9 @@ class _NetworkCreatorPageState extends State<NetworkCreatorPage> {
                     const SizedBox(height: 16),
                     TextFormField(
                       controller: _hostnameController,
-                      decoration: const InputDecoration(
-                        labelText: 'Hostname (Optional)',
-                        helperText: 'Device name (max 32 characters)',
+                      decoration: InputDecoration(
+                        labelText: context.l10n.networkHostname,
+                        helperText: context.l10n.networkDeviceNameHelper,
                         border: OutlineInputBorder(),
                       ),
                       maxLength: 32,
@@ -122,7 +125,7 @@ class _NetworkCreatorPageState extends State<NetworkCreatorPage> {
                           onPressed: creating.value
                               ? null
                               : () => context.pop(),
-                          child: const Text('Cancel'),
+                          child: Text(context.l10n.commonCancel),
                         ),
                         const SizedBox(width: 8),
                         FilledButton(
@@ -135,7 +138,7 @@ class _NetworkCreatorPageState extends State<NetworkCreatorPage> {
                                     strokeWidth: 2,
                                   ),
                                 )
-                              : const Text('Create'),
+                              : Text(context.l10n.commonCreate),
                         ),
                       ],
                     ),

@@ -8,6 +8,7 @@ import 'package:yukari/backend/service_version.dart';
 import 'package:yukari/backend/system/service_control.dart';
 import 'package:yukari/backend/system/system_service.dart';
 import 'package:yukari/controllers/backend_settings_controller.dart';
+import 'package:yukari/l10n/l10n.dart';
 import 'package:yukari/models/backend.dart';
 import 'package:yukari/pages/settings/settings_page.dart';
 
@@ -54,7 +55,10 @@ void main() {
     );
     addTearDown(controller.dispose);
     await tester.pumpWidget(
-      MaterialApp(home: SettingsPage(controller: controller)),
+      MaterialApp(
+        localizationsDelegates: const [AppLocalizations.delegate],
+        home: SettingsPage(controller: controller),
+      ),
     );
     await tester.pump();
     return controller;

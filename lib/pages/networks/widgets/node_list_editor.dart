@@ -1,6 +1,7 @@
 import 'package:m3e_core/m3e_core.dart';
 import 'package:material_ui/material_ui.dart';
 
+import '../../../l10n/l10n.dart';
 import '../../../models/node.dart';
 import 'list_editor_segments.dart';
 import '../../../widgets/form_section/form_section.dart';
@@ -23,24 +24,24 @@ class NodeListEditor extends StatelessWidget {
     final colors = theme.colorScheme;
 
     return FormSection(
-      title: 'Initial Peers',
+      title: context.l10n.networkInitialPeers,
       icon: Icons.people,
-      description: 'Configure nodes to connect when starting the network',
+      description: context.l10n.networkInitialPeersDescription,
       footer: M3EButton.icon(
         style: M3EButtonStyle.tonal,
         icon: const Icon(Icons.add),
-        label: const Text('Add Peer'),
+        label: Text(context.l10n.networkAddPeer),
         onPressed: () => _showNodeDialog(context, null),
       ),
       onTap: nodes.isEmpty ? null : (i) => _showNodeDialog(context, nodes[i]),
       semanticLabelBuilder: nodes.isEmpty
           ? null
-          : (i) => 'Edit peer ${nodes[i].id}',
+          : (i) => context.l10n.networkEditPeerNamed(nodes[i].id),
       children: nodes.isEmpty
-          ? const [
+          ? [
               EmptyListSegment(
                 icon: Icons.person_add,
-                text: 'No peers configured',
+                text: context.l10n.networkNoConfiguredPeers,
               ),
             ]
           : [
@@ -72,7 +73,7 @@ class NodeListEditor extends StatelessWidget {
                         ),
                     ],
                   ),
-                  deleteTooltip: 'Delete peer',
+                  deleteTooltip: context.l10n.networkDeletePeer,
                   onDelete: () => _deleteNode(index),
                 ),
             ],

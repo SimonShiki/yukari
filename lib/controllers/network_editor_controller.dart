@@ -1,6 +1,7 @@
 import 'package:signals/signals.dart';
 
 import '../models/network.dart';
+import '../signals/locale.dart';
 import '../signals/networks.dart';
 import '../utils/validator.dart';
 
@@ -31,7 +32,7 @@ class NetworkEditorController {
       // Save a copy so later edits never mutate the saved state in place.
       await updateNetwork(id, current.copy());
     } catch (e) {
-      showMessage('Failed to save: $e');
+      showMessage(l10n.value.controllerSave(e.toString()));
     }
   }
 

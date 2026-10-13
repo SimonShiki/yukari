@@ -1,6 +1,7 @@
 import 'package:material_ui/material_ui.dart';
 
 import '../../controllers/home_controller.dart';
+import '../../l10n/l10n.dart';
 import 'widgets/address_card.dart';
 import 'widgets/backend_header.dart';
 import 'widgets/nat_card.dart';
@@ -33,7 +34,7 @@ class _HomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(title: const Text('Home')),
+    appBar: AppBar(title: Text(context.l10n.navHome)),
     body: SafeArea(
       child: LayoutBuilder(
         builder: (context, constraints) {

@@ -1,5 +1,6 @@
 import 'package:material_ui/material_ui.dart';
 
+import '../../l10n/l10n.dart';
 import '../../models/node.dart';
 import '../../models/peer.dart';
 
@@ -40,80 +41,90 @@ class PeerCardData {
   final bool isSelf;
   final VoidCallback? onTap;
 
-  factory PeerCardData.fromPeer(Peer peer, {VoidCallback? onTap}) {
+  factory PeerCardData.fromPeer(
+    Peer peer,
+    AppLocalizations l10n, {
+    VoidCallback? onTap,
+  }) {
     return PeerCardData(
       id: peer.id,
       hostname: peer.hostname,
       latencyMs: peer.latency ~/ 1000,
       protocols: peer.protocols.map<String>(_formatProtocol).toList(),
-      connectionStatus: _formatConnectionType(peer.connectionType),
+      connectionStatus: _formatConnectionType(peer.connectionType, l10n),
       virtualIpv4: peer.virtualIpv4,
       tags: [
-        ?_identityTag(peer.identityType),
-        ?_securityTag(peer.secureAuthLevel),
+        ?_identityTag(peer.identityType, l10n),
+        ?_securityTag(peer.secureAuthLevel, l10n),
       ],
       onTap: onTap,
     );
   }
 
   /// The local node, whose connection details do not apply.
-  factory PeerCardData.fromSelf(Peer self) => PeerCardData(
-    id: self.id,
-    hostname: self.hostname,
-    latencyMs: 0,
-    protocols: const [],
-    connectionStatus: 'Local',
-    virtualIpv4: self.virtualIpv4,
-    isSelf: true,
-  );
+  factory PeerCardData.fromSelf(Peer self, AppLocalizations l10n) =>
+      PeerCardData(
+        id: self.id,
+        hostname: self.hostname,
+        latencyMs: 0,
+        protocols: const [],
+        connectionStatus: l10n.peerLocal,
+        virtualIpv4: self.virtualIpv4,
+        isSelf: true,
+      );
 
   // Admins, which hold the network secret, are the usual case.
-  static PeerTag? _identityTag(IdentityType type) => switch (type) {
-    IdentityType.admin => null,
-    IdentityType.credential => const PeerTag(
-      Icons.key_rounded,
-      'Credential',
-      'Joined with a temporary credential instead of the network secret.',
-    ),
-    IdentityType.sharedNode => const PeerTag(
-      Icons.public_rounded,
-      'Shared node',
-      'A public node that relays traffic. It is not a member of this network.',
-    ),
-  };
+  static PeerTag? _identityTag(IdentityType type, AppLocalizations l10n) =>
+      switch (type) {
+        IdentityType.admin => null,
+        IdentityType.credential => PeerTag(
+          Icons.key_rounded,
+          l10n.peerCredential,
+          l10n.peerCredentialDescription,
+        ),
+        IdentityType.sharedNode => PeerTag(
+          Icons.public_rounded,
+          l10n.peerSharedNode,
+          l10n.peerSharedNodeDescription,
+        ),
+      };
 
   // Without secure mode there is no handshake to report on.
-  static PeerTag? _securityTag(SecureAuthLevel level) => switch (level) {
-    SecureAuthLevel.none => null,
-    SecureAuthLevel.encryptedUnauthenciated => const PeerTag(
-      Icons.lock_open_rounded,
-      'Unverified',
-      "Traffic is encrypted, but this peer's identity is not verified.",
-      PeerTagTone.caution,
-    ),
-    SecureAuthLevel.peerVerified => const PeerTag(
-      Icons.lock_rounded,
-      'Key verified',
-      "Traffic is encrypted, and this peer's public key is trusted.",
-      PeerTagTone.positive,
-    ),
-    SecureAuthLevel.networkSecretConfirmed => const PeerTag(
-      Icons.verified_user_rounded,
-      'Secret verified',
-      'Traffic is encrypted, and this peer proved it knows the network secret.',
-      PeerTagTone.positive,
-    ),
-  };
+  static PeerTag? _securityTag(SecureAuthLevel level, AppLocalizations l10n) =>
+      switch (level) {
+        SecureAuthLevel.none => null,
+        SecureAuthLevel.encryptedUnauthenciated => PeerTag(
+          Icons.lock_open_rounded,
+          l10n.peerUnverified,
+          l10n.peerUnverifiedDescription,
+          PeerTagTone.caution,
+        ),
+        SecureAuthLevel.peerVerified => PeerTag(
+          Icons.lock_rounded,
+          l10n.peerKeyVerified,
+          l10n.peerKeyVerifiedDescription,
+          PeerTagTone.positive,
+        ),
+        SecureAuthLevel.networkSecretConfirmed => PeerTag(
+          Icons.verified_user_rounded,
+          l10n.peerSecretVerified,
+          l10n.peerSecretVerifiedDescription,
+          PeerTagTone.positive,
+        ),
+      };
 
   static String _formatProtocol(NodeProtocol protocol) {
     return protocol.name.toUpperCase();
   }
 
-  static String _formatConnectionType(PeerConnectionType type) {
+  static String _formatConnectionType(
+    PeerConnectionType type,
+    AppLocalizations l10n,
+  ) {
     return switch (type) {
-      PeerConnectionType.local => 'Local',
+      PeerConnectionType.local => l10n.peerLocal,
       PeerConnectionType.direct => 'P2P',
-      PeerConnectionType.relay => 'Relay',
+      PeerConnectionType.relay => l10n.peerRelay,
     };
   }
 

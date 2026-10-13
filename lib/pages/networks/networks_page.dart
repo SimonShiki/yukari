@@ -4,6 +4,7 @@ import 'package:signals/signals_flutter.dart';
 
 import '../../controllers/network_instance_controller.dart';
 import '../../controllers/network_page_controller.dart';
+import '../../l10n/l10n.dart';
 import '../../widgets/network_card/network_card_list.dart';
 import '../../widgets/network_card/network_card_data.dart';
 import '../../widgets/empty_state/empty_state.dart';
@@ -99,10 +100,10 @@ class _NetworksPageState extends State<NetworksPage>
 
           return Scaffold(
             appBar: AppBar(
-              title: const Text('Networks'),
+              title: Text(context.l10n.navNetworks),
               actions: [
                 IconButton(
-                  tooltip: 'Refresh network status',
+                  tooltip: context.l10n.networkRefresh,
                   onPressed: _controller.refreshing.value
                       ? null
                       : _controller.refresh,
@@ -128,17 +129,17 @@ class _NetworksPageState extends State<NetworksPage>
                                     onPressed: _controller.refreshing.value
                                         ? null
                                         : _controller.refresh,
-                                    child: const Text('Retry'),
+                                    child: Text(context.l10n.commonRetry),
                                   ),
                                 ],
                               ),
                             Expanded(
                               child: cards.isEmpty
-                                  ? const EmptyState(
+                                  ? EmptyState(
                                       icon: Icons.hub_outlined,
-                                      title: 'No networks yet',
+                                      title: context.l10n.networkEmpty,
                                       message:
-                                          'Add a network to get connected.',
+                                          context.l10n.networkEmptyDescription,
                                     )
                                   : Align(
                                       alignment: Alignment.topCenter,

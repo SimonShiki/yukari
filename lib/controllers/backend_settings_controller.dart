@@ -6,6 +6,7 @@ import '../backend/service_version.dart';
 import '../backend/system/service_control.dart';
 import '../models/backend.dart';
 import '../signals/backend.dart';
+import '../signals/locale.dart';
 
 /// Chooses where networks run and manages the background service.
 class BackendSettingsController {
@@ -56,7 +57,7 @@ class BackendSettingsController {
           ? await _probeVersion()
           : null;
     } catch (e) {
-      showMessage('Could not check the service: $e');
+      showMessage(l10n.value.controllerCheckService(e.toString()));
     }
   }
 
@@ -67,10 +68,10 @@ class BackendSettingsController {
         case ServiceState.running || ServiceState.stopped:
           break;
         case ServiceState.rootRequired:
-          showMessage('Grant Yukari root access first.');
+          showMessage(l10n.value.controllerRootRequired);
           return;
         case ServiceState.unsupported || ServiceState.notInstalled:
-          showMessage('Install the background service first.');
+          showMessage(l10n.value.controllerInstallRequired);
           return;
       }
     }
@@ -85,7 +86,7 @@ class BackendSettingsController {
       try {
         await active.stop(running.keys.toList());
       } catch (e) {
-        showMessage('Could not stop the running networks: $e');
+        showMessage(l10n.value.controllerStopNetworks(e.toString()));
         return;
       }
     }
@@ -123,7 +124,12 @@ class BackendSettingsController {
     try {
       await action();
     } catch (e) {
-      showMessage('Could not $verb the service: $e');
+      showMessage(switch (verb) {
+        'install' => l10n.value.controllerServiceInstall(e.toString()),
+        'start' => l10n.value.controllerServiceStart(e.toString()),
+        'stop' => l10n.value.controllerServiceStop(e.toString()),
+        _ => l10n.value.controllerServiceUninstall(e.toString()),
+      });
     } finally {
       await refresh();
       busy.value = false;

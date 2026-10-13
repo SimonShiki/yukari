@@ -1,6 +1,7 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
+import 'package:yukari/l10n/l10n.dart';
 import 'package:yukari/widgets/context_menu/m3e_context_menu.dart';
 
 void main() {
@@ -13,6 +14,7 @@ void main() {
     addTearDown(tester.view.reset);
     await tester.pumpWidget(
       MaterialApp(
+        localizationsDelegates: const [AppLocalizations.delegate],
         home: Scaffold(
           body: Padding(
             padding: EdgeInsets.only(top: top),

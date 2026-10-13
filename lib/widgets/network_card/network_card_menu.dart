@@ -1,5 +1,6 @@
 import 'package:material_ui/material_ui.dart';
 
+import '../../l10n/l10n.dart';
 import '../context_menu/m3e_context_menu.dart';
 
 class NetworkCardMenu extends StatelessWidget {
@@ -24,21 +25,21 @@ class NetworkCardMenu extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => M3EContextMenu(
-    tooltip: 'More options for $name',
+    tooltip: context.l10n.cardMoreOptions(name),
     actions: [
       M3EMenuAction(
         icon: Icons.edit_outlined,
-        label: 'Edit',
+        label: context.l10n.commonEdit,
         onPressed: running || busy ? null : onEdit,
       ),
       M3EMenuAction(
         icon: Icons.article_outlined,
-        label: 'Log',
+        label: context.l10n.cardLog,
         onPressed: running ? onLog : null,
       ),
       M3EMenuAction(
         icon: Icons.delete_outline,
-        label: 'Delete',
+        label: context.l10n.commonDelete,
         onPressed: busy ? null : onDelete,
         destructive: true,
       ),

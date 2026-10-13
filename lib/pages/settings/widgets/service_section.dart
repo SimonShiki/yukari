@@ -4,6 +4,7 @@ import 'package:signals_flutter/signals_flutter.dart';
 
 import '../../../backend/service_version.dart';
 import '../../../controllers/backend_settings_controller.dart';
+import '../../../l10n/l10n.dart';
 import '../../../models/backend.dart';
 import '../../../widgets/form_section/form_section.dart';
 
@@ -23,42 +24,45 @@ class ServiceSection extends StatelessWidget {
       final (icon, title, detail) = switch (state) {
         ServiceState.unsupported => (
           Icons.block_rounded,
-          'Unavailable',
-          'This platform or build has no background service',
+          context.l10n.settingsServiceUnavailable,
+          context.l10n.settingsServiceUnsupported,
         ),
         ServiceState.rootRequired => (
           Icons.lock_outline_rounded,
-          'Root required',
-          'Grant Yukari root access in KernelSU or Magisk to install it',
+          context.l10n.settingsRootRequired,
+          context.l10n.settingsGrantRoot,
         ),
         ServiceState.notInstalled => (
           Icons.download_rounded,
-          'Not installed',
-          'Install it to run networks with full privileges',
+          context.l10n.settingsServiceNotInstalled,
+          context.l10n.settingsInstallServiceHint,
         ),
         ServiceState.stopped => (
           Icons.pause_circle_outline_rounded,
-          'Stopped',
-          'Installed, but not running',
+          context.l10n.settingsServiceStopped,
+          context.l10n.settingsServiceStoppedDescription,
         ),
         ServiceState.running when outdated => (
           Icons.upgrade_rounded,
-          'Update available',
-          'Running Version $version; The latest is $serviceVersion',
+          context.l10n.settingsServiceUpdateAvailable,
+          context.l10n.settingsServiceVersions(
+            version.toString(),
+            serviceVersion,
+          ),
         ),
         ServiceState.running => (
           Icons.check_circle_outline_rounded,
-          'Running',
+          context.l10n.settingsServiceRunning,
           [
-            if (version != null) 'Version $version',
-            'Starts with the system',
+            if (version != null) context.l10n.settingsServiceVersion(version),
+            context.l10n.settingsStartsWithSystem,
           ].join(' · '),
         ),
       };
-      final actions = _actions(state, busy, outdated);
+      final actions = _actions(context, state, busy, outdated);
 
       return FormSection(
-        title: 'Background service',
+        title: context.l10n.settingsBackgroundService,
         icon: Icons.settings_suggest_outlined,
         children: [
           M3EListItem(
@@ -80,7 +84,7 @@ class ServiceSection extends StatelessWidget {
                     ),
                   )
                 : IconButton(
-                    tooltip: 'Check again',
+                    tooltip: context.l10n.settingsCheckAgain,
                     onPressed: controller.refresh,
                     icon: const Icon(Icons.refresh_rounded),
                   ),
@@ -104,23 +108,28 @@ class ServiceSection extends StatelessWidget {
   );
 
   /// The actions for [state], from least to most emphasized.
-  List<Widget> _actions(ServiceState state, bool busy, bool outdated) {
+  List<Widget> _actions(
+    BuildContext context,
+    ServiceState state,
+    bool busy,
+    bool outdated,
+  ) {
     VoidCallback? enabled(Future<void> Function() action) =>
         busy ? null : action;
     final uninstall = TextButton(
       onPressed: enabled(controller.uninstall),
-      child: const Text('Uninstall'),
+      child: Text(context.l10n.settingsUninstall),
     );
     final reinstall = OutlinedButton(
       onPressed: enabled(controller.install),
-      child: const Text('Reinstall'),
+      child: Text(context.l10n.settingsReinstall),
     );
     return switch (state) {
       ServiceState.unsupported || ServiceState.rootRequired => const [],
       ServiceState.notInstalled => [
         FilledButton(
           onPressed: enabled(controller.install),
-          child: const Text('Install'),
+          child: Text(context.l10n.settingsInstall),
         ),
       ],
       ServiceState.stopped => [
@@ -128,18 +137,18 @@ class ServiceSection extends StatelessWidget {
         reinstall,
         FilledButton(
           onPressed: enabled(controller.start),
-          child: const Text('Start'),
+          child: Text(context.l10n.commonStart),
         ),
       ],
       ServiceState.running when outdated => [
         uninstall,
         OutlinedButton(
           onPressed: enabled(controller.stop),
-          child: const Text('Stop'),
+          child: Text(context.l10n.commonStop),
         ),
         FilledButton(
           onPressed: enabled(controller.install),
-          child: const Text('Update'),
+          child: Text(context.l10n.settingsUpdate),
         ),
       ],
       ServiceState.running => [
@@ -147,7 +156,7 @@ class ServiceSection extends StatelessWidget {
         reinstall,
         FilledButton.tonal(
           onPressed: enabled(controller.stop),
-          child: const Text('Stop'),
+          child: Text(context.l10n.commonStop),
         ),
       ],
     };
@@ -165,8 +174,10 @@ class _InstallProgress extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final label = switch (progress) {
-      final progress? => 'Downloading · ${(progress * 100).round()}%',
-      null => 'Installing',
+      final progress? => context.l10n.settingsDownloading(
+        (progress * 100).round(),
+      ),
+      null => context.l10n.settingsInstalling,
     };
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),

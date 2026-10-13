@@ -3,21 +3,27 @@ import 'package:material_ui/material_ui.dart';
 import 'package:signals_flutter/signals_flutter.dart';
 
 import '../../../controllers/home_controller.dart';
+import '../../../l10n/l10n.dart';
 import '../../../models/peer.dart';
 import 'dashboard_card.dart';
 
 /// How readily peers behind a NAT type connect to this device directly,
 /// rather than through relays.
 enum _Ease {
-  easy(Icons.bolt_rounded, 'Easy P2P · connects directly'),
-  fair(Icons.swap_horiz_rounded, 'Fair P2P · usually direct'),
-  hard(Icons.alt_route_rounded, 'Hard P2P · often relayed'),
-  unknown(Icons.help_outline_rounded, 'P2P unknown · UDP may be blocked');
+  easy(Icons.bolt_rounded),
+  fair(Icons.swap_horiz_rounded),
+  hard(Icons.alt_route_rounded),
+  unknown(Icons.help_outline_rounded);
 
-  const _Ease(this.icon, this.summary);
+  const _Ease(this.icon);
 
   final IconData icon;
-  final String summary;
+  String summary(BuildContext context) => switch (this) {
+    easy => context.l10n.homeP2pEasy,
+    fair => context.l10n.homeP2pFair,
+    hard => context.l10n.homeP2pHard,
+    unknown => context.l10n.homeP2pUnknown,
+  };
 
   Color color(ColorScheme colors) => switch (this) {
     easy => colors.primary,
@@ -35,59 +41,66 @@ class NatCard extends StatelessWidget {
   final HomeController controller;
 
   /// The type's name, how it behaves, and what that means for P2P.
-  static (String, String, _Ease) _describe(NatType type) => switch (type) {
+  static (String, String, _Ease) _describe(
+    BuildContext context,
+    NatType type,
+  ) => switch (type) {
     NatType.unknown => (
-      'Unknown',
-      'No STUN server could tell how this network maps UDP.',
+      context.l10n.homeNatUnknown,
+      context.l10n.homeNatUnknownDescription,
       _Ease.unknown,
     ),
     NatType.openInternet => (
-      'Open internet',
-      'This device has a public address with no NAT or firewall.',
+      context.l10n.homeNatOpenInternet,
+      context.l10n.homeNatOpenInternetDescription,
       _Ease.easy,
     ),
     NatType.noPat => (
-      'No NAT',
-      'A public address, behind a firewall that filters UDP.',
+      context.l10n.homeNatNoPat,
+      context.l10n.homeNatNoPatDescription,
       _Ease.easy,
     ),
     NatType.fullCone => (
-      'Full cone',
-      'Anyone can reach the public port this device sends from.',
+      context.l10n.homeNatFullCone,
+      context.l10n.homeNatFullConeDescription,
       _Ease.easy,
     ),
     NatType.restricted => (
-      'Restricted cone',
-      'Hosts this device contacted can reach it, from any port.',
+      context.l10n.homeNatRestricted,
+      context.l10n.homeNatRestrictedDescription,
       _Ease.easy,
     ),
     NatType.portRestricted => (
-      'Port restricted cone',
-      'Only the exact addresses and ports contacted can reach back.',
+      context.l10n.homeNatPortRestricted,
+      context.l10n.homeNatPortRestrictedDescription,
       _Ease.fair,
     ),
     NatType.symmetricEasyIncrement || NatType.symmetricEasyDecrement => (
-      'Predictable symmetric',
-      'Each peer sees another port, but in an order EasyTier can guess.',
+      context.l10n.homeNatPredictableSymmetric,
+      context.l10n.homeNatPredictableSymmetricDescription,
       _Ease.fair,
     ),
     NatType.symmetric => (
-      'Symmetric',
-      'Each peer sees another public port, which is hard to punch through.',
+      context.l10n.homeNatSymmetric,
+      context.l10n.homeNatSymmetricDescription,
       _Ease.hard,
     ),
     NatType.symmetricUdpFirewall => (
-      'Symmetric firewall',
-      'A firewall gives each peer another port, which is hard to punch through.',
+      context.l10n.homeNatSymmetricFirewall,
+      context.l10n.homeNatSymmetricFirewallDescription,
       _Ease.hard,
     ),
   };
 
-  static Widget _report(NatType type, ColorScheme colors) {
-    final (label, behavior, ease) = _describe(type);
+  static Widget _report(
+    BuildContext context,
+    NatType type,
+    ColorScheme colors,
+  ) {
+    final (label, behavior, ease) = _describe(context, type);
     return DashboardValue(
       value: label,
-      supporting: ease.summary,
+      supporting: ease.summary(context),
       supportingIcon: ease.icon,
       supportingColor: ease.color(colors),
       tooltip: behavior,
@@ -103,18 +116,18 @@ class NatCard extends StatelessWidget {
       return DashboardCard(
         icon: Icons.router_rounded,
         shape: Shapes.c6SidedCookie,
-        title: 'NAT type',
+        title: context.l10n.homeNatType,
         // EasyTier keeps its report current; the probe needs a rerun.
         trailing: nat?.reported ?? false
             ? null
             : DashboardAction(
                 icon: Icons.refresh_rounded,
-                tooltip: 'Detect again',
+                tooltip: context.l10n.homeDetectAgain,
                 onPressed: probing ? null : controller.detectNat,
               ),
         child: switch (nat) {
           null => const DashboardValue.loading(),
-          (:final type, reported: _) => _report(type, colors),
+          (:final type, reported: _) => _report(context, type, colors),
         },
       );
     },

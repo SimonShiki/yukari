@@ -3,6 +3,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:signals_flutter/signals_flutter.dart';
 
 import '../../../controllers/backend_settings_controller.dart';
+import '../../../l10n/l10n.dart';
 import '../../../models/backend.dart';
 import '../../../widgets/form_section/form_section.dart';
 
@@ -12,26 +13,23 @@ class BackendModeSection extends StatelessWidget {
 
   final BackendSettingsController controller;
 
-  static const _modes = [
-    (
-      BackendKind.ffi,
-      Icons.apps_rounded,
-      'App',
-      'Run networks inside Yukari. '
-          'requires administrator or root privileges.',
-    ),
-    (
-      BackendKind.service,
-      Icons.dns_outlined,
-      'Service',
-      'Run networks as system service. '
-          'Can start on boot and work without Yukari app.',
-    ),
-  ];
-
   @override
   Widget build(BuildContext context) => SignalBuilder(
     builder: (context) {
+      final modes = [
+        (
+          BackendKind.ffi,
+          Icons.apps_rounded,
+          context.l10n.settingsModeApp,
+          context.l10n.settingsModeAppDescription,
+        ),
+        (
+          BackendKind.service,
+          Icons.dns_outlined,
+          context.l10n.settingsModeService,
+          context.l10n.settingsModeServiceDescription,
+        ),
+      ];
       final unreachable =
           controller.kind.value == BackendKind.service &&
           controller.status.value == BackendStatus.unavailable;
@@ -44,17 +42,17 @@ class BackendModeSection extends StatelessWidget {
           if (kind != null) controller.select(kind);
         },
         child: FormSection(
-          title: 'Working mode',
+          title: context.l10n.settingsWorkingMode,
           icon: Icons.lan_outlined,
-          onTap: (index) => controller.select(_modes[index].$1),
+          onTap: (index) => controller.select(modes[index].$1),
           children: [
-            for (final (kind, icon, title, detail) in _modes)
+            for (final (kind, icon, title, detail) in modes)
               if (kind == BackendKind.service && rootRequired)
                 M3EListItem(
                   enabled: false,
                   leading: Icon(icon),
                   headline: Text(title),
-                  supportingText: const Text('Needs root.'),
+                  supportingText: Text(context.l10n.settingsNeedsRoot),
                   trailing: Radio(value: kind, enabled: false),
                 )
               else
@@ -64,7 +62,7 @@ class BackendModeSection extends StatelessWidget {
                   supportingText: _Wrapping(
                     kind == BackendKind.service && unreachable
                         ? Text(
-                            'Cannot reach the service. Start or reinstall it.',
+                            context.l10n.settingsServiceUnreachable,
                             style: TextStyle(color: error),
                           )
                         : Text(detail),

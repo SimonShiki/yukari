@@ -4,6 +4,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:signals_flutter/signals_flutter.dart';
 
 import '../../../controllers/network_editor_controller.dart';
+import '../../../l10n/l10n.dart';
 import '../../../models/backend.dart';
 import '../../../models/network.dart';
 import '../../../signals/backend.dart';
@@ -62,15 +63,15 @@ class _NetworkBasicTabState extends State<NetworkBasicTab>
       formKey: widget.formKey,
       children: [
         FormSection(
-          title: 'Network Identity',
+          title: context.l10n.networkIdentity,
           icon: Icons.fingerprint,
           children: [
             FieldSegment(
               child: ValidatedTextField(
                 initialValue: _network.networkName,
-                decoration: const InputDecoration(
-                  labelText: 'Network Name',
-                  helperText: 'Unique identifier for this network',
+                decoration: InputDecoration(
+                  labelText: context.l10n.networkName,
+                  helperText: context.l10n.networkNameHelper,
                   border: OutlineInputBorder(),
                 ),
                 validator: _editor.networkNameError,
@@ -80,9 +81,9 @@ class _NetworkBasicTabState extends State<NetworkBasicTab>
             FieldSegment(
               child: ValidatedTextField(
                 initialValue: _network.hostname,
-                decoration: const InputDecoration(
-                  labelText: 'Hostname (Optional)',
-                  helperText: 'Device name in the network (max 32 chars)',
+                decoration: InputDecoration(
+                  labelText: context.l10n.networkHostname,
+                  helperText: context.l10n.networkHostnameHelper,
                   border: OutlineInputBorder(),
                 ),
                 maxLength: 32,
@@ -97,8 +98,8 @@ class _NetworkBasicTabState extends State<NetworkBasicTab>
                 builder: (context) => ValidatedTextField(
                   controller: _secretController,
                   decoration: InputDecoration(
-                    labelText: 'Network Secret (Optional)',
-                    helperText: 'Shared secret for authentication',
+                    labelText: context.l10n.networkSecret,
+                    helperText: context.l10n.networkSecretHelper,
                     border: const OutlineInputBorder(),
                     suffixIcon: Row(
                       mainAxisSize: MainAxisSize.min,
@@ -110,14 +111,14 @@ class _NetworkBasicTabState extends State<NetworkBasicTab>
                                 : Icons.visibility,
                           ),
                           tooltip: _secretVisible.value
-                              ? 'Hide secret'
-                              : 'Show secret',
+                              ? context.l10n.networkHideSecret
+                              : context.l10n.networkShowSecret,
                           onPressed: () =>
                               _secretVisible.value = !_secretVisible.value,
                         ),
                         IconButton(
                           icon: const Icon(Icons.refresh),
-                          tooltip: 'Generate random secret',
+                          tooltip: context.l10n.networkGenerateSecret,
                           onPressed: () {
                             _secretController.text = generateSecretKey();
                             _setSecret(_secretController.text);
@@ -134,13 +135,13 @@ class _NetworkBasicTabState extends State<NetworkBasicTab>
           ],
         ),
         FormSection(
-          title: 'IP Configuration',
+          title: context.l10n.networkIpConfiguration,
           icon: Icons.network_check,
           children: [
             SignalBuilder(
               builder: (context) => SwitchSegment(
-                title: 'Enable DHCP',
-                subtitle: 'Automatically assign IP addresses',
+                title: context.l10n.networkDhcp,
+                subtitle: context.l10n.networkDhcpDescription,
                 value: _editor.network.value!.dhcp,
                 onChanged: (v) => _editor.update((n) => n.dhcp = v),
               ),
@@ -149,10 +150,10 @@ class _NetworkBasicTabState extends State<NetworkBasicTab>
               child: SignalBuilder(
                 builder: (context) => ValidatedTextField(
                   initialValue: _network.ipv4,
-                  decoration: const InputDecoration(
-                    labelText: 'IPv4 Address (CIDR)',
+                  decoration: InputDecoration(
+                    labelText: context.l10n.networkIpv4,
                     hintText: '10.144.144.1/24',
-                    helperText: 'Your IPv4 address in CIDR notation',
+                    helperText: context.l10n.networkIpv4Helper,
                     border: OutlineInputBorder(),
                   ),
                   enabled: !_editor.network.value!.dhcp,
@@ -165,10 +166,10 @@ class _NetworkBasicTabState extends State<NetworkBasicTab>
             FieldSegment(
               child: ValidatedTextField(
                 initialValue: _network.ipv6,
-                decoration: const InputDecoration(
-                  labelText: 'IPv6 Address (CIDR)',
+                decoration: InputDecoration(
+                  labelText: context.l10n.networkIpv6,
                   hintText: 'fd00::1/64',
-                  helperText: 'Your IPv6 address in CIDR notation',
+                  helperText: context.l10n.networkIpv6Helper,
                   border: OutlineInputBorder(),
                 ),
                 validator: (v) => validateCidr(v, InternetAddressType.IPv6),

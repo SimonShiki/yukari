@@ -2,6 +2,7 @@ import 'package:flutter/rendering.dart';
 import 'package:m3e_core/m3e_core.dart';
 import 'package:material_ui/material_ui.dart';
 
+import '../../l10n/l10n.dart';
 import '../../models/log_entry.dart';
 import 'log_entry_tile.dart';
 
@@ -158,7 +159,7 @@ class _LogEntryListState extends State<LogEntryList> {
             child: M3EFab(
               size: M3EFabSize.small,
               color: M3EFabColor.secondary,
-              tooltip: 'Back to top',
+              tooltip: context.l10n.logBackToTop,
               onPressed: _backToTop,
               icon: const Icon(Icons.arrow_upward_rounded),
             ),

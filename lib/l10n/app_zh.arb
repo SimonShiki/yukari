@@ -1,0 +1,907 @@
+{
+  "@@locale": "zh",
+  "commonCancel": "取消",
+  "commonSave": "保存",
+  "commonDelete": "删除",
+  "commonCreate": "创建",
+  "commonStart": "启动",
+  "commonStop": "停止",
+  "commonRetry": "重试",
+  "commonGoBack": "返回",
+  "navHome": "首页",
+  "navNetworks": "网络",
+  "navBookmarks": "收藏",
+  "navSettings": "设置",
+  "settingsInterface": "界面",
+  "settingsLanguage": "语言",
+  "settingsLanguageSystem": "跟随系统",
+  "languageName": "简体中文",
+  "advancedNetworkServices": "网络服务",
+  "advancedNetworkServicesDescription": "SOCKS5、虚拟网卡与命名空间",
+  "advancedSocks5Proxy": "SOCKS5 代理（可选）",
+  "advancedSocks5ProxyHelper": "出站流量使用的 SOCKS5 代理地址",
+  "advancedTunDeviceName": "TUN 设备名称（可选）",
+  "advancedTunDeviceNameHelper": "虚拟网卡的名称",
+  "advancedNetNamespace": "网络命名空间（可选）",
+  "advancedNetNamespaceHelper": "Linux 网络命名空间名称",
+  "advancedNoTun": "禁用 TUN 模式",
+  "advancedNoTunSubtitle": "不创建虚拟网卡运行；本节点只能被其他节点访问，并通过 SOCKS5 访问其他节点",
+  "advancedNetworkFlags": "网络选项",
+  "advancedNetworkFlagsDescription": "协议与性能设置",
+  "advancedEnableEncryption": "启用加密",
+  "advancedEnableEncryptionSubtitle": "加密网络流量；所有节点须保持一致",
+  "advancedEnableIpv6": "启用 IPv6",
+  "advancedEnableIpv6Subtitle": "允许 IPv6 连接",
+  "advancedLatencyFirst": "延迟优先",
+  "advancedLatencyFirstSubtitle": "按最低总延迟而非跳数选择路由",
+  "advancedMultiThread": "多线程",
+  "advancedMultiThreadSubtitle": "使用多个线程处理",
+  "advancedKcpProxy": "KCP 代理",
+  "advancedKcpProxySubtitle": "通过 KCP 承载 TCP，降低延迟、提升速度",
+  "advancedQuicProxy": "QUIC 代理",
+  "advancedQuicProxySubtitle": "通过 QUIC 承载 TCP，降低延迟、提升速度",
+  "advancedMagicDns": "魔法 DNS",
+  "advancedMagicDnsSubtitle": "通过名称访问节点；会修改系统 DNS 设置",
+  "advancedDnsSuffix": "DNS 后缀",
+  "advancedDnsSuffixHelper": "节点名称为 <主机名>.<后缀>",
+  "advancedMtuHelper": "最大传输单元（576-65535）",
+  "advancedMappedListeners": "映射监听器",
+  "advancedMappedListenersDescription": "其他节点访问本节点所用的公网地址",
+  "advancedTuning": "调优",
+  "advancedTuningDescription": "协议、算法与资源限制",
+  "advancedDefaultProtocol": "默认协议",
+  "advancedDefaultProtocolHelper": "用于未指定协议的节点",
+  "advancedEncryptionAlgorithm": "加密算法",
+  "advancedEncryptionAlgorithmHelper": "所有节点须保持一致",
+  "advancedXorInsecure": "XOR（不安全）",
+  "advancedCompression": "压缩",
+  "advancedCompressionHelper": "压缩发往其他节点的流量",
+  "advancedCompressionNone": "不压缩",
+  "advancedThreadCount": "线程数",
+  "advancedThreadCountHelper": "启用多线程时的工作线程数",
+  "advancedThreadCountName": "线程数",
+  "advancedReceiveLimit": "接收限速",
+  "advancedReceiveLimitHelper": "本节点每秒接收的总字节数。留空则不限速",
+  "advancedSmoltcp": "用户态网络栈",
+  "advancedSmoltcpSubtitle": "系统防火墙阻挡子网代理或 KCP 代理时使用 smoltcp",
+  "advancedSocketMark": "套接字标记",
+  "advancedSocketMarkHelper": "仅 Linux：为底层套接字设置 SO_MARK 以用于策略路由。需要 CAP_NET_ADMIN",
+  "advancedRelay": "中继",
+  "advancedRelayDescription": "为其他节点和网络转发流量",
+  "advancedRelayWhitelist": "中继网络白名单",
+  "advancedRelayWhitelistHelper": "要中继的网络，以空格分隔，支持通配符。留空则不中继任何网络",
+  "advancedRelayAllPeerRpc": "中继所有节点 RPC",
+  "advancedRelayAllPeerRpcSubtitle": "中继白名单外节点的 RPC，使其能够建立 P2P 连接",
+  "advancedDisableRelayData": "禁用数据中继",
+  "advancedDisableRelayDataSubtitle": "不为其他节点转发数据包",
+  "advancedPreferPeerRelay": "优先节点中继",
+  "advancedPreferPeerRelaySubtitle": "优先使用已在中继至目标的凭据节点",
+  "advancedDisableRelayKcp": "禁用 KCP 中继",
+  "advancedDisableRelayKcpSubtitle": "不中继 KCP 数据包，以节省带宽",
+  "advancedRelayForeignKcp": "中继外部网络 KCP",
+  "advancedRelayForeignKcpSubtitle": "作为共享节点时中继其他网络的 KCP 数据包",
+  "advancedDisableRelayQuic": "禁用 QUIC 中继",
+  "advancedDisableRelayQuicSubtitle": "不中继 QUIC 数据包，以节省带宽",
+  "advancedRelayForeignQuic": "中继外部网络 QUIC",
+  "advancedRelayForeignQuicSubtitle": "作为共享节点时中继其他网络的 QUIC 数据包",
+  "advancedForeignRelayLimit": "外部中继限速",
+  "advancedForeignRelayLimitHelper": "每秒为其他网络中继的字节数。留空则不限速",
+  "advancedUdpBroadcastRelay": "UDP 广播中继",
+  "advancedUdpBroadcastRelaySubtitle": "仅 Windows：将本地 UDP 广播转发给其他节点，以便游戏发现局域网房间。需要管理员权限",
+  "advancedP2p": "P2P 与 NAT 穿透",
+  "advancedP2pDescription": "直连与打洞",
+  "advancedDisableP2p": "禁用 P2P",
+  "advancedDisableP2pSubtitle": "仅通过其他节点中继；需要 P2P 的节点仍可直连",
+  "advancedP2pOnly": "仅 P2P",
+  "advancedP2pOnlySubtitle": "只与直连的节点通信，从不中继",
+  "advancedLazyP2p": "按需 P2P",
+  "advancedLazyP2pSubtitle": "仅在有流量发往某节点时才与其直连",
+  "advancedNeedP2p": "需要 P2P",
+  "advancedNeedP2pSubtitle": "要求其他节点直连本节点，即使对方启用了按需 P2P",
+  "advancedDisableUdpHolePunching": "禁用 UDP 打洞",
+  "advancedDisableUdpHolePunchingSubtitle": "不通过 UDP 进行 NAT 打洞",
+  "advancedDisableTcpHolePunching": "禁用 TCP 打洞",
+  "advancedDisableTcpHolePunchingSubtitle": "不通过 TCP 进行 NAT 打洞",
+  "advancedDisableSymmetricHolePunching": "禁用对称型 NAT 打洞",
+  "advancedDisableSymmetricHolePunchingSubtitle": "将对称型 NAT 视为锥型 NAT",
+  "advancedDisableUpnp": "禁用 UPnP",
+  "advancedDisableUpnpSubtitle": "不使用 UPnP 或 NAT-PMP 映射监听端口",
+  "advancedBindDevice": "仅绑定物理网卡",
+  "advancedBindDeviceSubtitle": "从不通过其他虚拟网络连接节点",
+  "advancedRouting": "路由",
+  "advancedRoutingDescription": "共享本地网络并选择流量去向",
+  "advancedSubnetProxy": "子网代理",
+  "advancedSubnetProxyHint": "192.168.1.0/24 或 192.168.1.0/24->10.1.1.0/24",
+  "advancedSubnetProxyHelper": "要共享给其他节点的本地 IPv4 网络，可映射到另一个同样大小的网络",
+  "advancedManualRoutes": "手动路由",
+  "advancedManualRoutesHelper": "仅路由这些 IPv4 网络，忽略其他节点的子网代理和 WireGuard 路由。留空则接受这些路由",
+  "advancedExitNodes": "出口节点",
+  "advancedExitNodesHelper": "用于转发全部流量的节点虚拟 IP，按优先级排列",
+  "advancedEnableExitNode": "启用出口节点",
+  "advancedEnableExitNodeSubtitle": "允许其他节点将本节点用作出口节点",
+  "advancedSystemForwarding": "系统转发",
+  "advancedSystemForwardingSubtitle": "通过系统内核而非内置 NAT 转发代理流量",
+  "advancedPortForwarding": "端口转发",
+  "advancedPortForwardingHelper": "将本地端口转发到虚拟网络中的地址",
+  "advancedStunServers": "STUN 服务器",
+  "advancedStunDescription": "用于 NAT 穿透的 STUN 服务器。留空则使用默认值",
+  "advancedStunServersHelper": "UDP STUN 服务器；TCP STUN 服务器为空时也用于 TCP",
+  "advancedTcpStunServers": "TCP STUN 服务器",
+  "advancedTcpStunServersHelper": "通过 TCP 查询的 STUN 服务器",
+  "advancedIpv6StunServers": "IPv6 STUN 服务器",
+  "advancedIpv6StunServersHelper": "通过 IPv6 查询的 STUN 服务器。若为空而已设置 STUN 服务器，则不使用",
+  "advancedPublicIpv6": "公网 IPv6",
+  "advancedPublicIpv6Description": "从共享子网为节点分配公网 IPv6 地址",
+  "advancedAutoPublicIpv6": "自动获取公网 IPv6",
+  "advancedAutoPublicIpv6Subtitle": "从共享子网的节点获取公网 IPv6 地址",
+  "advancedSharePublicIpv6": "共享公网 IPv6 子网",
+  "advancedSharePublicIpv6Subtitle": "仅 Linux：从本节点的子网分配地址",
+  "advancedSharedSubnet": "共享子网（可选）",
+  "advancedSharedSubnetHelper": "要共享的子网。留空则从路由中检测",
+  "advancedVpnPortal": "VPN 门户",
+  "advancedVpnPortalDescription": "让 WireGuard 客户端无需 EasyTier 即可加入",
+  "advancedEnableVpnPortal": "启用 VPN 门户",
+  "advancedEnableVpnPortalSubtitle": "在下方地址接受 WireGuard 客户端",
+  "advancedWireguardListen": "WireGuard 监听地址",
+  "advancedWireguardListenHelper": "WireGuard 客户端连接的本地地址",
+  "advancedStartup": "启动",
+  "advancedStartOnBoot": "开机启动",
+  "advancedStartOnBootSubtitle": "由后台服务在系统启动时运行",
+  "advancedAccessControl": "访问控制",
+  "advancedAccessControlDescription": "限制其他网络与开放端口",
+  "advancedPrivateMode": "私有模式",
+  "advancedPrivateModeSubtitle": "拒绝其他网络或使用不同密钥的节点进行握手和中继",
+  "advancedTcpWhitelist": "TCP 端口白名单",
+  "advancedTcpWhitelistHint": "80 或 8000-9000",
+  "advancedTcpWhitelistHelper": "其他节点可访问的 TCP 端口。留空则全部允许",
+  "advancedUdpWhitelist": "UDP 端口白名单",
+  "advancedUdpWhitelistHint": "53 或 5000-6000",
+  "advancedUdpWhitelistHelper": "其他节点可访问的 UDP 端口。留空则全部允许",
+  "advancedSecureModeKeys": "安全模式密钥",
+  "advancedSecureModeKeysDescription": "配置安全模式使用的密钥",
+  "advancedPrivateKey": "节点私钥（Base64）",
+  "advancedPrivateKeyHelper": "用于身份验证的 Ed25519 私钥",
+  "advancedHidePrivateKey": "隐藏私钥",
+  "advancedShowPrivateKey": "显示私钥",
+  "advancedGenerateKeyPair": "生成新密钥对",
+  "advancedPublicKey": "节点公钥（Base64）",
+  "advancedPublicKeyHelper": "由私钥推导",
+  "advancedHidePublicKey": "隐藏公钥",
+  "advancedShowPublicKey": "显示公钥",
+  "networkRefresh": "刷新网络状态",
+  "networkEmpty": "暂无网络",
+  "networkEmptyDescription": "添加网络以建立连接。",
+  "networkDeleteTitle": "删除网络？",
+  "networkPrivileges": "需要权限",
+  "networkRestart": "重启",
+  "networkEdit": "编辑网络",
+  "networkMissing": "找不到网络",
+  "networkMissingDescription": "该网络可能已被删除。",
+  "networkBasic": "基本",
+  "networkAdvanced": "高级",
+  "networkTitle": "网络",
+  "networkPeers": "节点",
+  "networkLogs": "日志",
+  "networkDiscardTitle": "放弃无效更改？",
+  "networkDiscardDescription": "部分字段包含无效值，尚未保存。离开页面将放弃这些更改。",
+  "networkKeepEditing": "继续编辑",
+  "networkDiscard": "放弃",
+  "networkCreate": "创建网络",
+  "networkCreateHeading": "创建新网络",
+  "networkCreateDescription": "创建后即可配置所有设置",
+  "networkCreateManually": "手动创建",
+  "networkImportFile": "从文件导入",
+  "networkScanQr": "扫描二维码",
+  "networkAdd": "添加网络",
+  "networkCloseMenu": "关闭网络菜单",
+  "networkIdentity": "网络标识",
+  "networkName": "网络名称",
+  "networkNameHelper": "此网络的唯一标识",
+  "networkHostname": "主机名（可选）",
+  "networkHostnameHelper": "设备在网络中的名称（最多 32 个字符）",
+  "networkDeviceNameHelper": "设备名称（最多 32 个字符）",
+  "networkSecret": "网络密钥（可选）",
+  "networkSecretHelper": "用于身份验证的共享密钥",
+  "networkHideSecret": "隐藏密钥",
+  "networkShowSecret": "显示密钥",
+  "networkGenerateSecret": "生成随机密钥",
+  "networkIpConfiguration": "IP 配置",
+  "networkDhcp": "启用 DHCP",
+  "networkDhcpDescription": "自动分配 IP 地址",
+  "networkIpv4": "IPv4 地址（CIDR）",
+  "networkIpv4Helper": "以 CIDR 格式填写本机 IPv4 地址",
+  "networkIpv6": "IPv6 地址（CIDR）",
+  "networkIpv6Helper": "以 CIDR 格式填写本机 IPv6 地址",
+  "networkInitialPeers": "初始节点",
+  "networkInitialPeersDescription": "配置网络启动时要连接的节点",
+  "networkAddPeer": "添加节点",
+  "networkEditPeer": "编辑节点",
+  "networkNoConfiguredPeers": "尚未配置节点",
+  "networkDeletePeer": "删除节点",
+  "networkPeerIdEmpty": "节点 ID 不能为空",
+  "networkPeerIdExists": "节点 ID 已存在",
+  "networkPeerId": "节点 ID",
+  "networkPeerIdHelper": "此节点的唯一标识",
+  "networkUrl": "URL",
+  "networkUrlHelper": "不含端口的基础 URL",
+  "networkPort": "端口",
+  "networkPortHelper": "端口号（1–65535）",
+  "networkProtocols": "协议",
+  "networkProtocolRequired": "请至少选择一种协议",
+  "networkPublicKey": "公钥（可选）",
+  "networkPeerPublicKeyHelper": "用于安全模式的节点公钥",
+  "networkAddListener": "添加监听器",
+  "networkEditListener": "编辑监听器",
+  "networkProtocol": "协议",
+  "networkHost": "主机",
+  "networkListenHostHelper": "要监听的 IP 地址或主机名",
+  "networkListeners": "监听器",
+  "networkListenersDescription": "用于接收连接的本地地址",
+  "networkDeleteListener": "删除监听器",
+  "networkNoEvents": "暂无事件",
+  "networkNoEventsDescription": "网络事件发生时会显示在这里。",
+  "networkNotRunning": "未运行",
+  "networkNotRunningDescription": "启动网络以查看节点。",
+  "networkNoPeers": "暂无节点",
+  "networkNoPeersDescription": "节点连接后会显示在这里。",
+  "networkFilterAll": "全部",
+  "networkFilterErrors": "错误",
+  "networkFilterConnections": "连接",
+  "networkCreateFailed": "创建网络失败：{error}",
+  "@networkCreateFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "networkEditNamed": "编辑 {name}",
+  "@networkEditNamed": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "networkDeleteDescription": "删除“{name}”？其正在运行的实例将被停止。此操作无法撤销。",
+  "@networkDeleteDescription": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "networkEditPeerNamed": "编辑节点 {id}",
+  "@networkEditPeerNamed": {
+    "placeholders": {
+      "id": {
+        "type": "String"
+      }
+    }
+  },
+  "networkEditListenerNamed": "编辑监听器 {address}",
+  "@networkEditListenerNamed": {
+    "placeholders": {
+      "address": {
+        "type": "String"
+      }
+    }
+  },
+  "networkAddListeners": "添加{title}",
+  "@networkAddListeners": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "networkNoListeners": "尚未配置{title}",
+  "@networkNoListeners": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "networkTunWindows": "“{name}”需要管理员权限才能创建 TUN 设备。您可以：\n\n• 以管理员身份重启 Yukari。\n• 为此网络启用“禁用 TUN 模式”。",
+  "@networkTunWindows": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "networkTunRoot": "“{name}”需要 root 权限才能创建 TUN 设备。您可以：\n\n• 以 root 身份重启 Yukari。\n• 为此网络启用“禁用 TUN 模式”。",
+  "@networkTunRoot": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "networkTunServiceOption": "\n• 在设置中使用服务模式，以完整权限在后台运行网络。",
+  "bookmarksPage": "书签页面",
+  "homeIpAddress": "IP 地址",
+  "homePublicIp": "公网 IP",
+  "homeVirtualIp": "虚拟 IP",
+  "homeSeenByStun": "STUN 服务器检测到的地址",
+  "homeUnavailable": "不可用",
+  "homeNoStunAnswer": "没有 STUN 服务器响应。",
+  "homeMoreAddresses": "另有 {count} 个",
+  "homeRunningInApp": "在应用内运行",
+  "homeRunningAsService": "以服务运行",
+  "homeReady": "就绪",
+  "homeConnecting": "连接中",
+  "homeUnreachable": "无法连接",
+  "homeServiceVersion": "服务 v{version}",
+  "homeTraffic": "流量",
+  "homeNoTraffic": "暂无流量",
+  "homeNoRunningNetwork": "没有正在运行的网络。",
+  "homeTrafficTotals": "已接收 {received} · 已发送 {sent}",
+  "homeNoNetworks": "暂无网络",
+  "homeCreateNetworkHint": "点击创建网络。",
+  "homeStartNetworkHint": "启动网络以连接。",
+  "homeRunningNetworks": "{saved} 个网络中有 {running} 个正在运行",
+  "homeP2pEasy": "易于 P2P · 可直接连接",
+  "homeP2pFair": "一般 P2P · 通常可直连",
+  "homeP2pHard": "难于 P2P · 经常需要中继",
+  "homeP2pUnknown": "P2P 未知 · UDP 可能被阻止",
+  "homeNatType": "NAT 类型",
+  "homeDetectAgain": "重新检测",
+  "homeNatUnknown": "未知",
+  "homeNatUnknownDescription": "没有 STUN 服务器能确定此网络的 UDP 映射方式。",
+  "homeNatOpenInternet": "开放互联网",
+  "homeNatOpenInternetDescription": "此设备拥有公网地址，没有 NAT 或防火墙。",
+  "homeNatNoPat": "无 NAT",
+  "homeNatNoPatDescription": "拥有公网地址，但防火墙会过滤 UDP。",
+  "homeNatFullCone": "完全锥形",
+  "homeNatFullConeDescription": "任何节点都可以访问此设备发送数据所用的公网端口。",
+  "homeNatRestricted": "受限锥形",
+  "homeNatRestrictedDescription": "此设备联系过的主机可以从任意端口访问它。",
+  "homeNatPortRestricted": "端口受限锥形",
+  "homeNatPortRestrictedDescription": "只有此设备联系过的具体地址和端口可以回连。",
+  "homeNatPredictableSymmetric": "可预测对称型",
+  "homeNatPredictableSymmetricDescription": "各节点看到的端口不同，但 EasyTier 可以预测端口变化顺序。",
+  "homeNatSymmetric": "对称型",
+  "homeNatSymmetricDescription": "各节点看到的公网端口不同，难以进行 NAT 穿透。",
+  "homeNatSymmetricFirewall": "对称型防火墙",
+  "homeNatSymmetricFirewallDescription": "防火墙为各节点分配不同端口，难以进行 NAT 穿透。",
+  "settingsModeApp": "应用",
+  "settingsModeService": "服务",
+  "settingsModeAppDescription": "在 Yukari 内运行网络。需要管理员或 root 权限。",
+  "settingsModeServiceDescription": "以系统服务运行网络。可随系统启动，并在 Yukari 应用关闭后继续运行。",
+  "settingsWorkingMode": "运行模式",
+  "settingsNeedsRoot": "需要 root 权限。",
+  "settingsServiceUnreachable": "无法连接服务。请启动或重新安装服务。",
+  "settingsSwitch": "切换",
+  "settingsSwitchToService": "切换到服务？",
+  "settingsSwitchToApp": "切换到应用？",
+  "settingsSwitchToServiceMessage": "应用中正在运行的 {count} 个网络将停止。重新启动这些网络后，它们将在服务中运行。",
+  "settingsSwitchToAppMessage": "服务中正在运行的 {count} 个网络将停止。重新启动这些网络后，它们将在应用中运行。",
+  "settingsServiceUnavailable": "不可用",
+  "settingsServiceUnsupported": "此平台或构建不支持后台服务",
+  "settingsRootRequired": "需要 root 权限",
+  "settingsGrantRoot": "请在 KernelSU 或 Magisk 中授予 Yukari root 权限以安装服务",
+  "settingsServiceNotInstalled": "未安装",
+  "settingsInstallServiceHint": "安装服务以完整权限运行网络",
+  "settingsServiceStopped": "已停止",
+  "settingsServiceStoppedDescription": "已安装，但未运行",
+  "settingsServiceUpdateAvailable": "有可用更新",
+  "settingsServiceRunning": "运行中",
+  "settingsStartsWithSystem": "随系统启动",
+  "settingsBackgroundService": "后台服务",
+  "settingsCheckAgain": "重新检查",
+  "settingsUninstall": "卸载",
+  "settingsReinstall": "重新安装",
+  "settingsInstall": "安装",
+  "settingsUpdate": "更新",
+  "settingsInstalling": "安装中",
+  "settingsServiceVersions": "运行版本 {version}；最新版本为 {latest}",
+  "settingsServiceVersion": "版本 {version}",
+  "settingsDownloading": "下载中 · {percent}%",
+  "homeLoading": "加载中",
+  "cardStopped": "已停止",
+  "cardRunning": "运行中",
+  "cardStarting": "启动中",
+  "cardStopping": "停止中",
+  "cardFailed": "失败",
+  "cardUnknown": "未知",
+  "cardStart": "启动 {name}",
+  "@cardStart": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "cardStop": "停止 {name}",
+  "@cardStop": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "cardMoreOptions": "{name} 的更多选项",
+  "@cardMoreOptions": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "commonEdit": "编辑",
+  "cardLog": "日志",
+  "peerLocal": "本机",
+  "peerRelay": "中继",
+  "peerCredential": "凭证",
+  "peerCredentialDescription": "通过临时凭证加入，未使用网络密钥。",
+  "peerSharedNode": "共享节点",
+  "peerSharedNodeDescription": "用于中继流量的公共节点，不属于此网络。",
+  "peerUnverified": "未验证",
+  "peerUnverifiedDescription": "流量已加密，但此节点的身份尚未验证。",
+  "peerKeyVerified": "公钥已验证",
+  "peerKeyVerifiedDescription": "流量已加密，且此节点的公钥受信任。",
+  "peerSecretVerified": "密钥已验证",
+  "peerSecretVerifiedDescription": "流量已加密，且此节点已证明持有网络密钥。",
+  "networkOnePerLine": "{helper}。每行一项",
+  "@networkOnePerLine": {
+    "placeholders": {
+      "helper": {
+        "type": "String"
+      }
+    }
+  },
+  "validationNetworkEmpty": "网络名称不能为空",
+  "validationNetworkExists": "网络名称已存在",
+  "validationHostnameLength": "主机名不能超过 32 个字符",
+  "validationIpv4Cidr": "请输入 IPv4 CIDR，例如 10.144.144.1/24",
+  "validationIpv6Cidr": "请输入 IPv6 CIDR，例如 fd00::1/64",
+  "validationHostEmpty": "主机不能为空",
+  "validationHost": "请输入有效的 IP 地址或主机名",
+  "validationDns": "请输入域名，例如 et.net.",
+  "validationNodeUrl": "地址不能包含端口、查询参数或片段",
+  "validationSocks": "格式应为 socks5://host:port",
+  "validationSocket": "请输入带端口的 IP 地址，例如 0.0.0.0:22022",
+  "validationPrivateKey": "请输入 Base64 编码的 32 字节密钥",
+  "controllerRootRequired": "请先授予 Yukari root 权限。",
+  "controllerInstallRequired": "请先安装后台服务。",
+  "controllerSelectConfig": "选择 EasyTier 配置文件",
+  "controllerFileUnavailable": "无法访问所选文件。",
+  "controllerQrComing": "二维码扫描功能即将推出。",
+  "controllerReorderFailed": "无法调整网络顺序，请重试。",
+  "controllerOneNetwork": "一次只能运行一个网络。",
+  "logCopyJson": "复制为 JSON",
+  "logBackToTop": "回到顶部",
+  "validationRange": "{label}必须是 {min} 到 {max} 之间的数字",
+  "@validationRange": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      },
+      "min": {
+        "type": "String"
+      },
+      "max": {
+        "type": "String"
+      }
+    }
+  },
+  "validationStun": "无效的 STUN 服务器：{value}",
+  "@validationStun": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "validationIp": "无效的 IP 地址：{value}",
+  "@validationIp": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "validationIpv4Network": "无效的 IPv4 网络：{value}",
+  "@validationIpv4Network": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "validationMappedNetwork": "映射网络的前缀长度必须相同：{value}",
+  "@validationMappedNetwork": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "validationPortForward": "无效的端口转发：{value}",
+  "@validationPortForward": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "validationPortRange": "无效的端口或范围：{value}",
+  "@validationPortRange": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "controllerCheckService": "无法检查服务：{error}",
+  "@controllerCheckService": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "controllerStopNetworks": "无法停止正在运行的网络：{error}",
+  "@controllerStopNetworks": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "controllerSave": "保存失败：{error}",
+  "@controllerSave": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "controllerRefresh": "刷新网络失败：{error}",
+  "@controllerRefresh": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "controllerImportInvalid": "无法导入“{name}”：{error}",
+  "@controllerImportInvalid": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "controllerImportFailed": "导入配置失败：{error}",
+  "@controllerImportFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "controllerNetworkLimit": "一次最多只能运行 {limit} 个网络。",
+  "@controllerNetworkLimit": {
+    "placeholders": {
+      "limit": {
+        "type": "String"
+      }
+    }
+  },
+  "controllerDeleteFailed": "无法删除 {name}，请重试。",
+  "@controllerDeleteFailed": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "controllerServiceInstall": "无法安装服务：{error}",
+  "@controllerServiceInstall": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "controllerServiceStart": "无法启动服务：{error}",
+  "@controllerServiceStart": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "controllerServiceStop": "无法停止服务：{error}",
+  "@controllerServiceStop": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "controllerServiceUninstall": "无法卸载服务：{error}",
+  "@controllerServiceUninstall": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "controllerNetworkRun": "无法运行 {name}：{error}",
+  "@controllerNetworkRun": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "controllerNetworkStop": "无法停止 {name}：{error}",
+  "@controllerNetworkStop": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "logTunDeviceReady": "TUN 设备已就绪：{a}",
+  "@logTunDeviceReady": {
+    "placeholders": {
+      "a": {
+        "type": "String"
+      }
+    }
+  },
+  "logTunDeviceError": "TUN 设备错误：{a}",
+  "@logTunDeviceError": {
+    "placeholders": {
+      "a": {
+        "type": "String"
+      }
+    }
+  },
+  "logPeerAdded": "节点 {a} 已加入",
+  "@logPeerAdded": {
+    "placeholders": {
+      "a": {
+        "type": "String"
+      }
+    }
+  },
+  "logPeerRemoved": "节点 {a} 已离开",
+  "@logPeerRemoved": {
+    "placeholders": {
+      "a": {
+        "type": "String"
+      }
+    }
+  },
+  "logPeerConnAdded": "已通过 {b} {c} 连接到节点 {a}",
+  "@logPeerConnAdded": {
+    "placeholders": {
+      "a": {
+        "type": "String"
+      },
+      "b": {
+        "type": "String"
+      },
+      "c": {
+        "type": "String"
+      }
+    }
+  },
+  "logPeerConnRemoved": "已断开通过 {b} {c} 与节点 {a} 的连接",
+  "@logPeerConnRemoved": {
+    "placeholders": {
+      "a": {
+        "type": "String"
+      },
+      "b": {
+        "type": "String"
+      },
+      "c": {
+        "type": "String"
+      }
+    }
+  },
+  "logListenerAdded": "正在监听 {a}",
+  "@logListenerAdded": {
+    "placeholders": {
+      "a": {
+        "type": "String"
+      }
+    }
+  },
+  "logListenerAddFailed": "无法监听 {a}：{b}",
+  "@logListenerAddFailed": {
+    "placeholders": {
+      "a": {
+        "type": "String"
+      },
+      "b": {
+        "type": "String"
+      }
+    }
+  },
+  "logListenerAcceptFailed": "监听器 {a} 失败：{b}",
+  "@logListenerAcceptFailed": {
+    "placeholders": {
+      "a": {
+        "type": "String"
+      },
+      "b": {
+        "type": "String"
+      }
+    }
+  },
+  "logListenerPortMappingEstablished": "已通过 {c} 将 {a} 映射到 {b}",
+  "@logListenerPortMappingEstablished": {
+    "placeholders": {
+      "a": {
+        "type": "String"
+      },
+      "b": {
+        "type": "String"
+      },
+      "c": {
+        "type": "String"
+      }
+    }
+  },
+  "logConnecting": "正在连接 {a}",
+  "@logConnecting": {
+    "placeholders": {
+      "a": {
+        "type": "String"
+      }
+    }
+  },
+  "logConnectError": "无法连接 {a}（{b}）：{c}",
+  "@logConnectError": {
+    "placeholders": {
+      "a": {
+        "type": "String"
+      },
+      "b": {
+        "type": "String"
+      },
+      "c": {
+        "type": "String"
+      }
+    }
+  },
+  "logConnectionAccepted": "已在 {a} 接受来自 {b} 的连接",
+  "@logConnectionAccepted": {
+    "placeholders": {
+      "a": {
+        "type": "String"
+      },
+      "b": {
+        "type": "String"
+      }
+    }
+  },
+  "logConnectionError": "{a} 上的连接 {b} 失败：{c}",
+  "@logConnectionError": {
+    "placeholders": {
+      "a": {
+        "type": "String"
+      },
+      "b": {
+        "type": "String"
+      },
+      "c": {
+        "type": "String"
+      }
+    }
+  },
+  "logVpnPortalStarted": "VPN 门户已启动：{a}",
+  "@logVpnPortalStarted": {
+    "placeholders": {
+      "a": {
+        "type": "String"
+      }
+    }
+  },
+  "logVpnPortalClientConnected": "VPN 客户端 {a} 已连接",
+  "@logVpnPortalClientConnected": {
+    "placeholders": {
+      "a": {
+        "type": "String"
+      }
+    }
+  },
+  "logVpnPortalClientDisconnected": "VPN 客户端 {a} 已断开连接",
+  "@logVpnPortalClientDisconnected": {
+    "placeholders": {
+      "a": {
+        "type": "String"
+      }
+    }
+  },
+  "logDhcpIpv4Changed": "DHCP IPv4 已从 {a} 更改为 {b}",
+  "@logDhcpIpv4Changed": {
+    "placeholders": {
+      "a": {
+        "type": "String"
+      },
+      "b": {
+        "type": "String"
+      }
+    }
+  },
+  "logDhcpIpv4Conflicted": "DHCP IPv4 {a} 发生冲突",
+  "@logDhcpIpv4Conflicted": {
+    "placeholders": {
+      "a": {
+        "type": "String"
+      }
+    }
+  },
+  "logPublicIpv6Changed": "公网 IPv6 已从 {a} 更改为 {b}",
+  "@logPublicIpv6Changed": {
+    "placeholders": {
+      "a": {
+        "type": "String"
+      },
+      "b": {
+        "type": "String"
+      }
+    }
+  },
+  "logPublicIpv6RoutesUpdated": "IPv6 路由已更新：+{a} −{b}",
+  "@logPublicIpv6RoutesUpdated": {
+    "placeholders": {
+      "a": {
+        "type": "String"
+      },
+      "b": {
+        "type": "String"
+      }
+    }
+  },
+  "logProxyCidrsUpdated": "代理 CIDR 已更新：+{a} −{b}",
+  "@logProxyCidrsUpdated": {
+    "placeholders": {
+      "a": {
+        "type": "String"
+      },
+      "b": {
+        "type": "String"
+      }
+    }
+  },
+  "logPortForwardAdded": "已添加端口转发",
+  "logConfigPatched": "配置已更新",
+  "logCredentialChanged": "凭据已更改",
+  "logUnknown": "无法识别的日志条目",
+  "logUdpRelayStarted": "UDP 广播中继已通过 {backend} 启动",
+  "@logUdpRelayStarted": {
+    "placeholders": {
+      "backend": {
+        "type": "String"
+      }
+    }
+  },
+  "logUdpRelayFailed": "UDP 广播中继失败：{error}",
+  "@logUdpRelayFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "logNone": "无"
+}

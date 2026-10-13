@@ -3,6 +3,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:signals_flutter/signals_flutter.dart';
 
 import '../../controllers/network_instance_controller.dart';
+import '../../l10n/l10n.dart';
 import '../../widgets/empty_state/empty_state.dart';
 import 'widgets/instance_logs_tab.dart';
 import 'widgets/instance_peers_tab.dart';
@@ -70,14 +71,14 @@ class _NetworkInstancePageState extends State<NetworkInstancePage>
       final network = _controller.network.value;
       if (network == null) {
         return Scaffold(
-          appBar: AppBar(title: const Text('Network')),
+          appBar: AppBar(title: Text(context.l10n.networkTitle)),
           body: EmptyState(
             icon: Icons.error_outline,
-            title: 'Network not found',
-            message: 'It may have been deleted.',
+            title: context.l10n.networkMissing,
+            message: context.l10n.networkMissingDescription,
             action: FilledButton(
               onPressed: () => context.go('/networks'),
-              child: const Text('Go Back'),
+              child: Text(context.l10n.commonGoBack),
             ),
           ),
         );
@@ -87,9 +88,9 @@ class _NetworkInstancePageState extends State<NetworkInstancePage>
           title: Text(network.networkName),
           bottom: TabBar(
             controller: _tabs,
-            tabs: const [
-              Tab(text: 'Peers'),
-              Tab(text: 'Logs'),
+            tabs: [
+              Tab(text: context.l10n.networkPeers),
+              Tab(text: context.l10n.networkLogs),
             ],
           ),
         ),

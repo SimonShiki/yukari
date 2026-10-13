@@ -3,6 +3,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:signals_flutter/signals_flutter.dart';
 
 import '../../../controllers/home_controller.dart';
+import '../../../l10n/l10n.dart';
 import '../../../utils/stun_probe.dart';
 import 'dashboard_card.dart';
 
@@ -23,19 +24,20 @@ class AddressCard extends StatelessWidget {
         icon: Icons.location_on_rounded,
         shape: Shapes.pentagon,
         title: !refreshed
-            ? 'IP address'
+            ? context.l10n.homeIpAddress
             : virtual.isEmpty
-            ? 'Public IP'
-            : 'Virtual IP',
+            ? context.l10n.homePublicIp
+            : context.l10n.homeVirtualIp,
         child: switch (virtual) {
           _ when !refreshed => const DashboardValue.loading(),
-          [] => _public(),
+          [] => _public(context),
           [final first, ...final others] => DashboardValue(
             value: first.address,
             supporting: [
               ?first.host,
               first.network,
-              if (others.isNotEmpty) '+${others.length} more',
+              if (others.isNotEmpty)
+                context.l10n.homeMoreAddresses(others.length),
             ].join(' · '),
             // In full, as the line above can cut names off.
             tooltip: first.host == null && others.isEmpty
@@ -51,16 +53,16 @@ class AddressCard extends StatelessWidget {
     },
   );
 
-  Widget _public() => switch (controller.natProbe.value) {
+  Widget _public(BuildContext context) => switch (controller.natProbe.value) {
     null => const DashboardValue.loading(),
     NatProbe(publicAddress: final address?) => DashboardValue(
       value: address,
-      supporting: 'Seen by STUN servers',
+      supporting: context.l10n.homeSeenByStun,
       selectable: true,
     ),
-    NatProbe() => const DashboardValue(
-      value: 'Unavailable',
-      supporting: 'No STUN server answered.',
+    NatProbe() => DashboardValue(
+      value: context.l10n.homeUnavailable,
+      supporting: context.l10n.homeNoStunAnswer,
     ),
   };
 }

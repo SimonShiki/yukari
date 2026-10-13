@@ -1,6 +1,7 @@
 import 'package:m3e_core/m3e_core.dart';
 import 'package:material_ui/material_ui.dart';
 
+import '../../../l10n/l10n.dart';
 import 'list_editor_segments.dart';
 import 'listener_editor_dialog.dart';
 import '../../../widgets/form_section/form_section.dart';
@@ -11,30 +12,31 @@ class ListenerListEditor extends StatelessWidget {
     super.key,
     required this.listeners,
     required this.onListenersChanged,
-    this.title = 'Listeners',
-    this.description = 'Local addresses for incoming connections',
+    this.title,
+    this.description,
     this.collapsible = false,
   });
 
   final List<Uri> listeners;
   final ValueChanged<List<Uri>> onListenersChanged;
-  final String title;
-  final String description;
+  final String? title;
+  final String? description;
   final bool collapsible;
 
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
+    final sectionTitle = title ?? context.l10n.networkListeners;
 
     return FormSection(
-      title: title,
+      title: sectionTitle,
       icon: Icons.podcasts,
-      description: description,
+      description: description ?? context.l10n.networkListenersDescription,
       collapsible: collapsible,
       footer: M3EButton.icon(
         style: M3EButtonStyle.tonal,
         icon: const Icon(Icons.add),
-        label: Text('Add $title'),
+        label: Text(context.l10n.networkAddListeners(sectionTitle)),
         onPressed: () => _showListenerDialog(context, null),
       ),
       onTap: listeners.isEmpty
@@ -42,12 +44,13 @@ class ListenerListEditor extends StatelessWidget {
           : (i) => _showListenerDialog(context, listeners[i]),
       semanticLabelBuilder: listeners.isEmpty
           ? null
-          : (i) => 'Edit listener ${listeners[i]}',
+          : (i) =>
+                context.l10n.networkEditListenerNamed(listeners[i].toString()),
       children: listeners.isEmpty
           ? [
               EmptyListSegment(
                 icon: Icons.podcasts,
-                text: 'No $title configured',
+                text: context.l10n.networkNoListeners(sectionTitle),
               ),
             ]
           : [
@@ -62,7 +65,7 @@ class ListenerListEditor extends StatelessWidget {
                     '${listener.scheme.toUpperCase()} • '
                     '${listener.host}:${listener.port}',
                   ),
-                  deleteTooltip: 'Delete listener',
+                  deleteTooltip: context.l10n.networkDeleteListener,
                   onDelete: () => _deleteListener(index),
                 ),
             ],

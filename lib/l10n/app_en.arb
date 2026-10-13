@@ -1,0 +1,985 @@
+{
+  "@@locale": "en",
+  "commonCancel": "Cancel",
+  "commonSave": "Save",
+  "commonDelete": "Delete",
+  "commonCreate": "Create",
+  "commonStart": "Start",
+  "commonStop": "Stop",
+  "commonRetry": "Retry",
+  "commonGoBack": "Go Back",
+  "navHome": "Home",
+  "navNetworks": "Networks",
+  "navBookmarks": "Bookmarks",
+  "navSettings": "Settings",
+  "settingsInterface": "Interface",
+  "settingsLanguage": "Language",
+  "settingsLanguageSystem": "Follow system",
+  "@settingsLanguageSystem": {
+    "description": "Language option that uses the operating system's language"
+  },
+  "languageName": "English",
+  "@languageName": {
+    "description": "The name of this language, written in this language, shown in the language picker"
+  },
+  "advancedNetworkServices": "Network Services",
+  "advancedNetworkServicesDescription": "SOCKS5, virtual device and namespace",
+  "advancedSocks5Proxy": "SOCKS5 Proxy (Optional)",
+  "advancedSocks5ProxyHelper": "SOCKS5 proxy address for outbound traffic",
+  "advancedTunDeviceName": "TUN Device Name (Optional)",
+  "advancedTunDeviceNameHelper": "Name of the virtual network interface",
+  "advancedNetNamespace": "Network Namespace (Optional)",
+  "advancedNetNamespaceHelper": "Linux network namespace name",
+  "advancedNoTun": "Disable TUN Mode",
+  "advancedNoTunSubtitle": "Run without a virtual network device; this node can only be reached, and reaches others through SOCKS5",
+  "advancedNetworkFlags": "Network Flags",
+  "advancedNetworkFlagsDescription": "Protocol and performance settings",
+  "advancedEnableEncryption": "Enable Encryption",
+  "advancedEnableEncryptionSubtitle": "Encrypt network traffic; must match on every peer",
+  "advancedEnableIpv6": "Enable IPv6",
+  "advancedEnableIpv6Subtitle": "Allow IPv6 connections",
+  "advancedLatencyFirst": "Latency First",
+  "advancedLatencyFirstSubtitle": "Route by lowest total latency instead of hops",
+  "advancedMultiThread": "Multi-Threading",
+  "advancedMultiThreadSubtitle": "Use multiple threads for processing",
+  "advancedKcpProxy": "KCP Proxy",
+  "advancedKcpProxySubtitle": "Carry TCP over KCP for lower latency and speed",
+  "advancedQuicProxy": "QUIC Proxy",
+  "advancedQuicProxySubtitle": "Carry TCP over QUIC for lower latency and speed",
+  "advancedMagicDns": "Magic DNS",
+  "advancedMagicDnsSubtitle": "Reach peers by name; changes system DNS settings",
+  "advancedDnsSuffix": "DNS Suffix",
+  "advancedDnsSuffixHelper": "Peers are named <hostname>.<suffix>",
+  "advancedMtuHelper": "Maximum Transmission Unit (576-65535)",
+  "advancedMappedListeners": "Mapped Listeners",
+  "advancedMappedListenersDescription": "Public addresses peers use to reach this node",
+  "advancedTuning": "Tuning",
+  "advancedTuningDescription": "Protocols, algorithms and resource limits",
+  "advancedDefaultProtocol": "Default Protocol",
+  "advancedDefaultProtocolHelper": "Used for peers given without a protocol",
+  "advancedEncryptionAlgorithm": "Encryption Algorithm",
+  "advancedEncryptionAlgorithmHelper": "Must match on every peer",
+  "advancedXorInsecure": "XOR (insecure)",
+  "advancedCompression": "Compression",
+  "advancedCompressionHelper": "Compress traffic sent to peers",
+  "advancedCompressionNone": "None",
+  "advancedThreadCount": "Thread Count",
+  "advancedThreadCountHelper": "Worker threads when multi-threading is on",
+  "advancedThreadCountName": "Thread count",
+  "advancedReceiveLimit": "Receive Limit",
+  "advancedReceiveLimitHelper": "Bytes per second this node receives in total. Leave empty for no limit",
+  "advancedSmoltcp": "User-Space Network Stack",
+  "advancedSmoltcpSubtitle": "Use smoltcp when system firewalls block subnet or KCP proxying",
+  "advancedSocketMark": "Socket Mark",
+  "advancedSocketMarkHelper": "Linux only: SO_MARK for policy routing of underlay sockets. Needs CAP_NET_ADMIN",
+  "advancedRelay": "Relay",
+  "advancedRelayDescription": "Forwarding traffic for other peers and networks",
+  "advancedRelayWhitelist": "Relay Network Whitelist",
+  "advancedRelayWhitelistHelper": "Networks to relay, separated by spaces; wildcards allowed. Leave empty to relay none",
+  "advancedRelayAllPeerRpc": "Relay All Peer RPC",
+  "advancedRelayAllPeerRpcSubtitle": "Relay RPC of peers outside the whitelist so they can set up P2P",
+  "advancedDisableRelayData": "Disable Data Relay",
+  "advancedDisableRelayDataSubtitle": "Carry no data packets for other peers",
+  "advancedPreferPeerRelay": "Prefer Peer Relay",
+  "advancedPreferPeerRelaySubtitle": "Prefer credential peers already relaying to a destination",
+  "advancedDisableRelayKcp": "Disable KCP Relay",
+  "advancedDisableRelayKcpSubtitle": "Do not relay KCP packets, to save bandwidth",
+  "advancedRelayForeignKcp": "Relay Foreign Network KCP",
+  "advancedRelayForeignKcpSubtitle": "Relay KCP packets of other networks when serving as a shared node",
+  "advancedDisableRelayQuic": "Disable QUIC Relay",
+  "advancedDisableRelayQuicSubtitle": "Do not relay QUIC packets, to save bandwidth",
+  "advancedRelayForeignQuic": "Relay Foreign Network QUIC",
+  "advancedRelayForeignQuicSubtitle": "Relay QUIC packets of other networks when serving as a shared node",
+  "advancedForeignRelayLimit": "Foreign Relay Limit",
+  "advancedForeignRelayLimitHelper": "Bytes per second relayed for other networks. Leave empty for no limit",
+  "advancedUdpBroadcastRelay": "UDP Broadcast Relay",
+  "advancedUdpBroadcastRelaySubtitle": "Windows only: forward local UDP broadcasts to peers, so games find LAN rooms. Needs administrator rights",
+  "advancedP2p": "P2P & NAT Traversal",
+  "advancedP2pDescription": "Direct connections and hole punching",
+  "advancedDisableP2p": "Disable P2P",
+  "advancedDisableP2pSubtitle": "Only relay through other nodes; peers that need P2P can still connect directly",
+  "advancedP2pOnly": "P2P Only",
+  "advancedP2pOnlySubtitle": "Only talk to peers with a direct connection, never relay",
+  "advancedLazyP2p": "Lazy P2P",
+  "advancedLazyP2pSubtitle": "Connect directly to a peer only once traffic targets it",
+  "advancedNeedP2p": "Need P2P",
+  "advancedNeedP2pSubtitle": "Ask peers to connect to this node directly, even if lazy",
+  "advancedDisableUdpHolePunching": "Disable UDP Hole Punching",
+  "advancedDisableUdpHolePunchingSubtitle": "Do not punch through NAT over UDP",
+  "advancedDisableTcpHolePunching": "Disable TCP Hole Punching",
+  "advancedDisableTcpHolePunchingSubtitle": "Do not punch through NAT over TCP",
+  "advancedDisableSymmetricHolePunching": "Disable Symmetric NAT Hole Punching",
+  "advancedDisableSymmetricHolePunchingSubtitle": "Treat symmetric NAT as cone NAT",
+  "advancedDisableUpnp": "Disable UPnP",
+  "advancedDisableUpnpSubtitle": "Do not map listener ports with UPnP or NAT-PMP",
+  "advancedBindDevice": "Bind to Physical Device Only",
+  "advancedBindDeviceSubtitle": "Never connect to peers through other virtual networks",
+  "advancedRouting": "Routing",
+  "advancedRoutingDescription": "Share local networks and choose where traffic goes",
+  "advancedSubnetProxy": "Subnet Proxy",
+  "advancedSubnetProxyHint": "192.168.1.0/24 or 192.168.1.0/24->10.1.1.0/24",
+  "advancedSubnetProxyHelper": "Local IPv4 networks to share with peers, optionally mapped to another network of the same size",
+  "advancedManualRoutes": "Manual Routes",
+  "advancedManualRoutesHelper": "Route only these IPv4 networks; ignores subnet proxy and WireGuard routes from peers. Leave empty to accept them",
+  "advancedExitNodes": "Exit Nodes",
+  "advancedExitNodesHelper": "Virtual IPs of peers to send all traffic through, in order of priority",
+  "advancedEnableExitNode": "Enable Exit Node",
+  "advancedEnableExitNodeSubtitle": "Allow peers to use this node as an exit node",
+  "advancedSystemForwarding": "System Forwarding",
+  "advancedSystemForwardingSubtitle": "Forward proxied traffic through the system kernel instead of the built-in NAT",
+  "advancedPortForwarding": "Port Forwarding",
+  "advancedPortForwardingHelper": "Forward a local port to an address in the virtual network",
+  "advancedStunServers": "STUN Servers",
+  "advancedStunDescription": "STUN servers for NAT traversal. Leave empty for defaults",
+  "advancedStunServersHelper": "UDP STUN servers, also used for TCP when that is empty",
+  "advancedTcpStunServers": "TCP STUN Servers",
+  "advancedTcpStunServersHelper": "STUN servers queried over TCP",
+  "advancedIpv6StunServers": "IPv6 STUN Servers",
+  "advancedIpv6StunServersHelper": "STUN servers queried over IPv6. Off when empty while STUN Servers is set",
+  "advancedPublicIpv6": "Public IPv6",
+  "advancedPublicIpv6Description": "Give peers public IPv6 addresses from a shared subnet",
+  "advancedAutoPublicIpv6": "Auto Public IPv6",
+  "advancedAutoPublicIpv6Subtitle": "Get a public IPv6 address from a peer sharing its subnet",
+  "advancedSharePublicIpv6": "Share Public IPv6 Subnet",
+  "advancedSharePublicIpv6Subtitle": "Linux only: hand out addresses from this node’s subnet",
+  "advancedSharedSubnet": "Shared Subnet (Optional)",
+  "advancedSharedSubnetHelper": "Subnet to share. Leave empty to detect it from routes",
+  "advancedVpnPortal": "VPN Portal",
+  "advancedVpnPortalDescription": "Let WireGuard clients join without EasyTier",
+  "advancedEnableVpnPortal": "Enable VPN Portal",
+  "advancedEnableVpnPortalSubtitle": "Accept WireGuard clients on the address below",
+  "advancedWireguardListen": "WireGuard Listen Address",
+  "advancedWireguardListenHelper": "Local address WireGuard clients connect to",
+  "advancedStartup": "Startup",
+  "advancedStartOnBoot": "Start on boot",
+  "advancedStartOnBootSubtitle": "The background service runs it at system startup",
+  "advancedAccessControl": "Access Control",
+  "advancedAccessControlDescription": "Restrict other networks and open ports",
+  "advancedPrivateMode": "Private Mode",
+  "advancedPrivateModeSubtitle": "Refuse handshakes and relaying for nodes of other networks or with another secret",
+  "advancedTcpWhitelist": "TCP Port Whitelist",
+  "advancedTcpWhitelistHint": "80 or 8000-9000",
+  "advancedTcpWhitelistHelper": "TCP ports peers may reach. Leave empty to allow all",
+  "advancedUdpWhitelist": "UDP Port Whitelist",
+  "advancedUdpWhitelistHint": "53 or 5000-6000",
+  "advancedUdpWhitelistHelper": "UDP ports peers may reach. Leave empty to allow all",
+  "advancedSecureModeKeys": "Secure Mode Keys",
+  "advancedSecureModeKeysDescription": "Configure cryptographic keys for secure mode",
+  "advancedPrivateKey": "Node Private Key (Base64)",
+  "advancedPrivateKeyHelper": "Ed25519 private key for authentication",
+  "advancedHidePrivateKey": "Hide private key",
+  "advancedShowPrivateKey": "Show private key",
+  "advancedGenerateKeyPair": "Generate new key pair",
+  "advancedPublicKey": "Node Public Key (Base64)",
+  "advancedPublicKeyHelper": "Derived from private key",
+  "advancedHidePublicKey": "Hide public key",
+  "advancedShowPublicKey": "Show public key",
+  "networkRefresh": "Refresh network status",
+  "networkEmpty": "No networks yet",
+  "networkEmptyDescription": "Add a network to get connected.",
+  "networkDeleteTitle": "Delete network?",
+  "networkPrivileges": "Privileges required",
+  "networkRestart": "Restart",
+  "networkEdit": "Edit Network",
+  "networkMissing": "Network not found",
+  "networkMissingDescription": "It may have been deleted.",
+  "networkBasic": "Basic",
+  "networkAdvanced": "Advanced",
+  "networkTitle": "Network",
+  "networkPeers": "Peers",
+  "networkLogs": "Logs",
+  "networkDiscardTitle": "Discard invalid changes?",
+  "networkDiscardDescription": "Some fields contain invalid values that were not saved. Leaving will discard them.",
+  "networkKeepEditing": "Keep Editing",
+  "networkDiscard": "Discard",
+  "networkCreate": "Create Network",
+  "networkCreateHeading": "Create a new network",
+  "networkCreateDescription": "You'll be able to configure all settings after creation",
+  "networkCreateManually": "Create manually",
+  "networkImportFile": "Import from file",
+  "networkScanQr": "Scan QR code",
+  "networkAdd": "Add network",
+  "networkCloseMenu": "Close network menu",
+  "networkIdentity": "Network Identity",
+  "networkName": "Network Name",
+  "networkNameHelper": "Unique identifier for this network",
+  "networkHostname": "Hostname (Optional)",
+  "networkHostnameHelper": "Device name in the network (max 32 chars)",
+  "networkDeviceNameHelper": "Device name (max 32 characters)",
+  "networkSecret": "Network Secret (Optional)",
+  "networkSecretHelper": "Shared secret for authentication",
+  "networkHideSecret": "Hide secret",
+  "networkShowSecret": "Show secret",
+  "networkGenerateSecret": "Generate random secret",
+  "networkIpConfiguration": "IP Configuration",
+  "networkDhcp": "Enable DHCP",
+  "networkDhcpDescription": "Automatically assign IP addresses",
+  "networkIpv4": "IPv4 Address (CIDR)",
+  "networkIpv4Helper": "Your IPv4 address in CIDR notation",
+  "networkIpv6": "IPv6 Address (CIDR)",
+  "networkIpv6Helper": "Your IPv6 address in CIDR notation",
+  "networkInitialPeers": "Initial Peers",
+  "networkInitialPeersDescription": "Configure nodes to connect when starting the network",
+  "networkAddPeer": "Add Peer",
+  "networkEditPeer": "Edit Peer",
+  "networkNoConfiguredPeers": "No peers configured",
+  "networkDeletePeer": "Delete peer",
+  "networkPeerIdEmpty": "Peer ID cannot be empty",
+  "networkPeerIdExists": "Peer ID already exists",
+  "networkPeerId": "Peer ID",
+  "networkPeerIdHelper": "Unique identifier for this peer",
+  "networkUrl": "URL",
+  "networkUrlHelper": "Base URL without port",
+  "networkPort": "Port",
+  "networkPortHelper": "Port number (1-65535)",
+  "networkProtocols": "Protocols",
+  "networkProtocolRequired": "At least one protocol must be selected",
+  "networkPublicKey": "Public Key (Optional)",
+  "networkPeerPublicKeyHelper": "Peer's public key for secure mode",
+  "networkAddListener": "Add Listener",
+  "networkEditListener": "Edit Listener",
+  "networkProtocol": "Protocol",
+  "networkHost": "Host",
+  "networkListenHostHelper": "IP address or hostname to listen on",
+  "networkListeners": "Listeners",
+  "networkListenersDescription": "Local addresses for incoming connections",
+  "networkDeleteListener": "Delete listener",
+  "networkNoEvents": "No events yet",
+  "networkNoEventsDescription": "Network events appear here as they happen.",
+  "networkNotRunning": "Not running",
+  "networkNotRunningDescription": "Start the network to see its peers.",
+  "networkNoPeers": "No peers yet",
+  "networkNoPeersDescription": "Peers appear here once they connect.",
+  "networkFilterAll": "All",
+  "networkFilterErrors": "Errors",
+  "networkFilterConnections": "Connections",
+  "networkCreateFailed": "Failed to create network: {error}",
+  "@networkCreateFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "networkEditNamed": "Edit {name}",
+  "@networkEditNamed": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "networkDeleteDescription": "Delete “{name}”? Its running instance will be stopped. This cannot be undone.",
+  "@networkDeleteDescription": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "networkEditPeerNamed": "Edit peer {id}",
+  "@networkEditPeerNamed": {
+    "placeholders": {
+      "id": {
+        "type": "String"
+      }
+    }
+  },
+  "networkEditListenerNamed": "Edit listener {address}",
+  "@networkEditListenerNamed": {
+    "placeholders": {
+      "address": {
+        "type": "String"
+      }
+    }
+  },
+  "networkAddListeners": "Add {title}",
+  "@networkAddListeners": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "networkNoListeners": "No {title} configured",
+  "@networkNoListeners": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "networkTunWindows": "\"{name}\" needs administrator privileges to create its TUN device. You can:\n\n• Restart Yukari as administrator.\n• Turn on \"Disable TUN mode\" for this network.",
+  "@networkTunWindows": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "networkTunRoot": "\"{name}\" needs root privileges to create its TUN device. You can:\n\n• Restart Yukari as root.\n• Turn on \"Disable TUN mode\" for this network.",
+  "@networkTunRoot": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "networkTunServiceOption": "\n• Use service mode in Settings, which runs networks in the background with full privileges.",
+  "bookmarksPage": "Bookmarks Page",
+  "homeIpAddress": "IP address",
+  "homePublicIp": "Public IP",
+  "homeVirtualIp": "Virtual IP",
+  "homeSeenByStun": "Seen by STUN servers",
+  "homeUnavailable": "Unavailable",
+  "homeNoStunAnswer": "No STUN server answered.",
+  "homeMoreAddresses": "+{count} more",
+  "@homeMoreAddresses": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "homeRunningInApp": "Running in app",
+  "homeRunningAsService": "Running as service",
+  "homeReady": "Ready",
+  "homeConnecting": "Connecting",
+  "homeUnreachable": "Unreachable",
+  "homeServiceVersion": "Service v{version}",
+  "@homeServiceVersion": {
+    "placeholders": {
+      "version": {
+        "type": "int"
+      }
+    }
+  },
+  "homeTraffic": "Traffic",
+  "homeNoTraffic": "No traffic",
+  "homeNoRunningNetwork": "No network is running.",
+  "homeTrafficTotals": "{received} received · {sent} sent",
+  "@homeTrafficTotals": {
+    "placeholders": {
+      "received": {
+        "type": "String"
+      },
+      "sent": {
+        "type": "String"
+      }
+    }
+  },
+  "homeNoNetworks": "No networks",
+  "homeCreateNetworkHint": "Tap to create one.",
+  "homeStartNetworkHint": "Start one to connect.",
+  "homeRunningNetworks": "{running} of {saved} running",
+  "@homeRunningNetworks": {
+    "placeholders": {
+      "running": {
+        "type": "int"
+      },
+      "saved": {
+        "type": "int"
+      }
+    }
+  },
+  "homeP2pEasy": "Easy P2P · connects directly",
+  "homeP2pFair": "Fair P2P · usually direct",
+  "homeP2pHard": "Hard P2P · often relayed",
+  "homeP2pUnknown": "P2P unknown · UDP may be blocked",
+  "homeNatType": "NAT type",
+  "homeDetectAgain": "Detect again",
+  "homeNatUnknown": "Unknown",
+  "homeNatUnknownDescription": "No STUN server could tell how this network maps UDP.",
+  "homeNatOpenInternet": "Open internet",
+  "homeNatOpenInternetDescription": "This device has a public address with no NAT or firewall.",
+  "homeNatNoPat": "No NAT",
+  "homeNatNoPatDescription": "A public address, behind a firewall that filters UDP.",
+  "homeNatFullCone": "Full cone",
+  "homeNatFullConeDescription": "Anyone can reach the public port this device sends from.",
+  "homeNatRestricted": "Restricted cone",
+  "homeNatRestrictedDescription": "Hosts this device contacted can reach it, from any port.",
+  "homeNatPortRestricted": "Port restricted cone",
+  "homeNatPortRestrictedDescription": "Only the exact addresses and ports contacted can reach back.",
+  "homeNatPredictableSymmetric": "Predictable symmetric",
+  "homeNatPredictableSymmetricDescription": "Each peer sees another port, but in an order EasyTier can guess.",
+  "homeNatSymmetric": "Symmetric",
+  "homeNatSymmetricDescription": "Each peer sees another public port, which is hard to punch through.",
+  "homeNatSymmetricFirewall": "Symmetric firewall",
+  "homeNatSymmetricFirewallDescription": "A firewall gives each peer another port, which is hard to punch through.",
+  "settingsModeApp": "App",
+  "settingsModeService": "Service",
+  "settingsModeAppDescription": "Run networks inside Yukari. Requires administrator or root privileges.",
+  "settingsModeServiceDescription": "Run networks as system service. Can start on boot and work without Yukari app.",
+  "settingsWorkingMode": "Working mode",
+  "settingsNeedsRoot": "Needs root.",
+  "settingsServiceUnreachable": "Cannot reach the service. Start or reinstall it.",
+  "settingsSwitch": "Switch",
+  "settingsSwitchToService": "Switch to the service?",
+  "settingsSwitchToApp": "Switch to the app?",
+  "settingsSwitchToServiceMessage": "{count, plural, =1{1 network running in the app will stop.} other{{count} networks running in the app will stop.}} Start them again to run them in the service.",
+  "@settingsSwitchToServiceMessage": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "settingsSwitchToAppMessage": "{count, plural, =1{1 network running in the service will stop.} other{{count} networks running in the service will stop.}} Start them again to run them in the app.",
+  "@settingsSwitchToAppMessage": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "settingsServiceUnavailable": "Unavailable",
+  "settingsServiceUnsupported": "This platform or build has no background service",
+  "settingsRootRequired": "Root required",
+  "settingsGrantRoot": "Grant Yukari root access in KernelSU or Magisk to install it",
+  "settingsServiceNotInstalled": "Not installed",
+  "settingsInstallServiceHint": "Install it to run networks with full privileges",
+  "settingsServiceStopped": "Stopped",
+  "settingsServiceStoppedDescription": "Installed, but not running",
+  "settingsServiceUpdateAvailable": "Update available",
+  "settingsServiceRunning": "Running",
+  "settingsStartsWithSystem": "Starts with the system",
+  "settingsBackgroundService": "Background service",
+  "settingsCheckAgain": "Check again",
+  "settingsUninstall": "Uninstall",
+  "settingsReinstall": "Reinstall",
+  "settingsInstall": "Install",
+  "settingsUpdate": "Update",
+  "settingsInstalling": "Installing",
+  "settingsServiceVersions": "Running Version {version}; The latest is {latest}",
+  "@settingsServiceVersions": {
+    "placeholders": {
+      "version": {
+        "type": "String"
+      },
+      "latest": {
+        "type": "int"
+      }
+    }
+  },
+  "settingsServiceVersion": "Version {version}",
+  "@settingsServiceVersion": {
+    "placeholders": {
+      "version": {
+        "type": "int"
+      }
+    }
+  },
+  "settingsDownloading": "Downloading · {percent}%",
+  "@settingsDownloading": {
+    "placeholders": {
+      "percent": {
+        "type": "int"
+      }
+    }
+  },
+  "homeLoading": "Loading",
+  "cardStopped": "Stopped",
+  "cardRunning": "Running",
+  "cardStarting": "Starting",
+  "cardStopping": "Stopping",
+  "cardFailed": "Failed",
+  "cardUnknown": "Unknown",
+  "cardStart": "Start {name}",
+  "@cardStart": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "cardStop": "Stop {name}",
+  "@cardStop": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "cardMoreOptions": "More options for {name}",
+  "@cardMoreOptions": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "commonEdit": "Edit",
+  "cardLog": "Log",
+  "peerLocal": "Local",
+  "peerRelay": "Relay",
+  "peerCredential": "Credential",
+  "peerCredentialDescription": "Joined with a temporary credential instead of the network secret.",
+  "peerSharedNode": "Shared node",
+  "peerSharedNodeDescription": "A public node that relays traffic. It is not a member of this network.",
+  "peerUnverified": "Unverified",
+  "peerUnverifiedDescription": "Traffic is encrypted, but this peer's identity is not verified.",
+  "peerKeyVerified": "Key verified",
+  "peerKeyVerifiedDescription": "Traffic is encrypted, and this peer's public key is trusted.",
+  "peerSecretVerified": "Secret verified",
+  "peerSecretVerifiedDescription": "Traffic is encrypted, and this peer proved it knows the network secret.",
+  "networkOnePerLine": "{helper}. One per line",
+  "@networkOnePerLine": {
+    "placeholders": {
+      "helper": {
+        "type": "String"
+      }
+    }
+  },
+  "validationNetworkEmpty": "Network name cannot be empty",
+  "validationNetworkExists": "Network name already exists",
+  "validationHostnameLength": "Hostname cannot exceed 32 characters",
+  "validationIpv4Cidr": "Must be an IPv4 CIDR, e.g. 10.144.144.1/24",
+  "validationIpv6Cidr": "Must be an IPv6 CIDR, e.g. fd00::1/64",
+  "validationHostEmpty": "Host cannot be empty",
+  "validationHost": "Must be a valid IP address or hostname",
+  "validationDns": "Must be a domain, e.g. et.net.",
+  "validationNodeUrl": "Must be an address without port, query or fragment",
+  "validationSocks": "Must look like socks5://host:port",
+  "validationSocket": "Must be an IP address with port, e.g. 0.0.0.0:22022",
+  "validationPrivateKey": "Must be a base64-encoded 32-byte key",
+  "controllerRootRequired": "Grant Yukari root access first.",
+  "controllerInstallRequired": "Install the background service first.",
+  "controllerSelectConfig": "Select EasyTier Config File",
+  "controllerFileUnavailable": "Could not access the selected file.",
+  "controllerQrComing": "QR code scanning is coming soon.",
+  "controllerReorderFailed": "Could not reorder networks. Try again.",
+  "controllerOneNetwork": "Only one network can run at a time.",
+  "logCopyJson": "Copy as JSON",
+  "logBackToTop": "Back to top",
+  "validationRange": "{label} must be a number between {min} and {max}",
+  "@validationRange": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      },
+      "min": {
+        "type": "String"
+      },
+      "max": {
+        "type": "String"
+      }
+    }
+  },
+  "validationStun": "Invalid STUN server: {value}",
+  "@validationStun": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "validationIp": "Invalid IP address: {value}",
+  "@validationIp": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "validationIpv4Network": "Invalid IPv4 network: {value}",
+  "@validationIpv4Network": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "validationMappedNetwork": "Mapped network must have the same prefix: {value}",
+  "@validationMappedNetwork": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "validationPortForward": "Invalid port forward: {value}",
+  "@validationPortForward": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "validationPortRange": "Invalid port or range: {value}",
+  "@validationPortRange": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "controllerCheckService": "Could not check the service: {error}",
+  "@controllerCheckService": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "controllerStopNetworks": "Could not stop the running networks: {error}",
+  "@controllerStopNetworks": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "controllerSave": "Failed to save: {error}",
+  "@controllerSave": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "controllerRefresh": "Failed to refresh networks: {error}",
+  "@controllerRefresh": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "controllerImportInvalid": "Cannot import \"{name}\": {error}",
+  "@controllerImportInvalid": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "controllerImportFailed": "Failed to import config: {error}",
+  "@controllerImportFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "controllerNetworkLimit": "Only {limit} networks can run at a time.",
+  "@controllerNetworkLimit": {
+    "placeholders": {
+      "limit": {
+        "type": "String"
+      }
+    }
+  },
+  "controllerDeleteFailed": "Could not delete {name}. Try again.",
+  "@controllerDeleteFailed": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "controllerServiceInstall": "Could not install the service: {error}",
+  "@controllerServiceInstall": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "controllerServiceStart": "Could not start the service: {error}",
+  "@controllerServiceStart": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "controllerServiceStop": "Could not stop the service: {error}",
+  "@controllerServiceStop": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "controllerServiceUninstall": "Could not uninstall the service: {error}",
+  "@controllerServiceUninstall": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "controllerNetworkRun": "Could not run {name}: {error}",
+  "@controllerNetworkRun": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "controllerNetworkStop": "Could not stop {name}: {error}",
+  "@controllerNetworkStop": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "logTunDeviceReady": "TUN device ready: {a}",
+  "@logTunDeviceReady": {
+    "placeholders": {
+      "a": {
+        "type": "String"
+      }
+    }
+  },
+  "logTunDeviceError": "TUN device error: {a}",
+  "@logTunDeviceError": {
+    "placeholders": {
+      "a": {
+        "type": "String"
+      }
+    }
+  },
+  "logPeerAdded": "Peer {a} joined",
+  "@logPeerAdded": {
+    "placeholders": {
+      "a": {
+        "type": "String"
+      }
+    }
+  },
+  "logPeerRemoved": "Peer {a} left",
+  "@logPeerRemoved": {
+    "placeholders": {
+      "a": {
+        "type": "String"
+      }
+    }
+  },
+  "logPeerConnAdded": "Connected to peer {a} via {b} {c}",
+  "@logPeerConnAdded": {
+    "placeholders": {
+      "a": {
+        "type": "String"
+      },
+      "b": {
+        "type": "String"
+      },
+      "c": {
+        "type": "String"
+      }
+    }
+  },
+  "logPeerConnRemoved": "Disconnected from peer {a} via {b} {c}",
+  "@logPeerConnRemoved": {
+    "placeholders": {
+      "a": {
+        "type": "String"
+      },
+      "b": {
+        "type": "String"
+      },
+      "c": {
+        "type": "String"
+      }
+    }
+  },
+  "logListenerAdded": "Listening on {a}",
+  "@logListenerAdded": {
+    "placeholders": {
+      "a": {
+        "type": "String"
+      }
+    }
+  },
+  "logListenerAddFailed": "Cannot listen on {a}: {b}",
+  "@logListenerAddFailed": {
+    "placeholders": {
+      "a": {
+        "type": "String"
+      },
+      "b": {
+        "type": "String"
+      }
+    }
+  },
+  "logListenerAcceptFailed": "Listener {a} failed: {b}",
+  "@logListenerAcceptFailed": {
+    "placeholders": {
+      "a": {
+        "type": "String"
+      },
+      "b": {
+        "type": "String"
+      }
+    }
+  },
+  "logListenerPortMappingEstablished": "Mapped {a} to {b} via {c}",
+  "@logListenerPortMappingEstablished": {
+    "placeholders": {
+      "a": {
+        "type": "String"
+      },
+      "b": {
+        "type": "String"
+      },
+      "c": {
+        "type": "String"
+      }
+    }
+  },
+  "logConnecting": "Connecting to {a}",
+  "@logConnecting": {
+    "placeholders": {
+      "a": {
+        "type": "String"
+      }
+    }
+  },
+  "logConnectError": "Cannot connect to {a} ({b}): {c}",
+  "@logConnectError": {
+    "placeholders": {
+      "a": {
+        "type": "String"
+      },
+      "b": {
+        "type": "String"
+      },
+      "c": {
+        "type": "String"
+      }
+    }
+  },
+  "logConnectionAccepted": "Accepted {b} on {a}",
+  "@logConnectionAccepted": {
+    "placeholders": {
+      "a": {
+        "type": "String"
+      },
+      "b": {
+        "type": "String"
+      }
+    }
+  },
+  "logConnectionError": "Connection {b} on {a} failed: {c}",
+  "@logConnectionError": {
+    "placeholders": {
+      "a": {
+        "type": "String"
+      },
+      "b": {
+        "type": "String"
+      },
+      "c": {
+        "type": "String"
+      }
+    }
+  },
+  "logVpnPortalStarted": "VPN portal started: {a}",
+  "@logVpnPortalStarted": {
+    "placeholders": {
+      "a": {
+        "type": "String"
+      }
+    }
+  },
+  "logVpnPortalClientConnected": "VPN client {a} connected",
+  "@logVpnPortalClientConnected": {
+    "placeholders": {
+      "a": {
+        "type": "String"
+      }
+    }
+  },
+  "logVpnPortalClientDisconnected": "VPN client {a} disconnected",
+  "@logVpnPortalClientDisconnected": {
+    "placeholders": {
+      "a": {
+        "type": "String"
+      }
+    }
+  },
+  "logDhcpIpv4Changed": "DHCP IPv4 changed from {a} to {b}",
+  "@logDhcpIpv4Changed": {
+    "placeholders": {
+      "a": {
+        "type": "String"
+      },
+      "b": {
+        "type": "String"
+      }
+    }
+  },
+  "logDhcpIpv4Conflicted": "DHCP IPv4 {a} conflicted",
+  "@logDhcpIpv4Conflicted": {
+    "placeholders": {
+      "a": {
+        "type": "String"
+      }
+    }
+  },
+  "logPublicIpv6Changed": "Public IPv6 changed from {a} to {b}",
+  "@logPublicIpv6Changed": {
+    "placeholders": {
+      "a": {
+        "type": "String"
+      },
+      "b": {
+        "type": "String"
+      }
+    }
+  },
+  "logPublicIpv6RoutesUpdated": "IPv6 routes updated: +{a} −{b}",
+  "@logPublicIpv6RoutesUpdated": {
+    "placeholders": {
+      "a": {
+        "type": "String"
+      },
+      "b": {
+        "type": "String"
+      }
+    }
+  },
+  "logProxyCidrsUpdated": "Proxy CIDRs updated: +{a} −{b}",
+  "@logProxyCidrsUpdated": {
+    "placeholders": {
+      "a": {
+        "type": "String"
+      },
+      "b": {
+        "type": "String"
+      }
+    }
+  },
+  "logPortForwardAdded": "Port forward added",
+  "logConfigPatched": "Configuration patched",
+  "logCredentialChanged": "Credential changed",
+  "logUnknown": "Unrecognized log entry",
+  "logUdpRelayStarted": "UDP broadcast relay started via {backend}",
+  "@logUdpRelayStarted": {
+    "placeholders": {
+      "backend": {
+        "type": "String"
+      }
+    }
+  },
+  "logUdpRelayFailed": "UDP broadcast relay failed: {error}",
+  "@logUdpRelayFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "logNone": "none"
+}

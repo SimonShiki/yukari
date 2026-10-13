@@ -1,5 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:yukari/l10n/generated/app_localizations_en.dart';
+import 'package:yukari/l10n/generated/app_localizations_zh.dart';
 import 'package:yukari/models/log_entry.dart';
+import 'package:yukari/widgets/log_entry/log_summary.dart';
 
 const _connAdded =
     '{"time":"2026-10-12T21:21:42.747707393+08:00","event":{"PeerConnAdded":'
@@ -16,14 +19,17 @@ void main() {
     expect(entry.kind, 'PeerAdded');
     expect(entry.category, LogCategory.peer);
     expect(entry.severity, LogSeverity.success);
-    expect(entry.summary, 'Peer 1269433021 joined');
+    expect(
+      formatLogSummary(entry, AppLocalizationsEn()),
+      'Peer 1269433021 joined',
+    );
     expect(entry.time, DateTime.utc(2026, 10, 12, 13, 21, 42, 713, 912));
   });
 
   test('parses struct variants and flattens their details', () {
     final entry = LogEntry.parse(_connAdded);
     expect(
-      entry.summary,
+      formatLogSummary(entry, AppLocalizationsEn()),
       'Connected to peer 1269433021 via tcp tcp://47.116.42.222:21010',
     );
     expect(
@@ -41,7 +47,7 @@ void main() {
     expect(error.severity, LogSeverity.error);
     expect(error.category, LogCategory.connection);
     expect(
-      error.summary,
+      formatLogSummary(error, AppLocalizationsEn()),
       'Cannot connect to tcp://1.2.3.4:11010 (v4): timeout',
     );
     expect(error.details, contains(('[2]', 'timeout')));
@@ -49,8 +55,20 @@ void main() {
     final unit = LogEntry.parse(
       '{"time":"2026-10-12T21:21:42+08:00","event":"CredentialChanged"}',
     );
-    expect(unit.summary, 'Credential changed');
+    expect(formatLogSummary(unit, AppLocalizationsEn()), 'Credential changed');
     expect(unit.category, LogCategory.system);
+  });
+
+  test('formats Chinese summaries and absent options', () {
+    final entry = LogEntry.parse('{"event":{"PeerAdded":42}}');
+    expect(formatLogSummary(entry, AppLocalizationsZh()), '节点 42 已加入');
+    final missing = LogEntry.parse(
+      '{"event":{"DhcpIpv4Changed":[null,"10.0.0.1"]}}',
+    );
+    expect(
+      formatLogSummary(missing, AppLocalizationsZh()),
+      'DHCP IPv4 已从 无 更改为 10.0.0.1',
+    );
   });
 
   test('keeps malformed lines instead of throwing', () {

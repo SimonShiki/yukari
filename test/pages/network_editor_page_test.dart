@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:material_ui/material_ui.dart';
+import 'package:yukari/l10n/l10n.dart';
 import 'package:yukari/pages/networks/editor_exit_guard.dart';
 import 'package:yukari/pages/networks/network_editor_page.dart';
 import 'package:yukari/widgets/form_section/form_segments.dart';
@@ -16,7 +17,12 @@ void main() {
     tester.view.physicalSize = const Size(1200, 4000);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
-    await tester.pumpWidget(MaterialApp(home: NetworkEditorPage(id: id)));
+    await tester.pumpWidget(
+      MaterialApp(
+        localizationsDelegates: const [AppLocalizations.delegate],
+        home: NetworkEditorPage(id: id),
+      ),
+    );
   }
 
   Finder field(String label) => find.widgetWithText(TextFormField, label);
@@ -317,7 +323,12 @@ void main() {
         ],
       );
       addTearDown(router.dispose);
-      await tester.pumpWidget(MaterialApp.router(routerConfig: router));
+      await tester.pumpWidget(
+        MaterialApp.router(
+          localizationsDelegates: const [AppLocalizations.delegate],
+          routerConfig: router,
+        ),
+      );
       await tester.pumpAndSettle();
     }
 

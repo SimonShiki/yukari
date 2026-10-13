@@ -1,5 +1,7 @@
 import 'package:material_ui/material_ui.dart';
 
+import '../../../l10n/l10n.dart';
+
 /// Pulsing bars in place of a [DashboardValue]'s two lines while its data
 /// loads, each as tall as the line of text it stands for so that nothing
 /// moves when the text arrives.
@@ -43,7 +45,7 @@ class _DashboardSkeletonState extends State<DashboardSkeleton>
 
   @override
   Widget build(BuildContext context) => Semantics(
-    label: 'Loading',
+    label: context.l10n.homeLoading,
     child: FadeTransition(
       opacity: CurvedAnimation(parent: _pulse, curve: Easing.standard),
       child: Column(

@@ -3,6 +3,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:signals_flutter/signals_flutter.dart';
 
 import '../../../controllers/home_controller.dart';
+import '../../../l10n/l10n.dart';
 import '../../../utils/byte_units.dart';
 import 'dashboard_card.dart';
 
@@ -18,20 +19,21 @@ class TrafficCard extends StatelessWidget {
     builder: (context) => DashboardCard(
       icon: Icons.swap_vert_rounded,
       shape: Shapes.l4LeafClover,
-      title: 'Traffic',
+      title: context.l10n.homeTraffic,
       child: switch (controller.traffic.value) {
         _ when !controller.refreshed.value => const DashboardValue.loading(),
-        null => const DashboardValue(
-          value: 'No traffic',
-          supporting: 'No network is running.',
+        null => DashboardValue(
+          value: context.l10n.homeNoTraffic,
+          supporting: context.l10n.homeNoRunningNetwork,
         ),
         final traffic => DashboardValue(
           value:
               '↓ ${formatBytes(traffic.receiveRate)}/s  '
               '↑ ${formatBytes(traffic.sendRate)}/s',
-          supporting:
-              '${formatBytes(traffic.received)} received · '
-              '${formatBytes(traffic.sent)} sent',
+          supporting: context.l10n.homeTrafficTotals(
+            formatBytes(traffic.received),
+            formatBytes(traffic.sent),
+          ),
         ),
       },
     ),

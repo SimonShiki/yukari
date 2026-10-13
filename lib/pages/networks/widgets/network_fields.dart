@@ -2,6 +2,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:signals_flutter/signals_flutter.dart';
 
 import '../../../controllers/network_editor_controller.dart';
+import '../../../l10n/l10n.dart';
 import '../../../models/network.dart';
 import '../../../models/network_flags.dart';
 import '../../../utils/line_formats.dart';
@@ -129,7 +130,7 @@ class LineListField extends StatelessWidget {
       decoration: InputDecoration(
         labelText: label,
         hintText: hint,
-        helperText: '$helper. One per line',
+        helperText: context.l10n.networkOnePerLine(helper),
         helperMaxLines: 3,
         border: const OutlineInputBorder(),
       ),

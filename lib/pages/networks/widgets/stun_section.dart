@@ -1,6 +1,7 @@
 import 'package:material_ui/material_ui.dart';
 
 import '../../../controllers/network_editor_controller.dart';
+import '../../../l10n/l10n.dart';
 import '../../../models/network.dart';
 import '../../../utils/validator.dart';
 import 'network_fields.dart';
@@ -15,38 +16,40 @@ class StunSection extends StatelessWidget {
   Network get _network => controller.network.peek()!;
 
   @override
-  Widget build(BuildContext context) => FormSection(
-    title: 'STUN Servers',
-    icon: Icons.cloud_sync,
-    description: 'STUN servers for NAT traversal. Leave empty for defaults',
-    collapsible: true,
-    children: [
-      LineListField(
-        label: 'STUN Servers',
-        hint: 'stun.example.com:3478',
-        helper: 'UDP STUN servers, also used for TCP when that is empty',
-        initial: _network.stunServers,
-        validateLine: validateStunServer,
-        onValid: (lines) => controller.update((n) => n.stunServers = lines),
-      ),
-      LineListField(
-        label: 'TCP STUN Servers',
-        hint: 'stun.example.com:3478',
-        helper: 'STUN servers queried over TCP',
-        initial: _network.tcpStunServers,
-        validateLine: validateStunServer,
-        onValid: (lines) => controller.update((n) => n.tcpStunServers = lines),
-      ),
-      LineListField(
-        label: 'IPv6 STUN Servers',
-        hint: 'stun.example.com:3478',
-        helper:
-            'STUN servers queried over IPv6. Off when empty while STUN '
-            'Servers is set',
-        initial: _network.stunServersV6,
-        validateLine: validateStunServer,
-        onValid: (lines) => controller.update((n) => n.stunServersV6 = lines),
-      ),
-    ],
-  );
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    return FormSection(
+      title: l10n.advancedStunServers,
+      icon: Icons.cloud_sync,
+      description: l10n.advancedStunDescription,
+      collapsible: true,
+      children: [
+        LineListField(
+          label: l10n.advancedStunServers,
+          hint: 'stun.example.com:3478',
+          helper: l10n.advancedStunServersHelper,
+          initial: _network.stunServers,
+          validateLine: validateStunServer,
+          onValid: (lines) => controller.update((n) => n.stunServers = lines),
+        ),
+        LineListField(
+          label: l10n.advancedTcpStunServers,
+          hint: 'stun.example.com:3478',
+          helper: l10n.advancedTcpStunServersHelper,
+          initial: _network.tcpStunServers,
+          validateLine: validateStunServer,
+          onValid: (lines) =>
+              controller.update((n) => n.tcpStunServers = lines),
+        ),
+        LineListField(
+          label: l10n.advancedIpv6StunServers,
+          hint: 'stun.example.com:3478',
+          helper: l10n.advancedIpv6StunServersHelper,
+          initial: _network.stunServersV6,
+          validateLine: validateStunServer,
+          onValid: (lines) => controller.update((n) => n.stunServersV6 = lines),
+        ),
+      ],
+    );
+  }
 }

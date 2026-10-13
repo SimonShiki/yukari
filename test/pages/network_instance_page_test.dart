@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:yukari/controllers/network_instance_controller.dart';
+import 'package:yukari/l10n/l10n.dart';
 import 'package:yukari/pages/networks/network_instance_page.dart';
 import 'package:signals/signals.dart';
 import 'package:yukari/signals/instance_logs.dart';
@@ -46,6 +47,7 @@ void main() {
     );
     await tester.pumpWidget(
       MaterialApp(
+        localizationsDelegates: const [AppLocalizations.delegate],
         home: NetworkInstancePage(
           id: 'n1',
           initialTab: tab,

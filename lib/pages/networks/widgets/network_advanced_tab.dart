@@ -2,6 +2,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:signals_flutter/signals_flutter.dart';
 
 import '../../../controllers/network_editor_controller.dart';
+import '../../../l10n/l10n.dart';
 import '../../../models/network.dart';
 import '../../../utils/validator.dart';
 import 'access_section.dart';
@@ -54,23 +55,24 @@ class _NetworkAdvancedTabState extends State<NetworkAdvancedTab>
   @override
   Widget build(BuildContext context) {
     super.build(context);
+    final l10n = context.l10n;
 
     return NetworkFormTab(
       formKey: widget.formKey,
       children: [
         FormSection(
-          title: 'Network Services',
+          title: l10n.advancedNetworkServices,
           icon: Icons.dns,
-          description: 'SOCKS5, virtual device and namespace',
+          description: l10n.advancedNetworkServicesDescription,
           children: [
             FieldSegment(
               child: ValidatedTextField(
                 initialValue: _network.socks5Proxy?.toString(),
-                decoration: const InputDecoration(
-                  labelText: 'SOCKS5 Proxy (Optional)',
+                decoration: InputDecoration(
+                  labelText: l10n.advancedSocks5Proxy,
                   hintText: 'socks5://host:port',
-                  helperText: 'SOCKS5 proxy address for outbound traffic',
-                  border: OutlineInputBorder(),
+                  helperText: l10n.advancedSocks5ProxyHelper,
+                  border: const OutlineInputBorder(),
                 ),
                 validator: validateSocks5Proxy,
                 onValid: (v) => _editor.update(
@@ -81,10 +83,10 @@ class _NetworkAdvancedTabState extends State<NetworkAdvancedTab>
             FieldSegment(
               child: ValidatedTextField(
                 initialValue: _network.flags.deviceName,
-                decoration: const InputDecoration(
-                  labelText: 'TUN Device Name (Optional)',
-                  helperText: 'Name of the virtual network interface',
-                  border: OutlineInputBorder(),
+                decoration: InputDecoration(
+                  labelText: l10n.advancedTunDeviceName,
+                  helperText: l10n.advancedTunDeviceNameHelper,
+                  border: const OutlineInputBorder(),
                 ),
                 onValid: (v) =>
                     _editor.update((n) => n.flags.deviceName = v.trim()),
@@ -93,10 +95,10 @@ class _NetworkAdvancedTabState extends State<NetworkAdvancedTab>
             FieldSegment(
               child: ValidatedTextField(
                 initialValue: _network.netNamespace,
-                decoration: const InputDecoration(
-                  labelText: 'Network Namespace (Optional)',
-                  helperText: 'Linux network namespace name',
-                  border: OutlineInputBorder(),
+                decoration: InputDecoration(
+                  labelText: l10n.advancedNetNamespace,
+                  helperText: l10n.advancedNetNamespaceHelper,
+                  border: const OutlineInputBorder(),
                 ),
                 onValid: (v) => _editor.update(
                   (n) => n.netNamespace = v.isEmpty ? null : v,
@@ -105,10 +107,8 @@ class _NetworkAdvancedTabState extends State<NetworkAdvancedTab>
             ),
             FlagSwitch(
               controller: _editor,
-              title: 'Disable TUN Mode',
-              subtitle:
-                  'Run without a virtual network device; this node can only '
-                  'be reached, and reaches others through SOCKS5',
+              title: l10n.advancedNoTun,
+              subtitle: l10n.advancedNoTunSubtitle,
               read: (f) => f.noTun,
               write: (f, v) => f.noTun = v,
             ),
@@ -128,58 +128,56 @@ class _NetworkAdvancedTabState extends State<NetworkAdvancedTab>
             // Rebuilds to show the DNS suffix only while Magic DNS is on.
             SignalBuilder(
               builder: (context) => FormSection(
-                title: 'Network Flags',
+                title: l10n.advancedNetworkFlags,
                 icon: Icons.flag,
-                description: 'Protocol and performance settings',
+                description: l10n.advancedNetworkFlagsDescription,
                 children: [
                   FlagSwitch(
                     controller: _editor,
-                    title: 'Enable Encryption',
-                    subtitle:
-                        'Encrypt network traffic; must match on every peer',
+                    title: l10n.advancedEnableEncryption,
+                    subtitle: l10n.advancedEnableEncryptionSubtitle,
                     read: (f) => f.enableEncryption,
                     write: (f, v) => f.enableEncryption = v,
                   ),
                   FlagSwitch(
                     controller: _editor,
-                    title: 'Enable IPv6',
-                    subtitle: 'Allow IPv6 connections',
+                    title: l10n.advancedEnableIpv6,
+                    subtitle: l10n.advancedEnableIpv6Subtitle,
                     read: (f) => f.enableIpv6,
                     write: (f, v) => f.enableIpv6 = v,
                   ),
                   FlagSwitch(
                     controller: _editor,
-                    title: 'Latency First',
-                    subtitle: 'Route by lowest total latency instead of hops',
+                    title: l10n.advancedLatencyFirst,
+                    subtitle: l10n.advancedLatencyFirstSubtitle,
                     read: (f) => f.latencyFirst,
                     write: (f, v) => f.latencyFirst = v,
                   ),
                   FlagSwitch(
                     controller: _editor,
-                    title: 'Multi-Threading',
-                    subtitle: 'Use multiple threads for processing',
+                    title: l10n.advancedMultiThread,
+                    subtitle: l10n.advancedMultiThreadSubtitle,
                     read: (f) => f.multiThread,
                     write: (f, v) => f.multiThread = v,
                   ),
                   FlagSwitch(
                     controller: _editor,
-                    title: 'KCP Proxy',
-                    subtitle: 'Carry TCP over KCP for lower latency and speed',
+                    title: l10n.advancedKcpProxy,
+                    subtitle: l10n.advancedKcpProxySubtitle,
                     read: (f) => f.enableKcpProxy,
                     write: (f, v) => f.enableKcpProxy = v,
                   ),
                   FlagSwitch(
                     controller: _editor,
-                    title: 'QUIC Proxy',
-                    subtitle: 'Carry TCP over QUIC for lower latency and speed',
+                    title: l10n.advancedQuicProxy,
+                    subtitle: l10n.advancedQuicProxySubtitle,
                     read: (f) => f.enableQuicProxy,
                     write: (f, v) => f.enableQuicProxy = v,
                   ),
                   FlagSwitch(
                     controller: _editor,
-                    title: 'Magic DNS',
-                    subtitle:
-                        'Reach peers by name; changes system DNS settings',
+                    title: l10n.advancedMagicDns,
+                    subtitle: l10n.advancedMagicDnsSubtitle,
                     read: (f) => f.acceptDns,
                     write: (f, v) => f.acceptDns = v,
                   ),
@@ -188,11 +186,11 @@ class _NetworkAdvancedTabState extends State<NetworkAdvancedTab>
                       key: const ValueKey('dnsZone'),
                       child: ValidatedTextField(
                         initialValue: _network.flags.dnsZone,
-                        decoration: const InputDecoration(
-                          labelText: 'DNS Suffix',
+                        decoration: InputDecoration(
+                          labelText: l10n.advancedDnsSuffix,
                           hintText: 'et.net.',
-                          helperText: 'Peers are named <hostname>.<suffix>',
-                          border: OutlineInputBorder(),
+                          helperText: l10n.advancedDnsSuffixHelper,
+                          border: const OutlineInputBorder(),
                         ),
                         validator: validateDnsZone,
                         onValid: (v) =>
@@ -202,10 +200,10 @@ class _NetworkAdvancedTabState extends State<NetworkAdvancedTab>
                   FieldSegment(
                     child: ValidatedTextField(
                       initialValue: _network.flags.mtu.toString(),
-                      decoration: const InputDecoration(
+                      decoration: InputDecoration(
                         labelText: 'MTU',
-                        helperText: 'Maximum Transmission Unit (576-65535)',
-                        border: OutlineInputBorder(),
+                        helperText: l10n.advancedMtuHelper,
+                        border: const OutlineInputBorder(),
                       ),
                       keyboardType: TextInputType.number,
                       validator: (v) => validateIntRange(v, 'MTU', 576, 65535),
@@ -238,8 +236,8 @@ class _NetworkAdvancedTabState extends State<NetworkAdvancedTab>
         AccessSection(controller: _editor),
         SignalBuilder(
           builder: (context) => ListenerListEditor(
-            title: 'Mapped Listeners',
-            description: 'Public addresses peers use to reach this node',
+            title: l10n.advancedMappedListeners,
+            description: l10n.advancedMappedListenersDescription,
             collapsible: true,
             listeners: _editor.network.value!.mappedListeners,
             onListenersChanged: (list) =>

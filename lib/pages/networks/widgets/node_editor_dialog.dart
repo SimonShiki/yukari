@@ -1,5 +1,6 @@
 import 'package:material_ui/material_ui.dart';
 
+import '../../../l10n/l10n.dart';
 import '../../../models/node.dart';
 import '../../../utils/validator.dart';
 
@@ -49,9 +50,9 @@ class _NodeEditorDialogState extends State<NodeEditorDialog> {
 
   String? _validateId(String value) {
     final id = value.trim();
-    if (id.isEmpty) return 'Peer ID cannot be empty';
+    if (id.isEmpty) return context.l10n.networkPeerIdEmpty;
     if (id != widget.initialNode?.id && widget.existingIds.contains(id)) {
-      return 'Peer ID already exists';
+      return context.l10n.networkPeerIdExists;
     }
     return null;
   }
@@ -61,7 +62,11 @@ class _NodeEditorDialogState extends State<NodeEditorDialog> {
     final theme = Theme.of(context);
 
     return AlertDialog(
-      title: Text(widget.initialNode == null ? 'Add Peer' : 'Edit Peer'),
+      title: Text(
+        widget.initialNode == null
+            ? context.l10n.networkAddPeer
+            : context.l10n.networkEditPeer,
+      ),
       content: SingleChildScrollView(
         child: SizedBox(
           width: MediaQuery.of(context).size.width * 0.8,
@@ -74,9 +79,9 @@ class _NodeEditorDialogState extends State<NodeEditorDialog> {
               children: [
                 TextFormField(
                   controller: _idController,
-                  decoration: const InputDecoration(
-                    labelText: 'Peer ID',
-                    helperText: 'Unique identifier for this peer',
+                  decoration: InputDecoration(
+                    labelText: context.l10n.networkPeerId,
+                    helperText: context.l10n.networkPeerIdHelper,
                     border: OutlineInputBorder(),
                   ),
                   validator: (v) => _validateId(v!),
@@ -84,10 +89,10 @@ class _NodeEditorDialogState extends State<NodeEditorDialog> {
                 const SizedBox(height: 16),
                 TextFormField(
                   controller: _urlController,
-                  decoration: const InputDecoration(
-                    labelText: 'URL',
+                  decoration: InputDecoration(
+                    labelText: context.l10n.networkUrl,
                     hintText: 'example.com',
-                    helperText: 'Base URL without port',
+                    helperText: context.l10n.networkUrlHelper,
                     border: OutlineInputBorder(),
                   ),
                   validator: (v) => validateNodeUrl(v!),
@@ -95,23 +100,25 @@ class _NodeEditorDialogState extends State<NodeEditorDialog> {
                 const SizedBox(height: 16),
                 TextFormField(
                   controller: _portController,
-                  decoration: const InputDecoration(
-                    labelText: 'Port',
+                  decoration: InputDecoration(
+                    labelText: context.l10n.networkPort,
                     hintText: '11010',
-                    helperText: 'Port number (1-65535)',
+                    helperText: context.l10n.networkPortHelper,
                     border: OutlineInputBorder(),
                   ),
                   keyboardType: TextInputType.number,
                   validator: (v) => validatePort(v!),
                 ),
                 const SizedBox(height: 16),
-                Text('Protocols', style: theme.textTheme.titleSmall),
+                Text(
+                  context.l10n.networkProtocols,
+                  style: theme.textTheme.titleSmall,
+                ),
                 const SizedBox(height: 8),
                 FormField<Set<NodeProtocol>>(
                   initialValue: _selectedProtocols,
-                  validator: (v) => v!.isEmpty
-                      ? 'At least one protocol must be selected'
-                      : null,
+                  validator: (v) =>
+                      v!.isEmpty ? context.l10n.networkProtocolRequired : null,
                   builder: (field) => Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -148,9 +155,9 @@ class _NodeEditorDialogState extends State<NodeEditorDialog> {
                 const SizedBox(height: 16),
                 TextFormField(
                   controller: _publicKeyController,
-                  decoration: const InputDecoration(
-                    labelText: 'Public Key (Optional)',
-                    helperText: 'Peer\'s public key for secure mode',
+                  decoration: InputDecoration(
+                    labelText: context.l10n.networkPublicKey,
+                    helperText: context.l10n.networkPeerPublicKeyHelper,
                     border: OutlineInputBorder(),
                   ),
                   maxLines: 2,
@@ -163,9 +170,12 @@ class _NodeEditorDialogState extends State<NodeEditorDialog> {
       actions: [
         TextButton(
           onPressed: () => Navigator.of(context).pop(),
-          child: const Text('Cancel'),
+          child: Text(context.l10n.commonCancel),
         ),
-        FilledButton(onPressed: _handleSave, child: const Text('Save')),
+        FilledButton(
+          onPressed: _handleSave,
+          child: Text(context.l10n.commonSave),
+        ),
       ],
     );
   }
