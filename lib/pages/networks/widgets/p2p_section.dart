@@ -2,7 +2,7 @@ import 'package:material_ui/material_ui.dart';
 
 import '../../../controllers/network_editor_controller.dart';
 import 'network_fields.dart';
-import 'network_form_section.dart';
+import '../../../widgets/form_section/form_section.dart';
 
 /// How this node connects directly to peers.
 class P2pSection extends StatelessWidget {
@@ -11,7 +11,7 @@ class P2pSection extends StatelessWidget {
   final NetworkEditorController controller;
 
   @override
-  Widget build(BuildContext context) => NetworkFormSection(
+  Widget build(BuildContext context) => FormSection(
     title: 'P2P & NAT Traversal',
     icon: Icons.hub,
     description: 'Direct connections and hole punching',

@@ -1,9 +1,10 @@
 import 'dart:io';
 
+import 'package:go_router/go_router.dart';
 import 'package:material_ui/material_ui.dart';
 
 import '../../models/network.dart';
-import '../../utils/tun_helper.dart';
+import '../../signals/backend.dart';
 
 Future<bool> confirmNetworkDeletion(
   BuildContext context,
@@ -36,66 +37,52 @@ Future<bool> confirmNetworkDeletion(
     ) ??
     false;
 
-Future<bool> showTunPermissionWarning(
+/// Explains how to give [network] the privileges its TUN device needs.
+Future<void> showTunPermissionWarning(
   BuildContext context,
   Network network,
-) async {
-  if (Platform.isWindows) {
-    return await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        icon: const Icon(Icons.warning_outlined),
-        title: const Text('Administrator privileges required'),
-        content: Text(
-              'Network requires administrator/root '
-              'privileges to proxy your traffic system-wide.\n\n'
-              'Click ok to try get that permission, or turn on `No TUN` for this network.',
+) => showDialog<void>(
+  context: context,
+  builder: (context) {
+    final active = backend.value;
+    final serviceSupported = serviceControl.supported;
+    return AlertDialog(
+      icon: const Icon(Icons.admin_panel_settings_outlined),
+      title: const Text('Privileges required'),
+      content: Text(
+        '"${network.networkName}" needs '
+        '${Platform.isWindows ? 'administrator' : 'root'} privileges to '
+        'create its TUN device. You can:\n\n'
+        '• Restart Yukari ${Platform.isWindows ? 'as administrator' : 'as root'}.\n'
+        '• Turn on "Disable TUN mode" for this network.'
+        '${serviceSupported ? '\n• Use service mode in Settings, which runs '
+            'networks in the background with full privileges.' : ''}',
+      ),
+      actions: [
+        TextButton(
+          autofocus: true,
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Cancel'),
         ),
-        actions: [
+        if (serviceSupported)
           TextButton(
-            autofocus: true,
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
+            onPressed: () {
+              Navigator.pop(context);
+              context.go('/settings');
+            },
+            child: const Text('Settings'),
           ),
+        if (active.canElevate)
           FilledButton(
             onPressed: () async {
               final navigator = Navigator.of(context);
-              final success = await requestTunPermission();
-              if (success) {
-                // Elevation request initiated, close the app
-                exit(0);
-              }
-              if (navigator.mounted) {
-                navigator.pop(false);
-              }
+              // The elevated instance takes over from this one.
+              if (await active.elevate()) exit(0);
+              if (navigator.mounted) navigator.pop();
             },
-            child: const Text('Elevate'),
+            child: const Text('Restart'),
           ),
-        ],
-      ),
-    ) ?? false;
-  } else {
-    // Unix/Linux/macOS
-    return await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        icon: const Icon(Icons.warning_outlined),
-        title: const Text('Privileges required'),
-        content: Text(
-          'Network "${network.networkName}" requires privileges '
-          'to create a TUN device. You need to do either:\n\n'
-          '1. Restart the application with sudo or as root.\n'
-          '2. Turn on "Disable TUN mode" to use the network without TUN.\n'
-          '3. Using RPC mode in global settings.'
-        ),
-        actions: [
-          FilledButton(
-            autofocus: true,
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('OK'),
-          ),
-        ],
-      ),
-    ) ?? false;
-  }
-}
+      ],
+    );
+  },
+);

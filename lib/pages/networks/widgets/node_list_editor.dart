@@ -3,7 +3,7 @@ import 'package:material_ui/material_ui.dart';
 
 import '../../../models/node.dart';
 import 'list_editor_segments.dart';
-import 'network_form_section.dart';
+import '../../../widgets/form_section/form_section.dart';
 import 'node_editor_dialog.dart';
 
 /// The "Initial Peers" section. Tapping a peer edits it.
@@ -22,7 +22,7 @@ class NodeListEditor extends StatelessWidget {
     final theme = Theme.of(context);
     final colors = theme.colorScheme;
 
-    return NetworkFormSection(
+    return FormSection(
       title: 'Initial Peers',
       icon: Icons.people,
       description: 'Configure nodes to connect when starting the network',

@@ -7,10 +7,11 @@ import '../../../controllers/network_editor_controller.dart';
 import '../../../models/network.dart';
 import '../../../utils/crypto_utils.dart';
 import '../../../utils/validator.dart';
-import 'form_segments.dart';
-import 'network_form_section.dart';
+import '../../../widgets/form_section/form_segments.dart';
+import '../../../widgets/form_section/form_section.dart';
 import 'network_form_tab.dart';
 import 'node_list_editor.dart';
+import 'startup_section.dart';
 import 'validated_text_field.dart';
 
 class NetworkBasicTab extends StatefulWidget {
@@ -58,7 +59,7 @@ class _NetworkBasicTabState extends State<NetworkBasicTab>
     return NetworkFormTab(
       formKey: widget.formKey,
       children: [
-        NetworkFormSection(
+        FormSection(
           title: 'Network Identity',
           icon: Icons.fingerprint,
           children: [
@@ -130,7 +131,7 @@ class _NetworkBasicTabState extends State<NetworkBasicTab>
             ),
           ],
         ),
-        NetworkFormSection(
+        FormSection(
           title: 'IP Configuration',
           icon: Icons.network_check,
           children: [
@@ -175,6 +176,8 @@ class _NetworkBasicTabState extends State<NetworkBasicTab>
             ),
           ],
         ),
+        // Android has no background service to start networks on boot.
+        if (!Platform.isAndroid) StartupSection(controller: _editor),
         SignalBuilder(
           builder: (context) => NodeListEditor(
             nodes: _editor.network.value!.nodes,

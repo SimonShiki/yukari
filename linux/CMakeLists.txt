@@ -112,6 +112,10 @@ install(DIRECTORY "${NATIVE_ASSETS_DIR}"
    DESTINATION "${INSTALL_BUNDLE_LIB_DIR}"
    COMPONENT Runtime)
 
+# Build and bundle the background service, which shares the EasyTier library.
+include("${CMAKE_CURRENT_SOURCE_DIR}/../tool/yukari_service.cmake")
+yukari_add_service()
+
 # Fully re-copy the assets directory on each build to avoid having stale files
 # from a previous install.
 set(FLUTTER_ASSET_DIR_NAME "flutter_assets")

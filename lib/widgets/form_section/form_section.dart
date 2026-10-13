@@ -4,9 +4,9 @@ import 'package:material_ui/material_ui.dart';
 import 'form_segments.dart';
 
 /// A titled group of settings. Its [children] are laid out as the segments of
-/// one [NetworkFormSegments] container.
-class NetworkFormSection extends StatefulWidget {
-  const NetworkFormSection({
+/// one [FormSegments] container.
+class FormSection extends StatefulWidget {
+  const FormSection({
     super.key,
     required this.title,
     required this.icon,
@@ -35,10 +35,10 @@ class NetworkFormSection extends StatefulWidget {
   final bool collapsible;
 
   @override
-  State<NetworkFormSection> createState() => _NetworkFormSectionState();
+  State<FormSection> createState() => _FormSectionState();
 }
 
-class _NetworkFormSectionState extends State<NetworkFormSection> {
+class _FormSectionState extends State<FormSection> {
   late bool _expanded = !widget.collapsible;
 
   Widget _title(ThemeData theme) {
@@ -125,7 +125,7 @@ class _NetworkFormSectionState extends State<NetworkFormSection> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                NetworkFormSegments(
+                FormSegments(
                   onTap: widget.onTap,
                   semanticLabelBuilder: widget.semanticLabelBuilder,
                   children: widget.children,

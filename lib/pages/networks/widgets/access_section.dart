@@ -4,7 +4,7 @@ import '../../../controllers/network_editor_controller.dart';
 import '../../../models/network.dart';
 import '../../../utils/validator.dart';
 import 'network_fields.dart';
-import 'network_form_section.dart';
+import '../../../widgets/form_section/form_section.dart';
 
 /// Who may reach this node and through which ports.
 class AccessSection extends StatelessWidget {
@@ -15,7 +15,7 @@ class AccessSection extends StatelessWidget {
   Network get _network => controller.network.peek()!;
 
   @override
-  Widget build(BuildContext context) => NetworkFormSection(
+  Widget build(BuildContext context) => FormSection(
     title: 'Access Control',
     icon: Icons.shield,
     description: 'Restrict other networks and open ports',

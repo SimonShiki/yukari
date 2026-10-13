@@ -1,6 +1,8 @@
 import 'package:material_ui/material_ui.dart';
 
-/// Scrollable, width-limited form holding the sections of one editor tab.
+import '../../../widgets/form_section/section_list.dart';
+
+/// The validated form holding the sections of one editor tab.
 class NetworkFormTab extends StatelessWidget {
   const NetworkFormTab({
     super.key,
@@ -15,18 +17,6 @@ class NetworkFormTab extends StatelessWidget {
   Widget build(BuildContext context) => Form(
     key: formKey,
     autovalidateMode: AutovalidateMode.onUserInteraction,
-    child: SingleChildScrollView(
-      padding: const EdgeInsets.fromLTRB(16, 24, 16, 32),
-      child: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 840),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            spacing: 32,
-            children: children,
-          ),
-        ),
-      ),
-    ),
+    child: SectionList(children: children),
   );
 }

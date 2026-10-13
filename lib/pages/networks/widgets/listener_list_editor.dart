@@ -3,7 +3,7 @@ import 'package:material_ui/material_ui.dart';
 
 import 'list_editor_segments.dart';
 import 'listener_editor_dialog.dart';
-import 'network_form_section.dart';
+import '../../../widgets/form_section/form_section.dart';
 
 /// The listeners section. Tapping a listener edits it.
 class ListenerListEditor extends StatelessWidget {
@@ -26,7 +26,7 @@ class ListenerListEditor extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
 
-    return NetworkFormSection(
+    return FormSection(
       title: title,
       icon: Icons.podcasts,
       description: description,

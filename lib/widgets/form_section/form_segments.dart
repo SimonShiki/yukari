@@ -10,8 +10,8 @@ const _pressedRadius = BorderRadius.all(Radius.circular(16));
 ///
 /// Unlike M3ESegmentedColumn, whose focus ring remounts its child, it keeps
 /// focused text fields and buttons alive.
-class NetworkFormSegments extends StatelessWidget {
-  const NetworkFormSegments({
+class FormSegments extends StatelessWidget {
+  const FormSegments({
     super.key,
     required this.children,
     this.onTap,

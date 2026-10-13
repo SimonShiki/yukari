@@ -69,6 +69,7 @@ Network _$NetworkFromJson(Map<String, dynamic> json) => Network()
   ..additionalFlags = json['additionalFlags'] as Map<String, dynamic>
   ..additionalConfiguration =
       json['additionalConfiguration'] as Map<String, dynamic>
+  ..autoStart = json['autoStart'] as bool
   ..createdAt = DateTime.parse(json['createdAt'] as String)
   ..updatedAt = DateTime.parse(json['updatedAt'] as String);
 
@@ -106,6 +107,7 @@ Map<String, dynamic> _$NetworkToJson(Network instance) => <String, dynamic>{
   'flags': instance.flags.toJson(),
   'additionalFlags': instance.additionalFlags,
   'additionalConfiguration': instance.additionalConfiguration,
+  'autoStart': instance.autoStart,
   'createdAt': instance.createdAt.toIso8601String(),
   'updatedAt': instance.updatedAt.toIso8601String(),
 };

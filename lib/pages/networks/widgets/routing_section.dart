@@ -5,7 +5,7 @@ import '../../../models/network.dart';
 import '../../../utils/line_formats.dart';
 import '../../../utils/validator.dart';
 import 'network_fields.dart';
-import 'network_form_section.dart';
+import '../../../widgets/form_section/form_section.dart';
 
 /// Subnet proxy, routes, exit nodes and port forwarding.
 class RoutingSection extends StatelessWidget {
@@ -16,7 +16,7 @@ class RoutingSection extends StatelessWidget {
   Network get _network => controller.network.peek()!;
 
   @override
-  Widget build(BuildContext context) => NetworkFormSection(
+  Widget build(BuildContext context) => FormSection(
     title: 'Routing',
     icon: Icons.alt_route,
     description: 'Share local networks and choose where traffic goes',

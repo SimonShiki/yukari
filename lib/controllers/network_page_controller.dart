@@ -6,17 +6,14 @@ import 'package:material_ui/material_ui.dart';
 import 'package:signals/signals.dart';
 import 'package:uuid/uuid.dart';
 
+import '../backend/backend.dart';
 import '../bindings/easytier_ffi_native.dart' as native;
-import '../models/instance.dart';
-import '../models/network.dart';
-import '../models/backend.dart';
+import '../models/models.dart';
 import 'network_instance_controller.dart';
-import  '../signals/backend.dart';
+import '../signals/backend.dart';
 import '../signals/instance_logs.dart';
 import '../signals/networks.dart';
 import '../utils/easytier_config_parser.dart';
-import '../utils/network_runner_android.dart';
-import '../utils/tun_helper.dart';
 import '../utils/validator.dart';
 import '../widgets/network_card/network_card_data.dart';
 
@@ -28,17 +25,12 @@ class NetworkPageController {
     required this.showMessage,
     required this.confirmDelete,
     required this.showTunPermissionWarning,
-    FutureOr<Map<String, Instance>> Function(Map<String, Network>)? collect,
-    Future<void> Function(Network)? run,
-    FutureOr<void> Function(List<String>)? stop,
+    NetworkBackend? backend,
     this.refreshInterval = const Duration(seconds: 10),
-  }) : _collect = collect ?? native.collectNetworkInfos,
-       _run = run ?? (Platform.isAndroid
-           ? AndroidNetworkRunner.runNetworkWithVpn
-           : native.runNetworkInstance),
-       _stop = stop ?? native.deleteNetworkInstances {
+  }) : _injected = backend {
     _unsubscribe = effect(() {
       networks.value;
+      _backend; // Refresh when the user switches backends too.
       if (_active) unawaited(refresh());
     });
   }
@@ -46,12 +38,12 @@ class NetworkPageController {
   final void Function(String route, String? id) navigate;
   final ValueChanged<String> showMessage;
   final Future<bool> Function(Network) confirmDelete;
-  final Future<bool> Function(Network) showTunPermissionWarning;
+  final Future<void> Function(Network) showTunPermissionWarning;
   final Duration refreshInterval;
   final Map<String, Key> _keys = {};
-  final FutureOr<Map<String, Instance>> Function(Map<String, Network>) _collect;
-  final Future<void> Function(Network) _run;
-  final FutureOr<void> Function(List<String>) _stop;
+
+  /// The backend to use instead of the active one, such as in tests.
+  final NetworkBackend? _injected;
   late final void Function() _unsubscribe;
   Timer? _timer;
   bool _active = false;
@@ -92,6 +84,8 @@ class NetworkPageController {
 
   late final hasRunningNetwork = computed(() => instances.value.isNotEmpty);
 
+  NetworkBackend get _backend => _injected ?? backend.value;
+
   Key keyForIndex(int index) =>
       _keys.putIfAbsent(networks.value.keys.elementAt(index), UniqueKey.new);
 
@@ -111,10 +105,13 @@ class NetworkPageController {
         transition == InstanceStatus.stopping;
     final running = instance != null;
 
-    // On Android, disable toggle if another network is running (VPN limitation)
-    final androidVpnLimited = Platform.isAndroid && backend.value.kind == BackendKind.ffi &&
-        hasRunningNetwork.value &&
-        !running;
+    // Some backends run a limited number of instances, like Android's VPN.
+    final limitReached =
+        !running &&
+        switch (_backend.maxInstances) {
+          final limit? => instances.value.length >= limit,
+          null => false,
+        };
 
     return NetworkCardData(
       id: id,
@@ -130,7 +127,7 @@ class NetworkPageController {
       onEdit: () => edit(id),
       onLog: () => log(id),
       onDelete: () => delete(id),
-      onToggle: busy || error.value != null || !loaded.value || androidVpnLimited
+      onToggle: busy || error.value != null || !loaded.value || limitReached
           ? null
           : (value) => toggle(id, value),
     );
@@ -155,7 +152,7 @@ class NetworkPageController {
     refreshing.value = true;
     try {
       final snapshot = Map<String, Network>.of(networks.value);
-      final newInstances = await _collect(snapshot);
+      final newInstances = await _backend.collect(snapshot);
       if (_disposed) return;
       for (final MapEntry(:key, :value) in newInstances.entries) {
         recordInstanceEvents(key, value.events);

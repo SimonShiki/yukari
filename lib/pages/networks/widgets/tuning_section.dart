@@ -4,9 +4,9 @@ import '../../../controllers/network_editor_controller.dart';
 import '../../../models/network_flags.dart';
 import '../../../models/node.dart';
 import '../../../utils/validator.dart';
-import 'form_segments.dart';
+import '../../../widgets/form_section/form_segments.dart';
 import 'network_fields.dart';
-import 'network_form_section.dart';
+import '../../../widgets/form_section/form_section.dart';
 import 'validated_text_field.dart';
 
 /// Protocol, cipher and runtime details few networks need to change.
@@ -18,7 +18,7 @@ class TuningSection extends StatelessWidget {
   NetworkFlags get _flags => controller.network.peek()!.flags;
 
   @override
-  Widget build(BuildContext context) => NetworkFormSection(
+  Widget build(BuildContext context) => FormSection(
     title: 'Tuning',
     icon: Icons.tune,
     description: 'Protocols, algorithms and resource limits',

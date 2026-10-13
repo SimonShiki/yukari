@@ -4,9 +4,9 @@ import 'package:material_ui/material_ui.dart';
 
 import '../../../controllers/network_editor_controller.dart';
 import '../../../utils/validator.dart';
-import 'form_segments.dart';
+import '../../../widgets/form_section/form_segments.dart';
 import 'network_fields.dart';
-import 'network_form_section.dart';
+import '../../../widgets/form_section/form_section.dart';
 import 'validated_text_field.dart';
 
 /// Sharing a public IPv6 subnet between peers.
@@ -16,7 +16,7 @@ class PublicIpv6Section extends StatelessWidget {
   final NetworkEditorController controller;
 
   @override
-  Widget build(BuildContext context) => NetworkFormSection(
+  Widget build(BuildContext context) => FormSection(
     title: 'Public IPv6',
     icon: Icons.public,
     description: 'Give peers public IPv6 addresses from a shared subnet',

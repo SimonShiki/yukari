@@ -84,59 +84,56 @@ extension NetworkPageActions on NetworkPageController {
     }
     if (running == instances.value.containsKey(id)) return;
 
-    // On Android, only one VPN network can run at a time
-    if (Platform.isAndroid && running && instances.value.isNotEmpty) {
-      showMessage('Only one network can run at a time on Android.');
-      return;
-    }
-
-    // Check TUN permission before starting a network that requires it
-    if (running && !network.flags.noTun) {
-      if (Platform.isAndroid) {
-        final hasPermission = await requestTunPermission();
-        if (!hasPermission) return;
-      } else if (!canCreateTun()) {
-        await showTunPermissionWarning(network);
+    final backend = _backend;
+    if (running) {
+      if (backend.maxInstances case final limit?
+          when instances.value.length >= limit) {
+        showMessage(
+          limit == 1
+              ? 'Only one network can run at a time.'
+              : 'Only $limit networks can run at a time.',
+        );
         return;
       }
+      switch (await backend.tunAccess(network)) {
+        case TunAccess.granted:
+          break;
+        case TunAccess.denied:
+          return;
+        case TunAccess.elevationRequired:
+          await showTunPermissionWarning(network);
+          return;
+      }
+      if (_disposed) return;
     }
 
     transitions.value[id] = running
         ? InstanceStatus.starting
         : InstanceStatus.stopping;
     transitions.set(transitions.value);
-    if (running) {
-      clearInstanceLogs(id);
-      // The native run future completes when the instance exits, not on startup.
-      unawaited(_runUntilStopped(id, network));
-    } else {
-      try {
-        await _stop([network.networkName]);
-        // Clear transition immediately after successful stop
+    try {
+      if (running) {
+        clearInstanceLogs(id);
+        await backend.start(id, network);
+      } else {
+        await backend.stop([network.networkName]);
         transitions.value.remove(id);
         transitions.set(transitions.value);
-        // Refresh to update instance list
-        if (_active) await refresh();
-      } catch (_) {
+      }
+    } catch (e) {
+      if (running) {
+        transitions.value[id] = InstanceStatus.failed;
+      } else {
         transitions.value.remove(id);
-        transitions.set(transitions.value);
-        if (!_disposed) showMessage('Could not stop ${network.networkName}.');
+      }
+      transitions.set(transitions.value);
+      if (!_disposed) {
+        showMessage(
+          'Could not ${running ? 'run' : 'stop'} ${network.networkName}: $e',
+        );
       }
     }
-  }
-
-  Future<void> _runUntilStopped(String id, Network network) async {
-    try {
-      await _run(network);
-      transitions.value.remove(id);
-      transitions.set(transitions.value);
-    } catch (_) {
-      transitions.value[id] = InstanceStatus.failed;
-      transitions.set(transitions.value);
-      if (!_disposed) showMessage('Could not run ${network.networkName}.');
-    } finally {
-      if (_active && !_disposed) await refresh();
-    }
+    if (_active && !_disposed) await refresh();
   }
 
   Future<void> delete(String id) async {
@@ -152,9 +149,9 @@ extension NetworkPageActions on NetworkPageController {
     try {
       if (!await confirmDelete(network) || _disposed) return;
       // Stop first, including an instance started since the last status refresh.
-      final current = await _collect(Map.of(networks.value));
+      final current = await _backend.collect(Map.of(networks.value));
       if (_disposed) return;
-      if (current.containsKey(id)) await _stop([network.networkName]);
+      if (current.containsKey(id)) await _backend.stop([network.networkName]);
       if (_disposed) return;
       await deleteNetwork(id);
       clearInstanceLogs(id);

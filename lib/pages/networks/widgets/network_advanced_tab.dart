@@ -5,10 +5,10 @@ import '../../../controllers/network_editor_controller.dart';
 import '../../../models/network.dart';
 import '../../../utils/validator.dart';
 import 'access_section.dart';
-import 'form_segments.dart';
+import '../../../widgets/form_section/form_segments.dart';
 import 'listener_list_editor.dart';
 import 'network_fields.dart';
-import 'network_form_section.dart';
+import '../../../widgets/form_section/form_section.dart';
 import 'network_form_tab.dart';
 import 'p2p_section.dart';
 import 'public_ipv6_section.dart';
@@ -58,7 +58,7 @@ class _NetworkAdvancedTabState extends State<NetworkAdvancedTab>
     return NetworkFormTab(
       formKey: widget.formKey,
       children: [
-        NetworkFormSection(
+        FormSection(
           title: 'Network Services',
           icon: Icons.dns,
           description: 'SOCKS5, virtual device and namespace',
@@ -127,7 +127,7 @@ class _NetworkAdvancedTabState extends State<NetworkAdvancedTab>
           children: [
             // Rebuilds to show the DNS suffix only while Magic DNS is on.
             SignalBuilder(
-              builder: (context) => NetworkFormSection(
+              builder: (context) => FormSection(
                 title: 'Network Flags',
                 icon: Icons.flag,
                 description: 'Protocol and performance settings',

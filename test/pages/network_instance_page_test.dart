@@ -4,12 +4,12 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:yukari/controllers/network_instance_controller.dart';
-import 'package:yukari/models/instance.dart';
 import 'package:yukari/pages/networks/network_instance_page.dart';
 import 'package:signals/signals.dart';
 import 'package:yukari/signals/instance_logs.dart';
 import 'package:yukari/widgets/peer_card/peer_card.dart';
 
+import '../fake_backend.dart';
 import '../networks_fixture.dart';
 
 List<String> _fixed() => _events;
@@ -38,18 +38,11 @@ void main() {
   }) async {
     final controller = NetworkInstanceController(
       id: 'n1',
-      collect: (networks) => {
-        if (collected != null)
-          'n1': Instance.fromJsonAndNetwork(collected, networks['n1']!)
-        else
-          'n1': Instance(
-            network: networks['n1']!,
-            status: InstanceStatus.running,
-            events: events(),
-            myself: null,
-            peers: const [],
-          ),
-      },
+      backend: FakeBackend(
+        collected: () => {
+          'alpha': collected ?? {'running': true, 'events': events()},
+        },
+      ),
     );
     await tester.pumpWidget(
       MaterialApp(

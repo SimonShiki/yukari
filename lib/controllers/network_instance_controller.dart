@@ -2,10 +2,10 @@ import 'dart:async';
 
 import 'package:signals/signals.dart';
 
-import '../bindings/easytier_ffi_native.dart' as native;
+import '../backend/backend.dart';
 import '../models/instance.dart';
 import '../models/log_entry.dart';
-import '../models/network.dart';
+import '../signals/backend.dart';
 import '../signals/instance_logs.dart';
 import '../signals/networks.dart';
 
@@ -35,14 +35,16 @@ enum LogFilter {
 class NetworkInstanceController {
   NetworkInstanceController({
     required this.id,
-    FutureOr<Map<String, Instance>> Function(Map<String, Network>)? collect,
+    NetworkBackend? backend,
     this.refreshInterval = const Duration(seconds: 2),
-  }) : _collect = collect ?? native.collectNetworkInfos,
+  }) : _injected = backend,
        logs = instanceLogs(id);
 
   final String id;
   final Duration refreshInterval;
-  final FutureOr<Map<String, Instance>> Function(Map<String, Network>) _collect;
+
+  /// The backend to use instead of the active one, such as in tests.
+  final NetworkBackend? _injected;
   final ReadonlySignal<List<LogEntry>> logs;
   Timer? _timer;
   bool _refreshing = false;
@@ -94,7 +96,9 @@ class NetworkInstanceController {
     if (_disposed || _refreshing || network == null) return;
     _refreshing = true;
     try {
-      final current = (await _collect({id: network}))[id];
+      final current = (await (_injected ?? backend.value).collect({
+        id: network,
+      }))[id];
       if (_disposed) return;
       if (current != null) recordInstanceEvents(id, current.events);
       instance.value = current;

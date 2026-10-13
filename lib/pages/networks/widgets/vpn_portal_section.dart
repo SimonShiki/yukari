@@ -5,8 +5,8 @@ import '../../../controllers/network_editor_controller.dart';
 import '../../../models/network_components.dart';
 import '../../../utils/crypto_utils.dart';
 import '../../../utils/validator.dart';
-import 'form_segments.dart';
-import 'network_form_section.dart';
+import '../../../widgets/form_section/form_segments.dart';
+import '../../../widgets/form_section/form_section.dart';
 import 'validated_text_field.dart';
 
 const _defaultListen = '0.0.0.0:22022';
@@ -27,7 +27,7 @@ class VpnPortalSection extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) => NetworkFormSection(
+  Widget build(BuildContext context) => FormSection(
     title: 'VPN Portal',
     icon: Icons.vpn_lock,
     description: 'Let WireGuard clients join without EasyTier',

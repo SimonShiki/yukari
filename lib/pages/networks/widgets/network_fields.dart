@@ -6,7 +6,7 @@ import '../../../models/network.dart';
 import '../../../models/network_flags.dart';
 import '../../../utils/line_formats.dart';
 import '../../../utils/validator.dart';
-import 'form_segments.dart';
+import '../../../widgets/form_section/form_segments.dart';
 import 'validated_text_field.dart';
 
 /// A switch segment bound to one boolean of the edited network.

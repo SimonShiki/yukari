@@ -51,6 +51,9 @@ final class Network {
   NetworkFlags flags = NetworkFlags();
   Map<String, Object?> additionalFlags = {};
   Map<String, Object?> additionalConfiguration = {};
+
+  /// Whether the background service runs this network when the system boots.
+  bool autoStart = false;
   DateTime createdAt = DateTime.now().toUtc();
   DateTime updatedAt = DateTime.now().toUtc();
 }

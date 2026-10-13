@@ -1,4 +1,5 @@
 import 'dart:io';
+
 import 'package:flutter/services.dart';
 
 class AndroidVpnService {
@@ -29,13 +30,16 @@ class AndroidVpnService {
       throw UnsupportedError('VPN service is only supported on Android');
     }
 
-    final result = await _channel.invokeMethod<Map<Object?, Object?>>('startVpn', {
-      'networkName': networkName,
-      'ipv4': ipv4,
-      'mtu': mtu,
-      'routes': routes,
-      'dns': dns,
-    });
+    final result = await _channel.invokeMethod<Map<Object?, Object?>>(
+      'startVpn',
+      {
+        'networkName': networkName,
+        'ipv4': ipv4,
+        'mtu': mtu,
+        'routes': routes,
+        'dns': dns,
+      },
+    );
 
     if (result == null || result['fd'] == null) {
       throw Exception('Failed to start VPN: no TUN fd received');

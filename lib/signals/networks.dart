@@ -1,9 +1,7 @@
-import 'dart:convert';
-
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:signals/signals.dart';
 
 import '../models/network.dart';
+import '../storage/network_store.dart';
 
 /// Private backing signal for the global network collection.
 /// Use [networks] for readonly access.
@@ -25,39 +23,24 @@ final Signal<Map<String, Network>> _networks = signal(const <String, Network>{})
 ///
 /// All mutations use optimistic updates with automatic rollback on error.
 /// Operations are queued and executed sequentially to prevent race conditions.
+/// They persist to the [NetworkStore], which the background service reads.
 ReadonlySignal<Map<String, Network>> get networks => _networks;
 
-SharedPreferences? _prefs;
+NetworkStore? _store;
 
 /// Operation queue to ensure sequential execution of all network mutations.
 Future<void> _operations = Future.value();
 
-const _networksKey = 'networks';
-
-/// Initialize the networks signal by loading persisted data.
+/// Initialize the networks signal by loading persisted data from [store].
 ///
 /// Must be called once at app startup before any network operations.
-Future<void> init() async {
-  await _operations;
-  _prefs = await SharedPreferences.getInstance();
-  _networks.value = Map.unmodifiable(await _load());
+Future<void> init(NetworkStore store) async {
+  await dispose();
+  _store = store;
+  _networks.value = Map.unmodifiable(await store.load());
 }
 
-Future<Map<String, Network>> _load() async {
-  final data = _prefs!.getString(_networksKey);
-  if (data == null) return {};
-
-  final json = jsonDecode(data) as Map<String, dynamic>;
-  return {
-    for (final entry in json.entries)
-      entry.key: Network.fromJson(entry.value as Map<String, dynamic>),
-  };
-}
-
-Future<void> _save(Map<String, Network> networks) async {
-  final json = {for (final entry in networks.entries) entry.key: entry.value.toJson()};
-  await _prefs!.setString(_networksKey, jsonEncode(json));
-}
+Future<void> _save(Map<String, Network> networks) => _store!.save(networks);
 
 Future<void> _enqueue(Future<void> Function() operation) {
   final result = _operations.then((_) => operation());
@@ -151,10 +134,13 @@ Future<void> reorderNetworks(int oldIndex, int newIndex) => _enqueue(() async {
   );
 });
 
+/// Completes once every queued mutation has been persisted.
+Future<void> settled() => _operations;
+
 /// Clean up resources when networks signal is no longer needed.
 ///
 /// Waits for all pending operations to complete before disposing.
 Future<void> dispose() async {
   await _operations;
-  _prefs = null;
+  _store = null;
 }

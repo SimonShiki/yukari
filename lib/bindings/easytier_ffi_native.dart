@@ -1,12 +1,8 @@
-import 'dart:convert';
 import 'dart:ffi';
-import 'dart:isolate';
 
 import 'package:ffi/ffi.dart';
-import 'package:yukari/bindings/easytier_ffi_exception.dart';
 
-import '../models/models.dart';
-import '../utils/easytier_config_serializer.dart';
+import 'easytier_ffi_exception.dart';
 import 'generated/easytier.g.dart' as native;
 
 EasyTierFfiException takeError(String operation, int code) {
@@ -34,38 +30,31 @@ void parseConfig(String config) {
   }
 }
 
-Future<void> runNetworkInstance(Network network) {
-  // Runtime naming lets collect/stop address this network without a persisted ID.
-  final tomlString =
-      'instance_name = ${jsonEncode(network.networkName)}\n'
-      '${network.toEasyTierToml()}';
-  return Isolate.run(() {
-    return using((arena) {
-      final configuration = tomlString.toNativeUtf8(allocator: arena);
-      final result = native.run_network_instance(configuration.cast());
-      if (result != 0) {
-        throw takeError('run_network_instance', result);
-      }
-    });
+/// Starts an instance from the TOML [config] in the background.
+void runNetworkInstance(String config) {
+  using((arena) {
+    final result = native.run_network_instance(
+      config.toNativeUtf8(allocator: arena).cast(),
+    );
+    if (result != 0) {
+      throw takeError('run_network_instance', result);
+    }
   });
 }
 
-Future<void> deleteNetworkInstances(List<String> names) {
-  if (names.isEmpty) {
-    return Future.value();
-  }
-  return Isolate.run(() {
-    final result = using((arena) {
-      final pointers = arena<Pointer<Char>>(names.length);
-      for (var index = 0; index < names.length; index++) {
-        pointers[index] = names[index].toNativeUtf8(allocator: arena).cast();
-      }
-      return native.delete_network_instance(pointers, names.length);
-    });
-    if (result != 0) {
-      throw takeError('delete_network_instance', result);
+/// Stops the instances named [names].
+void deleteNetworkInstances(List<String> names) {
+  if (names.isEmpty) return;
+  final result = using((arena) {
+    final pointers = arena<Pointer<Char>>(names.length);
+    for (var index = 0; index < names.length; index++) {
+      pointers[index] = names[index].toNativeUtf8(allocator: arena).cast();
     }
+    return native.delete_network_instance(pointers, names.length);
   });
+  if (result != 0) {
+    throw takeError('delete_network_instance', result);
+  }
 }
 
 Map<String, String> _readPairs(
@@ -103,32 +92,13 @@ Map<String, String> _readPairs(
   );
 }
 
-Map<String, String> getInstanceNameIdMap() {
-  return _readPairs(native.list_instance, 'list_instance');
-}
+/// Running instances' ids, keyed by instance name.
+Map<String, String> listInstances() =>
+    _readPairs(native.list_instance, 'list_instance');
 
-/// Collects running network instance's information from the given networks.
-Future<Map<String, Instance>> collectNetworkInfos(Map<String, Network> networks) async {
-  Map<String, String> infos = await Isolate.run(() {
-    return _readPairs(native.collect_network_infos, 'collect_network_infos');
-  });
-  return hydrateNetworkInfos(
-    networks,
-    infos,
-  );
-}
-
-Map<String, Instance> hydrateNetworkInfos(
-  Map<String, Network> networks,
-  Map<String, String> infos,
-) => {
-  for (final entry in networks.entries)
-    if (infos[entry.value.networkName] case final info?)
-      entry.key: Instance.fromJsonAndNetwork(
-        jsonDecode(info) as Map<String, Object?>,
-        entry.value,
-      ),
-};
+/// Running instances' information as JSON, keyed by instance name.
+Map<String, String> collectNetworkInfos() =>
+    _readPairs(native.collect_network_infos, 'collect_network_infos');
 
 /// Set TUN file descriptor for an Android network instance.
 /// This must be called after starting the instance on Android.

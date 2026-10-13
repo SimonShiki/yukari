@@ -1,17 +1,20 @@
-enum BackendKind { ffi, rpc }
+/// Where network instances run: inside the app through FFI, or inside the
+/// privileged background service.
+enum BackendKind { ffi, service }
 
-enum BackendStatus { stopped, starting, running, stopping, failed, closed }
+/// Connection state of the active backend.
+enum BackendStatus { connecting, ready, unavailable }
 
-final class Backend {
-  Backend({
-    this.kind = BackendKind.ffi,
-    this.status = BackendStatus.stopped,
-    this.error,
-    this.updatedAt,
-  });
+/// Installation state of the background system service.
+enum ServiceState { unsupported, notInstalled, stopped, running }
 
-  final BackendKind kind;
-  final BackendStatus status;
-  final String? error;
-  final DateTime? updatedAt;
+/// Whether a network may create its TUN device under the active backend.
+enum TunAccess {
+  granted,
+
+  /// The user declined the request, such as Android's VPN consent dialog.
+  denied,
+
+  /// The process lacks the privileges; see [NetworkBackend.elevate].
+  elevationRequired,
 }

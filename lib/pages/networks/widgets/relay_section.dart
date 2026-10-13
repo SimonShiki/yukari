@@ -1,9 +1,9 @@
 import 'package:material_ui/material_ui.dart';
 
 import '../../../controllers/network_editor_controller.dart';
-import 'form_segments.dart';
+import '../../../widgets/form_section/form_segments.dart';
 import 'network_fields.dart';
-import 'network_form_section.dart';
+import '../../../widgets/form_section/form_section.dart';
 import 'validated_text_field.dart';
 
 /// What this node forwards for other peers and networks.
@@ -13,7 +13,7 @@ class RelaySection extends StatelessWidget {
   final NetworkEditorController controller;
 
   @override
-  Widget build(BuildContext context) => NetworkFormSection(
+  Widget build(BuildContext context) => FormSection(
     title: 'Relay',
     icon: Icons.swap_calls,
     description: 'Forwarding traffic for other peers and networks',

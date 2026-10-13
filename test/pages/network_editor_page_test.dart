@@ -3,7 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:yukari/pages/networks/editor_exit_guard.dart';
 import 'package:yukari/pages/networks/network_editor_page.dart';
-import 'package:yukari/pages/networks/widgets/form_segments.dart';
+import 'package:yukari/widgets/form_section/form_segments.dart';
 import 'package:yukari/signals/networks.dart';
 import 'package:yukari/utils/validator.dart';
 
@@ -27,6 +27,7 @@ void main() {
     await tester.runAsync(() async {
       action();
       await Future<void>.delayed(const Duration(milliseconds: 10));
+      await settled();
     });
     await tester.pump();
   }

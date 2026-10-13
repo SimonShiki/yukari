@@ -5,8 +5,8 @@ import '../../../controllers/network_editor_controller.dart';
 import '../../../models/network_components.dart';
 import '../../../utils/crypto_utils.dart';
 import '../../../utils/validator.dart';
-import 'form_segments.dart';
-import 'network_form_section.dart';
+import '../../../widgets/form_section/form_segments.dart';
+import '../../../widgets/form_section/form_section.dart';
 import 'validated_text_field.dart';
 
 /// Secure mode key pair; the public key is derived from the private key.
@@ -58,7 +58,7 @@ class _SecureModeFieldsState extends State<SecureModeFields> {
   }
 
   @override
-  Widget build(BuildContext context) => NetworkFormSection(
+  Widget build(BuildContext context) => FormSection(
     title: 'Secure Mode Keys',
     icon: Icons.key,
     description: 'Configure cryptographic keys for secure mode',
