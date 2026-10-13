@@ -5,6 +5,7 @@ import 'package:yukari/pages/networks/editor_exit_guard.dart';
 import 'package:yukari/pages/networks/network_editor_page.dart';
 import 'package:yukari/pages/networks/widgets/form_segments.dart';
 import 'package:yukari/signals/networks.dart';
+import 'package:yukari/utils/validator.dart';
 
 import '../networks_fixture.dart';
 
@@ -157,6 +158,75 @@ void main() {
     await type(tester, 'Node Private Key (Base64)', 'AAAA');
     expect(find.text('Must be a base64-encoded 32-byte key'), findsOneWidget);
     expect(networks.value['n1']!.secureMode, isNull);
+  });
+
+  testWidgets('subnet proxy lines are saved once valid', (tester) async {
+    await pumpEditor(tester);
+    await openAdvanced(tester);
+
+    await type(tester, 'Subnet Proxy', '192.168.1.0/24->10.0.0.0/16');
+    expect(find.textContaining('same prefix'), findsOneWidget);
+    expect(networks.value['n1']!.proxyNetworks, isEmpty);
+
+    await type(tester, 'Subnet Proxy', '192.168.1.0/24->10.1.1.0/24\n');
+    final proxy = networks.value['n1']!.proxyNetworks.single;
+    expect(proxy.cidr, '192.168.1.0/24');
+    expect(proxy.mappedCidr, '10.1.1.0/24');
+  });
+
+  testWidgets('DNS suffix shows only with Magic DNS and keeps MTU input', (
+    tester,
+  ) async {
+    await pumpEditor(tester);
+    await openAdvanced(tester);
+    expect(field('DNS Suffix'), findsNothing);
+
+    await type(tester, 'MTU', '1');
+    await toggle(tester, 'Magic DNS');
+    expect(find.widgetWithText(TextFormField, '1'), findsOneWidget);
+
+    await type(tester, 'DNS Suffix', 'not a domain');
+    expect(find.text('Must be a domain, e.g. et.net.'), findsOneWidget);
+    await type(tester, 'DNS Suffix', 'home.lan.');
+    expect(networks.value['n1']!.flags.dnsZone, 'home.lan.');
+
+    await toggle(tester, 'Magic DNS');
+    expect(field('DNS Suffix'), findsNothing);
+  });
+
+  testWidgets('uncommon sections start collapsed and expand on tap', (
+    tester,
+  ) async {
+    await pumpEditor(tester);
+    await openAdvanced(tester);
+    expect(find.text('Lazy P2P'), findsNothing);
+
+    await tester.tap(find.text('P2P & NAT Traversal'));
+    await tester.pumpAndSettle();
+    await toggle(tester, 'Lazy P2P');
+    expect(networks.value['n1']!.flags.lazyP2p, isTrue);
+  });
+
+  testWidgets('enabling the VPN portal gives it a key and an address', (
+    tester,
+  ) async {
+    await pumpEditor(tester);
+    await openAdvanced(tester);
+    await tester.tap(find.text('VPN Portal'));
+    await tester.pumpAndSettle();
+
+    await toggle(tester, 'Enable VPN Portal');
+    final portal = networks.value['n1']!.vpnPortal!;
+    expect(portal.enabled, isTrue);
+    expect(portal.wireguardListen, '0.0.0.0:22022');
+    expect(validatePrivateKey(portal.wireguardPrivateKey!), isNull);
+
+    await toggle(tester, 'Enable VPN Portal');
+    expect(networks.value['n1']!.vpnPortal!.enabled, isFalse);
+    expect(
+      networks.value['n1']!.vpnPortal!.wireguardPrivateKey,
+      portal.wireguardPrivateKey,
+    );
   });
 
   testWidgets('peer dialog highlights every invalid field', (tester) async {

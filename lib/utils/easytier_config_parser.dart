@@ -213,6 +213,7 @@ PortForward _parsePortForward(Map<dynamic, dynamic> data) => PortForward(
 );
 
 VpnPortal _parseVpnPortal(Map<dynamic, dynamic> data) => VpnPortal(
+  enabled: data['enabled'] as bool? ?? true,
   wireguardListen: data['wireguard_listen'].toString(),
   wireguardPrivateKey: data['wireguard_private_key']?.toString(),
   clients: data['clients'] is List

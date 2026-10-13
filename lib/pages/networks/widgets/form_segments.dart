@@ -33,6 +33,8 @@ class NetworkFormSegments extends StatelessWidget {
       children: [
         for (final (i, child) in children.indexed)
           _Segment(
+            // Keyed children keep their state when others come and go.
+            key: child.key,
             radius: BorderRadius.vertical(
               top: i == 0 ? _outerRadius : _innerRadius,
               bottom: i == last ? _outerRadius : _innerRadius,
@@ -48,6 +50,7 @@ class NetworkFormSegments extends StatelessWidget {
 
 class _Segment extends StatefulWidget {
   const _Segment({
+    super.key,
     required this.radius,
     required this.child,
     this.onTap,

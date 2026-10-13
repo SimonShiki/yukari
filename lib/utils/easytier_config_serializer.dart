@@ -33,7 +33,8 @@ String _serialize(Network network) {
           if (proxy.allow.isNotEmpty) 'allow': proxy.allow,
         },
     ],
-    'routes': network.routes,
+    // EasyTier reads an empty list here as an override: no peer routes.
+    if (network.routes.isNotEmpty) 'routes': network.routes,
     'port_forward': [
       for (final forward in network.portForwards)
         <String, Object?>{
@@ -45,9 +46,12 @@ String _serialize(Network network) {
     'flags': _flags(network.flags, network.additionalFlags),
     'tcp_whitelist': network.tcpWhitelist,
     'udp_whitelist': network.udpWhitelist,
-    'stun_servers': network.stunServers,
-    'tcp_stun_servers': network.tcpStunServers,
-    'stun_servers_v6': network.stunServersV6,
+    // EasyTier reads an empty STUN list as disabling STUN.
+    if (network.stunServers.isNotEmpty) 'stun_servers': network.stunServers,
+    if (network.tcpStunServers.isNotEmpty)
+      'tcp_stun_servers': network.tcpStunServers,
+    if (network.stunServersV6.isNotEmpty)
+      'stun_servers_v6': network.stunServersV6,
     'managed_credentials': [
       for (final credential in network.managedCredentials)
         <String, Object?>{
@@ -149,6 +153,7 @@ Map<String, Object?> _flags(
 }
 
 Map<String, Object?> _vpnPortal(VpnPortal portal) => <String, Object?>{
+  'enabled': portal.enabled,
   'wireguard_listen': portal.wireguardListen,
   if (portal.wireguardPrivateKey != null)
     'wireguard_private_key': portal.wireguardPrivateKey,

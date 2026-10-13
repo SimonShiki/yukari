@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:yukari/models/node.dart';
+import 'package:yukari/models/models.dart';
 import 'package:yukari/utils/easytier_config_parser.dart';
 import 'package:yukari/utils/easytier_config_serializer.dart';
 
@@ -45,5 +45,32 @@ mtu = 1400
         ..remove('createdAt')
         ..remove('updatedAt'),
     );
+  });
+
+  test('omits empty lists that EasyTier reads as overrides', () {
+    final toml = Network().toEasyTierToml();
+    for (final key in [
+      'routes',
+      'stun_servers',
+      'tcp_stun_servers',
+      'stun_servers_v6',
+    ]) {
+      expect(toml, isNot(contains('$key =')));
+    }
+  });
+
+  test('keeps a disabled VPN portal and treats a missing state as enabled', () {
+    final network = Network()
+      ..vpnPortal = VpnPortal(wireguardListen: '0.0.0.0:22022', enabled: false);
+    expect(
+      parseEasyTierConfig(network.toEasyTierToml()).vpnPortal!.enabled,
+      isFalse,
+    );
+
+    final legacy = parseEasyTierConfig('''
+[vpn_portal_config]
+wireguard_listen = "0.0.0.0:22022"
+''');
+    expect(legacy.vpnPortal!.enabled, isTrue);
   });
 }

@@ -60,9 +60,11 @@ VpnPortal _$VpnPortalFromJson(Map<String, dynamic> json) => VpnPortal(
           ?.map((e) => VpnPortalClient.fromJson(e as Map<String, dynamic>))
           .toList() ??
       const [],
+  enabled: json['enabled'] as bool? ?? true,
 );
 
 Map<String, dynamic> _$VpnPortalToJson(VpnPortal instance) => <String, dynamic>{
+  'enabled': instance.enabled,
   'wireguardListen': instance.wireguardListen,
   'wireguardPrivateKey': instance.wireguardPrivateKey,
   'clients': instance.clients.map((e) => e.toJson()).toList(),

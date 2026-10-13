@@ -58,8 +58,11 @@ final class VpnPortal {
     required this.wireguardListen,
     this.wireguardPrivateKey,
     this.clients = const [],
+    this.enabled = true,
   });
 
+  /// Disabling keeps the portal's address, key and clients for later.
+  bool enabled;
   String wireguardListen;
   String? wireguardPrivateKey;
   List<VpnPortalClient> clients;

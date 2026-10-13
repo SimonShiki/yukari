@@ -12,11 +12,15 @@ class ListenerListEditor extends StatelessWidget {
     required this.listeners,
     required this.onListenersChanged,
     this.title = 'Listeners',
+    this.description = 'Local addresses for incoming connections',
+    this.collapsible = false,
   });
 
   final List<Uri> listeners;
   final ValueChanged<List<Uri>> onListenersChanged;
   final String title;
+  final String description;
+  final bool collapsible;
 
   @override
   Widget build(BuildContext context) {
@@ -25,7 +29,8 @@ class ListenerListEditor extends StatelessWidget {
     return NetworkFormSection(
       title: title,
       icon: Icons.podcasts,
-      description: 'Local addresses for incoming connections',
+      description: description,
+      collapsible: collapsible,
       footer: M3EButton.icon(
         style: M3EButtonStyle.tonal,
         icon: const Icon(Icons.add),
