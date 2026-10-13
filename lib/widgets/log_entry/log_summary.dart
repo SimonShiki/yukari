@@ -13,8 +13,7 @@ String formatLogSummary(LogEntry entry, AppLocalizations l10n) {
     'PeerRemoved' => l10n.logPeerRemoved(arg(0)),
     'PeerConnAdded' => l10n.logPeerConnAdded(
       field(['peer_id']),
-      field(['tunnel', 'tunnel_type']),
-      field(['tunnel', 'remote_addr']),
+      field(['tunnel', 'remote_addr'])
     ),
     'PeerConnRemoved' => l10n.logPeerConnRemoved(
       field(['peer_id']),

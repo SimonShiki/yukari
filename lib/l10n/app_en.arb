@@ -31,7 +31,7 @@
   "advancedNetNamespace": "Network Namespace (Optional)",
   "advancedNetNamespaceHelper": "Linux network namespace name",
   "advancedNoTun": "Disable TUN Mode",
-  "advancedNoTunSubtitle": "Run without a virtual network device; this node can only be reached, and reaches others through SOCKS5",
+  "advancedNoTunSubtitle": "Run without a virtual network device; Needs a SOCKS5 proxy to reach other peers.",
   "advancedNetworkFlags": "Network Flags",
   "advancedNetworkFlagsDescription": "Protocol and performance settings",
   "advancedEnableEncryption": "Enable Encryption",
@@ -200,7 +200,7 @@
   "networkScanQr": "Scan QR code",
   "networkAdd": "Add network",
   "networkCloseMenu": "Close network menu",
-  "networkIdentity": "Network Identity",
+  "networkIdentity": "Network",
   "networkName": "Network Name",
   "networkNameHelper": "Unique identifier for this network",
   "networkHostname": "Hostname (Optional)",
@@ -341,8 +341,8 @@
       }
     }
   },
-  "homeRunningInApp": "Running in app",
-  "homeRunningAsService": "Running as service",
+  "homeRunningInApp": "Running in app mode",
+  "homeRunningAsService": "Running as service mode",
   "homeReady": "Ready",
   "homeConnecting": "Connecting",
   "homeUnreachable": "Unreachable",
@@ -766,16 +766,13 @@
       }
     }
   },
-  "logPeerConnAdded": "Connected to peer {a} via {b} {c}",
+  "logPeerConnAdded": "Connected to peer {a} via {b}",
   "@logPeerConnAdded": {
     "placeholders": {
       "a": {
         "type": "String"
       },
       "b": {
-        "type": "String"
-      },
-      "c": {
         "type": "String"
       }
     }

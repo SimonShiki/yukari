@@ -25,7 +25,7 @@
   "advancedNetNamespace": "网络命名空间（可选）",
   "advancedNetNamespaceHelper": "Linux 网络命名空间名称",
   "advancedNoTun": "禁用 TUN 模式",
-  "advancedNoTunSubtitle": "不创建虚拟网卡运行；本节点只能被其他节点访问，并通过 SOCKS5 访问其他节点",
+  "advancedNoTunSubtitle": "不创建虚拟网卡运行；此模式下需要通过 SOCKS5 访问其他节点",
   "advancedNetworkFlags": "网络选项",
   "advancedNetworkFlagsDescription": "协议与性能设置",
   "advancedEnableEncryption": "启用加密",
@@ -177,7 +177,7 @@
   "networkEdit": "编辑网络",
   "networkMissing": "找不到网络",
   "networkMissingDescription": "该网络可能已被删除。",
-  "networkBasic": "基本",
+  "networkBasic": "基础",
   "networkAdvanced": "高级",
   "networkTitle": "网络",
   "networkPeers": "节点",
@@ -194,7 +194,7 @@
   "networkScanQr": "扫描二维码",
   "networkAdd": "添加网络",
   "networkCloseMenu": "关闭网络菜单",
-  "networkIdentity": "网络标识",
+  "networkIdentity": "网络",
   "networkName": "网络名称",
   "networkNameHelper": "此网络的唯一标识",
   "networkHostname": "主机名（可选）",
@@ -236,7 +236,7 @@
   "networkHost": "主机",
   "networkListenHostHelper": "要监听的 IP 地址或主机名",
   "networkListeners": "监听器",
-  "networkListenersDescription": "用于接收连接的本地地址",
+  "networkListenersDescription": "在哪些地址上接收远端的连接",
   "networkDeleteListener": "删除监听器",
   "networkNoEvents": "暂无事件",
   "networkNoEventsDescription": "网络事件发生时会显示在这里。",
@@ -327,9 +327,9 @@
   "homeSeenByStun": "STUN 服务器检测到的地址",
   "homeUnavailable": "不可用",
   "homeNoStunAnswer": "没有 STUN 服务器响应。",
-  "homeMoreAddresses": "另有 {count} 个",
-  "homeRunningInApp": "在应用内运行",
-  "homeRunningAsService": "以服务运行",
+  "homeMoreAddresses": "...还有 {count} 个地址",
+  "homeRunningInApp": "以应用模式运行",
+  "homeRunningAsService": "以服务模式运行",
   "homeReady": "就绪",
   "homeConnecting": "连接中",
   "homeUnreachable": "无法连接",
@@ -341,10 +341,10 @@
   "homeNoNetworks": "暂无网络",
   "homeCreateNetworkHint": "点击创建网络。",
   "homeStartNetworkHint": "启动网络以连接。",
-  "homeRunningNetworks": "{saved} 个网络中有 {running} 个正在运行",
-  "homeP2pEasy": "易于 P2P · 可直接连接",
+  "homeRunningNetworks": "{running} / {saved} 个活跃网络",
+  "homeP2pEasy": "容易 P2P · 可直接连接",
   "homeP2pFair": "一般 P2P · 通常可直连",
-  "homeP2pHard": "难于 P2P · 经常需要中继",
+  "homeP2pHard": "难以 P2P · 经常需要中继",
   "homeP2pUnknown": "P2P 未知 · UDP 可能被阻止",
   "homeNatType": "NAT 类型",
   "homeDetectAgain": "重新检测",
@@ -368,8 +368,8 @@
   "homeNatSymmetricFirewallDescription": "防火墙为各节点分配不同端口，难以进行 NAT 穿透。",
   "settingsModeApp": "应用",
   "settingsModeService": "服务",
-  "settingsModeAppDescription": "在 Yukari 内运行网络。需要管理员或 root 权限。",
-  "settingsModeServiceDescription": "以系统服务运行网络。可随系统启动，并在 Yukari 应用关闭后继续运行。",
+  "settingsModeAppDescription": "随应用运行网络。应用本身需要管理员或 root 权限。",
+  "settingsModeServiceDescription": "以系统服务运行网络。可随系统启动，并可在 Yukari 应用关闭后继续运行。",
   "settingsWorkingMode": "运行模式",
   "settingsNeedsRoot": "需要 root 权限。",
   "settingsServiceUnreachable": "无法连接服务。请启动或重新安装服务。",
@@ -688,16 +688,13 @@
       }
     }
   },
-  "logPeerConnAdded": "已通过 {b} {c} 连接到节点 {a}",
+  "logPeerConnAdded": "已通过 {b} 连接到节点 {a}",
   "@logPeerConnAdded": {
     "placeholders": {
       "a": {
         "type": "String"
       },
       "b": {
-        "type": "String"
-      },
-      "c": {
         "type": "String"
       }
     }
