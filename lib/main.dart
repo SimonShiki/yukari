@@ -32,10 +32,10 @@ class Yukari extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SignalBuilder(
-      builder: (context) {
-        return DynamicColorBuilder(
-          builder: (ColorScheme? lightDynamic, ColorScheme? darkDynamic) {
+    return DynamicColorBuilder(
+      builder: (ColorScheme? lightDynamic, ColorScheme? darkDynamic) {
+        return SignalBuilder(
+          builder: (context) {
             return MaterialApp.router(
               title: 'Yukari',
               theme: theme_provider.getLightTheme(lightDynamic),
