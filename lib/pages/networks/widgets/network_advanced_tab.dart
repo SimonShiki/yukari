@@ -15,7 +15,7 @@ import 'p2p_section.dart';
 import 'public_ipv6_section.dart';
 import 'relay_section.dart';
 import 'routing_section.dart';
-import 'secure_mode_fields.dart';
+import 'security_section.dart';
 import 'stun_section.dart';
 import 'tuning_section.dart';
 import 'validated_text_field.dart';
@@ -122,115 +122,96 @@ class _NetworkAdvancedTabState extends State<NetworkAdvancedTab>
           ),
         ),
         RoutingSection(controller: _editor),
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            // Rebuilds to show the DNS suffix only while Magic DNS is on.
-            SignalBuilder(
-              builder: (context) => FormSection(
-                title: l10n.advancedNetworkFlags,
-                icon: Icons.flag,
-                description: l10n.advancedNetworkFlagsDescription,
-                children: [
-                  FlagSwitch(
-                    controller: _editor,
-                    title: l10n.advancedEnableEncryption,
-                    subtitle: l10n.advancedEnableEncryptionSubtitle,
-                    read: (f) => f.enableEncryption,
-                    write: (f, v) => f.enableEncryption = v,
-                  ),
-                  FlagSwitch(
-                    controller: _editor,
-                    title: l10n.advancedEnableIpv6,
-                    subtitle: l10n.advancedEnableIpv6Subtitle,
-                    read: (f) => f.enableIpv6,
-                    write: (f, v) => f.enableIpv6 = v,
-                  ),
-                  FlagSwitch(
-                    controller: _editor,
-                    title: l10n.advancedLatencyFirst,
-                    subtitle: l10n.advancedLatencyFirstSubtitle,
-                    read: (f) => f.latencyFirst,
-                    write: (f, v) => f.latencyFirst = v,
-                  ),
-                  FlagSwitch(
-                    controller: _editor,
-                    title: l10n.advancedMultiThread,
-                    subtitle: l10n.advancedMultiThreadSubtitle,
-                    read: (f) => f.multiThread,
-                    write: (f, v) => f.multiThread = v,
-                  ),
-                  FlagSwitch(
-                    controller: _editor,
-                    title: l10n.advancedKcpProxy,
-                    subtitle: l10n.advancedKcpProxySubtitle,
-                    read: (f) => f.enableKcpProxy,
-                    write: (f, v) => f.enableKcpProxy = v,
-                  ),
-                  FlagSwitch(
-                    controller: _editor,
-                    title: l10n.advancedQuicProxy,
-                    subtitle: l10n.advancedQuicProxySubtitle,
-                    read: (f) => f.enableQuicProxy,
-                    write: (f, v) => f.enableQuicProxy = v,
-                  ),
-                  FlagSwitch(
-                    controller: _editor,
-                    title: l10n.advancedMagicDns,
-                    subtitle: l10n.advancedMagicDnsSubtitle,
-                    read: (f) => f.acceptDns,
-                    write: (f, v) => f.acceptDns = v,
-                  ),
-                  if (_magicDns.value)
-                    FieldSegment(
-                      key: const ValueKey('dnsZone'),
-                      child: ValidatedTextField(
-                        initialValue: _network.flags.dnsZone,
-                        decoration: InputDecoration(
-                          labelText: l10n.advancedDnsSuffix,
-                          hintText: 'et.net.',
-                          helperText: l10n.advancedDnsSuffixHelper,
-                          border: const OutlineInputBorder(),
-                        ),
-                        validator: validateDnsZone,
-                        onValid: (v) =>
-                            _editor.update((n) => n.flags.dnsZone = v.trim()),
-                      ),
-                    ),
-                  FieldSegment(
-                    child: ValidatedTextField(
-                      initialValue: _network.flags.mtu.toString(),
-                      decoration: InputDecoration(
-                        labelText: 'MTU',
-                        helperText: l10n.advancedMtuHelper,
-                        border: const OutlineInputBorder(),
-                      ),
-                      keyboardType: TextInputType.number,
-                      validator: (v) => validateIntRange(v, 'MTU', 576, 65535),
-                      onValid: (v) => _editor.update(
-                        (n) => n.flags.mtu = int.parse(v.trim()),
-                      ),
-                    ),
-                  ),
-                ],
+        // Rebuilds to show the DNS suffix only while Magic DNS is on.
+        SignalBuilder(
+          builder: (context) => FormSection(
+            title: l10n.advancedNetworkFlags,
+            icon: Icons.flag,
+            description: l10n.advancedNetworkFlagsDescription,
+            children: [
+              FlagSwitch(
+                controller: _editor,
+                title: l10n.advancedEnableEncryption,
+                subtitle: l10n.advancedEnableEncryptionSubtitle,
+                read: (f) => f.enableEncryption,
+                write: (f, v) => f.enableEncryption = v,
               ),
-            ),
-            // Secure mode keys only apply while encryption is enabled.
-            SignalBuilder(
-              builder: (context) => AnimatedSize(
-                duration: Durations.medium4,
-                curve: Easing.emphasizedDecelerate,
-                alignment: Alignment.topCenter,
-                child: _editor.network.value!.flags.enableEncryption
-                    ? Padding(
-                        padding: const EdgeInsets.only(top: 32),
-                        child: SecureModeFields(controller: _editor),
-                      )
-                    : const SizedBox(width: double.infinity),
+              FlagSwitch(
+                controller: _editor,
+                title: l10n.advancedEnableIpv6,
+                subtitle: l10n.advancedEnableIpv6Subtitle,
+                read: (f) => f.enableIpv6,
+                write: (f, v) => f.enableIpv6 = v,
               ),
-            ),
-          ],
+              FlagSwitch(
+                controller: _editor,
+                title: l10n.advancedLatencyFirst,
+                subtitle: l10n.advancedLatencyFirstSubtitle,
+                read: (f) => f.latencyFirst,
+                write: (f, v) => f.latencyFirst = v,
+              ),
+              FlagSwitch(
+                controller: _editor,
+                title: l10n.advancedMultiThread,
+                subtitle: l10n.advancedMultiThreadSubtitle,
+                read: (f) => f.multiThread,
+                write: (f, v) => f.multiThread = v,
+              ),
+              FlagSwitch(
+                controller: _editor,
+                title: l10n.advancedKcpProxy,
+                subtitle: l10n.advancedKcpProxySubtitle,
+                read: (f) => f.enableKcpProxy,
+                write: (f, v) => f.enableKcpProxy = v,
+              ),
+              FlagSwitch(
+                controller: _editor,
+                title: l10n.advancedQuicProxy,
+                subtitle: l10n.advancedQuicProxySubtitle,
+                read: (f) => f.enableQuicProxy,
+                write: (f, v) => f.enableQuicProxy = v,
+              ),
+              FlagSwitch(
+                controller: _editor,
+                title: l10n.advancedMagicDns,
+                subtitle: l10n.advancedMagicDnsSubtitle,
+                read: (f) => f.acceptDns,
+                write: (f, v) => f.acceptDns = v,
+              ),
+              if (_magicDns.value)
+                FieldSegment(
+                  key: const ValueKey('dnsZone'),
+                  child: ValidatedTextField(
+                    initialValue: _network.flags.dnsZone,
+                    decoration: InputDecoration(
+                      labelText: l10n.advancedDnsSuffix,
+                      hintText: 'et.net.',
+                      helperText: l10n.advancedDnsSuffixHelper,
+                      border: const OutlineInputBorder(),
+                    ),
+                    validator: validateDnsZone,
+                    onValid: (v) =>
+                        _editor.update((n) => n.flags.dnsZone = v.trim()),
+                  ),
+                ),
+              FieldSegment(
+                child: ValidatedTextField(
+                  initialValue: _network.flags.mtu.toString(),
+                  decoration: InputDecoration(
+                    labelText: 'MTU',
+                    helperText: l10n.advancedMtuHelper,
+                    border: const OutlineInputBorder(),
+                  ),
+                  keyboardType: TextInputType.number,
+                  validator: (v) => validateIntRange(v, 'MTU', 576, 65535),
+                  onValid: (v) =>
+                      _editor.update((n) => n.flags.mtu = int.parse(v.trim())),
+                ),
+              ),
+            ],
+          ),
         ),
+        SecuritySection(controller: _editor),
         P2pSection(controller: _editor),
         RelaySection(controller: _editor),
         AccessSection(controller: _editor),

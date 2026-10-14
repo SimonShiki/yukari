@@ -158,13 +158,45 @@ void main() {
     expect(find.text('Network name already exists'), findsOneWidget);
   });
 
-  testWidgets('invalid private key never enables secure mode', (tester) async {
+  testWidgets('secure mode generates a key pair and hides it again', (
+    tester,
+  ) async {
     await pumpEditor(tester);
     await openAdvanced(tester);
+    expect(field('Node Private Key (Base64)'), findsNothing);
+
+    await toggle(tester, 'Secure Mode');
+
+    final mode = networks.value['n1']!.secureMode!;
+    expect(mode.enabled, isTrue);
+    expect(validatePrivateKey(mode.localPrivateKey!), isNull);
+    expect(mode.localPublicKey, isNotEmpty);
+    expect(field('Node Private Key (Base64)'), findsOneWidget);
+    expect(
+      find.widgetWithText(TextField, 'Node Public Key (Base64)'),
+      findsOneWidget,
+    );
+
+    await toggle(tester, 'Secure Mode');
+
+    expect(networks.value['n1']!.secureMode!.enabled, isFalse);
+    expect(field('Node Private Key (Base64)'), findsNothing);
+    // The key pair stays for the next time secure mode is on.
+    expect(
+      networks.value['n1']!.secureMode!.localPrivateKey,
+      mode.localPrivateKey,
+    );
+  });
+
+  testWidgets('invalid private key never reaches the model', (tester) async {
+    await pumpEditor(tester);
+    await openAdvanced(tester);
+    await toggle(tester, 'Secure Mode');
+    final generated = networks.value['n1']!.secureMode!.localPrivateKey;
 
     await type(tester, 'Node Private Key (Base64)', 'AAAA');
     expect(find.text('Must be a base64-encoded 32-byte key'), findsOneWidget);
-    expect(networks.value['n1']!.secureMode, isNull);
+    expect(networks.value['n1']!.secureMode!.localPrivateKey, generated);
   });
 
   testWidgets('subnet proxy lines are saved once valid', (tester) async {
