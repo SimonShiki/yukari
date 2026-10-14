@@ -911,6 +911,15 @@
   "bookmarksNoResults": "没有匹配的书签",
   "bookmarksNoResultsDescription": "换个关键词，或清除筛选条件。",
   "bookmarksAdd": "添加书签",
+  "bookmarksEditNamed": "编辑 {name}",
+  "@bookmarksEditNamed": {
+    "description": "Accessibility label of a bookmark row that opens it for editing",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "bookmarksEdit": "编辑书签",
   "bookmarksDelete": "删除",
   "bookmarksDeleteConfirm": "删除 {name}？",

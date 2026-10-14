@@ -989,6 +989,15 @@
   "bookmarksNoResults": "No bookmarks match",
   "bookmarksNoResultsDescription": "Try another search, or clear the filters.",
   "bookmarksAdd": "Add Bookmark",
+  "bookmarksEditNamed": "Edit {name}",
+  "@bookmarksEditNamed": {
+    "description": "Accessibility label of a bookmark row that opens it for editing",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "bookmarksEdit": "Edit Bookmark",
   "bookmarksDelete": "Delete",
   "bookmarksDeleteConfirm": "Delete {name}?",

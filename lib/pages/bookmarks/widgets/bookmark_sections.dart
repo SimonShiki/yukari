@@ -14,12 +14,17 @@ class BookmarkSections extends StatelessWidget {
     super.key,
     required this.bookmarks,
     required this.itemBuilder,
+    required this.onEdit,
   });
 
   final List<Bookmark> bookmarks;
 
   /// Builds one row, so the page keeps the actions each bookmark offers.
   final Widget Function(Bookmark bookmark) itemBuilder;
+
+  /// Opens one of the user's own bookmarks for editing; shared nodes are
+  /// read-only and stay untappable.
+  final void Function(Bookmark bookmark) onEdit;
 
   @override
   Widget build(BuildContext context) {
@@ -45,6 +50,11 @@ class BookmarkSections extends StatelessWidget {
           title: context.l10n.bookmarksSectionMine,
           icon: Icons.bookmark,
           description: context.l10n.bookmarksSectionMineDescription,
+          onTap: mine.isEmpty ? null : (index) => onEdit(mine[index]),
+          semanticLabelBuilder: mine.isEmpty
+              ? null
+              : (index) =>
+                    context.l10n.bookmarksEditNamed(mine[index].displayName),
           children: mine.isEmpty
               ? [
                   EmptyListSegment(

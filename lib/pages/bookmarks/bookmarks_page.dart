@@ -128,7 +128,11 @@ class _BookmarksPageState extends State<BookmarksPage> {
                     ? BookmarksEmptyState(onCreate: _create)
                     : visible.isEmpty
                     ? BookmarksNoMatchesState(onClearFilters: _clearFilters)
-                    : BookmarkSections(bookmarks: visible, itemBuilder: _item),
+                    : BookmarkSections(
+                        bookmarks: visible,
+                        itemBuilder: _item,
+                        onEdit: _edit,
+                      ),
               ),
             ],
           ),

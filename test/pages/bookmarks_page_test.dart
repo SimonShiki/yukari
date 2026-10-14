@@ -104,6 +104,49 @@ void main() {
     expect(label.bottom, lessThanOrEqualTo(viewport.bottom));
   });
 
+  testWidgets('tapping a bookmark opens it for editing', (tester) async {
+    await tester.runAsync(
+      () => seedBookmarks([
+        testBookmark(
+          'b1',
+          host: 'relay.example.com',
+          name: 'Home relay',
+          tags: const ['fast'],
+        ),
+      ]),
+    );
+    await pump(tester);
+
+    await tester.tap(find.text('Home relay'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Edit Bookmark'), findsOneWidget);
+    expect(find.widgetWithText(TextFormField, 'Home relay'), findsOneWidget);
+    expect(find.widgetWithText(TextFormField, 'fast'), findsOneWidget);
+    expect(
+      find.widgetWithText(TextFormField, 'relay.example.com'),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('tapping a shared node does not open an editor', (tester) async {
+    await pump(
+      tester,
+      builtins: [
+        testBookmark(
+          'builtin:shared',
+          host: 'shared.example.com',
+          name: 'Community relay',
+        ),
+      ],
+    );
+
+    await tester.tap(find.text('Community relay'));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(AlertDialog), findsNothing);
+  });
+
   testWidgets('searches the saved bookmarks', (tester) async {
     await tester.runAsync(
       () => seedBookmarks([
