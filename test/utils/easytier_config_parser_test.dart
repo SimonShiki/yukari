@@ -34,6 +34,7 @@ mtu = 1400
     expect(network.flags.mtu, 1400);
     final node = network.nodes.single;
     expect(node.id, 'example.com:11010');
+    expect(node.url.toString(), 'example.com');
     expect(node.protocols, [NodeProtocol.tcp, NodeProtocol.udp]);
 
     final roundTrip = parseEasyTierConfig(network.toEasyTierToml());

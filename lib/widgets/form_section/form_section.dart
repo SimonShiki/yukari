@@ -12,6 +12,7 @@ class FormSection extends StatefulWidget {
     required this.icon,
     required this.children,
     this.description,
+    this.banner,
     this.footer,
     this.onTap,
     this.semanticLabelBuilder,
@@ -22,6 +23,10 @@ class FormSection extends StatefulWidget {
   final IconData icon;
   final String? description;
   final List<Widget> children;
+
+  /// Shown between the title and the segments, such as a warning about the
+  /// section's current state.
+  final Widget? banner;
 
   /// Shown under the segments, such as an add button.
   final Widget? footer;
@@ -113,6 +118,8 @@ class _FormSectionState extends State<FormSection> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         header,
+        if (widget.banner case final banner?)
+          Padding(padding: const EdgeInsets.only(bottom: 12), child: banner),
         AnimatedSize(
           duration: Durations.medium4,
           curve: Easing.emphasizedDecelerate,

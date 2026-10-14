@@ -13,6 +13,7 @@ class ListEntrySegment extends StatelessWidget {
     required this.supporting,
     required this.deleteTooltip,
     required this.onDelete,
+    this.actions = const [],
   });
 
   final IconData icon;
@@ -23,6 +24,9 @@ class ListEntrySegment extends StatelessWidget {
   final Widget supporting;
   final String deleteTooltip;
   final VoidCallback onDelete;
+
+  /// Extra buttons shown before the delete button.
+  final List<Widget> actions;
 
   @override
   Widget build(BuildContext context) => M3EListItem(
@@ -35,10 +39,16 @@ class ListEntrySegment extends StatelessWidget {
     ),
     headline: Text(headline, maxLines: 1, overflow: TextOverflow.ellipsis),
     supportingText: supporting,
-    trailing: IconButton(
-      icon: const Icon(Icons.delete_outline),
-      tooltip: deleteTooltip,
-      onPressed: onDelete,
+    trailing: Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        ...actions,
+        IconButton(
+          icon: const Icon(Icons.delete_outline),
+          tooltip: deleteTooltip,
+          onPressed: onDelete,
+        ),
+      ],
     ),
   );
 }

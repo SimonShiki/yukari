@@ -326,7 +326,6 @@
     }
   },
   "networkTunServiceOption": "\n• Use service mode in Settings, which runs networks in the background with full privileges.",
-  "bookmarksPage": "Bookmarks Page",
   "homeIpAddress": "IP address",
   "homePublicIp": "Public IP",
   "homeVirtualIp": "Virtual IP",
@@ -978,5 +977,169 @@
       }
     }
   },
-  "logNone": "none"
+  "logNone": "none",
+  "bookmarksSearchClear": "Clear search",
+  "bookmarksSearchHint": "Search bookmarks",
+  "bookmarksSectionShared": "Shared Nodes",
+  "bookmarksSectionSharedDescription": "Publicly served nodes you can add to any network",
+  "bookmarksSectionMine": "My Bookmarks",
+  "bookmarksSectionMineDescription": "Nodes you saved, with their tags and categories",
+  "bookmarksEmpty": "No bookmarks yet",
+  "bookmarksEmptyDescription": "Save a node from a network, or add one here to reuse it in every network.",
+  "bookmarksNoResults": "No bookmarks match",
+  "bookmarksNoResultsDescription": "Try another search, or clear the filters.",
+  "bookmarksAdd": "Add Bookmark",
+  "bookmarksEdit": "Edit Bookmark",
+  "bookmarksDelete": "Delete",
+  "bookmarksDeleteConfirm": "Delete {name}?",
+  "@bookmarksDeleteConfirm": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "bookmarksDeleteConfirmDescription": "It leaves this list only; networks that already use the node keep their peer.",
+  "bookmarksName": "Name (Optional)",
+  "bookmarksNameHelper": "Shown in this list; defaults to the address",
+  "bookmarksDescription": "Description (Optional)",
+  "bookmarksDescriptionHelper": "What this node is for",
+  "bookmarksCategory": "Category (Optional)",
+  "bookmarksCategoryHelper": "Group bookmarks, such as Public or Home",
+  "bookmarksTags": "Tags (Optional)",
+  "bookmarksTagsHelper": "Separate tags with commas",
+  "bookmarksFilterCategory": "Category",
+  "bookmarksFilterTags": "Tags",
+  "bookmarksClearFilters": "Clear filters",
+  "bookmarksAddToNetwork": "Add to Network",
+  "bookmarksAddToNetworkTitle": "Add to which network?",
+  "bookmarksNoNetworks": "No saved networks yet",
+  "bookmarksNoNetworksDescription": "Create a network first, then add this node to it.",
+  "bookmarksShare": "Share",
+  "bookmarksShareTitle": "Share {name}",
+  "@bookmarksShareTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "bookmarksShareOverNetwork": "Send over network",
+  "bookmarksShareOverNetworkSubtitle": "Hand it to a peer of a connected network",
+  "bookmarksShowQr": "Show QR code",
+  "bookmarksShowQrSubtitle": "Let another device scan this node",
+  "bookmarksCopyAddress": "Copy address",
+  "bookmarksExportJson": "Export as JSON",
+  "bookmarksExportJsonSubtitle": "A file you can import in another Yukari",
+  "bookmarksExportFile": "Export bookmarks",
+  "bookmarksImportFile": "Import from file",
+  "bookmarksExported": "Bookmarks exported",
+  "bookmarksImportNothingNew": "Nothing new to import",
+  "bookmarksImported": "Imported {count} bookmarks",
+  "@bookmarksImported": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "bookmarksImportInvalid": "Not a valid bookmarks file: {reason}",
+  "@bookmarksImportInvalid": {
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
+  "bookmarksImportFailed": "Import failed: {error}",
+  "@bookmarksImportFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "bookmarksExportFailed": "Export failed: {error}",
+  "@bookmarksExportFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "bookmarksFileUnavailable": "That file cannot be read",
+  "bookmarksShareUnavailable": "Sending over a network arrives with the data plane",
+  "bookmarksQrUnavailable": "QR sharing is not available yet",
+  "bookmarksCopied": "Copied {address}",
+  "@bookmarksCopied": {
+    "placeholders": {
+      "address": {
+        "type": "String"
+      }
+    }
+  },
+  "bookmarksSaveFailed": "Could not save the bookmark: {error}",
+  "@bookmarksSaveFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "bookmarksDeleteFailed": "Could not delete the bookmark: {error}",
+  "@bookmarksDeleteFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "bookmarksAlreadyInNetwork": "Already in {name}",
+  "@bookmarksAlreadyInNetwork": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "bookmarksAddedToNetwork": "Added to {name}",
+  "@bookmarksAddedToNetwork": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "bookmarksAddToNetworkFailed": "Could not add the node: {error}",
+  "@bookmarksAddToNetworkFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "bookmarksSaved": "Saved to bookmarks",
+  "bookmarksRemoved": "Removed from bookmarks",
+  "bookmarksFromBookmarks": "From Bookmarks",
+  "bookmarksPickerTitle": "Add from Bookmarks",
+  "bookmarksPickerEmpty": "No bookmarks to add",
+  "bookmarksPickerAdd": "Add {count}",
+  "@bookmarksPickerAdd": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "peersEmptyWarning": "This network has no initial peers, so it may not find anyone. Add a public node so it connects correctly.",
+  "peersEmptyAddPublic": "Add a Public Node",
+  "peersEmptyBrowse": "Browse Bookmarks",
+  "peersEmptyNoPublic": "No public nodes are bundled yet. Add a peer, or save one as a bookmark.",
+  "peersSaveToBookmarks": "Save to bookmarks",
+  "peersRemoveBookmark": "Remove from bookmarks",
+  "bookmarksFilters": "Filters",
+  "bookmarksFiltersDescription": "Narrow the bookmarks down by category or tag.",
+  "bookmarksNoFilters": "No categories or tags yet. Edit a bookmark to add them.",
+  "bookmarksScanQr": "Scan QR Code",
+  "bookmarksScanUnavailable": "Scanning a bookmark from a QR code is coming soon."
 }

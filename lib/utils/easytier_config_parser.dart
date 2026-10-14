@@ -178,7 +178,7 @@ List<Node> _parsePeers(List<dynamic> peers) {
       nodeId,
       () => Node(
         id: nodeId,
-        url: Uri(host: host),
+        url: nodeUrlForHost(host),
         port: port,
         protocols: [],
         publicKey: publicKey,

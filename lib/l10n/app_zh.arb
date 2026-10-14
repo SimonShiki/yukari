@@ -320,7 +320,6 @@
     }
   },
   "networkTunServiceOption": "\n• 在设置中使用服务模式，以完整权限在后台运行网络。",
-  "bookmarksPage": "书签页面",
   "homeIpAddress": "IP 地址",
   "homePublicIp": "公网 IP",
   "homeVirtualIp": "虚拟 IP",
@@ -900,5 +899,169 @@
       }
     }
   },
-  "logNone": "无"
+  "logNone": "无",
+  "bookmarksSearchClear": "清除搜索",
+  "bookmarksSearchHint": "搜索书签",
+  "bookmarksSectionShared": "共享节点",
+  "bookmarksSectionSharedDescription": "公开提供服务的节点，可加入任意网络",
+  "bookmarksSectionMine": "我的书签",
+  "bookmarksSectionMineDescription": "你保存的节点及其标签与分类",
+  "bookmarksEmpty": "还没有书签",
+  "bookmarksEmptyDescription": "从网络中保存一个节点，或在此手动添加，之后就能在各网络间复用。",
+  "bookmarksNoResults": "没有匹配的书签",
+  "bookmarksNoResultsDescription": "换个关键词，或清除筛选条件。",
+  "bookmarksAdd": "添加书签",
+  "bookmarksEdit": "编辑书签",
+  "bookmarksDelete": "删除",
+  "bookmarksDeleteConfirm": "删除 {name}？",
+  "@bookmarksDeleteConfirm": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "bookmarksDeleteConfirmDescription": "只会从书签列表中移除；已使用该节点的网络仍保留该节点。",
+  "bookmarksName": "名称（可选）",
+  "bookmarksNameHelper": "显示在列表中；留空则使用地址",
+  "bookmarksDescription": "描述（可选）",
+  "bookmarksDescriptionHelper": "该节点的用途",
+  "bookmarksCategory": "分类（可选）",
+  "bookmarksCategoryHelper": "用于归类，如「公开」或「家庭」",
+  "bookmarksTags": "标签（可选）",
+  "bookmarksTagsHelper": "多个标签用逗号分隔",
+  "bookmarksFilterCategory": "分类",
+  "bookmarksFilterTags": "标签",
+  "bookmarksClearFilters": "清除筛选",
+  "bookmarksAddToNetwork": "添加到网络",
+  "bookmarksAddToNetworkTitle": "添加到哪个网络？",
+  "bookmarksNoNetworks": "还没有已保存的网络",
+  "bookmarksNoNetworksDescription": "请先创建网络，再把这个节点添加进去。",
+  "bookmarksShare": "分享",
+  "bookmarksShareTitle": "分享 {name}",
+  "@bookmarksShareTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "bookmarksShareOverNetwork": "通过网络发送",
+  "bookmarksShareOverNetworkSubtitle": "发送给已连接网络中的节点",
+  "bookmarksShowQr": "显示二维码",
+  "bookmarksShowQrSubtitle": "让另一台设备扫描此节点",
+  "bookmarksCopyAddress": "复制地址",
+  "bookmarksExportJson": "导出为 JSON",
+  "bookmarksExportJsonSubtitle": "可在另一台 Yukari 上导入的文件",
+  "bookmarksExportFile": "导出书签",
+  "bookmarksImportFile": "从文件导入",
+  "bookmarksExported": "书签已导出",
+  "bookmarksImportNothingNew": "没有新的书签可导入",
+  "bookmarksImported": "已导入 {count} 个书签",
+  "@bookmarksImported": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "bookmarksImportInvalid": "不是有效的书签文件：{reason}",
+  "@bookmarksImportInvalid": {
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
+  "bookmarksImportFailed": "导入失败：{error}",
+  "@bookmarksImportFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "bookmarksExportFailed": "导出失败：{error}",
+  "@bookmarksExportFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "bookmarksFileUnavailable": "无法读取该文件",
+  "bookmarksShareUnavailable": "通过网络分享将随数据面功能一同提供",
+  "bookmarksQrUnavailable": "二维码分享暂不可用",
+  "bookmarksCopied": "已复制 {address}",
+  "@bookmarksCopied": {
+    "placeholders": {
+      "address": {
+        "type": "String"
+      }
+    }
+  },
+  "bookmarksSaveFailed": "无法保存书签：{error}",
+  "@bookmarksSaveFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "bookmarksDeleteFailed": "无法删除书签：{error}",
+  "@bookmarksDeleteFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "bookmarksAlreadyInNetwork": "已在 {name} 中",
+  "@bookmarksAlreadyInNetwork": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "bookmarksAddedToNetwork": "已添加到 {name}",
+  "@bookmarksAddedToNetwork": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "bookmarksAddToNetworkFailed": "无法添加该节点：{error}",
+  "@bookmarksAddToNetworkFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "bookmarksSaved": "已保存到书签",
+  "bookmarksRemoved": "已从书签中移除",
+  "bookmarksFromBookmarks": "从书签添加",
+  "bookmarksPickerTitle": "从书签添加",
+  "bookmarksPickerEmpty": "没有可添加的书签",
+  "bookmarksPickerAdd": "添加 {count} 个",
+  "@bookmarksPickerAdd": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "peersEmptyWarning": "该网络没有初始节点，可能无法发现其他节点。添加一个公共节点即可正常连接。",
+  "peersEmptyAddPublic": "添加公共节点",
+  "peersEmptyBrowse": "浏览书签",
+  "peersEmptyNoPublic": "目前还没有内置公共节点。请手动添加节点，或先将其保存为书签。",
+  "peersSaveToBookmarks": "保存到书签",
+  "peersRemoveBookmark": "从书签中移除",
+  "bookmarksFilters": "筛选",
+  "bookmarksFiltersDescription": "按分类或标签缩小书签范围。",
+  "bookmarksNoFilters": "还没有分类或标签。编辑书签即可添加。",
+  "bookmarksScanQr": "扫描二维码",
+  "bookmarksScanUnavailable": "通过二维码扫描书签的功能即将推出。"
 }

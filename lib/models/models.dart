@@ -1,4 +1,5 @@
 export 'backend.dart';
+export 'bookmark.dart';
 export 'network_flags.dart';
 export 'instance.dart';
 export 'network.dart';

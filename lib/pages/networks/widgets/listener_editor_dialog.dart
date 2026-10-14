@@ -56,6 +56,9 @@ class _ListenerEditorDialogState extends State<ListenerEditorDialog> {
             : context.l10n.networkEditListener,
       ),
       content: SingleChildScrollView(
+        // Room for the first field's floating label, which the scroll view
+        // clips when it starts flush with the content edge.
+        padding: const EdgeInsets.only(top: 10),
         child: SizedBox(
           width: MediaQuery.of(context).size.width * 0.8,
           child: Form(

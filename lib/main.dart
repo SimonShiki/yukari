@@ -9,7 +9,9 @@ import 'utils/theme_provider.dart' as theme_provider;
 import 'router.dart';
 
 import 'signals/backend.dart';
+import 'signals/bookmarks.dart' as bookmarks;
 import 'signals/networks.dart' as networks;
+import 'storage/bookmark_store.dart';
 import 'storage/network_store.dart';
 
 Future<void> main() async {
@@ -18,6 +20,7 @@ Future<void> main() async {
   // Load persistent data before running. The service reads the same store.
   final dataDir = (await getApplicationSupportDirectory()).path;
   await networks.init(NetworkStore.inDirectory(dataDir));
+  await bookmarks.init(BookmarkStore.inDirectory(dataDir));
   await initBackend(dataDir);
   await initLocale();
 
