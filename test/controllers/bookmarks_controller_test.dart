@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:yukari/constants/builtin_bookmarks.dart';
 import 'package:yukari/controllers/bookmarks_controller.dart';
 import 'package:yukari/models/node.dart';
 import 'package:yukari/signals/networks.dart';
@@ -32,7 +33,9 @@ void main() {
     final controller = BookmarksController(showMessage: (_) {});
     addTearDown(controller.dispose);
 
+    final builtinIds = [for (final bookmark in builtinBookmarks) bookmark.id];
     expect(controller.visible.value.map((bookmark) => bookmark.id), [
+      ...builtinIds,
       'b1',
       'b2',
       'b3',
@@ -61,7 +64,7 @@ void main() {
 
     controller.clearFilters();
     expect(controller.filtered, isFalse);
-    expect(controller.visible.value.length, 3);
+    expect(controller.visible.value.length, builtinIds.length + 3);
   });
 
   test('lists the categories and tags in use', () async {
@@ -73,8 +76,14 @@ void main() {
     final controller = BookmarksController(showMessage: (_) {});
     addTearDown(controller.dispose);
 
-    expect(controller.categories.value, ['Home', 'Public']);
-    expect(controller.availableTags.value, ['fast', 'tcp']);
+    // The built-in shared nodes contribute their own category and tags.
+    expect(controller.categories.value, ['Home', 'Public', sharedNodeCategory]);
+    expect(controller.availableTags.value, [
+      'fast',
+      sharedNodeOverseasTag,
+      sharedNodeRelayTag,
+      'tcp',
+    ]);
   });
 
   test('shows built-in shared nodes before the saved ones', () async {

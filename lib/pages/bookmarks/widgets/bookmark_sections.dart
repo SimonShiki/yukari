@@ -49,7 +49,6 @@ class BookmarkSections extends StatelessWidget {
         FormSection(
           title: context.l10n.bookmarksSectionMine,
           icon: Icons.bookmark,
-          description: context.l10n.bookmarksSectionMineDescription,
           onTap: mine.isEmpty ? null : (index) => onEdit(mine[index]),
           semanticLabelBuilder: mine.isEmpty
               ? null

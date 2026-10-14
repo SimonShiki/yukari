@@ -62,11 +62,11 @@ void main() {
       find.text(
         'No public nodes are bundled yet. Add a peer, or save one as a bookmark.',
       ),
-      findsOneWidget,
+      findsNothing,
     );
     expect(find.text('No peers configured'), findsOneWidget);
     expect(find.text('Browse Bookmarks'), findsWidgets);
-    expect(find.text('Add a Public Node'), findsNothing);
+    expect(find.text('Add a Public Node'), findsOneWidget);
   });
 
   testWidgets('adds bookmarks to the initial peers', (tester) async {

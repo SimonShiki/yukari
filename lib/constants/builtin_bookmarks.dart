@@ -6,22 +6,79 @@ import '../models/node.dart';
 /// never written to `bookmarks.json`.
 const String builtinBookmarkIdPrefix = 'builtin:';
 
+/// The category every built-in shared node carries.
+const String sharedNodeCategory = '公益节点';
+
+/// Tag on a shared node that relays traffic for peers which cannot reach each
+/// other directly.
+const String sharedNodeRelayTag = 'relay';
+
+/// Tag on a shared node hosted outside mainland China.
+const String sharedNodeOverseasTag = 'overseas';
+
 /// Publicly served EasyTier nodes offered out of the box, so a new network
 /// has somewhere to connect without hunting for an address.
 ///
-/// Deliberately empty for now: EasyTier publishes no official public node
-/// (its docs only use `<SharedNodeIP>` placeholders), and the community ones
-/// move around, so shipping addresses here would hand users dead peers. Add
-/// entries with [sharedNode] and an id prefixed [builtinBookmarkIdPrefix];
-/// the bookmarks page lists them under "Shared Nodes" and the editor's "no
-/// initial peers" tip offers them as one-tap additions.
+/// Community contributed, taken from the third-party monitor at
+/// https://info.qtet.cn/uptime/easytier, which also reports each node's
+/// operator, location and relay support. Every entry answered an EasyTier
+/// handshake and held the connection for a full monitor window, secure-mode
+/// clients included, and every one of them relays.
 ///
-/// Candidates to check before adding, from the EasyTier community: the
-/// third-party list at https://info.qtet.cn/uptime/easytier and the
-/// "shared nodes" discussion on the EasyTier repository. Public relays can
-/// see connection metadata and may be untrusted, so consider pinning a
+/// Community nodes come and go, so an entry may go dead between releases; the
+/// bookmarks page lists them under "Shared Nodes". Public relays can see
+/// connection metadata and may be untrusted, so consider pinning a
 /// `publicKey` on entries that support it.
-final List<Bookmark> builtinBookmarks = [];
+final List<Bookmark> builtinBookmarks = [
+  sharedNode(
+    id: '225284.xyz',
+    name: '海波 · Shanghai Telecom',
+    host: '225284.xyz',
+    port: 11010,
+    protocols: const [NodeProtocol.tcp],
+    tags: const [sharedNodeRelayTag],
+  ),
+  sharedNode(
+    id: '183.230.36.171',
+    name: 'Just the Two of Us · Chongqing Mobile',
+    host: '183.230.36.171',
+    port: 11010,
+    protocols: const [NodeProtocol.tcp],
+    tags: const [sharedNodeRelayTag],
+  ),
+  sharedNode(
+    id: 'easytier.weiai.org.cn',
+    name: '为爱唯爱 · Xiamen Telecom',
+    host: 'easytier.weiai.org.cn',
+    port: 11010,
+    protocols: const [NodeProtocol.tcp],
+    tags: const [sharedNodeRelayTag],
+  ),
+  sharedNode(
+    id: 'et.chinokou.cn',
+    name: 'ChinoKou · EdgeOne CDN',
+    host: 'et.chinokou.cn',
+    port: 443,
+    protocols: const [NodeProtocol.wss],
+    tags: const [sharedNodeRelayTag],
+  ),
+  sharedNode(
+    id: 'et.basd1.de',
+    name: '宇智波希 · Zaozhuang BGP',
+    host: 'et.basd1.de',
+    port: 11010,
+    protocols: const [NodeProtocol.udp],
+    tags: const [sharedNodeRelayTag],
+  ),
+  sharedNode(
+    id: 'us01.225284.xyz',
+    name: '海波 · US',
+    host: 'us01.225284.xyz',
+    port: 11010,
+    protocols: const [NodeProtocol.udp],
+    tags: const [sharedNodeRelayTag, sharedNodeOverseasTag],
+  ),
+];
 
 /// Whether [bookmark] is one of [builtinBookmarks] rather than a saved one.
 bool isBuiltinBookmark(Bookmark bookmark) =>
@@ -35,7 +92,7 @@ Bookmark sharedNode({
   required int port,
   required List<NodeProtocol> protocols,
   String? description,
-  String? category,
+  String? category = sharedNodeCategory,
   String? publicKey,
   List<String> tags = const [],
 }) => Bookmark(

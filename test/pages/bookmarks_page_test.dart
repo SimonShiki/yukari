@@ -1,10 +1,12 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
+import 'package:yukari/constants/builtin_bookmarks.dart';
 import 'package:yukari/controllers/bookmarks_controller.dart';
 import 'package:yukari/l10n/l10n.dart';
 import 'package:yukari/models/bookmark.dart';
 import 'package:yukari/models/node.dart';
 import 'package:yukari/pages/bookmarks/bookmarks_page.dart';
+import 'package:yukari/pages/bookmarks/widgets/bookmark_list_item.dart';
 import 'package:yukari/signals/bookmarks.dart';
 import 'package:yukari/signals/networks.dart' as saved_networks;
 
@@ -51,7 +53,8 @@ void main() {
 
   testWidgets('shows the empty state and saves a new bookmark', (tester) async {
     await real(tester, () async {
-      await pump(tester);
+      // Without bundling a shared node, so the page opens on its empty state.
+      await pump(tester, builtins: const []);
 
       expect(find.text('No bookmarks yet'), findsOneWidget);
 
@@ -167,7 +170,7 @@ void main() {
 
     controller.clearFilters();
     await tester.pumpAndSettle();
-    expect(controller.visible.value.length, 2);
+    expect(controller.visible.value.length, builtinBookmarks.length + 2);
   });
 
   testWidgets('filters by category and tag from the sidebar', (tester) async {
@@ -215,10 +218,18 @@ void main() {
 
   testWidgets('adds the bookmark to the chosen network', (tester) async {
     await real(tester, () async {
-      await seedBookmarks([testBookmark('b1', host: 'relay.example.com')]);
+      await seedBookmarks([
+        testBookmark('b1', host: 'relay.example.com', name: 'Home relay'),
+      ]);
       await pump(tester);
 
-      await tester.tap(find.byTooltip('Add to Network').first);
+      // Only the saved bookmark's own row, not the bundled shared nodes.
+      await tester.tap(
+        find.descendant(
+          of: find.widgetWithText(BookmarkListItem, 'Home relay'),
+          matching: find.byTooltip('Add to Network'),
+        ),
+      );
       await tester.pumpAndSettle();
       expect(find.text('Add to which network?'), findsOneWidget);
 
