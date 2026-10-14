@@ -4,6 +4,7 @@ import '../../controllers/backend_settings_controller.dart';
 import '../../l10n/l10n.dart';
 import '../../models/backend.dart';
 import '../../widgets/form_section/section_list.dart';
+import '../../widgets/snackbar/app_snackbar.dart';
 import 'widgets/backend_mode_section.dart';
 import 'widgets/interface_section.dart';
 import 'widgets/service_section.dart';
@@ -23,8 +24,7 @@ class _SettingsPageState extends State<SettingsPage> {
       BackendSettingsController(
         showMessage: (message) {
           if (!mounted) return;
-          ScaffoldMessenger.of(context)
-              .showSnackBar(SnackBar(content: Text(message)));
+          showAppSnackBar(context, message);
         },
         confirmStopNetworks: _confirmStopNetworks,
       );

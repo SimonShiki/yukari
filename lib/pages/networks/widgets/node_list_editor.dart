@@ -10,6 +10,7 @@ import '../../../models/node.dart';
 import '../../../signals/bookmarks.dart';
 import '../../../widgets/bookmark_picker/bookmark_picker_dialog.dart';
 import '../../../widgets/form_section/form_section.dart';
+import '../../../widgets/snackbar/app_snackbar.dart';
 import 'empty_peers_notice.dart';
 import 'list_editor_segments.dart';
 import 'node_editor_dialog.dart';
@@ -144,25 +145,22 @@ class _NodeListEditorState extends State<NodeListEditor> {
   /// Saves [node] as a bookmark, or removes the bookmark already holding it.
   Future<void> _toggleBookmark(Node node) async {
     final l10n = context.l10n;
-    final messenger = ScaffoldMessenger.of(context);
     final existing = bookmarkFor(node);
     try {
       if (existing != null) {
         await deleteBookmark(existing.id);
         if (!mounted) return;
-        messenger.showSnackBar(SnackBar(content: Text(l10n.bookmarksRemoved)));
+        showAppSnackBar(context, l10n.bookmarksRemoved);
         return;
       }
       await addBookmark(
         Bookmark(id: const Uuid().v4(), node: node.copy(), name: node.id),
       );
       if (!mounted) return;
-      messenger.showSnackBar(SnackBar(content: Text(l10n.bookmarksSaved)));
+      showAppSnackBar(context, l10n.bookmarksSaved);
     } catch (error) {
       if (!mounted) return;
-      messenger.showSnackBar(
-        SnackBar(content: Text(l10n.bookmarksSaveFailed('$error'))),
-      );
+      showAppSnackBar(context, l10n.bookmarksSaveFailed('$error'));
     }
   }
 }

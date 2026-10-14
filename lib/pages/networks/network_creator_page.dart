@@ -8,6 +8,7 @@ import '../../l10n/l10n.dart';
 import '../../models/network.dart';
 import '../../signals/networks.dart';
 import '../../utils/validator.dart';
+import '../../widgets/snackbar/app_snackbar.dart';
 
 class NetworkCreatorPage extends SignalStatefulWidget {
   const NetworkCreatorPage({super.key});
@@ -50,10 +51,9 @@ class _NetworkCreatorPageState extends State<NetworkCreatorPage> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(context.l10n.networkCreateFailed(e.toString())),
-          ),
+        showAppSnackBar(
+          context,
+          context.l10n.networkCreateFailed(e.toString()),
         );
       }
     } finally {

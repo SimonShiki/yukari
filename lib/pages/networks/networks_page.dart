@@ -8,6 +8,7 @@ import '../../l10n/l10n.dart';
 import '../../widgets/network_card/network_card_list.dart';
 import '../../widgets/network_card/network_card_data.dart';
 import '../../widgets/empty_state/empty_state.dart';
+import '../../widgets/snackbar/app_snackbar.dart';
 import 'editor_exit_guard.dart';
 import 'network_editor_page.dart';
 import 'network_page_dialogs.dart';
@@ -48,8 +49,7 @@ class _NetworksPageState extends State<NetworksPage>
           },
           showMessage: (message) {
             if (!mounted) return;
-            ScaffoldMessenger.of(context)
-                .showSnackBar(SnackBar(content: Text(message)));
+            showAppSnackBar(context, message);
           },
           confirmDelete: (network) => confirmNetworkDeletion(context, network),
           showTunPermissionWarning: (network) =>
@@ -97,6 +97,14 @@ class _NetworksPageState extends State<NetworksPage>
         builder: (context, constraints) {
           final isLargeScreen = constraints.maxWidth >= 840;
           final showDetail = isLargeScreen && selectedNetwork != null;
+          // Beside a detail pane the menu belongs to the list pane, but on its
+          // own it is the page's FAB, so the Scaffold can nudge a floating
+          // snackbar above it.
+          final createMenu = NetworkCreateMenu(
+            onCreate: _controller.createManually,
+            onImport: _controller.importFromFile,
+            onScan: _controller.scanQrCode,
+          );
 
           return Scaffold(
             appBar: AppBar(
@@ -245,15 +253,8 @@ class _NetworksPageState extends State<NetworksPage>
                             ),
                           ],
                         ),
-                        Positioned(
-                          right: 16,
-                          bottom: 16,
-                          child: NetworkCreateMenu(
-                            onCreate: _controller.createManually,
-                            onImport: _controller.importFromFile,
-                            onScan: _controller.scanQrCode,
-                          ),
-                        ),
+                        if (isLargeScreen)
+                          Positioned(right: 16, bottom: 16, child: createMenu),
                       ],
                     ),
                   ),
@@ -286,6 +287,7 @@ class _NetworksPageState extends State<NetworksPage>
                 ],
               ),
             ),
+            floatingActionButton: isLargeScreen ? null : createMenu,
           );
         },
       );

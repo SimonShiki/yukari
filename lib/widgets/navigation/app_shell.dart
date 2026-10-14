@@ -88,14 +88,14 @@ class AppShell extends StatelessWidget {
               labelType: NavigationRailLabelType.all,
               destinations: railDestinations,
             ),
-            Expanded(child: child),
+            Expanded(child: _PageMessenger(child: child)),
           ],
         ),
       );
     }
 
     return Scaffold(
-      body: child,
+      body: _PageMessenger(child: child),
       bottomNavigationBar: NavigationBar(
         selectedIndex: currentIndex,
         onDestinationSelected: (index) =>
@@ -104,4 +104,20 @@ class AppShell extends StatelessWidget {
       ),
     );
   }
+}
+
+/// Presents the pages' snackbars through their own Scaffold.
+///
+/// A ScaffoldMessenger only shows a snackbar in the root Scaffold of a nested
+/// set, and the shell Scaffold has no floating action button. Giving the shell
+/// body its own messenger makes each page Scaffold that root, so a floating
+/// snackbar is nudged above that page's FAB and above the navigation bar
+/// instead of covering them.
+class _PageMessenger extends StatelessWidget {
+  const _PageMessenger({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) => ScaffoldMessenger(child: child);
 }

@@ -7,6 +7,7 @@ import '../../controllers/bookmarks_controller.dart';
 import '../../l10n/l10n.dart';
 import '../../models/bookmark.dart';
 import '../../signals/bookmarks.dart' as saved;
+import '../../widgets/snackbar/app_snackbar.dart';
 import 'widgets/bookmark_delete_dialog.dart';
 import 'widgets/bookmark_editor_dialog.dart';
 import 'widgets/bookmark_empty_states.dart';
@@ -40,8 +41,7 @@ class _BookmarksPageState extends State<BookmarksPage> {
 
   void _showMessage(String message) {
     if (!mounted) return;
-    ScaffoldMessenger.of(context)
-        .showSnackBar(SnackBar(content: Text(message)));
+    showAppSnackBar(context, message);
   }
 
   Future<void> _create() => showDialog<void>(

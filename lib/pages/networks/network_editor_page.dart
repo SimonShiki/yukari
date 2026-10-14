@@ -5,6 +5,7 @@ import 'package:signals_flutter/signals_flutter.dart';
 import '../../controllers/network_editor_controller.dart';
 import '../../l10n/l10n.dart';
 import '../../widgets/empty_state/empty_state.dart';
+import '../../widgets/snackbar/app_snackbar.dart';
 import 'editor_exit_guard.dart';
 import 'widgets/network_basic_tab.dart';
 import 'widgets/network_advanced_tab.dart';
@@ -26,8 +27,7 @@ class _NetworkEditorPageState extends State<NetworkEditorPage> {
     id: widget.id,
     showMessage: (message) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text(message)));
+      showAppSnackBar(context, message);
     },
   );
 
