@@ -1,24 +1,43 @@
 > If you're a human, read <./CONTRIBUTING.md> 🥰
 Yukari is a cross-platform decentrailized networking tool that based on EasyTier.
+
 # Architecture
+
 ## Models
+
 Models are the data structure that the app uses. which stored in `models/` folder. Think whether to add before implement a new feature.
+
 ## Signals
-Signals are the way, and in most cases the only way, that the UI and the actual logic communicate. Before writing, check Flutter skills (or remote if local not exists: https://github.com/rodydavis/signals.dart/tree/main/skills/signals-flutter). Any changes that trigger the UI change should be done through them.
+
+Signals are the way, and in most cases the only way, that the UI and the actual logic communicate. Before writing, check Flutter skills (or remote if local not exists: <https://github.com/rodydavis/signals.dart/tree/main/skills/signals-flutter>). Any changes that trigger the UI change should be done through them.
 `signals/` stores global app state. for local, put in controllers.
+
 ## Storage
+
 `storage/network_store.dart` keeps saved networks in `networks.json` in the app data directory. The app is its only writer (through `signals/networks.dart`); the service reads the same file read-only.
+
 ## Backend
+
 `backend/` holds everything that runs EasyTier, behind one `NetworkBackend` interface: `FfiBackend` (in process), `AndroidBackend` (in process + VpnService) and `ServiceBackend` (IPC client of the service). Controllers run networks only through the active backend in `signals/backend.dart`, never through `bindings/` or platform APIs. Privilege checks and elevation live in `backend/privilege*.dart`, service registration (systemd, Windows SCM) in `backend/system/`.
+
 ## Service
+
 `daemon/` and `bin/yukari_service.dart` are the background service: a headless Dart executable (`dart build cli`, bundled as `bin/yukari-service` by `tool/yukari_service.cmake`) that serves an `FfiBackend` over JSON-RPC 2.0 (`backend/ipc/`) and starts `autoStart` networks on boot. Everything it imports must stay pure Dart, so keep Flutter out of the code `daemon/` reaches; the Android backend, which needs a platform channel, is the exception. On Android, where Dart cannot build executables, a KernelSU/Magisk module (`tool/service_module/`, packed by `tool/pack_service_module.sh`) runs the Linux build on bundled glibc; the app downloads it from the `ksu-service-module` release, then installs and controls it through `su` (`backend/system/module_service_control.dart`). Bump `serviceVersion` in `backend/service_version.dart` whenever code the service runs changes, so the app offers to update older services.
+
 ## Pages & Controller
+
 Pages are UI, controllers handle the logic.
+
 ## Widgets
+
 If a widget is too complex or it likely to be reuse, then put it in `widgets/` folder.
+
 # Designing
+
 For designing stuffs, use Material Design 3 Expressive. read [https://m3.material.io/](https://m3.material.io/) or local skills to confirm the most-suitable design in my given scenario. Prefer using `m3e_core` components.
+
 # Common rules when you contributing
+
 Before you write it at all, Work down this list and stop at the first answer that holds.
 
 1. Does this need to exist? A flag nobody asked for, a knob for a value that never changes, an interface with one implementation: skip it and say so in one line.
@@ -39,8 +58,4 @@ report did not mention.
 Never simplify away input validation at a trust boundary, a fail-closed check, error
 handling that loses state, or anything the requester asked for by name.
 
-## Reuse before you write
-
-The largest cleanup this project ever needed was caused by writing new code beside existing
-code instead of extending it: a 700-line duplicate of the container config form, three
-copies of the init system screen, one bottom bar pasted seven times. Grep before you write.
+During the work, NEVER touch the Git, let the human to review and check.
