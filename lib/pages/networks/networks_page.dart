@@ -176,10 +176,11 @@ class _NetworksPageState extends State<NetworksPage>
                                                   onOpen: isLargeScreen
                                                       ? () {
                                                           if (card.id !=
-                                                              selectedNetwork)
+                                                              selectedNetwork) {
                                                             _leaveEditor(
                                                               card.onOpen,
                                                             );
+                                                          }
                                                         }
                                                       : () {
                                                           if (card.running) {
@@ -232,8 +233,9 @@ class _NetworksPageState extends State<NetworksPage>
                                                   final card = cards[index];
                                                   if (isLargeScreen) {
                                                     if (card.id !=
-                                                        selectedNetwork)
+                                                        selectedNetwork) {
                                                       _leaveEditor(card.onOpen);
+                                                    }
                                                   } else if (card.running) {
                                                     context.go(
                                                       '/networks/instance/${card.id}',
