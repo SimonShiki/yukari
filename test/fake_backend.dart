@@ -54,3 +54,21 @@ class FakeBackend extends NetworkBackend {
   @override
   Future<void> dispose() async {}
 }
+
+/// A backend that counts its collections, and can be made to fail them.
+class CountingBackend extends FakeBackend {
+  CountingBackend({super.collected, this.failCollect = false});
+
+  /// Whether [collectInfos] throws instead of returning.
+  final bool failCollect;
+
+  /// How often [collectInfos] was called.
+  int collects = 0;
+
+  @override
+  Future<Map<String, String>> collectInfos() async {
+    collects++;
+    if (failCollect) throw Exception('boom');
+    return super.collectInfos();
+  }
+}

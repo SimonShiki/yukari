@@ -30,10 +30,19 @@ String nodeUrlText(Uri uri) {
   return uri.toString();
 }
 
+/// The host and port that identify a node's peer, whatever the node is named
+/// or its address is displayed as.
+///
+/// A record, so peer identity never depends on how an address is written.
+(String host, int port) nodeIdentity(Node node) =>
+    (nodeHost(node.url), node.port);
+
+/// The `host:port` an address shows under a node's name.
+String nodeHostPort(Node node) => '${nodeHost(node.url)}:${node.port}';
+
 /// Whether both nodes reach the same host and port, whatever they are named
 /// or which protocols they offer.
-bool sameNode(Node a, Node b) =>
-    nodeHost(a.url) == nodeHost(b.url) && a.port == b.port;
+bool sameNode(Node a, Node b) => nodeIdentity(a) == nodeIdentity(b);
 
 enum NodeProtocol { tcp, udp, ws, wss, quic, wg }
 

@@ -51,5 +51,5 @@ final class Bookmark {
   }
 
   /// `host:port`, the address a list shows under the name.
-  String get address => '${nodeHost(node.url)}:${node.port}';
+  String get address => nodeHostPort(node);
 }

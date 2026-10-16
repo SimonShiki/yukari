@@ -148,7 +148,7 @@ void main() {
     tester,
   ) async {
     await tester.runAsync(seedNetworks);
-    final backend = _CountingBackend();
+    final backend = CountingBackend(collected: () => {'alpha': _info});
     final controller = NetworkInstanceController(
       id: 'n1',
       backend: backend,
@@ -225,19 +225,6 @@ class _FlakyBackend extends FakeBackend {
   @override
   Future<Map<String, String>> collectInfos() async {
     if (fail) throw Exception('lost');
-    return super.collectInfos();
-  }
-}
-
-/// A backend that counts how often it was asked to collect.
-class _CountingBackend extends FakeBackend {
-  _CountingBackend() : super(collected: () => {'alpha': _info});
-
-  int collects = 0;
-
-  @override
-  Future<Map<String, String>> collectInfos() async {
-    collects++;
     return super.collectInfos();
   }
 }

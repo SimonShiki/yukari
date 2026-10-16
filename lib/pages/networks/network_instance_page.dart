@@ -4,7 +4,8 @@ import 'package:signals_flutter/signals_flutter.dart';
 
 import '../../controllers/network_instance_controller.dart';
 import '../../l10n/l10n.dart';
-import '../../widgets/empty_state/empty_state.dart';
+import '../../widgets/empty_state/missing_network_state.dart';
+import 'foreground_active.dart';
 import 'widgets/instance_tabs.dart';
 
 export '../../controllers/network_instance_controller.dart' show InstanceTab;
@@ -36,7 +37,10 @@ class NetworkInstancePage extends StatefulWidget {
 }
 
 class _NetworkInstancePageState extends State<NetworkInstancePage>
-    with SingleTickerProviderStateMixin, WidgetsBindingObserver {
+    with
+        SingleTickerProviderStateMixin,
+        WidgetsBindingObserver,
+        ForegroundActive<NetworkInstancePage> {
   late final NetworkInstanceController _controller =
       widget.controller ??
       NetworkInstanceController(
@@ -50,12 +54,11 @@ class _NetworkInstancePageState extends State<NetworkInstancePage>
     initialIndex: _controller.selectedTab.value.index,
   );
   late final void Function() _stopTabEffect;
-  bool _foreground = true;
 
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addObserver(this);
+    startForegroundTracking();
     _tabs.addListener(_pushTab);
     // Controller -> widget: the controller owns the selected tab, and the
     // listener below reports the user's own switches back to it.
@@ -67,27 +70,13 @@ class _NetworkInstancePageState extends State<NetworkInstancePage>
 
   void _pushTab() => _controller.selectTab(InstanceTab.values[_tabs.index]);
 
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    _syncActive();
-  }
-
-  @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
-    _foreground = state == AppLifecycleState.resumed;
-    _syncActive();
-  }
-
   /// The 2s refresh only runs while the page is in the foreground.
-  void _syncActive() => _controller.setActive(
-    _foreground && (ModalRoute.isCurrentOf(context) ?? false),
-  );
+  @override
+  void setActive(bool active) => _controller.setActive(active);
 
   @override
   void dispose() {
-    WidgetsBinding.instance.removeObserver(this);
-    _controller.setActive(false);
+    stopForegroundTracking();
     _stopTabEffect();
     _tabs.dispose();
     if (widget.controller == null) _controller.dispose();
@@ -116,15 +105,7 @@ class _NetworkInstancePageState extends State<NetworkInstancePage>
               ),
       ),
       body: missing
-          ? EmptyState(
-              icon: Icons.error_outline,
-              title: l10n.networkMissing,
-              message: l10n.networkMissingDescription,
-              action: FilledButton(
-                onPressed: () => context.go('/networks'),
-                child: Text(l10n.commonGoBack),
-              ),
-            )
+          ? MissingNetworkState(onGoBack: () => context.go('/networks'))
           : TabBarView(
               controller: _tabs,
               children: [

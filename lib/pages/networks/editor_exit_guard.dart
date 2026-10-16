@@ -1,6 +1,7 @@
 import 'package:material_ui/material_ui.dart';
 
 import '../../l10n/l10n.dart';
+import '../../widgets/dialog/confirm_dialog.dart';
 
 /// Keys the exit guards are registered under.
 ///
@@ -40,26 +41,12 @@ Future<bool> confirmLeavingPage(BuildContext context, Key pageKey) async {
 
 /// Asks whether invalid input may be discarded; true when the user discards,
 /// false when it is kept (including a dismissed dialog).
-Future<bool> confirmDiscardChanges(BuildContext context) async =>
-    await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        icon: const Icon(Icons.warning_amber_rounded),
-        title: Text(context.l10n.networkDiscardTitle),
-        content: Text(context.l10n.networkDiscardDescription),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: Text(context.l10n.networkKeepEditing),
-          ),
-          TextButton(
-            style: TextButton.styleFrom(
-              foregroundColor: Theme.of(context).colorScheme.error,
-            ),
-            onPressed: () => Navigator.of(context).pop(true),
-            child: Text(context.l10n.networkDiscard),
-          ),
-        ],
-      ),
-    ) ??
-    false;
+Future<bool> confirmDiscardChanges(BuildContext context) => showConfirmDialog(
+  context,
+  icon: Icons.warning_amber_rounded,
+  title: context.l10n.networkDiscardTitle,
+  message: context.l10n.networkDiscardDescription,
+  confirmLabel: context.l10n.networkDiscard,
+  cancelLabel: context.l10n.networkKeepEditing,
+  destructive: true,
+);

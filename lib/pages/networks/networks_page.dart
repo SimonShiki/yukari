@@ -7,6 +7,7 @@ import '../../l10n/l10n.dart';
 import '../../widgets/network_card/network_card_data.dart';
 import '../../widgets/snackbar/app_snackbar.dart';
 import 'editor_exit_guard.dart';
+import 'foreground_active.dart';
 import 'network_create_menu.dart';
 import 'network_editor_page.dart';
 import 'network_instance_page.dart';
@@ -23,7 +24,8 @@ class NetworksPage extends StatefulWidget {
   State<NetworksPage> createState() => _NetworksPageState();
 }
 
-class _NetworksPageState extends State<NetworksPage> with WidgetsBindingObserver {
+class _NetworksPageState extends State<NetworksPage>
+    with WidgetsBindingObserver, ForegroundActive<NetworksPage> {
   late final NetworkPageController _controller =
       widget.controller ??
       NetworkPageController(
@@ -40,7 +42,6 @@ class _NetworksPageState extends State<NetworksPage> with WidgetsBindingObserver
         invalidInput: _paneInvalid,
         confirmDiscardDialog: () => confirmDiscardChanges(context),
       );
-  bool _foreground = true;
 
   /// The window class the last layout ran with, for the controller's actions.
   bool _wide = false;
@@ -52,33 +53,19 @@ class _NetworksPageState extends State<NetworksPage> with WidgetsBindingObserver
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addObserver(this);
+    startForegroundTracking();
     _controller.start();
     registerExitGuard(networksGuardKey, _paneInvalid);
   }
 
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    _syncActive();
-  }
-
-  @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
-    _foreground = state == AppLifecycleState.resumed;
-    _syncActive();
-  }
-
   /// The 10s refresh only runs while the list is visible in the foreground.
-  void _syncActive() => _controller.setActive(
-    _foreground && (ModalRoute.isCurrentOf(context) ?? false),
-  );
+  @override
+  void setActive(bool active) => _controller.setActive(active);
 
   @override
   void dispose() {
-    WidgetsBinding.instance.removeObserver(this);
+    stopForegroundTracking();
     unregisterExitGuard(networksGuardKey);
-    _controller.setActive(false);
     if (widget.controller == null) _controller.dispose();
     super.dispose();
   }

@@ -3,7 +3,7 @@ import 'package:signals_flutter/signals_flutter.dart';
 
 import '../../controllers/network_editor_controller.dart';
 import '../../l10n/l10n.dart';
-import '../../widgets/empty_state/empty_state.dart';
+import '../../widgets/empty_state/missing_network_state.dart';
 import '../../widgets/snackbar/app_snackbar.dart';
 import 'editor_exit_guard.dart';
 import 'widgets/advanced_tab.dart';
@@ -74,15 +74,7 @@ class _NetworkEditorPageState extends State<NetworkEditorPage>
     if (_controller.working.value == null) {
       return Scaffold(
         appBar: AppBar(title: Text(l10n.networkMissing)),
-        body: EmptyState(
-          icon: Icons.error_outline,
-          title: l10n.networkMissing,
-          message: l10n.networkMissingDescription,
-          action: FilledButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: Text(l10n.commonGoBack),
-          ),
-        ),
+        body: MissingNetworkState(onGoBack: () => Navigator.of(context).pop()),
       );
     }
     return Scaffold(

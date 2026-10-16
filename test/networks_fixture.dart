@@ -17,16 +17,21 @@ NetworkStore temporaryStore() {
   return NetworkStore.inDirectory(directory.path);
 }
 
-/// Seeds the saved networks `n1` ("alpha") and `n2` ("beta").
-Future<void> seedNetworks() async {
-  _store = temporaryStore();
-  await _store.save({
-    'n1': Network()..networkName = 'alpha',
-    'n2': Network()..networkName = 'beta',
-  });
-  await saved.init(_store);
+/// Seeds the saved networks signal with [networks] from a fresh store, which
+/// becomes the one [persisted] reads.
+Future<NetworkStore> seedWith(Map<String, Network> networks) async {
+  final store = _store = temporaryStore();
+  await store.save(networks);
+  await saved.init(store);
   addTearDown(saved.dispose);
+  return store;
 }
+
+/// Seeds the saved networks `n1` ("alpha") and `n2` ("beta").
+Future<void> seedNetworks() => seedWith({
+  'n1': Network()..networkName = 'alpha',
+  'n2': Network()..networkName = 'beta',
+});
 
 /// The network `id` as persisted in the store.
 ///

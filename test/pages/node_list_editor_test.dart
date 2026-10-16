@@ -8,6 +8,7 @@ import 'package:yukari/signals/bookmarks.dart' as bookmarks;
 import 'package:yukari/signals/networks.dart' as saved;
 
 import '../bookmarks_fixture.dart';
+import '../networks_fixture.dart';
 import 'network_test_support.dart';
 
 void main() {

@@ -265,7 +265,7 @@ void main() {
 
   testWidgets('a failed refresh shows the banner and can retry', (tester) async {
     await tester.runAsync(seedNetworks);
-    final backend = _CountingFailingBackend();
+    final backend = CountingBackend(failCollect: true);
     final controller = await pumpList(
       tester,
       size: const Size(400, 780),
@@ -353,6 +353,13 @@ void main() {
     expect(find.text(strings.networkDeleteTitle), findsOneWidget);
     expect(find.text(strings.networkDeleteDescription('alpha')), findsOneWidget);
 
+    // Deleting is destructive, so the confirm wears the theme's error pair.
+    final confirm = find.widgetWithText(FilledButton, strings.commonDelete);
+    final button = tester.widget<FilledButton>(confirm);
+    final scheme = Theme.of(tester.element(confirm)).colorScheme;
+    expect(button.style?.backgroundColor?.resolve({}), scheme.error);
+    expect(button.style?.foregroundColor?.resolve({}), scheme.onError);
+
     await tester.tap(find.text(strings.commonCancel));
     await tester.pumpAndSettle();
 
@@ -431,15 +438,4 @@ void main() {
 class _ElevatingBackend extends FakeBackend {
   @override
   bool get canElevate => true;
-}
-
-/// A backend that fails every collection and counts the attempts.
-class _CountingFailingBackend extends FakeBackend {
-  int collects = 0;
-
-  @override
-  Future<Map<String, String>> collectInfos() async {
-    collects++;
-    throw Exception('boom');
-  }
 }

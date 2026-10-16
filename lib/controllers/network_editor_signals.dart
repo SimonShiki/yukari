@@ -6,7 +6,7 @@ extension NetworkEditorSignals on NetworkEditorController {
   /// Whether [node] has a saved bookmark: one primitive per peer row, so a
   /// bookmark change rebuilds that row's button only.
   ReadonlySignal<bool> bookmarkedNode(Node node) {
-    final key = nodeKey(node);
+    final key = nodeIdentity(node);
     final existing = _bookmarkFields[key];
     if (existing != null) return existing.signal;
     final created = _NodeFlag(

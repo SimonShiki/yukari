@@ -5,8 +5,6 @@ import 'package:yukari/models/models.dart';
 import 'package:yukari/signals/bookmarks.dart' as bookmarks;
 import 'package:yukari/signals/networks.dart' as saved;
 
-import '../networks_fixture.dart';
-
 /// Keeps focused text fields from blinking their cursor, which would schedule
 /// frames forever and never let `pumpAndSettle` settle.
 void useDeterministicCursor() {
@@ -92,14 +90,6 @@ Future<void> typeInto(WidgetTester tester, String label, String text) async {
   await tester.ensureVisible(finder);
   await tester.pumpAndSettle();
   await saving(tester, () => tester.enterText(finder, text));
-}
-
-/// Seeds the saved networks signal with [networks] from a fresh store.
-Future<void> seedWith(Map<String, Network> networks) async {
-  final store = temporaryStore();
-  await store.save(networks);
-  await saved.init(store);
-  addTearDown(saved.dispose);
 }
 
 /// A network with every field the editor can show, at its default.

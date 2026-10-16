@@ -16,7 +16,7 @@ Future<void> pickPeerBookmarks(
   NetworkEditorController controller, {
   required bool sharedOnly,
 }) async {
-  final present = {for (final node in controller.nodes.value) nodeKey(node)};
+  final present = {for (final node in controller.nodes.value) nodeIdentity(node)};
   final source = sharedOnly
       ? controller.sharedBookmarks
       : controller.pickableBookmarks;
@@ -24,7 +24,7 @@ Future<void> pickPeerBookmarks(
     context,
     bookmarks: [
       for (final bookmark in source)
-        if (!present.contains(nodeKey(bookmark.node))) bookmark,
+        if (!present.contains(nodeIdentity(bookmark.node))) bookmark,
     ],
   );
   if (picked == null || picked.isEmpty) return;

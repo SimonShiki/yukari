@@ -599,6 +599,17 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text(strings.networkDiscardTitle), findsOneWidget);
 
+    // Keeping the edits is the cancel action, and discarding is destructive.
+    expect(
+      find.widgetWithText(TextButton, strings.networkKeepEditing),
+      findsOneWidget,
+    );
+    final confirm = find.widgetWithText(FilledButton, strings.networkDiscard);
+    final button = tester.widget<FilledButton>(confirm);
+    final scheme = Theme.of(tester.element(confirm)).colorScheme;
+    expect(button.style?.backgroundColor?.resolve({}), scheme.error);
+    expect(button.style?.foregroundColor?.resolve({}), scheme.onError);
+
     await tester.tap(find.text(strings.networkKeepEditing));
     await tester.pumpAndSettle();
 

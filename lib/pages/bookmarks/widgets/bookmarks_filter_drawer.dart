@@ -82,15 +82,22 @@ class BookmarksFilterDrawer extends StatelessWidget {
                       if (categories.isNotEmpty) ...[
                         _label(context, l10n.bookmarksFilterCategory),
                         for (final category in categories)
-                          _CategoryTile(
-                            controller: controller,
-                            category: category,
+                          _FilterTile(
+                            selected: () =>
+                                controller.category.value == category,
+                            label: category,
+                            onChanged: () =>
+                                controller.toggleCategory(category),
                           ),
                       ],
                       if (tags.isNotEmpty) ...[
                         _label(context, l10n.bookmarksFilterTags),
                         for (final tag in tags)
-                          _TagTile(controller: controller, tag: tag),
+                          _FilterTile(
+                            selected: () => controller.tags.value.contains(tag),
+                            label: '#$tag',
+                            onChanged: () => controller.toggleTag(tag),
+                          ),
                       ],
                     ],
                   );
@@ -104,37 +111,27 @@ class BookmarksFilterDrawer extends StatelessWidget {
   }
 }
 
-/// One category, selected alone: choosing another replaces it.
-class _CategoryTile extends StatelessWidget {
-  const _CategoryTile({required this.controller, required this.category});
+/// One filter value: a category, selected alone, or a tag, selected alongside
+/// any other. Both are the same checkbox, so they share one tile.
+class _FilterTile extends StatelessWidget {
+  const _FilterTile({
+    required this.selected,
+    required this.label,
+    required this.onChanged,
+  });
 
-  final BookmarksController controller;
-  final String category;
-
-  @override
-  Widget build(BuildContext context) => SignalBuilder(
-    builder: (context) => CheckboxListTile(
-      value: controller.category.value == category,
-      onChanged: (_) => controller.toggleCategory(category),
-      title: Text(category),
-      controlAffinity: ListTileControlAffinity.leading,
-    ),
-  );
-}
-
-/// One tag, selected alongside any other.
-class _TagTile extends StatelessWidget {
-  const _TagTile({required this.controller, required this.tag});
-
-  final BookmarksController controller;
-  final String tag;
+  /// Whether this value is currently filtered on; re-read on every signal
+  /// change, as the builder wraps the read.
+  final bool Function() selected;
+  final String label;
+  final VoidCallback onChanged;
 
   @override
   Widget build(BuildContext context) => SignalBuilder(
     builder: (context) => CheckboxListTile(
-      value: controller.tags.value.contains(tag),
-      onChanged: (_) => controller.toggleTag(tag),
-      title: Text('#$tag'),
+      value: selected(),
+      onChanged: (_) => onChanged(),
+      title: Text(label),
       controlAffinity: ListTileControlAffinity.leading,
     ),
   );

@@ -549,6 +549,12 @@ void main() {
       await openMenu(tester, 'Alpha');
       await tester.tap(find.text('Delete'));
       await tester.pumpAndSettle();
+      // Deleting is destructive, so the confirm wears the theme's error pair.
+      final confirm = find.widgetWithText(FilledButton, 'Delete');
+      final button = tester.widget<FilledButton>(confirm);
+      final scheme = Theme.of(tester.element(confirm)).colorScheme;
+      expect(button.style?.backgroundColor?.resolve({}), scheme.error);
+      expect(button.style?.foregroundColor?.resolve({}), scheme.onError);
       await tester.tap(find.widgetWithText(FilledButton, 'Delete'));
       await tester.pumpAndSettle();
       await settleStores();

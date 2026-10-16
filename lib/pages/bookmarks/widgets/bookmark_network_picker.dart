@@ -1,9 +1,8 @@
-import 'dart:math' as math;
-
 import 'package:material_ui/material_ui.dart';
 
 import '../../../controllers/bookmarks_actions.dart';
 import '../../../l10n/l10n.dart';
+import '../../../widgets/dialog/confirm_dialog.dart';
 
 /// Asks which network to add the node to; null when dismissed.
 ///
@@ -16,7 +15,7 @@ Future<String?> showBookmarkNetworkPicker(
   builder: (context) => AlertDialog(
     title: Text(context.l10n.bookmarksAddToNetworkTitle),
     content: SizedBox(
-      width: math.min(MediaQuery.sizeOf(context).width * 0.8, 560),
+      width: dialogContentWidth(context),
       child: options.isEmpty
           ? Column(
               mainAxisSize: MainAxisSize.min,

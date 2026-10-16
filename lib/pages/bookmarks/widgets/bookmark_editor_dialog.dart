@@ -1,10 +1,9 @@
-import 'dart:math' as math;
-
 import 'package:material_ui/material_ui.dart';
 
 import '../../../controllers/bookmarks_actions.dart';
 import '../../../l10n/l10n.dart';
 import '../../../models/bookmark.dart';
+import '../../../widgets/dialog/confirm_dialog.dart';
 import '../../../widgets/node_form/node_form_fields.dart';
 
 /// Asks for one bookmark's fields and returns them, or null when dismissed.
@@ -81,8 +80,7 @@ class _BookmarkEditorDialogState extends State<_BookmarkEditorDialog> {
         widget.initial == null ? l10n.bookmarksAdd : l10n.bookmarksEdit,
       ),
       content: SizedBox(
-        // Narrow on phones, and never a wall of fields on a wide window.
-        width: math.min(MediaQuery.sizeOf(context).width * 0.8, 560),
+        width: dialogContentWidth(context),
         child: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,

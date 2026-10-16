@@ -1,10 +1,9 @@
-import 'dart:math' as math;
-
 import 'package:material_ui/material_ui.dart';
 
 import '../../../l10n/l10n.dart';
 import '../../../models/models.dart';
 import '../../../utils/validator.dart';
+import '../../../widgets/dialog/confirm_dialog.dart';
 import 'editor_fields.dart';
 
 /// Asks for one listener address; null when dismissed or still invalid.
@@ -69,7 +68,7 @@ class _ListenerDialogState extends State<_ListenerDialog> {
             : l10n.networkEditListenerNamed(widget.listener.toString()),
       ),
       content: SizedBox(
-        width: math.min(MediaQuery.sizeOf(context).width * 0.8, 560),
+        width: dialogContentWidth(context),
         child: SingleChildScrollView(
           child: Form(
             key: _formKey,

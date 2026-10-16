@@ -35,29 +35,26 @@ class AdvancedVpnPortalSection extends StatelessWidget {
             onChanged: controller.setVpnPortal,
           ),
           SignalBuilder(
-            builder: (context) => EditorTextField(
-              key: const ValueKey('wireguardListen'),
-              label: l10n.advancedWireguardListen,
-              hint: '0.0.0.0:22022',
-              helper: l10n.advancedWireguardListenHelper,
-              initialValue: controller
+            builder: (context) {
+              final listen = controller
                   .select(
                     'vpnPortal.listen',
                     (n) => n.vpnPortal?.wireguardListen ?? '',
                     '',
                   )
-                  .value,
-              value: controller
-                  .select(
-                    'vpnPortal.listen',
-                    (n) => n.vpnPortal?.wireguardListen ?? '',
-                    '',
-                  )
-                  .value,
-              enabled: enabled,
-              validator: validateSocketAddress,
-              onSaved: (value) => controller.setWireguardListen(value.trim()),
-            ),
+                  .value;
+              return EditorTextField(
+                key: const ValueKey('wireguardListen'),
+                label: l10n.advancedWireguardListen,
+                hint: '0.0.0.0:22022',
+                helper: l10n.advancedWireguardListenHelper,
+                initialValue: listen,
+                value: listen,
+                enabled: enabled,
+                validator: validateSocketAddress,
+                onSaved: (value) => controller.setWireguardListen(value.trim()),
+              );
+            },
           ),
         ],
       );

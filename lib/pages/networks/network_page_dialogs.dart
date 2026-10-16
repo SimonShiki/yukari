@@ -6,34 +6,18 @@ import 'package:material_ui/material_ui.dart';
 import '../../backend/backend.dart';
 import '../../l10n/l10n.dart';
 import '../../models/models.dart';
+import '../../widgets/dialog/confirm_dialog.dart';
 
 /// Confirms deleting [network]; a dismissed dialog means no.
-Future<bool> confirmDeleteNetwork(BuildContext context, Network network) async =>
-    await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        icon: const Icon(Icons.delete_outline),
-        title: Text(context.l10n.networkDeleteTitle),
-        content: Text(
-          context.l10n.networkDeleteDescription(network.networkName),
-        ),
-        actions: [
-          TextButton(
-            autofocus: true,
-            onPressed: () => Navigator.of(context).pop(false),
-            child: Text(context.l10n.commonCancel),
-          ),
-          TextButton(
-            style: TextButton.styleFrom(
-              foregroundColor: Theme.of(context).colorScheme.error,
-            ),
-            onPressed: () => Navigator.of(context).pop(true),
-            child: Text(context.l10n.commonDelete),
-          ),
-        ],
-      ),
-    ) ??
-    false;
+Future<bool> confirmDeleteNetwork(BuildContext context, Network network) =>
+    showConfirmDialog(
+      context,
+      icon: Icons.delete_outline,
+      title: context.l10n.networkDeleteTitle,
+      message: context.l10n.networkDeleteDescription(network.networkName),
+      confirmLabel: context.l10n.commonDelete,
+      destructive: true,
+    );
 
 /// Explains why [network] cannot create its TUN device, and the two ways out:
 /// the settings page, and restarting with the privileges it needs.

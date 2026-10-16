@@ -205,7 +205,10 @@ void main() {
 
   test('a failed refresh keeps the last state and reports it', () async {
     await seedNetworks();
-    final controller = build(backend: _FailingBackend(), messages: <String>[]);
+    final controller = build(
+      backend: CountingBackend(failCollect: true),
+      messages: <String>[],
+    );
     controller.start();
     addTearDown(controller.dispose);
 
@@ -524,7 +527,7 @@ void main() {
 
   test('the periodic refresh exists only while something runs', () async {
     await seedNetworks();
-    final backend = _CountingBackend();
+    final backend = CountingBackend();
     final controller = build(
       backend: backend,
       messages: <String>[],
@@ -551,13 +554,10 @@ void main() {
 
 /// Seeds `n1`/`n2` into a store whose writes fail from now on.
 Future<void> _seedWithFailingWrites() async {
-  final store = temporaryStore();
-  await store.save({
+  final store = await seedWith({
     'n1': Network()..networkName = 'alpha',
     'n2': Network()..networkName = 'beta',
   });
-  await saved.init(store);
-  addTearDown(saved.dispose);
   // A directory where the store writes makes every save fail.
   store.file.deleteSync();
   Directory(store.file.path).createSync(recursive: true);
@@ -572,22 +572,5 @@ class _FlakyStartBackend extends FakeBackend {
     starts++;
     if (starts == 1) throw Exception('no tun');
     return super.start(id, network);
-  }
-}
-
-/// A backend whose collection always fails.
-class _FailingBackend extends FakeBackend {
-  @override
-  Future<Map<String, String>> collectInfos() async => throw Exception('boom');
-}
-
-/// A backend that counts how often it was asked to collect.
-class _CountingBackend extends FakeBackend {
-  int collects = 0;
-
-  @override
-  Future<Map<String, String>> collectInfos() async {
-    collects++;
-    return super.collectInfos();
   }
 }

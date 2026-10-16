@@ -17,9 +17,6 @@ part 'network_editor_lists.dart';
 /// Which of a network's two listener lists a list editor edits.
 enum ListenerList { local, mapped }
 
-/// The host and port two nodes share when they are the same peer.
-String nodeKey(Node node) => '${nodeHost(node.url)}:${node.port}';
-
 /// Controller of the network editor: a deep working copy of one saved network,
 /// saved on every accepted edit.
 ///
@@ -86,7 +83,7 @@ class NetworkEditorController {
 
   final _fields = <_FieldSignal<Object?>>[];
   final _selects = <String, ReadonlySignal<Object?>>{};
-  final _bookmarkFields = <String, _NodeFlag>{};
+  final _bookmarkFields = <(String host, int port), _NodeFlag>{};
   bool _disposed = false;
 
   /// Pushes every bound primitive, but only when its own value changed.

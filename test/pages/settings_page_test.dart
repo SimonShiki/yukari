@@ -336,6 +336,9 @@ void main() {
 
     await tester.tap(find.text('ask'));
     await tester.pumpAndSettle();
+    // The switch is reversible, so its confirm keeps the default filled look.
+    final confirm = find.widgetWithText(FilledButton, 'Switch');
+    expect(tester.widget<FilledButton>(confirm).style, isNull);
     await tester.tap(find.text('Switch'));
     await tester.pumpAndSettle();
     expect(answer, isTrue);

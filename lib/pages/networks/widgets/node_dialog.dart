@@ -1,9 +1,8 @@
-import 'dart:math' as math;
-
 import 'package:material_ui/material_ui.dart';
 
 import '../../../l10n/l10n.dart';
 import '../../../models/models.dart';
+import '../../../widgets/dialog/confirm_dialog.dart';
 import '../../../widgets/node_form/node_form_fields.dart';
 
 /// Asks for one initial peer; null when dismissed or still invalid.
@@ -24,7 +23,7 @@ Future<Node?> showNodeDialog(
       content: Padding(
         padding: const EdgeInsets.only(top: 16),
         child: SizedBox(
-          width: math.min(MediaQuery.sizeOf(context).width * 0.8, 560),
+          width: dialogContentWidth(context),
           child: SingleChildScrollView(
             child: NodeFormFields(
               key: fields,
