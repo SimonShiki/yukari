@@ -7,6 +7,7 @@ import '../models/log_entry.dart';
 import '../models/models.dart';
 import '../signals/backend.dart' as backends;
 import '../signals/instance_logs.dart';
+import '../signals/instances.dart' as running;
 import '../signals/locale.dart';
 import '../signals/networks.dart' as saved;
 import '../widgets/peer_card/peer_card_data.dart';
@@ -68,11 +69,14 @@ class NetworkInstanceController {
     () => saved.networks.value[id]?.networkName ?? '',
   );
 
-  /// The instance as of the last refresh, or null while it is not running.
-  final Signal<Instance?> instance = signal(null);
+  /// The instance as of the last collection, or null while it is not running.
+  late final ReadonlySignal<Instance?> instance = computed(
+    () => running.instances.value[id],
+  );
 
-  /// Whether the backend answered at least once.
-  final Signal<bool> loaded = signal(false);
+  /// Whether the backend answered at least once: the instance pane keeps its
+  /// loading indicator up until the first successful collection.
+  ReadonlySignal<bool> get loaded => running.instancesLoaded;
 
   /// Whether an instance of this network is running.
   late final ReadonlySignal<bool> isRunning = computed(
@@ -132,25 +136,15 @@ class NetworkInstanceController {
     _timer = Timer.periodic(refreshInterval, (_) => unawaited(refresh()));
   }
 
-  /// Collects this network's instance, swallowing failures: the last known
-  /// state stays on screen and the next tick retries.
+  /// Collects every running instance into the shared store, swallowing
+  /// failures: the last known state stays on screen and the next tick retries.
   Future<void> refresh() async {
     if (_disposed || _refreshing) return;
     _refreshing = true;
     try {
-      final config = network.value;
-      final collected = config == null
-          ? const <String, Instance>{}
-          : await _backend.collect({id: config});
-      final current = collected[id];
-      if (current != null) recordInstanceEvents(id, current.events);
-      batch(() {
-        instance.value = current;
-        loaded.value = true;
-      });
+      if (network.value != null) await running.refreshInstances(_backend);
     } catch (_) {
       // Keep what is on screen; the next tick retries.
-      loaded.value = true;
     } finally {
       _refreshing = false;
     }
@@ -169,13 +163,13 @@ class NetworkInstanceController {
       count.dispose();
     }
     _counts.clear();
+    // [loaded] lives in the shared store, which outlives this controller.
     for (final signal in <ReadonlySignal<Object?>>[
       network,
       missing,
       name,
       selectedTab,
       instance,
-      loaded,
       isRunning,
       filter,
       expanded,

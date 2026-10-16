@@ -56,7 +56,12 @@ class FfiBackend extends NetworkBackend {
   Future<void> dispose() async {
     if (_disposed) return;
     _disposed = true;
-    await stop((await _list(native.listInstances)).keys.toList());
+    try {
+      await stop((await _list(native.listInstances)).keys.toList());
+    } finally {
+      // A stop that throws must not leak the status signal.
+      status.dispose();
+    }
   }
 
   Future<Map<String, String>> _list(Map<String, String> Function() read) {

@@ -1,8 +1,11 @@
+import 'dart:async';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:signals/signals.dart';
 import 'package:yukari/controllers/network_instance_controller.dart';
 import 'package:yukari/models/log_entry.dart';
 import 'package:yukari/signals/instance_logs.dart';
+import 'package:yukari/signals/instances.dart' as running;
 
 import '../fake_backend.dart';
 import '../networks_fixture.dart';
@@ -171,6 +174,36 @@ void main() {
     await tester.pump(const Duration(seconds: 4));
     expect(backend.collects, 3);
   });
+
+  test('disposing during a refresh writes no disposed signal', () async {
+    await seedNetworks();
+    final backend = _GatedBackend();
+    final controller = NetworkInstanceController(id: 'n1', backend: backend);
+    addTearDown(controller.dispose);
+
+    final refreshing = controller.refresh();
+    controller.dispose();
+    backend.gate.complete();
+
+    await expectLater(refreshing, completes);
+    // The collection lands in the shared store, which outlives the pane.
+    expect(running.instances.value.keys, ['n1']);
+    expect(running.instancesLoaded.disposed, isFalse);
+    expect(running.instances.disposed, isFalse);
+  });
+}
+
+/// A backend whose collection waits for the test to release it.
+class _GatedBackend extends FakeBackend {
+  _GatedBackend() : super(collected: () => {'alpha': _info});
+
+  final gate = Completer<void>();
+
+  @override
+  Future<Map<String, String>> collectInfos() async {
+    await gate.future;
+    return super.collectInfos();
+  }
 }
 
 /// The EasyTier information of one running instance with one peer.

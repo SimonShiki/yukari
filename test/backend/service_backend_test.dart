@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
@@ -140,6 +141,29 @@ void main() {
     expect(backend.status.value, BackendStatus.unavailable);
   });
 
+  test('disposes its status with it', () async {
+    final backend = ServiceBackend(
+      () async => IpcEndpoint(_missingAddress(store), 0),
+    );
+
+    await backend.dispose();
+
+    expect(backend.status.disposed, isTrue);
+  });
+
+  test('a service that answers after disposal cannot write the status', () async {
+    final locate = Completer<IpcEndpoint>();
+    final backend = ServiceBackend(() => locate.future);
+
+    final pending = backend.collectInfos();
+    await backend.dispose();
+    locate.complete(IpcEndpoint(_missingAddress(store), 0));
+
+    // The unreachable service is still reported as such: the status write in
+    // the failure path is skipped, not thrown from.
+    await expectLater(pending, throwsA(isA<ServiceUnavailableException>()));
+  });
+
   test('the daemon never writes the store', () {
     expect(
       () => ServiceDaemon(store: store, backend: runtime),
@@ -147,3 +171,9 @@ void main() {
     );
   });
 }
+
+/// An endpoint with no service listening beside [store].
+InternetAddress _missingAddress(NetworkStore store) => InternetAddress(
+  p.join(p.dirname(store.file.path), 'missing.sock'),
+  type: InternetAddressType.unix,
+);

@@ -20,23 +20,22 @@ extension HomeActions on HomeController {
     detectNat();
   }
 
-  /// Re-collects the running instances, falling back to none when the
-  /// backend cannot answer.
+  /// Re-collects the running instances into the shared store, falling back to
+  /// the last known state when the backend cannot answer.
   Future<void> refresh() async {
     if (_refreshing || _disposed) return;
     _refreshing = true;
     try {
-      var instances = const <String, Instance>{};
+      Map<String, Instance>? collected;
       try {
-        instances = await _activeBackend.value.collect(networks.peek());
+        collected = await running.refreshInstances(_activeBackend.value);
       } catch (_) {
         // The backend's own status signal tells the user it is unreachable.
       }
       if (_disposed) return;
-      batch(() {
-        _instances.value = instances;
-        _measure(instances);
-      });
+      // A failed collection measured nothing, so the last sample stands.
+      final fresh = collected;
+      if (fresh != null) batch(() => _measure(fresh));
     } finally {
       // Whatever happened, the next refresh must not be swallowed: release
       // the guard first, then tell the page the dashboard has data. A
@@ -52,8 +51,11 @@ extension HomeActions on HomeController {
     if (probing.value || _disposed) return;
     probing.value = true;
     try {
-      _probeResult.value = await _probe();
+      final probe = await _probe();
+      if (_disposed) return;
+      _probeResult.value = probe;
     } catch (_) {
+      if (_disposed) return;
       _probeResult.value = const NatProbe(
         publicAddress: null,
         natType: NatType.unknown,
@@ -65,11 +67,13 @@ extension HomeActions on HomeController {
 
   /// Reads the version of the background service, when one answers.
   Future<void> checkServiceVersion() async {
+    int? version;
     try {
-      serviceVersion.value = await _probeServiceVersion();
+      version = await _probeServiceVersion();
     } catch (_) {
-      serviceVersion.value = null;
+      version = null;
     }
+    if (!_disposed) serviceVersion.value = version;
   }
 
   /// Releases the effect, the timer and every signal this controller created.

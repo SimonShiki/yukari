@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'dart:ui' show Locale;
 
@@ -7,6 +8,7 @@ import 'package:yukari/controllers/network_page_controller.dart';
 import 'package:yukari/l10n/l10n.dart';
 import 'package:yukari/models/models.dart';
 import 'package:yukari/signals/instance_logs.dart';
+import 'package:yukari/signals/instances.dart';
 import 'package:yukari/signals/networks.dart' as saved;
 
 import '../fake_backend.dart';
@@ -550,6 +552,194 @@ void main() {
     expect(backend.collects, settled);
     expect(controller.active, isFalse);
   });
+
+  // Nothing may write a signal once the controller is gone: each case leaves
+  // its action in flight, disposes mid-await, and releases it afterwards.
+
+  test('disposing during a refresh writes no disposed signal', () async {
+    await seedNetworks();
+    final backend = _GatedCollectBackend(fail: true);
+    final controller = build(backend: backend, messages: <String>[]);
+
+    final refreshing = controller.refresh();
+    expect(controller.refreshing.value, isTrue);
+    controller.dispose();
+    backend.gate.complete();
+
+    await expectLater(refreshing, completes);
+    expect(controller.refreshing.peek(), isTrue, reason: 'the guard release');
+    expect(controller.refreshError.peek(), isNull, reason: 'the error report');
+    expect(
+      instances.disposed,
+      isFalse,
+      reason: 'the shared store outlives the controller',
+    );
+  });
+
+  test('disposing during a delete writes no disposed signal', () async {
+    await seedNetworks();
+    final confirm = Completer<bool>();
+    final controller = build(
+      backend: FakeBackend(),
+      messages: <String>[],
+      confirmDelete: (_) => confirm.future,
+    );
+
+    final deleting = controller.delete('n1');
+    expect(controller.deleting.value, {'n1'});
+    controller.dispose();
+    confirm.complete(true);
+
+    await expectLater(deleting, completes);
+    expect(saved.networks.value.keys, ['n2'], reason: 'the delete still lands');
+    expect(controller.deleting.peek(), {'n1'}, reason: 'the finally');
+    expect(controller.transitions.peek(), isEmpty);
+  });
+
+  test('disposing during a start writes no disposed signal', () async {
+    await seedNetworks();
+    final backend = _GatedStartBackend();
+    final controller = build(backend: backend, messages: <String>[]);
+    await controller.refresh();
+
+    final starting = controller.toggle('n1', true);
+    await backend.entered.future;
+    expect(controller.transitions.value['n1'], NetworkTransition.starting);
+    controller.dispose();
+    backend.gate.complete();
+
+    await expectLater(starting, completes);
+    expect(
+      controller.transitions.peek()['n1'],
+      NetworkTransition.starting,
+      reason: 'the failed marker is not written after dispose',
+    );
+    expect(backend.started, isEmpty);
+  });
+
+  test('disposing during a stop writes no disposed signal', () async {
+    await seedNetworks();
+    final backend = _GatedStopBackend();
+    final controller = build(backend: backend, messages: <String>[]);
+    await controller.refresh();
+
+    final stopping = controller.toggle('n1', false);
+    await backend.entered.future;
+    expect(controller.transitions.value['n1'], NetworkTransition.stopping);
+    controller.dispose();
+    backend.gate.complete();
+
+    await expectLater(stopping, completes);
+    expect(
+      controller.transitions.peek()['n1'],
+      NetworkTransition.stopping,
+      reason: 'the removal is not written after dispose',
+    );
+  });
+
+  test('disposing while the discard dialog is open writes no selection', () async {
+    await seedNetworks();
+    final gate = Completer<void>();
+    final controller = build(
+      backend: FakeBackend(),
+      messages: <String>[],
+      invalidInput: () => true,
+      confirmDiscardDialog: () async {
+        await gate.future;
+        return true;
+      },
+    );
+    controller.start();
+    expect(controller.selectedId.value, 'n1');
+
+    // The selection is parked in the page's modal dialog when the page goes.
+    final selecting = controller.select('n2');
+    controller.dispose();
+    gate.complete();
+
+    await expectLater(selecting, completes);
+    expect(
+      controller.selectedId.peek(),
+      'n1',
+      reason: 'the late selection is dropped',
+    );
+  });
+
+  test('disposing while the discard dialog is open leaves the tab alone', () async {
+    await seedNetworks();
+    final gate = Completer<void>();
+    final controller = build(
+      backend: FakeBackend(
+        collected: () => {'alpha': {'running': true}, 'beta': {'running': true}},
+      ),
+      messages: <String>[],
+      isWide: () => true,
+      invalidInput: () => true,
+      confirmDiscardDialog: () async {
+        await gate.future;
+        return true;
+      },
+    );
+    controller.start();
+    await controller.refresh();
+    expect(controller.selectedId.value, 'n1');
+
+    final logging = controller.log('n2');
+    controller.dispose();
+    gate.complete();
+
+    await expectLater(logging, completes);
+    expect(controller.selectedId.peek(), 'n1');
+    expect(
+      controller.instanceTab.peek(),
+      InstanceTab.peers,
+      reason: 'the late tab switch is dropped',
+    );
+  });
+}
+
+/// A backend whose collection waits for the test, then can fail.
+class _GatedCollectBackend extends FakeBackend {
+  _GatedCollectBackend({this.fail = false});
+
+  final gate = Completer<void>();
+  final bool fail;
+
+  @override
+  Future<Map<String, String>> collectInfos() async {
+    await gate.future;
+    if (fail) throw Exception('boom');
+    return super.collectInfos();
+  }
+}
+
+/// A backend whose first start waits for the test, then fails.
+class _GatedStartBackend extends FakeBackend {
+  final gate = Completer<void>();
+  final entered = Completer<void>();
+
+  @override
+  Future<void> start(String id, Network network) async {
+    entered.complete();
+    await gate.future;
+    throw Exception('no tun');
+  }
+}
+
+/// A backend that reports one running instance and whose stop waits, then
+/// fails.
+class _GatedStopBackend extends FakeBackend {
+  _GatedStopBackend() : super(collected: () => {'alpha': {'running': true}});
+
+  final gate = Completer<void>();
+  final entered = Completer<void>();
+
+  @override
+  Future<void> stop(List<String> names) async {
+    entered.complete();
+    await gate.future;
+    throw Exception('stuck');
+  }
 }
 
 /// Seeds `n1`/`n2` into a store whose writes fail from now on.

@@ -7,6 +7,7 @@ import 'package:uuid/uuid.dart';
 import '../bindings/easytier_ffi_native.dart' show parseConfig;
 import '../models/models.dart';
 import '../signals/instance_logs.dart';
+import '../signals/instances.dart';
 import '../signals/locale.dart';
 import '../signals/networks.dart' as saved;
 import '../utils/easytier_config_parser.dart';
@@ -53,7 +54,11 @@ extension NetworkPageActions on NetworkPageController {
   Future<void> log(String id) async {
     if (!instances.value.containsKey(id)) return;
     if (_paneIsOpen) {
-      if (await select(id)) instanceTab.value = InstanceTab.logs;
+      // The selection dialog can outlive the page; a disposed controller
+      // writes nothing.
+      if (await select(id) && !isDisposed) {
+        instanceTab.value = InstanceTab.logs;
+      }
       return;
     }
     navigate('network-logs', id);
@@ -69,6 +74,9 @@ extension NetworkPageActions on NetworkPageController {
     if (id == null && _paneIsOpen) return true;
     if (id == selectedId.value) return true;
     if ((invalidInput?.call() ?? false) && !await confirmDiscard()) return false;
+    // The dialog can outlive the page, so the answer is only applied while
+    // there is still a selection signal to hold it.
+    if (isDisposed) return false;
     selectedId.value = id;
     return true;
   }
@@ -117,13 +125,17 @@ extension NetworkPageActions on NetworkPageController {
         await activeBackend.stop([network.networkName]);
       }
       await saved.deleteNetwork(id);
+      // The store outlives this controller, so the deleted network is
+      // forgotten even if the page is gone.
       clearInstanceLogs(id);
-      instances.value = {...instances.value}..remove(id);
-      transitions.value = {...transitions.value}..remove(id);
+      forgetInstances([id]);
+      if (!isDisposed) transitions.value = {...transitions.value}..remove(id);
     } catch (_) {
-      showMessage(l10n.value.controllerDeleteFailed(network.networkName));
+      if (!isDisposed) {
+        showMessage(l10n.value.controllerDeleteFailed(network.networkName));
+      }
     } finally {
-      deleting.value = {...deleting.value}..remove(id);
+      if (!isDisposed) deleting.value = {...deleting.value}..remove(id);
     }
   }
 
@@ -166,10 +178,15 @@ extension NetworkPageActions on NetworkPageController {
     try {
       await activeBackend.start(id, network);
     } catch (error) {
-      transitions.value = {...transitions.value, id: NetworkTransition.failed};
-      showMessage(
-        l10n.value.controllerNetworkRun(network.networkName, '$error'),
-      );
+      if (!isDisposed) {
+        transitions.value = {
+          ...transitions.value,
+          id: NetworkTransition.failed,
+        };
+        showMessage(
+          l10n.value.controllerNetworkRun(network.networkName, '$error'),
+        );
+      }
     }
     await _refreshWhenActive();
   }
@@ -178,11 +195,16 @@ extension NetworkPageActions on NetworkPageController {
     transitions.value = {...transitions.value, id: NetworkTransition.stopping};
     try {
       await activeBackend.stop([network.networkName]);
+      // The store outlives this controller, so a settled stop is reflected
+      // even if the page is gone.
+      forgetInstances([id]);
     } catch (error) {
-      transitions.value = {...transitions.value}..remove(id);
-      showMessage(
-        l10n.value.controllerNetworkStop(network.networkName, '$error'),
-      );
+      if (!isDisposed) {
+        transitions.value = {...transitions.value}..remove(id);
+        showMessage(
+          l10n.value.controllerNetworkStop(network.networkName, '$error'),
+        );
+      }
     }
     await _refreshWhenActive();
   }

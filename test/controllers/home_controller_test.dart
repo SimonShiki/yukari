@@ -278,6 +278,43 @@ void main() {
     expect(home.runningCount.value, 2);
   });
 
+  test('disposing during a NAT probe writes no disposed signal', () async {
+    final gate = Completer<NatProbe>();
+    final home = controller(
+      backend: FakeBackend(collected: () => const {}),
+      probe: () => gate.future,
+    );
+
+    final detection = home.detectNat();
+    expect(home.probing.value, isTrue);
+    home.dispose();
+    gate.complete(
+      const NatProbe(publicAddress: '203.0.113.7', natType: NatType.fullCone),
+    );
+
+    await expectLater(detection, completes);
+    expect(
+      home.probing.peek(),
+      isTrue,
+      reason: 'the probe result and the flag are not written after dispose',
+    );
+  });
+
+  test('disposing during the version probe writes no disposed signal', () async {
+    final gate = Completer<int?>();
+    final home = controller(
+      backend: FakeBackend(collected: () => const {}),
+      service: () => gate.future,
+    );
+
+    final check = home.checkServiceVersion();
+    home.dispose();
+    gate.complete(7);
+
+    await expectLater(check, completes);
+    expect(home.serviceVersion.peek(), isNull);
+  });
+
   test('dispose releases every signal it created', () async {
     final home = controller(
       backend: FakeBackend(collected: () => {'alpha': _info()}),

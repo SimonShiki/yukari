@@ -52,7 +52,7 @@ class FakeBackend extends NetworkBackend {
   Future<TunAccess> tunAccess(Network network) async => access;
 
   @override
-  Future<void> dispose() async {}
+  Future<void> dispose() async => status.dispose();
 }
 
 /// A backend that counts its collections, and can be made to fail them.

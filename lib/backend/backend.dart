@@ -47,7 +47,8 @@ abstract class NetworkBackend {
   Future<Map<String, Instance>> collect(Map<String, Network> networks) async =>
       hydrateInstances(networks, await collectInfos());
 
-  /// Releases the backend. In-process backends stop their instances.
+  /// Releases the backend, and [status] with it: in-process backends stop
+  /// their instances, and nothing may write the status afterwards.
   Future<void> dispose();
 }
 

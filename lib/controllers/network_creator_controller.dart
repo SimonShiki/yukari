@@ -16,12 +16,14 @@ class NetworkCreatorController {
   /// Whether a create request is in flight; both buttons are disabled then.
   final Signal<bool> creating = signal(false);
 
+  bool _disposed = false;
+
   /// The saved networks' names, which the new name may not repeat.
   Iterable<String> get takenNames => saved.networkNames();
 
   /// Saves a network named [name] and opens its editor.
   Future<void> create({required String name, String? hostname}) async {
-    if (creating.value) return;
+    if (creating.value || _disposed) return;
     creating.value = true;
     final host = hostname?.trim();
     final id = const Uuid().v4();
@@ -33,13 +35,18 @@ class NetworkCreatorController {
           ..hostname = host == null || host.isEmpty ? null : host,
       );
     } catch (error) {
+      if (_disposed) return;
       creating.value = false;
       showMessage(l10n.value.networkCreateFailed('$error'));
       return;
     }
+    if (_disposed) return;
     creating.value = false;
     navigate('/networks/edit/$id');
   }
 
-  void dispose() => creating.dispose();
+  void dispose() {
+    _disposed = true;
+    creating.dispose();
+  }
 }

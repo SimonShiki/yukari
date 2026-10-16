@@ -30,37 +30,38 @@ extension NetworkPageRefresh on NetworkPageController {
     unawaited(refresh());
   }
 
-  /// Collects every running instance, and records the events it reports.
+  /// Collects every running instance into the shared store, and records the
+  /// events it reports.
   Future<void> refresh() async {
     if (_disposed || refreshing.peek()) return;
     refreshing.value = true;
-    final snapshot = saved.networks.value;
     try {
-      final collected = await activeBackend.collect(snapshot);
-      for (final MapEntry(:key, :value) in collected.entries) {
-        recordInstanceEvents(key, value.events);
-      }
+      final collected = await running.refreshInstances(activeBackend);
+      if (_disposed) return;
       batch(() {
-        instances.value = Map.unmodifiable(collected);
-        loaded.value = true;
         refreshError.value = null;
         _dropResolved(collected);
       });
     } catch (error) {
       // The backend's own status tells the user it is unreachable; the last
       // known state stays on screen.
-      refreshError.value = l10n.value.controllerRefresh('$error');
+      if (!_disposed) {
+        refreshError.value = l10n.value.controllerRefresh('$error');
+      }
     } finally {
-      refreshing.value = false;
-      _syncTimer();
+      // A disposed controller must not touch its signals or start a timer.
+      if (!_disposed) {
+        refreshing.value = false;
+        _syncTimer();
+      }
     }
   }
 
   /// The periodic refresh only exists while the list is active and something
   /// runs, so an idle page leaves no timer behind.
   void _syncTimer() {
-    final running = _active && instances.peek().isNotEmpty;
-    if (!running) {
+    final ticking = _active && instances.peek().isNotEmpty;
+    if (!ticking) {
       _timer?.cancel();
       _timer = null;
       return;

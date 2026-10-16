@@ -5,7 +5,7 @@ import 'package:signals/signals.dart';
 import '../backend/backend.dart';
 import '../models/models.dart';
 import '../signals/backend.dart' as backends;
-import '../signals/instance_logs.dart';
+import '../signals/instances.dart' as running;
 import '../signals/locale.dart';
 import '../signals/networks.dart' as saved;
 import '../widgets/network_card/network_card_data.dart';
@@ -37,10 +37,11 @@ class PickedConfig {
 /// Controller of the networks list, and of the editor it shows beside it on
 /// wide windows.
 ///
-/// It owns every signal the page reads as a small primitive ([refreshing],
-/// [loaded], [refreshError], an instance per id in [instances], a transition per
-/// id in [transitions]) and derives the row data the list binds in [cards]. The
-/// actions it invokes with live in `network_page_actions.dart`.
+/// It owns the signals the page reads as a small primitive ([refreshing],
+/// [refreshError], a transition per id in [transitions]) and derives the row
+/// data the list binds in [cards]. The running instances and whether the
+/// backend answered come from the shared [instances] store, which every page
+/// sees. The actions it invokes with live in `network_page_actions.dart`.
 class NetworkPageController {
   NetworkPageController({
     required this.navigate,
@@ -83,8 +84,8 @@ class NetworkPageController {
   /// Validates a config before it is parsed, for tests. Null uses EasyTier.
   final void Function(String config)? validateConfig;
 
-  /// Running instances, keyed by network id, as of the last refresh.
-  final Signal<Map<String, Instance>> instances = signal(const {});
+  /// Running instances, keyed by network id, from the shared store.
+  ReadonlySignal<Map<String, Instance>> get instances => running.instances;
 
   /// Start/stop requests that have not settled yet, keyed by network id.
   final Signal<Map<String, NetworkTransition>> transitions = signal(const {});
@@ -95,8 +96,9 @@ class NetworkPageController {
   /// Whether a refresh is running; the refresh action is disabled meanwhile.
   final Signal<bool> refreshing = signal(false);
 
-  /// Whether the backend answered at least once.
-  final Signal<bool> loaded = signal(false);
+  /// Whether the backend answered at least once: the cards stay unknown until
+  /// the first successful collection.
+  ReadonlySignal<bool> get loaded => running.instancesLoaded;
 
   /// Why the last refresh failed, or null.
   final Signal<String?> refreshError = signal(null);
@@ -154,12 +156,12 @@ class NetworkPageController {
       cleanup();
     }
     _cleanups.clear();
+    // [instances] and [loaded] live in the shared store, which outlives this
+    // controller; everything else was created here.
     for (final signal in <ReadonlySignal<Object?>>[
-      instances,
       transitions,
       deleting,
       refreshing,
-      loaded,
       refreshError,
       selectedId,
       instanceTab,

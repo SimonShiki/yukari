@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'dart:io';
 
 import 'package:yukari/models/network.dart';
+import 'package:yukari/signals/instances.dart' as running;
 import 'package:yukari/signals/networks.dart' as saved;
 import 'package:yukari/storage/network_store.dart';
 
@@ -19,10 +20,15 @@ NetworkStore temporaryStore() {
 
 /// Seeds the saved networks signal with [networks] from a fresh store, which
 /// becomes the one [persisted] reads.
+///
+/// It also empties the running-instances store, which is module state the
+/// controller tests share: without that, a collection one test left behind
+/// would decide what the next one sees.
 Future<NetworkStore> seedWith(Map<String, Network> networks) async {
   final store = _store = temporaryStore();
   await store.save(networks);
   await saved.init(store);
+  running.initInstances();
   addTearDown(saved.dispose);
   return store;
 }

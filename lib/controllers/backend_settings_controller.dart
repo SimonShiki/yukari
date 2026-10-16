@@ -27,7 +27,8 @@ class BackendSettingsController {
     ReadonlySignal<NetworkBackend>? backend,
   }) : control = control ?? backend_signals.serviceControl,
        _probe = probeVersion,
-       _backend = backend ?? backend_signals.backend;
+       _backend = backend ?? backend_signals.backend,
+       _injected = backend != null;
 
   /// Reports a user-visible outcome.
   final void Function(String message) showMessage;
@@ -42,6 +43,13 @@ class BackendSettingsController {
 
   /// The active backend; injectable so tests can drive its kind and status.
   final ReadonlySignal<NetworkBackend> _backend;
+
+  /// Whether [_backend] was injected. An injected backend is not owned here:
+  /// only the [kind] and [status] derivations over it are disposed with this
+  /// controller.
+  final bool _injected;
+  final List<void Function()> _disposers = [];
+  bool _disposed = false;
 
   /// The service's installation and run state, as last refreshed.
   final Signal<ServiceState> serviceState = signal(ServiceState.unsupported);
@@ -64,11 +72,21 @@ class BackendSettingsController {
   final Signal<bool> installing = signal(false);
   final Signal<double?> installProgress = signal(null);
 
-  /// The active backend's kind and connection status.
-  late final Computed<BackendKind> kind = computed(() => _backend.value.kind);
-  late final Computed<BackendStatus> status = computed(
-    () => _backend.value.status.value,
-  );
+  /// The active backend's kind and connection status: the app-wide signals,
+  /// or the injected backend's, which this controller owns.
+  late final ReadonlySignal<BackendKind> kind = _injected
+      ? _derived(() => _backend.value.kind)
+      : backend_signals.backendKind;
+  late final ReadonlySignal<BackendStatus> status = _injected
+      ? _derived(() => _backend.value.status.value)
+      : backend_signals.backendStatus;
+
+  /// A signal this controller created, and so disposes with it.
+  ReadonlySignal<T> _derived<T>(T Function() compute) {
+    final created = computed<T>(compute);
+    _disposers.add(created.dispose);
+    return created;
+  }
 
   /// Whether the running service is older than the one this app ships.
   late final Computed<bool> outdated = computed(
@@ -83,23 +101,29 @@ class BackendSettingsController {
 
   /// Re-reads the service state and, while it runs, its version.
   Future<void> refresh() async {
+    if (_disposed) return;
     try {
       final state = await control.state();
+      if (_disposed) return;
       serviceState.value = state;
-      runningVersion.value = state == ServiceState.running
+      final version = state == ServiceState.running
           ? await _probeVersion()
           : null;
+      // The probe can outlive both this controller and the signal it is
+      // written to: neither may be touched once gone.
+      if (_disposed || runningVersion.disposed) return;
+      runningVersion.value = version;
     } catch (error) {
-      showMessage(l10n.value.controllerCheckService('$error'));
+      if (!_disposed) showMessage(l10n.value.controllerCheckService('$error'));
     } finally {
       // Success or failure, the page may now show the real state.
-      stateKnown.value = true;
+      if (!_disposed) stateKnown.value = true;
     }
   }
 
   /// Switches to [kind], stopping the running networks once confirmed.
   Future<void> select(BackendKind kind) async {
-    if (busy.value || kind == this.kind.value) return;
+    if (_disposed || busy.value || kind == this.kind.value) return;
     if (kind == BackendKind.service) {
       if (serviceState.value == ServiceState.rootRequired) {
         showMessage(l10n.value.controllerRootRequired);
@@ -122,29 +146,33 @@ class BackendSettingsController {
       }
       await backend_signals.switchBackend(kind);
     } catch (error) {
-      showMessage(l10n.value.controllerStopNetworks('$error'));
+      if (!_disposed) showMessage(l10n.value.controllerStopNetworks('$error'));
     } finally {
-      busy.value = false;
+      if (!_disposed) busy.value = false;
     }
   }
 
   /// Installs or reinstalls the service, streaming the download's progress.
   Future<void> install() async {
-    if (busy.value) return;
+    if (_disposed || busy.value) return;
     busy.value = true;
     installing.value = true;
     installProgress.value = null;
     try {
       await control.install(
-        onProgress: (progress) => installProgress.value = progress,
+        onProgress: (progress) {
+          if (!_disposed) installProgress.value = progress;
+        },
       );
     } catch (error) {
-      showMessage(l10n.value.controllerServiceInstall('$error'));
+      if (!_disposed) showMessage(l10n.value.controllerServiceInstall('$error'));
     } finally {
-      installing.value = false;
-      installProgress.value = null;
-      busy.value = false;
-      await refresh();
+      if (!_disposed) {
+        installing.value = false;
+        installProgress.value = null;
+        busy.value = false;
+        await refresh();
+      }
     }
   }
 
@@ -168,15 +196,17 @@ class BackendSettingsController {
     Future<void> Function() action,
     String Function(String error) failure,
   ) async {
-    if (busy.value) return;
+    if (_disposed || busy.value) return;
     busy.value = true;
     try {
       await action();
     } catch (error) {
-      showMessage(failure('$error'));
+      if (!_disposed) showMessage(failure('$error'));
     } finally {
-      busy.value = false;
-      await refresh();
+      if (!_disposed) {
+        busy.value = false;
+        await refresh();
+      }
     }
   }
 
@@ -201,14 +231,18 @@ class BackendSettingsController {
 
   /// Frees every signal this controller created.
   void dispose() {
+    if (_disposed) return;
+    _disposed = true;
     serviceState.dispose();
     stateKnown.dispose();
     busy.dispose();
     runningVersion.dispose();
     installing.dispose();
     installProgress.dispose();
-    kind.dispose();
-    status.dispose();
     outdated.dispose();
+    for (final release in _disposers) {
+      release();
+    }
+    _disposers.clear();
   }
 }

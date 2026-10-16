@@ -26,6 +26,14 @@ final Signal<NetworkBackend> _backend = signal(FfiBackend());
 /// as it changes when the user switches.
 ReadonlySignal<NetworkBackend> get backend => _backend;
 
+/// The active backend's kind, for every page that reads it.
+final Computed<BackendKind> backendKind = computed(() => _backend.value.kind);
+
+/// The active backend's connection status, for every page that reads it.
+final Computed<BackendStatus> backendStatus = computed(
+  () => _backend.value.status.value,
+);
+
 /// Controls the background service, which [BackendKind.service] talks to.
 late final ServiceControl serviceControl;
 

@@ -349,9 +349,9 @@ void main() {
   group('select()', () {
     /// Puts [backend] into the global signal, so a switch replaces it.
     ///
-    /// [switchBackend] disposes the backend it replaces. With a fake in place
-    /// that dispose is a no-op, while the real FFI backend's spawns an isolate
-    /// that never settles inside `flutter test`.
+    /// [switchBackend] disposes the backend it replaces. A fake's dispose only
+    /// releases its status signal, while the real FFI backend's spawns an
+    /// isolate that never settles inside `flutter test`.
     void installGlobalBackend(FakeBackend backend) =>
         (backend_signals.backend as Signal<NetworkBackend>).value = backend;
 

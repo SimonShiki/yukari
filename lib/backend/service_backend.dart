@@ -64,8 +64,10 @@ class ServiceBackend extends NetworkBackend {
 
   @override
   Future<void> dispose() async {
+    if (_disposed) return;
     _disposed = true;
     _retry?.cancel();
+    _status.dispose();
     await _client?.close();
   }
 
@@ -88,8 +90,12 @@ class ServiceBackend extends NetworkBackend {
     try {
       client = await connectIpc(await _locate());
     } catch (error) {
-      _status.value = BackendStatus.unavailable;
-      _retryLater();
+      // The backend may have been disposed while locating the service, and
+      // its status signal was disposed with it.
+      if (!_disposed) {
+        _status.value = BackendStatus.unavailable;
+        _retryLater();
+      }
       throw ServiceUnavailableException(error);
     }
     if (_disposed) {

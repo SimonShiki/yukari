@@ -63,10 +63,9 @@ class NetworkEditorController {
     () => working.value == null,
   );
 
-  /// The active backend, so the startup section follows a backend switch.
-  late final ReadonlySignal<BackendKind> backendKind = computed(
-    () => backends.backend.value.kind,
-  );
+  /// The active backend's kind: the app-wide signal, so the startup section
+  /// follows a backend switch.
+  ReadonlySignal<BackendKind> get backendKind => backends.backendKind;
 
   /// The initial peers, so the peer rows rebuild only when a peer changes.
   late final Signal<List<Node>> nodes = signal(
@@ -166,7 +165,6 @@ class NetworkEditorController {
     for (final signal in <ReadonlySignal<Object?>>[
       working,
       missing,
-      backendKind,
       nodes,
       listeners,
       mappedListeners,

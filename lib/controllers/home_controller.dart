@@ -8,6 +8,7 @@ import '../backend/ipc/ipc_client.dart';
 import '../backend/ipc/ipc_endpoint.dart';
 import '../models/models.dart';
 import '../signals/backend.dart' as active;
+import '../signals/instances.dart' as running;
 import '../signals/networks.dart';
 import '../utils/stun_probe.dart';
 
@@ -67,12 +68,14 @@ class HomeController {
 
   // -- Backend header -------------------------------------------------------
 
-  late final Computed<BackendStatus> status = _derive(
-    () => _activeBackend.value.status.value,
-  );
-  late final Computed<BackendKind> backendKind = _derive(
-    () => _activeBackend.value.kind,
-  );
+  /// The active backend's status: the app-wide signal, or the injected
+  /// backend's, which this controller then owns.
+  late final ReadonlySignal<BackendStatus> status = _injected == null
+      ? active.backendStatus
+      : _derive(() => _activeBackend.value.status.value);
+  late final ReadonlySignal<BackendKind> backendKind = _injected == null
+      ? active.backendKind
+      : _derive(() => _activeBackend.value.kind);
   late final Signal<int?> serviceVersion = _own<int?>(null);
   late final Computed<bool> showSettings = _derive(
     () => status.value == BackendStatus.unavailable,
@@ -87,10 +90,9 @@ class HomeController {
   // -- Networks card --------------------------------------------------------
 
   late final Signal<bool> refreshed = _own(false);
-  late final Signal<Map<String, Instance>> _instances = _own(const {});
   late final Computed<List<Instance>> _running = _derive(
     () => [
-      for (final instance in _instances.value.values)
+      for (final instance in running.instances.value.values)
         if (instance.status == InstanceStatus.running) instance,
     ],
   );
