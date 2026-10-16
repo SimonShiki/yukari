@@ -3,8 +3,11 @@ name: Build Native Libraries
 on:
   workflow_dispatch:
   push:
+    branches: [trunk]
     paths:
       - 'xmake.lua'
+      - 'hook/**'
+      - 'tool/native_version.dart'
       - '.github/workflows/build-native-libraries.yml'
 
 jobs:
@@ -114,11 +117,31 @@ jobs:
       contents: write
 
     steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Get dependencies
+        run: flutter pub get
+
       - name: Download all artifacts
         uses: actions/download-artifact@v4
         with:
           path: artifacts
 
+      - name: Generate manifest
+        run: |
+          dart run tool/native_version.dart manifest natives.json \
+            windows/x64=artifacts/windows-x64-easytier_ffi.dll/easytier_ffi.dll \
+            linux/x86_64=artifacts/linux-x86_64-libeasytier_ffi.so/libeasytier_ffi.so \
+            linux/arm64=artifacts/linux-arm64-libeasytier_ffi.so/libeasytier_ffi.so \
+            android/arm64-v8a=artifacts/android-arm64-v8a-libeasytier_ffi.so/libeasytier_ffi.so \
+            android/x86_64=artifacts/android-x86_64-libeasytier_ffi.so/libeasytier_ffi.so
 
       - name: Upload Windows x64 library
         uses: svenstaro/upload-release-action@v2
@@ -210,6 +233,18 @@ jobs:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           file: artifacts/windows-x64-easytier_ffi.dll/WinDivert64.sys
           asset_name: WinDivert64.sys
+          tag: natives
+          release_name: Native Libraries
+          overwrite: true
+          prerelease: true
+          make_latest: false
+
+      - name: Upload the native version manifest
+        uses: svenstaro/upload-release-action@v2
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: natives.json
+          asset_name: natives.json
           tag: natives
           release_name: Native Libraries
           overwrite: true

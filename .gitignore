@@ -40,6 +40,9 @@ skills-lock.json
 /.xmake/
 /coverage/
 
+# Native library versions
+/natives.json
+
 # Symbolication related
 app.*.symbols
 
