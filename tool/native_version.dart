@@ -15,13 +15,23 @@ import '../hook/native_version.dart';
 /// `stamp` records the version of a library built by hand, so that the hook
 /// keeps using it instead of downloading or rebuilding one.
 ///
-/// Usage:
+/// Both read `xmake.lua` and the given library paths from the current directory,
+/// so run them from the root of the checkout:
+///
 /// ```shell
 /// dart run tool/native_version.dart manifest natives.json linux/x86_64=<library>...
 /// dart run tool/native_version.dart stamp linux x86_64 <library>
 /// ```
+///
+/// `dart run` also builds the native assets of this package, which a machine
+/// without a toolchain and without a published library cannot satisfy. Compile
+/// the tool first to run it there:
+///
+/// ```shell
+/// dart compile exe tool/native_version.dart -o native-version && ./native-version ...
+/// ```
 Future<void> main(List<String> args) async {
-  final packageRoot = Platform.script.resolve('../');
+  final packageRoot = Directory.current.uri;
   try {
     switch (args.isEmpty ? '' : args.first) {
       case 'manifest':

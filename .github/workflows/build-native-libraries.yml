@@ -136,7 +136,8 @@ jobs:
 
       - name: Generate manifest
         run: |
-          dart run tool/native_version.dart manifest natives.json \
+          dart compile exe tool/native_version.dart -o "$RUNNER_TEMP/native-version"
+          "$RUNNER_TEMP/native-version" manifest natives.json \
             windows/x64=artifacts/windows-x64-easytier_ffi.dll/easytier_ffi.dll \
             linux/x86_64=artifacts/linux-x86_64-libeasytier_ffi.so/libeasytier_ffi.so \
             linux/arm64=artifacts/linux-arm64-libeasytier_ffi.so/libeasytier_ffi.so \
