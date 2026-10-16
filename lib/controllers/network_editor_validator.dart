@@ -4,13 +4,13 @@ import 'dart:io';
 import '../models/network.dart';
 import '../models/node.dart';
 import '../signals/locale.dart';
-import 'line_formats.dart';
+import '../utils/line_formats.dart';
 
 // Form validators: each returns an error message, or null when the input is
 // valid. Validators of optional values accept empty input.
 
-String? validateNetworkName(String value, Iterable<String> takenNames) {
-  final name = value.trim();
+String? validateNetworkName(String? value, Iterable<String> takenNames) {
+  final name = value?.trim() ?? '';
   if (name.isEmpty) return l10n.value.validationNetworkEmpty;
   if (takenNames.contains(name)) return l10n.value.validationNetworkExists;
   return null;

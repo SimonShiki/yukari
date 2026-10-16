@@ -2,7 +2,7 @@ import 'package:material_ui/material_ui.dart';
 
 import '../../../l10n/l10n.dart';
 import '../../../models/node.dart';
-import '../../../utils/validator.dart';
+import '../../../controllers/network_editor_validator.dart';
 
 class ListenerEditorDialog extends StatefulWidget {
   const ListenerEditorDialog({

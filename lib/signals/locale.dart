@@ -41,7 +41,8 @@ const _localeKey = 'locale';
 /// Restores the language the user picked and follows system changes.
 Future<void> initLocale() async {
   WidgetsBinding.instance.addObserver(_SystemLocaleObserver());
-  final saved = (await SharedPreferences.getInstance()).getString(_localeKey);
+  final prefs = await SharedPreferences.getInstance();
+  final saved = prefs.getString(_localeKey);
   _preferred.value = _supported(saved);
 }
 

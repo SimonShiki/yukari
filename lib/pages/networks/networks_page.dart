@@ -282,7 +282,7 @@ class _NetworksPageState extends State<NetworksPage>
                               )
                             : NetworkEditorPage(
                                 key: ValueKey(selectedNetwork),
-                                id: selectedNetwork,
+                                name: selectedNetwork,
                               ),
                       ),
                     ),

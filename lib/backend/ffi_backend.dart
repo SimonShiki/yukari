@@ -2,8 +2,6 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:isolate';
 
-import 'package:signals/signals.dart';
-
 import '../bindings/easytier_ffi_native.dart' as native;
 import '../models/models.dart';
 import '../utils/easytier_config_serializer.dart';
@@ -23,7 +21,7 @@ class FfiBackend extends NetworkBackend {
   BackendKind get kind => BackendKind.ffi;
 
   @override
-  final ReadonlySignal<BackendStatus> status = signal(BackendStatus.ready);
+  final status = BackendStatus.ready;
 
   @override
   Future<Map<String, String>> collectInfos() =>

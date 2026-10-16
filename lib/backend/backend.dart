@@ -1,7 +1,5 @@
 import 'dart:convert';
 
-import 'package:signals/signals.dart';
-
 import '../models/models.dart';
 
 /// Runs EasyTier network instances for the app.
@@ -14,7 +12,7 @@ abstract class NetworkBackend {
   BackendKind get kind;
 
   /// Whether the backend can currently take requests.
-  ReadonlySignal<BackendStatus> get status;
+  BackendStatus get status;
 
   /// How many instances may run at once, or null when unlimited.
   int? get maxInstances => null;
@@ -57,7 +55,7 @@ Map<String, Instance> hydrateInstances(
   Map<String, String> infos,
 ) => {
   for (final MapEntry(:key, :value) in networks.entries)
-    if (infos[value.networkName] case final info?)
+    if (infos[key] case final info?)
       key: Instance.fromJsonAndNetwork(
         jsonDecode(info) as Map<String, Object?>,
         value,

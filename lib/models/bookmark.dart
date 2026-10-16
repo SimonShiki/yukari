@@ -29,6 +29,9 @@ final class Bookmark {
 
   Map<String, dynamic> toJson() => _$BookmarkToJson(this);
 
+  /// A deep, independent copy of this bookmark.
+  Bookmark copy() => Bookmark.fromJson(toJson());
+
   String id;
   Node node;
   String? name;

@@ -4,7 +4,7 @@ import 'package:signals_flutter/signals_flutter.dart';
 import '../../../controllers/network_editor_controller.dart';
 import '../../../l10n/l10n.dart';
 import '../../../models/network.dart';
-import '../../../utils/validator.dart';
+import '../../../controllers/network_editor_validator.dart';
 import 'access_section.dart';
 import '../../../widgets/form_section/form_segments.dart';
 import 'listener_list_editor.dart';

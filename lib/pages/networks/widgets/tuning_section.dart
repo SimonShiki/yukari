@@ -4,7 +4,7 @@ import '../../../controllers/network_editor_controller.dart';
 import '../../../l10n/l10n.dart';
 import '../../../models/network_flags.dart';
 import '../../../models/node.dart';
-import '../../../utils/validator.dart';
+import '../../../controllers/network_editor_validator.dart';
 import '../../../widgets/form_section/form_segments.dart';
 import 'network_fields.dart';
 import '../../../widgets/form_section/form_section.dart';

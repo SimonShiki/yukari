@@ -6,20 +6,23 @@ Network parseEasyTierConfig(String tomlContent) {
   final doc = TomlDocument.parse(tomlContent);
   final config = doc.toMap();
 
-  final network = Network();
-
-  if (config['hostname'] is String) {
-    network.hostname = config['hostname'] as String;
-  }
-
+  Network network;
   if (config['network_identity'] is Map) {
     final identity = config['network_identity'] as Map;
     if (identity['network_name'] is String) {
-      network.networkName = identity['network_name'] as String;
+      network = Network(identity['network_name'] as String);
+    } else {
+      throw FormatException('Missing network_name in network_identity');
     }
     if (identity['network_secret'] is String) {
       network.networkSecret = identity['network_secret'] as String;
     }
+  } else {
+    throw FormatException('Missing network_identity section');
+  }
+
+  if (config['hostname'] is String) {
+    network.hostname = config['hostname'] as String;
   }
 
   if (config['netns'] is String) {

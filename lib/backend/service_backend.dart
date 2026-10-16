@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:json_rpc_2/json_rpc_2.dart';
-import 'package:signals/signals.dart';
 
 import '../models/models.dart';
 import 'backend.dart';
@@ -35,7 +34,7 @@ class ServiceBackend extends NetworkBackend {
   final Future<IpcEndpoint> Function() _locate;
   final Duration retryInterval;
 
-  final _status = signal(BackendStatus.connecting);
+  BackendStatus _status = BackendStatus.connecting;
   Client? _client;
   Future<Client>? _connecting;
   Timer? _retry;
@@ -45,7 +44,7 @@ class ServiceBackend extends NetworkBackend {
   BackendKind get kind => BackendKind.service;
 
   @override
-  ReadonlySignal<BackendStatus> get status => _status;
+  BackendStatus get status => _status;
 
   @override
   Future<Map<String, String>> collectInfos() async =>
@@ -81,14 +80,14 @@ class ServiceBackend extends NetworkBackend {
   }
 
   Future<Client> _open() async {
-    if (_status.peek() != BackendStatus.ready) {
-      _status.value = BackendStatus.connecting;
+    if (_status != BackendStatus.ready) {
+      _status = BackendStatus.connecting;
     }
     final Client client;
     try {
       client = await connectIpc(await _locate());
     } catch (error) {
-      _status.value = BackendStatus.unavailable;
+      _status = BackendStatus.unavailable;
       _retryLater();
       throw ServiceUnavailableException(error);
     }
@@ -98,11 +97,11 @@ class ServiceBackend extends NetworkBackend {
     }
     client.done.whenComplete(() {
       if (!_disposed && identical(_client, client)) {
-        _status.value = BackendStatus.unavailable;
+        _status = BackendStatus.unavailable;
         _retryLater();
       }
     }).ignore();
-    _status.value = BackendStatus.ready;
+    _status = BackendStatus.ready;
     return _client = client;
   }
 

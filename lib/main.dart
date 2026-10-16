@@ -1,5 +1,6 @@
 import 'package:dynamic_color/dynamic_color.dart';
 import 'package:material_ui/material_ui.dart';
+import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:signals_flutter/signals_flutter.dart';
 
@@ -11,16 +12,13 @@ import 'router.dart';
 import 'signals/backend.dart';
 import 'signals/bookmarks.dart' as bookmarks;
 import 'signals/networks.dart' as networks;
-import 'storage/bookmark_store.dart';
-import 'storage/network_store.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Load persistent data before running. The service reads the same store.
   final dataDir = (await getApplicationSupportDirectory()).path;
-  await networks.init(NetworkStore.inDirectory(dataDir));
-  await bookmarks.init(BookmarkStore.inDirectory(dataDir));
+  await networks.init(p.join(dataDir, 'networks'));
+  await bookmarks.init(p.join(dataDir, 'bookmarks'));
   await initBackend(dataDir);
   await initLocale();
 

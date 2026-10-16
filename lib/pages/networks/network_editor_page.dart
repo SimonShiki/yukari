@@ -1,20 +1,18 @@
-import 'package:go_router/go_router.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:signals_flutter/signals_flutter.dart';
 
 import '../../controllers/network_editor_controller.dart';
 import '../../l10n/l10n.dart';
-import '../../widgets/empty_state/empty_state.dart';
 import '../../widgets/snackbar/app_snackbar.dart';
 import 'editor_exit_guard.dart';
 import 'widgets/network_basic_tab.dart';
 import 'widgets/network_advanced_tab.dart';
 
-/// Edits the saved network [id]. Valid changes are saved as they are made.
+/// Edits the saved network [name]. Valid changes are saved as they are made.
 class NetworkEditorPage extends StatefulWidget {
-  const NetworkEditorPage({super.key, required this.id});
+  const NetworkEditorPage({super.key, required this.name});
 
-  final String id;
+  final String name;
 
   @override
   State<NetworkEditorPage> createState() => _NetworkEditorPageState();
@@ -24,7 +22,7 @@ class _NetworkEditorPageState extends State<NetworkEditorPage> {
   final _basicForm = GlobalKey<FormState>();
   final _advancedForm = GlobalKey<FormState>();
   late final _controller = NetworkEditorController(
-    id: widget.id,
+    name: widget.name,
     showMessage: (message) {
       if (!mounted) return;
       showAppSnackBar(context, message);
@@ -53,22 +51,6 @@ class _NetworkEditorPageState extends State<NetworkEditorPage> {
 
   @override
   Widget build(BuildContext context) {
-    final network = _controller.network.peek();
-    if (network == null) {
-      return Scaffold(
-        appBar: AppBar(title: Text(context.l10n.networkEdit)),
-        body: EmptyState(
-          icon: Icons.error_outline,
-          title: context.l10n.networkMissing,
-          message: context.l10n.networkMissingDescription,
-          action: FilledButton(
-            onPressed: () => context.pop(),
-            child: Text(context.l10n.commonGoBack),
-          ),
-        ),
-      );
-    }
-
     return DefaultTabController(
       length: 2,
       child: Scaffold(
@@ -76,7 +58,7 @@ class _NetworkEditorPageState extends State<NetworkEditorPage> {
           title: SignalBuilder(
             builder: (context) => Text(
               context.l10n.networkEditNamed(
-                _controller.networkName.value ?? network.networkName,
+                _controller.networkName.value,
               ),
             ),
           ),

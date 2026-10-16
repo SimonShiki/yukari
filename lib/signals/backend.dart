@@ -12,9 +12,11 @@ import '../backend/system/module_service_control.dart';
 import '../backend/system/service_control.dart';
 import '../models/models.dart';
 
+final _backendKind = signal<BackendKind>(BackendKind.ffi);
+
 /// Private backing signal for the active backend.
 /// Use [backend] for readonly access and [switchBackend] for changes.
-final Signal<NetworkBackend> _backend = signal(FfiBackend());
+late final Signal<NetworkBackend> _backend;
 
 /// The backend that runs network instances: in process, or in the service.
 ///
@@ -29,20 +31,21 @@ ReadonlySignal<NetworkBackend> get backend => _backend;
 /// Controls the background service, which [BackendKind.service] talks to.
 late final ServiceControl serviceControl;
 
-const _kindKey = 'backend';
-
 /// Restores the backend the user chose, for the app data directory [dataDir].
 Future<void> initBackend(String dataDir) async {
+  final prefs = await SharedPreferences.getInstance();
+  final saved = prefs.getString('backend');
+  BackendKind chosen = BackendKind.values.asNameMap()[saved] ?? BackendKind.ffi;
+
   serviceControl = Platform.isAndroid
       ? ModuleServiceControl(dataDir: dataDir)
       : SystemServiceControl(dataDir: dataDir);
-  final saved = (await SharedPreferences.getInstance()).getString(_kindKey);
-  final kind = BackendKind.values.asNameMap()[saved] ?? BackendKind.ffi;
-  _backend.value = _create(
-    kind == BackendKind.service && serviceControl.supported
-        ? kind
-        : BackendKind.ffi,
-  );
+  if (chosen == BackendKind.service && !serviceControl.supported) {
+    chosen = BackendKind.ffi;
+  }
+
+  _backendKind.set(chosen);
+  _backend.value = _create(chosen);
 }
 
 /// Switches to the [kind] backend. Instances of an in-process backend stop.
@@ -50,7 +53,8 @@ Future<void> switchBackend(BackendKind kind) async {
   if (_backend.peek().kind == kind) return;
   final previous = _backend.peek();
   _backend.value = _create(kind);
-  await (await SharedPreferences.getInstance()).setString(_kindKey, kind.name);
+  final prefs = await SharedPreferences.getInstance();
+  await prefs.setString('backend', kind.name);
   await previous.dispose();
 }
 

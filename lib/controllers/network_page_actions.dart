@@ -25,7 +25,7 @@ extension NetworkPageActions on NetworkPageController {
       final network = parseEasyTierConfig(content);
 
       final error =
-          validateNetworkName(network.networkName, networkNames()) ??
+          validateNetworkName(network.networkName, index.peek()) ??
           validateNetwork(network);
       if (error != null) {
         showMessage(
@@ -34,7 +34,7 @@ extension NetworkPageActions on NetworkPageController {
         return;
       }
 
-      await addNetwork(const Uuid().v4(), network);
+      addNetwork(network.networkName, network);
     } catch (e) {
       showMessage(l10n.value.controllerImportFailed(e.toString()));
     }
@@ -42,48 +42,48 @@ extension NetworkPageActions on NetworkPageController {
 
   void scanQrCode() => showMessage(l10n.value.controllerQrComing);
 
-  void openInNewRoute(String id) {
-    final network = networks.value[id];
-    if (network == null || transitions.value[id] == InstanceStatus.starting) {
+  void openInNewRoute(String name) {
+    final network = networks[name];
+    if (network == null || transitions.value[name] == InstanceStatus.starting) {
       return;
     }
     navigate(
-      instances.value.containsKey(id) ? 'network-instance' : 'network-edit',
-      id,
+      instances.value.containsKey(name) ? 'network-instance' : 'network-edit',
+      name,
     );
   }
 
-  void edit(String id) {
-    final network = networks.value[id];
+  void edit(String name) {
+    final network = networks.value[name];
     if (network == null ||
-        instances.value.containsKey(id) ||
-        transitions.value[id] == InstanceStatus.starting) {
+        instances.value.containsKey(name) ||
+        transitions.value[name] == InstanceStatus.starting) {
       return;
     }
-    navigate('network-edit', id);
+    navigate('network-edit', name);
   }
 
-  void log(String id) {
-    if (instances.value.containsKey(id)) navigate('network-logs', id);
+  void log(String name) {
+    if (instances.value.containsKey(name)) navigate('network-logs', name);
   }
 
   Future<void> reorder(int oldIndex, int newIndex) async {
     try {
-      await reorderNetworks(oldIndex, newIndex);
+      reorderIndex(oldIndex, newIndex);
     } catch (_) {
       if (!_disposed) showMessage(l10n.value.controllerReorderFailed);
     }
   }
 
-  Future<void> toggle(String id, bool running) async {
-    final network = networks.value[id];
+  Future<void> toggle(String name, bool running) async {
+    final network = networks[name];
     if (network == null ||
         _disposed ||
-        deleting.value.contains(id) ||
+        deleting.value.contains(name) ||
         !loaded.value ||
         error.value != null ||
-        transitions.value[id] == InstanceStatus.starting ||
-        transitions.value[id] == InstanceStatus.stopping) {
+        transitions.value[name] == InstanceStatus.starting ||
+        transitions.value[name] == InstanceStatus.stopping) {
       return;
     }
     if (running == instances.value.containsKey(id)) return;
@@ -148,13 +148,13 @@ extension NetworkPageActions on NetworkPageController {
     if (_active && !_disposed) await refresh();
   }
 
-  Future<void> delete(String id) async {
-    final network = networks.value[id];
+  Future<void> delete(String name) async {
+    final network = networks[name];
     if (network == null ||
         _disposed ||
-        transitions.value[id] == InstanceStatus.starting ||
-        transitions.value[id] == InstanceStatus.stopping ||
-        !deleting.value.add(id)) {
+        transitions.value[name] == InstanceStatus.starting ||
+        transitions.value[name] == InstanceStatus.stopping ||
+        !deleting.value.add(name)) {
       return;
     }
     deleting.set(deleting.value);
@@ -163,20 +163,20 @@ extension NetworkPageActions on NetworkPageController {
       // Stop first, including an instance started since the last status refresh.
       final current = await _backend.collect(Map.of(networks.value));
       if (_disposed) return;
-      if (current.containsKey(id)) await _backend.stop([network.networkName]);
+      if (current.containsKey(name)) await _backend.stop([network.networkName]);
       if (_disposed) return;
-      await deleteNetwork(id);
-      clearInstanceLogs(id);
-      instances.value.remove(id);
+      removeNetwork(name);
+      clearInstanceLogs(name);
+      instances.value.remove(name);
       instances.set(instances.value);
-      transitions.value.remove(id);
+      transitions.value.remove(name);
       transitions.set(transitions.value);
     } catch (_) {
       if (!_disposed) {
         showMessage(l10n.value.controllerDeleteFailed(network.networkName));
       }
     } finally {
-      deleting.value.remove(id);
+      deleting.value.remove(name);
       deleting.set(deleting.value);
     }
   }

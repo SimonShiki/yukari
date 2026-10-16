@@ -13,7 +13,7 @@ Future<void> showNetworkPicker(
   required Bookmark bookmark,
   required BookmarksController controller,
 }) async {
-  final networkId = await showDialog<String>(
+  final networkName = await showDialog<String>(
     context: context,
     builder: (context) => AlertDialog(
       title: Text(context.l10n.bookmarksAddToNetworkTitle),
@@ -78,5 +78,5 @@ Future<void> showNetworkPicker(
     ),
   );
 
-  if (networkId != null) await controller.addToNetwork(bookmark, networkId);
+  if (networkName != null) controller.addToNetwork(bookmark, networkName);
 }

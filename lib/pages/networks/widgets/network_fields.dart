@@ -6,7 +6,7 @@ import '../../../l10n/l10n.dart';
 import '../../../models/network.dart';
 import '../../../models/network_flags.dart';
 import '../../../utils/line_formats.dart';
-import '../../../utils/validator.dart';
+import '../../../controllers/network_editor_validator.dart';
 import '../../../widgets/form_section/form_segments.dart';
 import 'validated_text_field.dart';
 

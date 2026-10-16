@@ -96,27 +96,27 @@ class BookmarksController {
   }
 
   /// Saves [bookmark], reporting a failure instead of throwing.
-  Future<void> add(Bookmark bookmark) async {
+  void add(Bookmark bookmark) {
     try {
-      await saved.addBookmark(bookmark);
+      saved.addBookmark(bookmark);
     } catch (error) {
       showMessage(l10n.value.bookmarksSaveFailed('$error'));
     }
   }
 
   /// Writes the changes made to an existing [bookmark].
-  Future<void> update(Bookmark bookmark) async {
+  void update(Bookmark bookmark) {
     try {
-      await saved.updateBookmark(bookmark);
+      saved.updateBookmark(bookmark);
     } catch (error) {
       showMessage(l10n.value.bookmarksSaveFailed('$error'));
     }
   }
 
   /// Removes [bookmark] after the page confirmed it.
-  Future<void> delete(Bookmark bookmark) async {
+  void delete(Bookmark bookmark) {
     try {
-      await saved.deleteBookmark(bookmark.id);
+      saved.deleteBookmark(bookmark.id);
     } catch (error) {
       showMessage(l10n.value.bookmarksDeleteFailed('$error'));
     }

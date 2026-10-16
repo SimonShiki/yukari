@@ -2,7 +2,7 @@ import 'package:material_ui/material_ui.dart';
 
 import '../../l10n/l10n.dart';
 import '../../models/node.dart';
-import '../../utils/validator.dart';
+import '../../controllers/network_editor_validator.dart';
 
 /// The fields describing one initial peer, shared by the network editor's
 /// peer dialog and the bookmarks page's editor.

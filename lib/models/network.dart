@@ -10,18 +10,17 @@ part 'network.g.dart';
 /// the responsibility of whoever writes them (see `utils/validator.dart`).
 @JsonSerializable(explicitToJson: true)
 final class Network {
-  Network();
+  Network(this.networkName);
 
   factory Network.fromJson(Map<String, dynamic> json) =>
       _$NetworkFromJson(json);
 
   Map<String, dynamic> toJson() => _$NetworkToJson(this);
 
-  /// A deep, independent copy of this network.
   Network copy() => Network.fromJson(toJson());
 
   String? hostname;
-  String networkName = 'youkai-boundaries';
+  String networkName;
   String? networkSecret;
   String? netNamespace;
   String? ipv4;
@@ -52,7 +51,6 @@ final class Network {
   Map<String, Object?> additionalFlags = {};
   Map<String, Object?> additionalConfiguration = {};
 
-  /// Whether the background service runs this network when the system boots.
   bool autoStart = false;
   DateTime createdAt = DateTime.now().toUtc();
   DateTime updatedAt = DateTime.now().toUtc();

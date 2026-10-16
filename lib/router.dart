@@ -45,23 +45,23 @@ final GoRouter appRouter = GoRouter(
           routes: [
             GoRoute(
               name: 'network-instance',
-              path: 'instance/:id',
+              path: 'instance/:name',
               builder: (context, state) =>
-                  NetworkInstancePage(id: state.pathParameters['id']!),
+                  NetworkInstancePage(id: state.pathParameters['name']!),
             ),
             GoRoute(
               name: 'network-logs',
-              path: 'instance/:id/logs',
+              path: 'instance/:name/logs',
               builder: (context, state) => NetworkInstancePage(
-                id: state.pathParameters['id']!,
+                id: state.pathParameters['name']!,
                 initialTab: InstanceTab.logs,
               ),
             ),
             GoRoute(
               name: 'network-edit',
-              path: 'edit/:id',
+              path: 'edit/:name',
               builder: (context, state) =>
-                  NetworkEditorPage(id: state.pathParameters['id']!),
+                  NetworkEditorPage(name: state.pathParameters['name']!),
               onExit: (context, state) =>
                   confirmLeavingPage(context, state.pageKey),
             ),

@@ -2,12 +2,10 @@ import 'package:go_router/go_router.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:signals_flutter/signals_flutter.dart';
 
-import 'package:uuid/uuid.dart';
-
 import '../../l10n/l10n.dart';
 import '../../models/network.dart';
 import '../../signals/networks.dart';
-import '../../utils/validator.dart';
+import '../../controllers/network_editor_validator.dart';
 import '../../widgets/snackbar/app_snackbar.dart';
 
 class NetworkCreatorPage extends SignalStatefulWidget {
@@ -37,17 +35,16 @@ class _NetworkCreatorPageState extends State<NetworkCreatorPage> {
     creating.value = true;
 
     try {
-      final id = const Uuid().v4();
+      final networkName = _nameController.text.trim();
       final hostname = _hostnameController.text.trim();
-      await addNetwork(
-        id,
-        Network()
-          ..networkName = _nameController.text.trim()
+      addNetwork(
+        networkName,
+        Network(networkName)
           ..hostname = hostname.isEmpty ? null : hostname,
       );
 
       if (mounted) {
-        context.go('/networks/edit/$id');
+        context.go('/networks/edit/$networkName');
       }
     } catch (e) {
       if (mounted) {
@@ -101,7 +98,7 @@ class _NetworkCreatorPageState extends State<NetworkCreatorPage> {
                         border: OutlineInputBorder(),
                       ),
                       enabled: !creating.value,
-                      validator: (v) => validateNetworkName(v!, networkNames()),
+                      validator: (v) => validateNetworkName(v!, index.value),
                       onFieldSubmitted: (_) => _handleCreate(),
                     ),
                     const SizedBox(height: 16),

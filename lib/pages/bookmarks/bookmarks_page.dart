@@ -57,7 +57,7 @@ class _BookmarksPageState extends State<BookmarksPage> {
 
   Future<void> _delete(Bookmark bookmark) async {
     if (await confirmBookmarkDeletion(context, bookmark)) {
-      await _controller.delete(bookmark);
+      _controller.delete(bookmark);
     }
   }
 

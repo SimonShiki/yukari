@@ -8,8 +8,9 @@ import '../../../l10n/l10n.dart';
 import '../../../models/backend.dart';
 import '../../../models/network.dart';
 import '../../../signals/backend.dart';
+import '../../../signals/networks.dart';
 import '../../../utils/crypto_utils.dart';
-import '../../../utils/validator.dart';
+import '../../../controllers/network_editor_validator.dart';
 import '../../../widgets/form_section/form_segments.dart';
 import '../../../widgets/form_section/form_section.dart';
 import 'network_form_tab.dart';
@@ -39,7 +40,7 @@ class _NetworkBasicTabState extends State<NetworkBasicTab>
   );
 
   NetworkEditorController get _editor => widget.controller;
-  Network get _network => _editor.network.peek()!;
+  Network get _network => _editor.editing.peek();
 
   // Keeps typed text and validation errors when switching tabs.
   @override
@@ -53,7 +54,10 @@ class _NetworkBasicTabState extends State<NetworkBasicTab>
   }
 
   void _setSecret(String secret) =>
-      _editor.update((n) => n.networkSecret = secret.isEmpty ? null : secret);
+      updateNetwork(
+        _network.networkName, 
+        updater: (n) => n.networkSecret = secret.isEmpty ? null : secret
+      );
 
   @override
   Widget build(BuildContext context) {
@@ -74,8 +78,11 @@ class _NetworkBasicTabState extends State<NetworkBasicTab>
                   helperText: context.l10n.networkNameHelper,
                   border: OutlineInputBorder(),
                 ),
-                validator: _editor.networkNameError,
-                onValid: (v) => _editor.update((n) => n.networkName = v.trim()),
+                validator: _editor.validator.networkName,
+                onValid: (v) => updateNetwork(
+                  _network.networkName,
+                  updater: (n) => n.networkName = v.trim(),
+                )
               ),
             ),
             FieldSegment(
@@ -88,8 +95,9 @@ class _NetworkBasicTabState extends State<NetworkBasicTab>
                 ),
                 maxLength: 32,
                 validator: validateHostname,
-                onValid: (v) => _editor.update(
-                  (n) => n.hostname = v.trim().isEmpty ? null : v.trim(),
+                onValid: (v) => updateNetwork(
+                  _network.networkName,
+                  updater: (n) => n.hostname = v.trim().isEmpty ? null : v.trim(),
                 ),
               ),
             ),
@@ -142,8 +150,8 @@ class _NetworkBasicTabState extends State<NetworkBasicTab>
               builder: (context) => SwitchSegment(
                 title: context.l10n.networkDhcp,
                 subtitle: context.l10n.networkDhcpDescription,
-                value: _editor.network.value!.dhcp,
-                onChanged: (v) => _editor.update((n) => n.dhcp = v),
+                value: _editor.dhcp.value,
+                onChanged: (v) => updateNetwork(_network.networkName, updater: (n) => n.dhcp = v),
               ),
             ),
             FieldSegment(
@@ -156,10 +164,10 @@ class _NetworkBasicTabState extends State<NetworkBasicTab>
                     helperText: context.l10n.networkIpv4Helper,
                     border: OutlineInputBorder(),
                   ),
-                  enabled: !_editor.network.value!.dhcp,
+                  enabled: !_editor.dhcp.value,
                   validator: (v) => validateCidr(v, InternetAddressType.IPv4),
                   onValid: (v) =>
-                      _editor.update((n) => n.ipv4 = v.isEmpty ? null : v),
+                      updateNetwork(_network.networkName, updater: (n) => n.ipv4 = v.isEmpty ? null : v),
                 ),
               ),
             ),
@@ -174,7 +182,7 @@ class _NetworkBasicTabState extends State<NetworkBasicTab>
                 ),
                 validator: (v) => validateCidr(v, InternetAddressType.IPv6),
                 onValid: (v) =>
-                    _editor.update((n) => n.ipv6 = v.isEmpty ? null : v),
+                    updateNetwork(_network.networkName, updater: (n) => n.ipv6 = v.isEmpty ? null : v),
               ),
             ),
           ],
@@ -183,12 +191,7 @@ class _NetworkBasicTabState extends State<NetworkBasicTab>
         // boot; the app itself cannot.
         if (!Platform.isAndroid || backend.peek().kind == BackendKind.service)
           StartupSection(controller: _editor),
-        SignalBuilder(
-          builder: (context) => NodeListEditor(
-            nodes: _editor.network.value!.nodes,
-            onNodesChanged: (nodes) => _editor.update((n) => n.nodes = nodes),
-          ),
-        ),
+        NodeListEditor(controller: _editor),
       ],
     );
   }

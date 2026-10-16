@@ -2,12 +2,14 @@ import 'package:m3e_core/m3e_core.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:signals_flutter/signals_flutter.dart';
 import 'package:uuid/uuid.dart';
+import 'package:yukari/controllers/network_editor_controller.dart';
 
 import '../../../constants/builtin_bookmarks.dart';
 import '../../../l10n/l10n.dart';
 import '../../../models/bookmark.dart';
 import '../../../models/node.dart';
 import '../../../signals/bookmarks.dart';
+import '../../../signals/networks.dart';
 import '../../../widgets/bookmark_picker/bookmark_picker_dialog.dart';
 import '../../../widgets/form_section/form_section.dart';
 import '../../../widgets/snackbar/app_snackbar.dart';
@@ -20,25 +22,28 @@ import 'peer_segment.dart';
 /// saves the peer for reuse, and the footer adds saved bookmarks to this
 /// network.
 class NodeListEditor extends StatefulWidget {
-  const NodeListEditor({
-    super.key,
-    required this.nodes,
-    required this.onNodesChanged,
-  });
+  const NodeListEditor({super.key, required this.controller});
 
-  final List<Node> nodes;
-  final ValueChanged<List<Node>> onNodesChanged;
+  final NetworkEditorController controller;
 
   @override
   State<NodeListEditor> createState() => _NodeListEditorState();
 }
 
 class _NodeListEditorState extends State<NodeListEditor> {
-  List<Node> get nodes => widget.nodes;
+  NetworkEditorController get _editor => widget.controller;
+  late final nodes = computed(() => _editor.editing.value.nodes);
+
+  @override
+  void dispose() {
+    nodes.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) => SignalBuilder(
     builder: (context) {
+      final list = nodes.value;
       // Reading the signal here keeps every row's bookmark button in step
       // with the store.
       final saved = bookmarks.value;
@@ -47,7 +52,7 @@ class _NodeListEditorState extends State<NodeListEditor> {
         title: context.l10n.networkInitialPeers,
         icon: Icons.people,
         description: context.l10n.networkInitialPeersDescription,
-        banner: nodes.isEmpty
+        banner: list.isEmpty
             ? EmptyPeersNotice(
                 hasPublicNodes: builtinBookmarks.isNotEmpty,
                 onAddPublic: () => _addFromBookmarks(sharedOnly: true),
@@ -72,11 +77,11 @@ class _NodeListEditorState extends State<NodeListEditor> {
             ),
           ],
         ),
-        onTap: nodes.isEmpty ? null : (i) => _showNodeDialog(nodes[i]),
-        semanticLabelBuilder: nodes.isEmpty
+        onTap: list.isEmpty ? null : (i) => _showNodeDialog(list[i]),
+        semanticLabelBuilder: list.isEmpty
             ? null
-            : (i) => context.l10n.networkEditPeerNamed(nodes[i].id),
-        children: nodes.isEmpty
+            : (i) => context.l10n.networkEditPeerNamed(list[i].id),
+        children: list.isEmpty
             ? [
                 EmptyListSegment(
                   icon: Icons.person_add,
@@ -84,7 +89,7 @@ class _NodeListEditorState extends State<NodeListEditor> {
                 ),
               ]
             : [
-                for (final (index, node) in nodes.indexed)
+                for (final (index, node) in list.indexed)
                   PeerSegment(
                     node: node,
                     bookmarked: saved.any(
@@ -98,14 +103,19 @@ class _NodeListEditorState extends State<NodeListEditor> {
     },
   );
 
+  /// Replaces this network's peers, saving through the networks store.
+  void _setNodes(List<Node> list) =>
+      updateNetwork(_editor.name, updater: (network) => network.nodes = list);
+
   void _showNodeDialog(Node? existingNode) {
+    final current = nodes.value;
     showDialog<void>(
       context: context,
       builder: (context) => NodeEditorDialog(
         initialNode: existingNode,
-        existingIds: nodes.map((n) => n.id).toList(),
+        existingIds: current.map((n) => n.id).toList(),
         onSave: (node) {
-          final newList = List<Node>.from(nodes);
+          final newList = List<Node>.from(current);
           if (existingNode != null) {
             final index = newList.indexWhere((n) => n.id == existingNode.id);
             if (index != -1) {
@@ -114,52 +124,50 @@ class _NodeListEditorState extends State<NodeListEditor> {
           } else {
             newList.add(node);
           }
-          widget.onNodesChanged(newList);
+          _setNodes(newList);
         },
       ),
     );
   }
 
   void _deleteNode(int index) {
-    final newList = List<Node>.from(nodes)..removeAt(index);
-    widget.onNodesChanged(newList);
+    final newList = List<Node>.from(nodes.value)..removeAt(index);
+    _setNodes(newList);
   }
 
   /// Adds the bookmarks the user picks — or only the shared ones — to the
   /// network's initial peers.
   Future<void> _addFromBookmarks({required bool sharedOnly}) async {
+    final current = nodes.value;
     final available = [
       for (final bookmark in [...builtinBookmarks, ...bookmarks.value])
         if ((!sharedOnly || isBuiltinBookmark(bookmark)) &&
-            !nodes.any((node) => sameNode(node, bookmark.node)))
+            !current.any((node) => sameNode(node, bookmark.node)))
           bookmark,
     ];
     final chosen = await showBookmarkPicker(context, bookmarks: available);
     if (chosen == null || chosen.isEmpty || !mounted) return;
-    widget.onNodesChanged([
-      ...nodes,
+    _setNodes([
+      ...current,
       for (final bookmark in chosen) bookmark.node.copy(),
     ]);
   }
 
   /// Saves [node] as a bookmark, or removes the bookmark already holding it.
-  Future<void> _toggleBookmark(Node node) async {
+  void _toggleBookmark(Node node) {
     final l10n = context.l10n;
     final existing = bookmarkFor(node);
     try {
       if (existing != null) {
-        await deleteBookmark(existing.id);
-        if (!mounted) return;
+        deleteBookmark(existing.id);
         showAppSnackBar(context, l10n.bookmarksRemoved);
         return;
       }
-      await addBookmark(
+      addBookmark(
         Bookmark(id: const Uuid().v4(), node: node.copy(), name: node.id),
       );
-      if (!mounted) return;
       showAppSnackBar(context, l10n.bookmarksSaved);
     } catch (error) {
-      if (!mounted) return;
       showAppSnackBar(context, l10n.bookmarksSaveFailed('$error'));
     }
   }

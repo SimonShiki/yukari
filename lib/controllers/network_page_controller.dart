@@ -15,7 +15,7 @@ import '../signals/backend.dart';
 import '../signals/instance_logs.dart';
 import '../signals/networks.dart';
 import '../utils/easytier_config_parser.dart';
-import '../utils/validator.dart';
+import 'network_editor_validator.dart';
 import '../widgets/network_card/network_card_data.dart';
 
 part 'network_page_actions.dart';

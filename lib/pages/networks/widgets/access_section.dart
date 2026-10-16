@@ -3,7 +3,7 @@ import 'package:material_ui/material_ui.dart';
 import '../../../controllers/network_editor_controller.dart';
 import '../../../l10n/l10n.dart';
 import '../../../models/network.dart';
-import '../../../utils/validator.dart';
+import '../../../controllers/network_editor_validator.dart';
 import 'network_fields.dart';
 import '../../../widgets/form_section/form_section.dart';
 
