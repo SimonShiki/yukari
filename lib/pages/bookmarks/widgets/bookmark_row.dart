@@ -7,6 +7,7 @@ import '../../../l10n/l10n.dart';
 import '../../../models/bookmark.dart';
 import '../../../widgets/context_menu/m3e_context_menu.dart';
 import '../../../widgets/metadata_chip/metadata_chip.dart';
+import '../../../widgets/overflow_text/overflow_text.dart';
 
 /// One bookmark as a list segment: identity, address, protocols and tags, an
 /// add-to-network button and the share/edit/delete menu.
@@ -71,11 +72,7 @@ class BookmarkRow extends StatelessWidget {
           ),
         ),
         overline: category == null ? null : Text(category),
-        headline: Text(
-          bookmark.displayName,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-        ),
+        headline: OverflowText(bookmark.displayName),
         supportingText: Wrap(
           spacing: 8,
           runSpacing: 4,

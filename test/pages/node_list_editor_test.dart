@@ -147,6 +147,16 @@ void main() {
     );
   });
 
+  testWidgets('a truncated peer id can be revealed, a short one cannot', (
+    tester,
+  ) async {
+    final longId = 'peer-${'x' * 60}';
+    await pumpPeers(tester, nodes: [node('peer-x'), node(longId)]);
+
+    expect(find.byTooltip(longId), findsOneWidget);
+    expect(find.byTooltip('peer-x'), findsNothing);
+  });
+
   testWidgets('the picker offers the saved bookmarks to add', (tester) async {
     await tester.runAsync(
       () => seedBookmarks([testBookmark('b1', name: 'Relay One')]),

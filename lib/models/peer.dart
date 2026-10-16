@@ -88,14 +88,14 @@ final class Peer {
         _secureAuthLevelNames,
         connection['secure_auth_level'],
       ),
-      protocols: [
+      protocols: {
         ...connections
             .map((connection) => connection['tunnel'] as Map<String, Object?>?)
             .whereType<Map<String, Object?>>()
             .map((tunnel) => tunnel['tunnel_type'] as String? ?? '')
             .map(_protocolFromName)
             .whereType<NodeProtocol>(),
-      ],
+      }.toList(),
       natType: natTypeOf(route['stun_info']),
       connectionType: route['next_hop_peer_id'] == route['peer_id']
           ? PeerConnectionType.direct

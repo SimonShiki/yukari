@@ -31,8 +31,9 @@ void main() {
     List<Bookmark> builtins = const [],
     BookmarkFilePicker? pickImportFile,
     BookmarkFileSaver? saveExportFile,
+    Size size = const Size(800, 900),
   }) async {
-    tester.view.physicalSize = const Size(800, 900);
+    tester.view.physicalSize = size;
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
     final controller = BookmarksController(
@@ -335,6 +336,40 @@ void main() {
       // The regression: a bare Badge took these, so `TCP` read as a failure.
       expect(chip('TCP').backgroundColor, isNot(colors.errorContainer));
       expect(chip('TCP').backgroundColor, isNot(colors.error));
+    });
+  });
+
+  testWidgets('reveals a truncated bookmark name on long-press', (
+    tester,
+  ) async {
+    await tester.runAsync(() async {
+      const longName =
+          'A very long bookmark name that cannot fit on one phone line';
+      await seedBookmarks([
+        testBookmark('u1', name: longName, host: 'one.example.com'),
+      ]);
+      await pumpPage(tester, size: const Size(360, 800));
+
+      expect(find.text(longName), findsOneWidget);
+      final tooltip = tester.widget<Tooltip>(
+        find.ancestor(of: find.text(longName), matching: find.byType(Tooltip)),
+      );
+      expect(tooltip.message, longName, reason: 'the full name is revealable');
+    });
+  });
+
+  testWidgets('leaves a name that fits without a tooltip', (tester) async {
+    await tester.runAsync(() async {
+      await seedBookmarks([
+        testBookmark('u1', name: 'Alpha', host: 'one.example.com'),
+      ]);
+      await pumpPage(tester, size: const Size(360, 800));
+
+      expect(find.text('Alpha'), findsOneWidget);
+      expect(
+        find.ancestor(of: find.text('Alpha'), matching: find.byType(Tooltip)),
+        findsNothing,
+      );
     });
   });
 

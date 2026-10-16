@@ -1,6 +1,8 @@
 import 'package:m3e_core/m3e_core.dart';
 import 'package:material_ui/material_ui.dart';
 
+import '../overflow_text/overflow_text.dart';
+
 /// An entry of an editable list, shown as one segment of its section.
 ///
 /// Shared by the network editors (peers, listeners) and the bookmark list, so
@@ -40,7 +42,7 @@ class ListEntrySegment extends StatelessWidget {
       color: color,
       child: Icon(icon, size: 20, color: onColor),
     ),
-    headline: Text(headline, maxLines: 1, overflow: TextOverflow.ellipsis),
+    headline: OverflowText(headline),
     supportingText: supporting,
     trailing: Row(
       mainAxisSize: MainAxisSize.min,

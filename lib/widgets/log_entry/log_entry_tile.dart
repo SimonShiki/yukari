@@ -2,6 +2,8 @@ import 'package:flutter/services.dart';
 import 'package:m3e_core/m3e_core.dart';
 import 'package:material_ui/material_ui.dart';
 
+import '../overflow_text/overflow_text.dart';
+
 import '../../l10n/l10n.dart';
 import '../../models/log_entry.dart';
 import 'log_summary.dart';
@@ -69,10 +71,9 @@ class LogEntryTile extends StatelessWidget {
           color: container,
           child: Icon(_icon, size: 20, color: onContainer),
         ),
-        headline: Text(
+        headline: OverflowText(
           formatLogSummary(entry, context.l10n),
           maxLines: 2,
-          overflow: TextOverflow.ellipsis,
         ),
         supportingText: Text('${_clock(entry.time)} · ${entry.kind}'),
       ),

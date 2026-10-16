@@ -4,6 +4,8 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:yukari/l10n/l10n.dart';
+import 'package:yukari/models/log_entry.dart';
+import 'package:yukari/widgets/log_entry/log_summary.dart';
 import 'package:yukari/widgets/peer_card/peer_card.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:signals_flutter/signals_flutter.dart';
@@ -72,6 +74,76 @@ void main() {
     await pumpInstance(tester, running: false);
 
     expect(find.text(strings.networkNotRunning), findsOneWidget);
+  });
+
+  testWidgets('a peer shows one chip per protocol, however many connections', (
+    tester,
+  ) async {
+    await tester.runAsync(seedNetworks);
+    final payload =
+        jsonDecode(jsonEncode(_instance)) as Map<String, Object?>;
+    final pair =
+        (payload['peer_route_pairs'] as List<Object?>).single
+            as Map<String, Object?>;
+    final peer = pair['peer'] as Map<String, Object?>;
+    final connection =
+        (peer['conns'] as List<Object?>).single as Map<String, Object?>;
+    peer['conns'] = <Map<String, Object?>>[
+      for (var index = 0; index < 3; index++)
+        {...connection, 'tunnel': {'tunnel_type': 'tcp'}},
+      {...connection, 'tunnel': {'tunnel_type': 'quic'}},
+    ];
+    await pumpInstance(tester, collected: payload);
+
+    expect(find.text('TCP'), findsOneWidget);
+    expect(find.text('QUIC'), findsOneWidget);
+
+    final colors = Theme.of(tester.element(find.text('TCP'))).colorScheme;
+    final chip = tester.widget<Badge>(
+      find.ancestor(of: find.text('TCP'), matching: find.byType(Badge)),
+    );
+    expect(chip.backgroundColor, colors.secondaryContainer);
+    expect(chip.textColor, colors.onSecondaryContainer);
+  });
+
+  testWidgets('a truncated hostname can be revealed, a short one cannot', (
+    tester,
+  ) async {
+    await tester.runAsync(seedNetworks);
+    final longHost = 'host-${'x' * 80}';
+    final myself = {
+      ...(_instance['my_node_info']! as Map<String, Object?>),
+      'hostname': longHost,
+    };
+    await pumpInstance(
+      tester,
+      collected: {..._instance, 'my_node_info': myself},
+    );
+
+    expect(find.byTooltip(longHost), findsOneWidget);
+    expect(find.byTooltip('peer-b'), findsNothing);
+  });
+
+  testWidgets('a truncated summary can be revealed, a short one cannot', (
+    tester,
+  ) async {
+    const long =
+        '{"time":"2024-01-01T00:00:04Z","event":{"PeerConnAdded":{"peer_id":"7",'
+        '"tunnel":{"remote_addr":{"url":"tcp://a-rather-long-hostname-for-'
+        'wrapping.example.com:11010"},"tunnel_type":"tcp"}}}}';
+    await tester.runAsync(seedNetworks);
+    recordInstanceEvents('n1', [long, peer]);
+    addTearDown(() => clearInstanceLogs('n1'));
+    await pumpInstance(tester, initialTab: InstanceTab.logs);
+
+    expect(
+      find.byTooltip(formatLogSummary(LogEntry.parse(long), strings)),
+      findsOneWidget,
+    );
+    expect(
+      find.byTooltip(formatLogSummary(LogEntry.parse(peer), strings)),
+      findsNothing,
+    );
   });
 
   testWidgets('an instance without peers has its own empty state', (

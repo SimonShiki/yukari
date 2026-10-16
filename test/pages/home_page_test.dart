@@ -359,6 +359,62 @@ void main() {
     home.dispose();
   });
 
+  testWidgets('reveals a truncated card line in full', (tester) async {
+    const name = 'a network name far longer than a phone card can show';
+    final home = controller(
+      backend: _HomeBackend(infos: {name: _info(natType: 'SymmetricEasyInc')}),
+    );
+    await tester.runAsync(() async {
+      await seedNetworks();
+      final network = saved.networks.value['n1']!;
+      network.networkName = name;
+      await saved.updateNetwork('n1', network);
+    });
+    await pumpHome(tester, controller: home, size: const Size(400, 900));
+    await settle(tester);
+
+    // The long name is ellipsized in both supporting lines it appears in.
+    expect(find.byTooltip(name), findsNWidgets(2));
+    // The long NAT label is ellipsized in the value line...
+    expect(find.byTooltip('Predictable symmetric'), findsOneWidget);
+    // ...as is the compact traffic value, wider than a 400px card.
+    expect(find.byTooltip('↓ 0 B/s  ↑ 0 B/s'), findsOneWidget);
+    // The selectable address keeps its own long press (copy), not a tooltip.
+    expect(find.byType(SelectableText), findsOneWidget);
+    expect(find.byTooltip('10.144.0.2'), findsNothing);
+
+    // Long-pressing the truncated supporting line shows the whole string.
+    await tester.longPress(find.text(name).first);
+    await tester.pumpAndSettle();
+    expect(find.text(name), findsNWidgets(3));
+
+    // And long-pressing a truncated value line does too.
+    await tester.longPress(find.text('Predictable symmetric'));
+    await tester.pumpAndSettle();
+    expect(find.text('Predictable symmetric'), findsNWidgets(2));
+
+    // Revealing text must not change the one-header-two-lines card height.
+    expect(cardHeights(tester).toSet(), hasLength(1));
+    home.dispose();
+  });
+
+  testWidgets('leaves a card line that fits plain, without a tooltip', (
+    tester,
+  ) async {
+    final home = controller(
+      backend: _HomeBackend(infos: {'alpha': _info(natType: 'Symmetric')}),
+    );
+    await tester.runAsync(seedNetworks);
+    await pumpHome(tester, controller: home, size: const Size(400, 900));
+    await settle(tester);
+
+    expect(find.byTooltip('alpha'), findsNothing);
+    expect(find.byTooltip('Symmetric'), findsNothing);
+    expect(find.byTooltip('Hard P2P · often relayed'), findsNothing);
+    expect(find.byTooltip('0 B received · 0 B sent'), findsNothing);
+    home.dispose();
+  });
+
   testWidgets('shows the dashboard in four columns at 1000px', (tester) async {
     final home = controller(
       backend: _HomeBackend(infos: {'alpha': _info(natType: 'Symmetric')}),

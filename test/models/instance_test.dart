@@ -31,6 +31,26 @@ void main() {
     expect(peer.secureAuthLevel, SecureAuthLevel.none);
   });
 
+  test('lists each protocol of a peer once, in first-seen order', () {
+    final json = collected();
+    final pair =
+        (json['peer_route_pairs'] as List<Object?>).single
+            as Map<String, Object?>;
+    final peer = pair['peer'] as Map<String, Object?>;
+    final connection =
+        (peer['conns'] as List<Object?>).single as Map<String, Object?>;
+    // EasyTier reports one connection per tunnel, so the same type repeats.
+    peer['conns'] = <Map<String, Object?>>[
+      for (var index = 0; index < 3; index++)
+        {...connection, 'tunnel': {'tunnel_type': 'tcp'}},
+      {...connection, 'tunnel': {'tunnel_type': 'quic'}},
+    ];
+
+    final parsed = Instance.fromJsonAndNetwork(json, Network()).peers.single;
+
+    expect(parsed.protocols, [NodeProtocol.tcp, NodeProtocol.quic]);
+  });
+
   test('reads enums by name or number', () {
     final json = collected();
     final pair =

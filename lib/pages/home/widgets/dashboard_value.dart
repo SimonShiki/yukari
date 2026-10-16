@@ -1,6 +1,7 @@
 import 'package:m3e_core/m3e_core.dart';
 import 'package:material_ui/material_ui.dart';
 
+import '../../../widgets/overflow_text/overflow_text.dart';
 import 'dashboard_card.dart';
 
 /// The two text lines of a dashboard card: the value and its supporting line.
@@ -34,12 +35,7 @@ class DashboardValue extends StatelessWidget {
         if (selectable)
           SelectableText(value, style: style, maxLines: 1)
         else
-          Text(
-            value,
-            style: style,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
+          OverflowText(value, style: style),
         supporting,
       ],
     );
@@ -57,13 +53,11 @@ class DashboardSupporting extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return Text(
+    return OverflowText(
       text,
       style: theme.textTheme.bodySmall?.copyWith(
         color: theme.colorScheme.onSurfaceVariant,
       ),
-      maxLines: 1,
-      overflow: TextOverflow.ellipsis,
     );
   }
 }
@@ -89,14 +83,7 @@ class DashboardSupportingLine extends StatelessWidget {
       children: [
         // Never taller than the line it sits on, so the card does not grow.
         Icon(icon, size: style?.fontSize ?? 16, color: color),
-        Flexible(
-          child: Text(
-            label,
-            style: style,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-        ),
+        Flexible(child: OverflowText(label, style: style)),
       ],
     );
   }

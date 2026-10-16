@@ -1,5 +1,7 @@
 import 'package:material_ui/material_ui.dart';
 
+import '../metadata_chip/metadata_chip.dart';
+import '../overflow_text/overflow_text.dart';
 import 'peer_card_data.dart';
 
 class PeerCard extends StatelessWidget {
@@ -33,11 +35,9 @@ class PeerCard extends StatelessWidget {
                     Row(
                       children: [
                         Flexible(
-                          child: Text(
+                          child: OverflowText(
                             data.hostname,
                             style: textTheme.titleMedium,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
                           ),
                         ),
                         if (!data.isSelf) ...[
@@ -70,18 +70,7 @@ class PeerCard extends StatelessWidget {
                               ),
                             ),
                           for (final protocol in data.protocols)
-                            Badge(
-                              backgroundColor: colors.secondaryContainer,
-                              textColor: colors.onSecondaryContainer,
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 6,
-                                vertical: 2,
-                              ),
-                              label: Text(
-                                protocol,
-                                style: textTheme.labelSmall,
-                              ),
-                            ),
+                            MetadataChip.protocol(protocol),
                           for (final tag in data.tags) _PeerTagChip(tag: tag),
                         ],
                       ),
