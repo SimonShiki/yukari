@@ -28,7 +28,7 @@ Controller contains:
 - The actions that the page needs.
 Page contains:
 - The UI components that are related to the page.
-- Construct the UI components with the signals from controller. using `SignalBuilder` to bind the signals to the UI components that really need to update when the signals change. AVOID using `SignalBuilder` to wrap the whole page to avoid unnecessary rebuilds.
+- Construct the UI components with the signals from controller. using `SignalBuilder` to bind the signals to the UI components that really need to update when the signals change. AVOID using `SignalBuilder` to wrap the whole page to avoid unnecessary rebuilds. only subcribes the primitive signals for minimal rebuilds.
 - Call the actions from controller when user interacts with the UI components.
 
 # Designing

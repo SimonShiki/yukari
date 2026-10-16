@@ -1,26 +1,143 @@
-part of 'bookmarks_controller.dart';
+import 'dart:convert';
 
-/// File transfer, sharing and network writes of the bookmarks page, kept
-/// apart from the [BookmarksController] state.
-extension BookmarkActions on BookmarksController {
-  /// Reads a bookmarks JSON file the user picked and saves what is new.
-  Future<void> importFromFile() async {
+import 'package:file_picker/file_picker.dart';
+import 'package:flutter/services.dart';
+import 'package:uuid/uuid.dart';
+
+import '../models/bookmark.dart';
+import '../models/node.dart';
+import '../signals/bookmarks.dart' as saved;
+import '../signals/locale.dart';
+import '../signals/networks.dart' as networks;
+import '../utils/bookmark_codec.dart';
+import 'bookmarks_controller.dart';
+
+/// The file an export writes.
+const String bookmarkExportFileName = 'yukari-bookmarks.json';
+
+/// The raw values the bookmark editor collected, before they are trimmed into
+/// a [Bookmark].
+typedef BookmarkDraft = ({
+  Node node,
+  String name,
+  String description,
+  String category,
+  String tags,
+});
+
+/// Reads the content of a bookmarks file; null when the user cancelled, and
+/// throws when the picked file cannot be read.
+typedef BookmarkFilePicker = Future<String?> Function();
+
+/// Writes [content] under [name] where the user chose to; false when the user
+/// cancelled, and throws when the write failed.
+typedef BookmarkFileSaver = Future<bool> Function(String name, String content);
+
+/// One row of the add-to-network picker.
+typedef BookmarkNetworkOption = ({String id, String name, bool contains});
+
+/// The user actions that are not filter state: composing, saving, deleting,
+/// sharing, copying and the file round trip.
+extension BookmarksActions on BookmarksController {
+  /// The bookmark [draft] describes, updating [existing] in place of a new one.
+  ///
+  /// Blank optional fields become null, tags are deduplicated, and an edit
+  /// keeps its id, creation time and extensions while stamping a new time.
+  Bookmark compose({Bookmark? existing, required BookmarkDraft draft}) {
+    final now = DateTime.now().toUtc();
+    return Bookmark(
+      id: existing?.id ?? const Uuid().v4(),
+      node: draft.node,
+      name: trimmedOrNull(draft.name),
+      description: trimmedOrNull(draft.description),
+      category: trimmedOrNull(draft.category),
+      tags: _splitTags(draft.tags),
+      extensions: existing?.extensions ?? const {},
+      createdAt: existing?.createdAt ?? now,
+      updatedAt: now,
+    );
+  }
+
+  /// Composes [draft] and saves it as a new bookmark or an update.
+  Future<bool> save({Bookmark? existing, required BookmarkDraft draft}) {
+    final bookmark = compose(existing: existing, draft: draft);
+    return existing == null ? add(bookmark) : update(bookmark);
+  }
+
+  /// The saved networks with whether each already holds [bookmark]'s node, for
+  /// the add-to-network picker.
+  List<BookmarkNetworkOption> networkOptions(Bookmark bookmark) => [
+    for (final MapEntry(key: id, value: network)
+        in networks.networks.value.entries)
+      (
+        id: id,
+        name: network.networkName,
+        contains: network.nodes.any((node) => sameNode(node, bookmark.node)),
+      ),
+  ];
+
+  /// Appends a copy of [bookmark]'s node to the saved network [networkId].
+  ///
+  /// An unknown network does nothing, and a node the network already has only
+  /// reports it.
+  Future<void> addToNetwork(Bookmark bookmark, String networkId) async {
+    final network = networks.networks.value[networkId];
+    if (network == null) return;
+    if (network.nodes.any((node) => sameNode(node, bookmark.node))) {
+      showMessage(l10n.value.bookmarksAlreadyInNetwork(network.networkName));
+      return;
+    }
     try {
-      final result = await FilePicker.pickFiles(
-        type: FileType.custom,
-        allowedExtensions: ['json'],
-        dialogTitle: l10n.value.bookmarksImportFile,
+      await networks.updateNetwork(
+        networkId,
+        network.copy()..nodes = [...network.nodes, bookmark.node.copy()],
       );
-      if (result.isEmpty) return;
+      showMessage(l10n.value.bookmarksAddedToNetwork(network.networkName));
+    } catch (error) {
+      showMessage(l10n.value.bookmarksAddToNetworkFailed('$error'));
+    }
+  }
 
-      final file = result.first;
-      if (file.path == null) {
-        showMessage(l10n.value.bookmarksFileUnavailable);
-        return;
-      }
+  /// Copies [bookmark]'s address to the clipboard.
+  Future<void> copyAddress(Bookmark bookmark) async {
+    try {
+      await Clipboard.setData(ClipboardData(text: bookmark.address));
+      showMessage(l10n.value.bookmarksCopied(bookmark.address));
+    } on Exception {
+      // The clipboard is the platform's; nothing was changed to undo.
+    }
+  }
 
-      // Imported files are untrusted: every entry is validated by the codec.
-      final document = decodeBookmarks(await File(file.path!).readAsString());
+  // The three share channels that are described but not implemented yet.
+  void shareOverNetwork() => showMessage(l10n.value.bookmarksShareUnavailable);
+  void showQrCode() => showMessage(l10n.value.bookmarksQrUnavailable);
+  void scanQrCode() => showMessage(l10n.value.bookmarksScanUnavailable);
+
+  /// Imports the bookmarks of a picked JSON file.
+  ///
+  /// A dismissed picker does nothing; every other outcome reports itself.
+  Future<void> importFromFile() async {
+    final String? content;
+    try {
+      content = await (pickImportFile ?? _pickJsonFile)();
+    } catch (_) {
+      showMessage(l10n.value.bookmarksFileUnavailable);
+      return;
+    }
+    if (content == null) return;
+
+    final BookmarkDocument document;
+    try {
+      document = decodeBookmarks(content);
+    } on FormatException catch (error) {
+      showMessage(l10n.value.bookmarksImportInvalid(error.message));
+      return;
+    } catch (error) {
+      showMessage(l10n.value.bookmarksImportFailed('$error'));
+      return;
+    }
+
+    try {
       final added = await saved.addBookmarks(
         document.bookmarks,
         extensions: document.extensions,
@@ -30,79 +147,54 @@ extension BookmarkActions on BookmarksController {
             ? l10n.value.bookmarksImportNothingNew
             : l10n.value.bookmarksImported(added),
       );
-    } on FormatException catch (error) {
-      showMessage(l10n.value.bookmarksImportInvalid(error.message));
     } catch (error) {
       showMessage(l10n.value.bookmarksImportFailed('$error'));
     }
   }
 
-  /// Writes [bookmarks] — every bookmark by default — to a JSON file the
-  /// user picks, in the same format [importFromFile] reads.
-  Future<void> exportToFile([Iterable<Bookmark>? bookmarks]) async {
-    final exported = [...(bookmarks ?? saved.bookmarks.value)];
+  /// Writes every saved bookmark to a JSON file, whatever the filters show.
+  ///
+  /// A dismissed save dialog does nothing; a failed write is reported.
+  Future<void> exportToFile() async {
     try {
-      final content = encodeBookmarks(
-        BookmarkDocument(
-          bookmarks: exported,
-          exportedAt: DateTime.now().toUtc(),
-          extensions: saved.bookmarkExtensions.value,
-        ),
+      final document = BookmarkDocument(
+        bookmarks: saved.bookmarks.value,
+        exportedAt: DateTime.now().toUtc(),
+        extensions: saved.bookmarkExtensions.value,
       );
-      final uri = await FilePicker.saveFile(
-        fileName: 'yukari-bookmarks.json',
-        bytes: utf8.encode(content),
-        mimeType: 'application/json',
-        type: FileType.custom,
-        allowedExtensions: ['json'],
-        dialogTitle: l10n.value.bookmarksExportFile,
+      final written = await (saveExportFile ?? _saveJsonFile)(
+        bookmarkExportFileName,
+        encodeBookmarks(document),
       );
-      if (uri != null) showMessage(l10n.value.bookmarksExported);
+      if (written) showMessage(l10n.value.bookmarksExported);
     } catch (error) {
       showMessage(l10n.value.bookmarksExportFailed('$error'));
     }
   }
+}
 
-  /// Sends [bookmark] to another Yukari over a connected network.
-  ///
-  /// A stub: the FFI data plane will carry the document later.
-  void shareOverNetwork(Bookmark bookmark) =>
-      showMessage(l10n.value.bookmarksShareUnavailable);
+/// Comma-split, trimmed, blank-dropped and deduplicated tags.
+List<String> _splitTags(String value) =>
+    {for (final raw in value.split(',')) ?trimmedOrNull(raw)}.toList();
 
-  /// Shows [bookmark] as a QR code for another device to scan.
-  ///
-  /// A stub until QR encoding lands.
-  void showQrCode(Bookmark bookmark) =>
-      showMessage(l10n.value.bookmarksQrUnavailable);
+/// Picks a JSON file and reads it; null when the user cancelled.
+Future<String?> _pickJsonFile() async {
+  final picked = await FilePicker.pickFile(
+    type: FileType.custom,
+    allowedExtensions: const ['json'],
+  );
+  if (picked == null) return null;
+  return utf8.decode(await picked.readAsBytes());
+}
 
-  /// Reads a bookmark another device shows as a QR code.
-  ///
-  /// A stub until QR scanning lands.
-  void scanQrCode() => showMessage(l10n.value.bookmarksScanUnavailable);
-
-  /// Copies the bookmark's peer address as `host:port`.
-  Future<void> copyAddress(Bookmark bookmark) async {
-    await Clipboard.setData(ClipboardData(text: bookmark.address));
-    showMessage(l10n.value.bookmarksCopied(bookmark.address));
-  }
-
-  /// Adds [bookmark]'s node to the network saved under [networkId].
-  Future<void> addToNetwork(Bookmark bookmark, String networkId) async {
-    final network = saved_networks.networks.value[networkId];
-    if (network == null) return;
-    if (network.nodes.any((node) => sameNode(node, bookmark.node))) {
-      showMessage(l10n.value.bookmarksAlreadyInNetwork(network.networkName));
-      return;
-    }
-
-    // The saved network stays untouched until the store accepted the change.
-    final updated = network.copy()
-      ..nodes = [...network.nodes, bookmark.node.copy()];
-    try {
-      await saved_networks.updateNetwork(networkId, updated);
-      showMessage(l10n.value.bookmarksAddedToNetwork(network.networkName));
-    } catch (error) {
-      showMessage(l10n.value.bookmarksAddToNetworkFailed('$error'));
-    }
-  }
+/// Writes [content] under [name] where the user chose to; false when cancelled.
+Future<bool> _saveJsonFile(String name, String content) async {
+  final location = await FilePicker.saveFile(
+    fileName: name,
+    bytes: Uint8List.fromList(utf8.encode(content)),
+    mimeType: 'application/json',
+    type: FileType.custom,
+    allowedExtensions: const ['json'],
+  );
+  return location != null;
 }

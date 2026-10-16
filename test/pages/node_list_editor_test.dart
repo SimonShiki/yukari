@@ -1,123 +1,188 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
-import 'package:yukari/l10n/l10n.dart';
-import 'package:yukari/models/node.dart';
-import 'package:yukari/pages/networks/widgets/node_list_editor.dart';
-import 'package:yukari/signals/bookmarks.dart';
+import 'package:yukari/controllers/network_editor_controller.dart';
+import 'package:yukari/models/models.dart';
+import 'package:yukari/pages/networks/network_editor_page.dart';
+import 'package:yukari/pages/networks/widgets/peer_list.dart';
+import 'package:yukari/signals/bookmarks.dart' as bookmarks;
+import 'package:yukari/signals/networks.dart' as saved;
 
 import '../bookmarks_fixture.dart';
+import 'network_test_support.dart';
 
 void main() {
-  late List<Node> nodes;
+  useDeterministicCursor();
 
-  setUp(() async {
-    nodes = [];
-    await seedBookmarks();
-  });
+  late NetworkEditorController controller;
 
-  Future<void> pump(WidgetTester tester) async {
-    tester.view.physicalSize = const Size(900, 2000);
-    tester.view.devicePixelRatio = 1;
-    addTearDown(tester.view.reset);
-    await tester.pumpWidget(
-      MaterialApp(
-        localizationsDelegates: const [AppLocalizations.delegate],
-        home: Scaffold(
-          body: SingleChildScrollView(
-            child: StatefulBuilder(
-              builder: (context, setState) => NodeListEditor(
-                nodes: nodes,
-                onNodesChanged: (value) => setState(() => nodes = value),
-              ),
-            ),
-          ),
-        ),
-      ),
+  Future<void> pumpPeers(
+    WidgetTester tester, {
+    List<Node> nodes = const [],
+    List<Bookmark>? sharedBookmarks,
+  }) async {
+    await tester.runAsync(
+      () => seedWith({'n1': seededNetwork(nodes: nodes)}),
     );
-    await tester.pumpAndSettle();
+    controller = NetworkEditorController(
+      id: 'n1',
+      showMessage: (_) {},
+      sharedBookmarks: sharedBookmarks,
+    );
+    addTearDown(controller.dispose);
+    await pumpApp(
+      tester,
+      NetworkEditorPage(id: 'n1', controller: controller),
+    );
   }
 
-  Future<void> act(WidgetTester tester, void Function() action) async {
-    await tester.runAsync(() async {
-      action();
-      await Future<void>.delayed(const Duration(milliseconds: 10));
-      await settled();
-    });
-    await tester.pump();
-  }
+  Node node(String id, {int port = 11010}) => Node(
+    id: id,
+    url: Uri.parse('relay.example.com'),
+    port: port,
+    protocols: const [NodeProtocol.tcp],
+  );
 
-  testWidgets('warns that a network without initial peers may not connect', (
+  testWidgets('the empty peer list warns and offers the bookmarks', (
     tester,
   ) async {
-    await pump(tester);
+    await pumpPeers(tester);
 
+    expect(find.text(strings.peersEmptyWarning), findsOneWidget);
+    expect(find.text(strings.peersEmptyNoPublic), findsNothing);
+    // The action, not a second copy of the notice text.
+    expect(find.text(strings.peersEmptyAddPublic), findsOneWidget);
+    expect(find.text(strings.peersEmptyBrowse), findsOneWidget);
+    expect(find.text(strings.networkNoConfiguredPeers), findsOneWidget);
+  });
+
+  testWidgets('the empty peer list says when no public nodes are bundled', (
+    tester,
+  ) async {
+    await pumpPeers(tester, sharedBookmarks: const []);
+
+    expect(find.text(strings.peersEmptyWarning), findsOneWidget);
+    expect(find.text(strings.peersEmptyNoPublic), findsOneWidget);
+    expect(find.text(strings.peersEmptyAddPublic), findsNothing);
+    expect(find.text(strings.peersEmptyBrowse), findsOneWidget);
+  });
+
+  testWidgets('the peer dialog flags every invalid field', (tester) async {
+    await pumpPeers(tester);
+
+    await tapSaving(tester, find.text(strings.networkAddPeer));
+    await tester.tap(find.text(strings.commonSave));
+    await tester.pumpAndSettle();
+
+    expect(find.text(strings.networkPeerIdEmpty), findsOneWidget);
+    expect(find.text(strings.validationHostEmpty), findsOneWidget);
     expect(
-      find.text(
-        'This network has no initial peers, so it may not find anyone. '
-        'Add a public node so it connects correctly.',
-      ),
+      find.text(strings.validationRange(strings.networkPort, '1', '65535')),
       findsOneWidget,
     );
+    expect(find.text(strings.networkProtocolRequired), findsOneWidget);
+    // The dialog stays open.
+    expect(find.text(strings.networkAddPeer), findsWidgets);
+  });
+
+  testWidgets('a valid peer is added and saved', (tester) async {
+    await pumpPeers(tester);
+
+    // The dialog's validation is locked above; the save itself runs in the
+    // real zone, because file IO started under the fake clock never completes.
+    await tester.runAsync(() async {
+      controller.addPeer(node('peer-x'));
+      await saved.settled();
+    });
+    await tester.pumpAndSettle();
+
+    expect(find.text('peer-x'), findsOneWidget);
+    // The row shows the protocols, not the endpoint URLs.
+    expect(find.text('TCP'), findsOneWidget);
+    expect(find.textContaining('relay.example.com'), findsNothing);
+  });
+
+  testWidgets('the peer dialog opens on the peer it edits', (tester) async {
+    await pumpPeers(tester, nodes: [node('peer-x')]);
+
+    await tapVisible(tester, find.text('peer-x'));
+
+    expect(find.text(strings.networkEditPeerNamed('peer-x')), findsOneWidget);
+    expect(find.text('11010'), findsWidgets);
+  });
+
+  testWidgets('a peer is saved as a bookmark and removed again', (tester) async {
+    await tester.runAsync(seedBookmarks);
+    await pumpPeers(tester, nodes: [node('peer-x')]);
+
+    expect(find.byTooltip(strings.peersSaveToBookmarks), findsOneWidget);
+
+    await tapSaving(tester, find.byTooltip(strings.peersSaveToBookmarks));
+
+    expect(bookmarks.bookmarks.value.single.name, 'peer-x');
+    expect(find.byTooltip(strings.peersRemoveBookmark), findsOneWidget);
+
+    await tapSaving(tester, find.byTooltip(strings.peersRemoveBookmark));
+
+    expect(bookmarks.bookmarks.value, isEmpty);
+    expect(find.byTooltip(strings.peersSaveToBookmarks), findsOneWidget);
+  });
+
+  testWidgets('a bookmark change rebuilds one peer row only', (tester) async {
+    await tester.runAsync(seedBookmarks);
+    await pumpPeers(tester, nodes: [node('peer-x'), node('peer-y')]);
+
+    final other = tester.widget<PeerRow>(find.byType(PeerRow).at(1));
+
+    await tapSaving(
+      tester,
+      find.byTooltip(strings.peersSaveToBookmarks).first,
+    );
+
+    expect(controller.bookmarkedNode(node('peer-x')).value, isTrue);
     expect(
-      find.text(
-        'No public nodes are bundled yet. Add a peer, or save one as a bookmark.',
-      ),
-      findsNothing,
+      identical(tester.widget<PeerRow>(find.byType(PeerRow).at(1)), other),
+      isTrue,
+      reason: 'the untouched peer row rebuilt',
     );
-    expect(find.text('No peers configured'), findsOneWidget);
-    expect(find.text('Browse Bookmarks'), findsWidgets);
-    expect(find.text('Add a Public Node'), findsOneWidget);
   });
 
-  testWidgets('adds bookmarks to the initial peers', (tester) async {
+  testWidgets('the picker offers the saved bookmarks to add', (tester) async {
     await tester.runAsync(
-      () => seedBookmarks([
-        testBookmark('b1', host: 'relay.example.com', name: 'Home relay'),
-      ]),
+      () => seedBookmarks([testBookmark('b1', name: 'Relay One')]),
     );
-    await pump(tester);
+    await pumpPeers(tester);
 
-    await tester.tap(find.text('From Bookmarks'));
-    await tester.pumpAndSettle();
-    expect(find.text('Add from Bookmarks'), findsOneWidget);
+    // Picking appends the node through the controller, which is what the
+    // controller test saves; here the picker's own state is locked.
+    await tapVisible(tester, find.text(strings.bookmarksFromBookmarks));
+    expect(find.text(strings.bookmarksPickerTitle), findsOneWidget);
 
-    await tester.tap(find.text('Home relay'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.widgetWithText(FilledButton, 'Add 1'));
+    await tester.tap(find.byType(CheckboxListTile).first);
     await tester.pumpAndSettle();
 
-    expect(nodes.single.id, 'b1');
-    expect(nodeHost(nodes.single.url), 'relay.example.com');
-    expect(find.text('b1'), findsOneWidget);
+    expect(find.text(strings.bookmarksPickerAdd(1)), findsOneWidget);
+
+    await tester.tap(find.text(strings.commonCancel));
+    await tester.pumpAndSettle();
+
+    expect(find.text(strings.bookmarksPickerTitle), findsNothing);
+    expect(controller.nodes.value, isEmpty);
   });
 
-  testWidgets('saves a peer as a bookmark and removes it again', (
-    tester,
-  ) async {
-    nodes = [
-      Node(
-        id: 'relay',
-        url: Uri.parse('relay.example.com'),
-        port: 11010,
-        protocols: const [NodeProtocol.tcp],
-      ),
-    ];
-    await pump(tester);
+  testWidgets('the shared nodes are offered on their own', (tester) async {
+    await tester.runAsync(
+      () => seedBookmarks([testBookmark('mine', name: 'My Node')]),
+    );
+    await pumpPeers(tester);
 
-    await act(tester, () async {
-      await tester.tap(find.byTooltip('Save to bookmarks'));
-    });
-    await tester.pumpAndSettle();
+    await tapVisible(
+      tester,
+      find.widgetWithText(TextButton, strings.peersEmptyAddPublic),
+    );
 
-    expect(bookmarks.value.single.node.id, 'relay');
-    expect(bookmarks.value.single.name, 'relay');
-    expect(persistedBookmarks().single.id, bookmarks.value.single.id);
-
-    await act(tester, () async {
-      await tester.tap(find.byTooltip('Remove from bookmarks'));
-    });
-    await tester.pumpAndSettle();
-
-    expect(bookmarks.value, isEmpty);
+    // Only the bundled shared nodes are offered.
+    expect(find.text(strings.bookmarksPickerTitle), findsOneWidget);
+    expect(find.text('My Node'), findsNothing);
+    expect(find.byType(CheckboxListTile), findsWidgets);
   });
 }

@@ -30,7 +30,7 @@ void main() {
     final entry = LogEntry.parse(_connAdded);
     expect(
       formatLogSummary(entry, AppLocalizationsEn()),
-      'Connected to peer 1269433021 via tcp tcp://47.116.42.222:21010',
+      'Connected to peer 1269433021 via tcp://47.116.42.222:21010',
     );
     expect(
       entry.details,

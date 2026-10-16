@@ -2,147 +2,133 @@ import 'package:go_router/go_router.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:signals_flutter/signals_flutter.dart';
 
-import 'package:uuid/uuid.dart';
-
+import '../../controllers/network_page_controller.dart';
 import '../../l10n/l10n.dart';
-import '../../models/network.dart';
-import '../../signals/networks.dart';
 import '../../utils/validator.dart';
 import '../../widgets/snackbar/app_snackbar.dart';
 
-class NetworkCreatorPage extends SignalStatefulWidget {
-  const NetworkCreatorPage({super.key});
+/// Creates a network from a name and an optional hostname, then opens its
+/// editor. The store call and the navigation belong to the controller.
+class NetworkCreatorPage extends StatefulWidget {
+  const NetworkCreatorPage({super.key, this.controller});
+
+  final NetworkCreatorController? controller;
 
   @override
   State<NetworkCreatorPage> createState() => _NetworkCreatorPageState();
 }
 
 class _NetworkCreatorPageState extends State<NetworkCreatorPage> {
+  late final NetworkCreatorController _controller =
+      widget.controller ??
+      NetworkCreatorController(
+        navigate: (route) => context.go(route),
+        showMessage: (message) => showAppSnackBar(context, message),
+      );
   final _formKey = GlobalKey<FormState>();
-  final _nameController = TextEditingController();
-  final _hostnameController = TextEditingController();
-  final creating = signal(false);
+  final _name = TextEditingController();
+  final _hostname = TextEditingController();
 
   @override
   void dispose() {
-    _nameController.dispose();
-    _hostnameController.dispose();
-    creating.dispose();
+    _name.dispose();
+    _hostname.dispose();
+    if (widget.controller == null) _controller.dispose();
     super.dispose();
   }
 
-  Future<void> _handleCreate() async {
-    if (!_formKey.currentState!.validate()) return;
-
-    creating.value = true;
-
-    try {
-      final id = const Uuid().v4();
-      final hostname = _hostnameController.text.trim();
-      await addNetwork(
-        id,
-        Network()
-          ..networkName = _nameController.text.trim()
-          ..hostname = hostname.isEmpty ? null : hostname,
-      );
-
-      if (mounted) {
-        context.go('/networks/edit/$id');
-      }
-    } catch (e) {
-      if (mounted) {
-        showAppSnackBar(
-          context,
-          context.l10n.networkCreateFailed(e.toString()),
-        );
-      }
-    } finally {
-      if (mounted) {
-        creating.value = false;
-      }
-    }
+  Future<void> _create() async {
+    if (!(_formKey.currentState?.validate() ?? false)) return;
+    await _controller.create(name: _name.text, hostname: _hostname.text);
   }
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     return Scaffold(
-      appBar: AppBar(title: Text(context.l10n.networkCreate)),
+      appBar: AppBar(title: Text(l10n.networkCreate)),
       body: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 500),
-          child: Card(
-            margin: const EdgeInsets.all(16),
-            child: Padding(
-              padding: const EdgeInsets.all(24),
-              child: Form(
-                key: _formKey,
-                autovalidateMode: AutovalidateMode.onUserInteraction,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Text(
-                      context.l10n.networkCreateHeading,
-                      style: Theme.of(context).textTheme.headlineSmall,
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      context.l10n.networkCreateDescription,
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(16),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 500),
+            child: Card(
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Form(
+                  key: _formKey,
+                  autovalidateMode: AutovalidateMode.onUserInteraction,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    spacing: 16,
+                    children: [
+                      Text(
+                        l10n.networkCreateHeading,
+                        style: Theme.of(context).textTheme.titleLarge,
                       ),
-                    ),
-                    const SizedBox(height: 24),
-                    TextFormField(
-                      controller: _nameController,
-                      decoration: InputDecoration(
-                        labelText: context.l10n.networkName,
-                        helperText: context.l10n.networkNameHelper,
-                        border: OutlineInputBorder(),
-                      ),
-                      enabled: !creating.value,
-                      validator: (v) => validateNetworkName(v!, networkNames()),
-                      onFieldSubmitted: (_) => _handleCreate(),
-                    ),
-                    const SizedBox(height: 16),
-                    TextFormField(
-                      controller: _hostnameController,
-                      decoration: InputDecoration(
-                        labelText: context.l10n.networkHostname,
-                        helperText: context.l10n.networkDeviceNameHelper,
-                        border: OutlineInputBorder(),
-                      ),
-                      maxLength: 32,
-                      enabled: !creating.value,
-                      validator: (v) => validateHostname(v!),
-                      onFieldSubmitted: (_) => _handleCreate(),
-                    ),
-                    const SizedBox(height: 24),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      children: [
-                        TextButton(
-                          onPressed: creating.value
-                              ? null
-                              : () => context.pop(),
-                          child: Text(context.l10n.commonCancel),
+                      Text(
+                        l10n.networkCreateDescription,
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
                         ),
-                        const SizedBox(width: 8),
-                        FilledButton(
-                          onPressed: creating.value ? null : _handleCreate,
-                          child: creating.value
-                              ? const SizedBox(
-                                  width: 16,
-                                  height: 16,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                  ),
-                                )
-                              : Text(context.l10n.commonCreate),
+                      ),
+                      TextFormField(
+                        controller: _name,
+                        autofocus: true,
+                        textInputAction: TextInputAction.next,
+                        onFieldSubmitted: (_) => _create(),
+                        decoration: InputDecoration(
+                          labelText: l10n.networkName,
+                          helperText: l10n.networkNameHelper,
+                          border: const OutlineInputBorder(),
                         ),
-                      ],
-                    ),
-                  ],
+                        validator: (value) => validateNetworkName(
+                          value ?? '',
+                          _controller.takenNames,
+                        ),
+                      ),
+                      TextFormField(
+                        controller: _hostname,
+                        maxLength: 32,
+                        textInputAction: TextInputAction.done,
+                        decoration: InputDecoration(
+                          labelText: l10n.networkHostname,
+                          helperText: l10n.networkDeviceNameHelper,
+                          border: const OutlineInputBorder(),
+                        ),
+                        validator: (value) => validateHostname(value ?? ''),
+                        onFieldSubmitted: (_) => _create(),
+                      ),
+                      SignalBuilder(
+                        builder: (context) => Row(
+                          mainAxisAlignment: MainAxisAlignment.end,
+                          spacing: 8,
+                          children: [
+                            TextButton(
+                              onPressed: _controller.creating.value
+                                  ? null
+                                  : () => context.pop(),
+                              child: Text(l10n.commonCancel),
+                            ),
+                            FilledButton(
+                              onPressed: _controller.creating.value
+                                  ? null
+                                  : _create,
+                              child: _controller.creating.value
+                                  ? const SizedBox(
+                                      width: 16,
+                                      height: 16,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                      ),
+                                    )
+                                  : Text(l10n.commonCreate),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),

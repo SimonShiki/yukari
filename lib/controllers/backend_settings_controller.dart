@@ -1,54 +1,87 @@
+import 'package:flutter/widgets.dart';
 import 'package:signals/signals.dart';
 
+import '../backend/backend.dart';
 import '../backend/ipc/ipc_client.dart';
 import '../backend/ipc/ipc_endpoint.dart';
 import '../backend/service_version.dart';
 import '../backend/system/service_control.dart';
 import '../models/backend.dart';
-import '../signals/backend.dart';
+import '../signals/backend.dart' as backend_signals;
 import '../signals/locale.dart';
+import '../signals/networks.dart';
 
-/// Chooses where networks run and manages the background service.
+/// How often the version probe retries while a just-restarted service is
+/// briefly unreachable, and how long it waits in between.
+const _probeAttempts = 6;
+const _probeInterval = Duration(milliseconds: 500);
+
+/// The settings page's signals and actions: where the networks run, the state
+/// of the background service, and the interface language.
 class BackendSettingsController {
   BackendSettingsController({
     required this.showMessage,
     required this.confirmStopNetworks,
     ServiceControl? control,
     Future<int?> Function()? probeVersion,
-  }) : control = control ?? serviceControl {
-    _probeVersion = probeVersion ?? _probeRunningVersion;
-  }
+    ReadonlySignal<NetworkBackend>? backend,
+  }) : control = control ?? backend_signals.serviceControl,
+       _probe = probeVersion,
+       _backend = backend ?? backend_signals.backend;
 
+  /// Reports a user-visible outcome.
   final void Function(String message) showMessage;
 
-  /// Asks whether the [running] networks may stop for the switch to
-  /// [target].
-  final Future<bool> Function(BackendKind target, int running)
-  confirmStopNetworks;
+  /// Asks whether to stop [count] running networks before switching to [kind];
+  /// false keeps them running and cancels the switch.
+  final Future<bool> Function(BackendKind kind, int count) confirmStopNetworks;
+
+  /// The service this page installs and controls.
   final ServiceControl control;
+  final Future<int?> Function()? _probe;
 
-  /// Asks the running service its version; null when it cannot be reached.
-  late final Future<int?> Function() _probeVersion;
+  /// The active backend; injectable so tests can drive its kind and status.
+  final ReadonlySignal<NetworkBackend> _backend;
 
-  final serviceState = signal(ServiceState.unsupported);
-  final busy = signal(false);
+  /// The service's installation and run state, as last refreshed.
+  final Signal<ServiceState> serviceState = signal(ServiceState.unsupported);
 
-  /// The version the running service reports, or null when unknown.
-  final runningVersion = signal<int?>(null);
+  /// Whether [refresh] has answered yet, success or failure.
+  ///
+  /// [serviceState] starts at [ServiceState.unsupported], which is a wrong
+  /// answer rather than an unknown one: the page shows a neutral loading form
+  /// until this is true, so the real state replaces nothing the user is
+  /// already reading.
+  final Signal<bool> stateKnown = signal(false);
 
-  /// Whether an install is underway, and how much of its download is done,
-  /// from 0 to 1; null while that is unknown or the download is over.
-  final installing = signal(false);
-  final installProgress = signal<double?>(null);
+  /// Whether an action is in flight; gates every mutation.
+  final Signal<bool> busy = signal(false);
 
-  late final kind = computed(() => backend.value.kind);
-  late final status = computed(() => backend.value.status.value);
+  /// The version the running service reported, or null while unknown.
+  final Signal<int?> runningVersion = signal(null);
 
-  /// Whether the running service is older than this app.
-  late final outdated = computed(
+  /// Whether an install is in flight, and how far its download is.
+  final Signal<bool> installing = signal(false);
+  final Signal<double?> installProgress = signal(null);
+
+  /// The active backend's kind and connection status.
+  late final Computed<BackendKind> kind = computed(() => _backend.value.kind);
+  late final Computed<BackendStatus> status = computed(
+    () => _backend.value.status.value,
+  );
+
+  /// Whether the running service is older than the one this app ships.
+  late final Computed<bool> outdated = computed(
     () => (runningVersion.value ?? serviceVersion) < serviceVersion,
   );
 
+  /// The language the user picked, or null to follow the system.
+  ReadonlySignal<Locale?> get language => preferredLocale;
+
+  /// Shows the app in [locale], or in the system language when null.
+  Future<void> selectLanguage(Locale? locale) => setPreferredLocale(locale);
+
+  /// Re-reads the service state and, while it runs, its version.
   Future<void> refresh() async {
     try {
       final state = await control.state();
@@ -56,103 +89,124 @@ class BackendSettingsController {
       runningVersion.value = state == ServiceState.running
           ? await _probeVersion()
           : null;
-    } catch (e) {
-      showMessage(l10n.value.controllerCheckService(e.toString()));
+    } catch (error) {
+      showMessage(l10n.value.controllerCheckService('$error'));
+    } finally {
+      // Success or failure, the page may now show the real state.
+      stateKnown.value = true;
     }
   }
 
+  /// Switches to [kind], stopping the running networks once confirmed.
   Future<void> select(BackendKind kind) async {
     if (busy.value || kind == this.kind.value) return;
     if (kind == BackendKind.service) {
-      switch (serviceState.value) {
-        case ServiceState.running || ServiceState.stopped:
-          break;
-        case ServiceState.rootRequired:
-          showMessage(l10n.value.controllerRootRequired);
-          return;
-        case ServiceState.unsupported || ServiceState.notInstalled:
-          showMessage(l10n.value.controllerInstallRequired);
-          return;
+      if (serviceState.value == ServiceState.rootRequired) {
+        showMessage(l10n.value.controllerRootRequired);
+        return;
       }
-    }
-    final active = backend.value;
-    // Stop what runs where networks ran so far, so that none keeps running
-    // unseen; an unreachable service has nothing to stop.
-    final running = await active.collectInfos().catchError(
-      (Object _) => <String, String>{},
-    );
-    if (running.isNotEmpty) {
-      if (!await confirmStopNetworks(kind, running.length)) return;
-      try {
-        await active.stop(running.keys.toList());
-      } catch (e) {
-        showMessage(l10n.value.controllerStopNetworks(e.toString()));
+      if (serviceState.value != ServiceState.running &&
+          serviceState.value != ServiceState.stopped) {
+        showMessage(l10n.value.controllerInstallRequired);
         return;
       }
     }
-    await switchBackend(kind);
+    busy.value = true;
+    try {
+      final running = await _backend.value.collect(networks.value);
+      if (running.isNotEmpty) {
+        if (!await confirmStopNetworks(kind, running.length)) return;
+        await _backend.value.stop([
+          for (final instance in running.values) instance.network.networkName,
+        ]);
+      }
+      await backend_signals.switchBackend(kind);
+    } catch (error) {
+      showMessage(l10n.value.controllerStopNetworks('$error'));
+    } finally {
+      busy.value = false;
+    }
   }
 
-  /// Installs the service, or updates it to this app's version.
-  Future<void> install() => _change(() async {
+  /// Installs or reinstalls the service, streaming the download's progress.
+  Future<void> install() async {
+    if (busy.value) return;
+    busy.value = true;
     installing.value = true;
     installProgress.value = null;
     try {
       await control.install(
         onProgress: (progress) => installProgress.value = progress,
       );
+    } catch (error) {
+      showMessage(l10n.value.controllerServiceInstall('$error'));
     } finally {
       installing.value = false;
-    }
-  }, 'install');
-
-  Future<void> start() => _change(control.start, 'start');
-
-  Future<void> stop() => _change(control.stop, 'stop');
-
-  Future<void> uninstall() async {
-    await _change(control.uninstall, 'uninstall');
-    if (serviceState.value == ServiceState.notInstalled &&
-        kind.value == BackendKind.service) {
-      await switchBackend(BackendKind.ffi);
+      installProgress.value = null;
+      busy.value = false;
+      await refresh();
     }
   }
 
-  Future<void> _change(Future<void> Function() action, String verb) async {
+  Future<void> start() =>
+      _run(control.start, (error) => l10n.value.controllerServiceStart(error));
+
+  Future<void> stop() =>
+      _run(control.stop, (error) => l10n.value.controllerServiceStop(error));
+
+  /// Removes the service and, when it was running the networks, the backend.
+  Future<void> uninstall() => _run(() async {
+    await control.uninstall();
+    if (_backend.value.kind == BackendKind.service) {
+      await backend_signals.switchBackend(BackendKind.ffi);
+    }
+  }, (error) => l10n.value.controllerServiceUninstall(error));
+
+  /// Runs a service action, reports its failure through [failure], and
+  /// refreshes the state afterwards either way.
+  Future<void> _run(
+    Future<void> Function() action,
+    String Function(String error) failure,
+  ) async {
     if (busy.value) return;
     busy.value = true;
     try {
       await action();
-    } catch (e) {
-      showMessage(switch (verb) {
-        'install' => l10n.value.controllerServiceInstall(e.toString()),
-        'start' => l10n.value.controllerServiceStart(e.toString()),
-        'stop' => l10n.value.controllerServiceStop(e.toString()),
-        _ => l10n.value.controllerServiceUninstall(e.toString()),
-      });
+    } catch (error) {
+      showMessage(failure('$error'));
     } finally {
-      await refresh();
       busy.value = false;
+      await refresh();
     }
   }
 
-  /// Tries for a few seconds, as a service just (re)started takes a moment
-  /// to listen.
-  Future<int?> _probeRunningVersion() async {
-    for (var attempt = 1; ; attempt++) {
+  /// The running service's version, from the injected probe or from its
+  /// endpoint, retrying while a restarted service comes back up.
+  late final Future<int?> Function() _probeVersion = _probe ?? _probeEndpoint;
+
+  Future<int?> _probeEndpoint() async {
+    for (var attempt = 0; attempt < _probeAttempts; attempt++) {
+      if (attempt > 0) await Future<void>.delayed(_probeInterval);
       try {
         final version = await runningServiceVersion(
           await IpcEndpoint.locate(control.dataDir),
         );
-        if (version != null || attempt == 6) return version;
+        if (version != null) return version;
       } catch (_) {
-        if (attempt == 6) return null;
+        // The service has not published its endpoint yet; try again.
       }
-      await Future<void>.delayed(const Duration(milliseconds: 500));
     }
+    return null;
   }
 
+  /// Frees every signal this controller created.
   void dispose() {
+    serviceState.dispose();
+    stateKnown.dispose();
+    busy.dispose();
+    runningVersion.dispose();
+    installing.dispose();
+    installProgress.dispose();
     kind.dispose();
     status.dispose();
     outdated.dispose();

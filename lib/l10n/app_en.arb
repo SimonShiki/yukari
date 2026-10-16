@@ -1151,5 +1151,7 @@
   "bookmarksFiltersDescription": "Narrow the bookmarks down by category or tag.",
   "bookmarksNoFilters": "No categories or tags yet. Edit a bookmark to add them.",
   "bookmarksScanQr": "Scan QR Code",
-  "bookmarksScanUnavailable": "Scanning a bookmark from a QR code is coming soon."
+  "bookmarksScanUnavailable": "Scanning a bookmark from a QR code is coming soon.",
+  "advancedCopyPublicKey": "Copy public key",
+  "advancedPublicKeyCopied": "Public key copied"
 }

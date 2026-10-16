@@ -7,126 +7,133 @@ import '../../../controllers/home_controller.dart';
 import '../../../l10n/l10n.dart';
 import '../../../models/backend.dart';
 
-/// Where networks run, whether that backend can take requests, and the
-/// versions it runs.
+/// The backend banner: where networks run, whether it is reachable, its
+/// versions, and — only while it is unreachable — the way to Settings.
 class BackendHeader extends StatelessWidget {
   const BackendHeader({super.key, required this.controller});
 
   final HomeController controller;
 
   @override
-  Widget build(BuildContext context) => SignalBuilder(
-    builder: (context) {
-      final theme = Theme.of(context);
-      final colors = theme.colorScheme;
-      final status = controller.status.value;
-      final (icon, title) = switch (controller.kind.value) {
-        BackendKind.ffi => (Icons.apps_rounded, context.l10n.homeRunningInApp),
-        BackendKind.service => (
-          Icons.dns_rounded,
-          context.l10n.homeRunningAsService,
-        ),
-      };
-      final (
-        container,
-        onContainer,
-        accent,
-        onAccent,
-        label,
-      ) = switch (status) {
-        BackendStatus.ready => (
-          colors.primaryContainer,
-          colors.onPrimaryContainer,
-          colors.primary,
-          colors.onPrimary,
-          context.l10n.homeReady,
-        ),
-        BackendStatus.connecting => (
-          colors.secondaryContainer,
-          colors.onSecondaryContainer,
-          colors.secondary,
-          colors.onSecondary,
-          context.l10n.homeConnecting,
-        ),
-        BackendStatus.unavailable => (
-          colors.errorContainer,
-          colors.onErrorContainer,
-          colors.error,
-          colors.onError,
-          context.l10n.homeUnreachable,
-        ),
-      };
-      final versions = [
-        if (controller.easyTierVersion.value case final version?)
-          'EasyTier $version',
-        if (controller.serviceVersion.value case final version?)
-          context.l10n.homeServiceVersion(version),
-      ];
+  Widget build(BuildContext context) {
+    return SignalBuilder(
+      builder: (context) {
+        final theme = Theme.of(context);
+        final l10n = context.l10n;
+        final status = controller.status.value;
+        final colors = _colors(status, theme.colorScheme);
+        final kind = controller.backendKind.value;
+        final easyTier = controller.easyTierVersion.value;
+        final service = controller.serviceVersion.value;
+        final versions = [
+          if (easyTier != null) 'EasyTier $easyTier',
+          if (service != null) l10n.homeServiceVersion(service),
+        ].join(' · ');
 
-      return Material(
-        color: container,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Row(
-            spacing: 16,
-            children: [
-              if (status == BackendStatus.connecting)
-                M3ELoadingIndicator(
-                  color: accent,
-                  constraints: BoxConstraints.tight(const Size.square(48)),
-                )
-              else
-                M3EContainer(
-                  Shapes.c9SidedCookie,
+        return Material(
+          color: colors.container,
+          shape: const RoundedRectangleBorder(
+            borderRadius: BorderRadius.all(Radius.circular(20)),
+          ),
+          clipBehavior: Clip.antiAlias,
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              spacing: 16,
+              children: [
+                SizedBox(
                   width: 48,
                   height: 48,
-                  color: accent,
-                  child: Icon(icon, size: 24, color: onAccent),
-                ),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  spacing: 4,
-                  children: [
-                    Text(
-                      title,
-                      style: theme.emphasizedTextTheme.titleMedium?.copyWith(
-                        color: onContainer,
-                      ),
-                    ),
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 4,
-                      crossAxisAlignment: WrapCrossAlignment.center,
-                      children: [
-                        Badge(
-                          backgroundColor: accent,
-                          textColor: onAccent,
-                          padding: const EdgeInsets.symmetric(horizontal: 8),
-                          label: Text(label),
-                        ),
-                        Text(
-                          versions.join(' · '),
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: onContainer,
+                  child: status == BackendStatus.connecting
+                      ? M3ELoadingIndicator(color: colors.accent)
+                      : M3EContainer(
+                          Shapes.c9SidedCookie,
+                          width: 48,
+                          height: 48,
+                          color: colors.accent,
+                          child: Icon(
+                            kind == BackendKind.ffi
+                                ? Icons.apps_rounded
+                                : Icons.dns_rounded,
+                            color: colors.onAccent,
                           ),
                         ),
-                      ],
-                    ),
-                  ],
                 ),
-              ),
-              if (status == BackendStatus.unavailable)
-                TextButton(
-                  style: TextButton.styleFrom(foregroundColor: onContainer),
-                  onPressed: () => context.go('/settings'),
-                  child: Text(context.l10n.navSettings),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    spacing: 2,
+                    children: [
+                      Row(
+                        spacing: 8,
+                        children: [
+                          Flexible(
+                            child: Text(
+                              kind == BackendKind.ffi
+                                  ? l10n.homeRunningInApp
+                                  : l10n.homeRunningAsService,
+                              style: theme.emphasizedTextTheme.titleMedium
+                                  ?.copyWith(color: colors.onContainer),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          Badge(
+                            label: Text(_badge(l10n, status)),
+                            backgroundColor: colors.accent,
+                            textColor: colors.onAccent,
+                          ),
+                        ],
+                      ),
+                      if (versions.isNotEmpty)
+                        Text(
+                          versions,
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: colors.onContainer,
+                          ),
+                        ),
+                    ],
+                  ),
                 ),
-            ],
+                if (controller.showSettings.value)
+                  TextButton(
+                    onPressed: () => context.go('/settings'),
+                    child: Text(l10n.navSettings),
+                  ),
+              ],
+            ),
           ),
-        ),
-      );
-    },
-  );
+        );
+      },
+    );
+  }
 }
+
+String _badge(AppLocalizations l10n, BackendStatus status) => switch (status) {
+  BackendStatus.ready => l10n.homeReady,
+  BackendStatus.connecting => l10n.homeConnecting,
+  BackendStatus.unavailable => l10n.homeUnreachable,
+};
+
+({Color container, Color onContainer, Color accent, Color onAccent}) _colors(
+  BackendStatus status,
+  ColorScheme scheme,
+) => switch (status) {
+  BackendStatus.ready => (
+    container: scheme.primaryContainer,
+    onContainer: scheme.onPrimaryContainer,
+    accent: scheme.primary,
+    onAccent: scheme.onPrimary,
+  ),
+  BackendStatus.connecting => (
+    container: scheme.secondaryContainer,
+    onContainer: scheme.onSecondaryContainer,
+    accent: scheme.secondary,
+    onAccent: scheme.onSecondary,
+  ),
+  BackendStatus.unavailable => (
+    container: scheme.errorContainer,
+    onContainer: scheme.onErrorContainer,
+    accent: scheme.error,
+    onAccent: scheme.onError,
+  ),
+};

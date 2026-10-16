@@ -1,35 +1,40 @@
 import 'dart:math' as math;
 
 import 'package:material_ui/material_ui.dart';
-import 'package:uuid/uuid.dart';
 
+import '../../../controllers/bookmarks_actions.dart';
 import '../../../l10n/l10n.dart';
 import '../../../models/bookmark.dart';
 import '../../../widgets/node_form/node_form_fields.dart';
 
-/// Creates a bookmark, or edits the one passed as [initial].
-class BookmarkEditorDialog extends StatefulWidget {
-  const BookmarkEditorDialog({super.key, required this.onSave, this.initial});
+/// Asks for one bookmark's fields and returns them, or null when dismissed.
+Future<BookmarkDraft?> showBookmarkEditorDialog(
+  BuildContext context, {
+  Bookmark? initial,
+}) => showDialog<BookmarkDraft>(
+  context: context,
+  builder: (context) => _BookmarkEditorDialog(initial: initial),
+);
+
+class _BookmarkEditorDialog extends StatefulWidget {
+  const _BookmarkEditorDialog({this.initial});
 
   final Bookmark? initial;
-  final ValueChanged<Bookmark> onSave;
 
   @override
-  State<BookmarkEditorDialog> createState() => _BookmarkEditorDialogState();
+  State<_BookmarkEditorDialog> createState() => _BookmarkEditorDialogState();
 }
 
-class _BookmarkEditorDialogState extends State<BookmarkEditorDialog> {
+class _BookmarkEditorDialogState extends State<_BookmarkEditorDialog> {
   final _nodeKey = GlobalKey<NodeFormFieldsState>();
-  late final TextEditingController _name = TextEditingController(
-    text: widget.initial?.name ?? '',
-  );
-  late final TextEditingController _description = TextEditingController(
+  late final _name = TextEditingController(text: widget.initial?.name ?? '');
+  late final _description = TextEditingController(
     text: widget.initial?.description ?? '',
   );
-  late final TextEditingController _category = TextEditingController(
+  late final _category = TextEditingController(
     text: widget.initial?.category ?? '',
   );
-  late final TextEditingController _tags = TextEditingController(
+  late final _tags = TextEditingController(
     text: widget.initial?.tags.join(', ') ?? '',
   );
 
@@ -42,95 +47,60 @@ class _BookmarkEditorDialogState extends State<BookmarkEditorDialog> {
     super.dispose();
   }
 
-  String? _optional(TextEditingController controller) =>
-      controller.text.trim().isEmpty ? null : controller.text.trim();
-
-  List<String> get _parsedTags => [
-    for (final tag in _tags.text.split(','))
-      if (tag.trim().isNotEmpty) tag.trim(),
-  ];
-
-  void _handleSave() {
+  /// Closes with the draft only when the node fields validate.
+  void _save() {
     final node = _nodeKey.currentState?.validate();
     if (node == null) return;
-
-    final initial = widget.initial;
-    final tags = _parsedTags;
-    widget.onSave(
-      Bookmark(
-        id: initial?.id ?? const Uuid().v4(),
-        node: node,
-        name: _optional(_name),
-        description: _optional(_description),
-        category: _optional(_category),
-        tags: tags,
-        // Fields another tool wrote are kept when its entry is edited.
-        extensions: initial?.extensions ?? const {},
-        createdAt: initial?.createdAt,
-        updatedAt: DateTime.now().toUtc(),
-      ),
-    );
-    Navigator.of(context).pop();
+    Navigator.of(context).pop((
+      node: node,
+      name: _name.text,
+      description: _description.text,
+      category: _category.text,
+      tags: _tags.text,
+    ));
   }
+
+  Widget _field(
+    TextEditingController controller,
+    String label,
+    String helper,
+  ) => TextField(
+    controller: controller,
+    decoration: InputDecoration(
+      labelText: label,
+      helperText: helper,
+      border: const OutlineInputBorder(),
+    ),
+  );
 
   @override
   Widget build(BuildContext context) {
-    final editing = widget.initial != null;
+    final l10n = context.l10n;
     return AlertDialog(
       title: Text(
-        editing ? context.l10n.bookmarksEdit : context.l10n.bookmarksAdd,
+        widget.initial == null ? l10n.bookmarksAdd : l10n.bookmarksEdit,
       ),
-      content: SingleChildScrollView(
-        // Room for the first field's floating label, which the scroll view
-        // clips when it starts flush with the content edge.
-        padding: const EdgeInsets.only(top: 10),
-        child: SizedBox(
-          // Narrow on phones, and never a wall of text on a wide window.
-          width: math.min(MediaQuery.sizeOf(context).width * 0.8, 560),
+      content: SizedBox(
+        // Narrow on phones, and never a wall of fields on a wide window.
+        width: math.min(MediaQuery.sizeOf(context).width * 0.8, 560),
+        child: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
+            spacing: 16,
             children: [
-              TextFormField(
-                controller: _name,
-                decoration: InputDecoration(
-                  labelText: context.l10n.bookmarksName,
-                  helperText: context.l10n.bookmarksNameHelper,
-                  border: const OutlineInputBorder(),
-                ),
+              _field(_name, l10n.bookmarksName, l10n.bookmarksNameHelper),
+              _field(
+                _description,
+                l10n.bookmarksDescription,
+                l10n.bookmarksDescriptionHelper,
               ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _description,
-                decoration: InputDecoration(
-                  labelText: context.l10n.bookmarksDescription,
-                  helperText: context.l10n.bookmarksDescriptionHelper,
-                  border: const OutlineInputBorder(),
-                ),
-                maxLines: 2,
+              _field(
+                _category,
+                l10n.bookmarksCategory,
+                l10n.bookmarksCategoryHelper,
               ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _category,
-                decoration: InputDecoration(
-                  labelText: context.l10n.bookmarksCategory,
-                  helperText: context.l10n.bookmarksCategoryHelper,
-                  border: const OutlineInputBorder(),
-                ),
-              ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _tags,
-                decoration: InputDecoration(
-                  labelText: context.l10n.bookmarksTags,
-                  helperText: context.l10n.bookmarksTagsHelper,
-                  border: const OutlineInputBorder(),
-                ),
-              ),
-              const Padding(
-                padding: EdgeInsets.symmetric(vertical: 24),
-                child: Divider(),
-              ),
+              _field(_tags, l10n.bookmarksTags, l10n.bookmarksTagsHelper),
               NodeFormFields(key: _nodeKey, initialNode: widget.initial?.node),
             ],
           ),
@@ -139,12 +109,9 @@ class _BookmarkEditorDialogState extends State<BookmarkEditorDialog> {
       actions: [
         TextButton(
           onPressed: () => Navigator.of(context).pop(),
-          child: Text(context.l10n.commonCancel),
+          child: Text(l10n.commonCancel),
         ),
-        FilledButton(
-          onPressed: _handleSave,
-          child: Text(context.l10n.commonSave),
-        ),
+        FilledButton(onPressed: _save, child: Text(l10n.commonSave)),
       ],
     );
   }

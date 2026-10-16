@@ -4,65 +4,64 @@ import 'package:signals_flutter/signals_flutter.dart';
 
 import '../../../controllers/home_controller.dart';
 import '../../../l10n/l10n.dart';
-import '../../../utils/stun_probe.dart';
 import 'dashboard_card.dart';
+import 'dashboard_skeleton.dart';
+import 'dashboard_value.dart';
 
-/// This device's address in the running networks, or its public address
-/// while none runs.
+/// The virtual addresses of the running networks, or the public address STUN
+/// reports when nothing runs.
 class AddressCard extends StatelessWidget {
   const AddressCard({super.key, required this.controller});
 
   final HomeController controller;
 
   @override
-  Widget build(BuildContext context) => SignalBuilder(
-    builder: (context) {
-      final virtual = controller.virtualAddresses.value;
-      // Which address to show depends on whether networks run.
-      final refreshed = controller.refreshed.value;
-      return DashboardCard(
-        icon: Icons.location_on_rounded,
-        shape: Shapes.pentagon,
-        title: !refreshed
-            ? context.l10n.homeIpAddress
-            : virtual.isEmpty
-            ? context.l10n.homePublicIp
-            : context.l10n.homeVirtualIp,
-        child: switch (virtual) {
-          _ when !refreshed => const DashboardValue.loading(),
-          [] => _public(context),
-          [final first, ...final others] => DashboardValue(
-            value: first.address,
-            supporting: [
-              ?first.host,
-              first.network,
-              if (others.isNotEmpty)
-                context.l10n.homeMoreAddresses(others.length),
-            ].join(' · '),
-            // In full, as the line above can cut names off.
-            tooltip: first.host == null && others.isEmpty
-                ? null
-                : [
-                    for (final (:address, :host, :network) in virtual)
-                      [address, ?host, network].join('  '),
-                  ].join('\n'),
-            selectable: true,
-          ),
-        },
-      );
-    },
-  );
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    return SignalBuilder(
+      builder: (context) {
+        final kind = controller.addressKind.value;
+        return DashboardCard(
+          shape: Shapes.pentagon,
+          icon: Icons.location_on_rounded,
+          title: switch (kind) {
+            AddressKind.initial => l10n.homeIpAddress,
+            AddressKind.virtual => l10n.homeVirtualIp,
+            AddressKind.waiting ||
+            AddressKind.public ||
+            AddressKind.unavailable => l10n.homePublicIp,
+          },
+          child: DashboardValueSwitcher(child: _value(l10n, kind)),
+        );
+      },
+    );
+  }
 
-  Widget _public(BuildContext context) => switch (controller.natProbe.value) {
-    null => const DashboardValue.loading(),
-    NatProbe(publicAddress: final address?) => DashboardValue(
-      value: address,
-      supporting: context.l10n.homeSeenByStun,
+  Widget _value(AppLocalizations l10n, AddressKind kind) => switch (kind) {
+    AddressKind.initial || AddressKind.waiting => const DashboardSkeleton(),
+    AddressKind.unavailable => DashboardValue(
+      value: l10n.homeUnavailable,
+      supporting: DashboardSupporting(l10n.homeNoStunAnswer),
+    ),
+    AddressKind.public => DashboardValue(
+      value: controller.address.value ?? '',
+      supporting: DashboardSupporting(l10n.homeSeenByStun),
       selectable: true,
     ),
-    NatProbe() => DashboardValue(
-      value: context.l10n.homeUnavailable,
-      supporting: context.l10n.homeNoStunAnswer,
+    AddressKind.virtual => DashboardValue(
+      value: controller.address.value ?? '',
+      supporting: DashboardSupporting(_supporting(l10n)),
+      tooltip: controller.addressTooltip.value,
+      selectable: true,
     ),
   };
+
+  /// `host · network · +N more`, the same order the card's tooltip lists.
+  String _supporting(AppLocalizations l10n) {
+    final more = controller.addressMoreCount.value;
+    return [
+      controller.addressSupporting.value,
+      if (more > 0) l10n.homeMoreAddresses(more),
+    ].join(' · ');
+  }
 }

@@ -1,134 +1,166 @@
-import 'dart:convert';
-import 'dart:io';
-
-import 'package:file_picker/file_picker.dart';
-import 'package:flutter/services.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:signals/signals.dart';
 
 import '../constants/builtin_bookmarks.dart';
 import '../models/bookmark.dart';
-import '../models/node.dart';
 import '../signals/bookmarks.dart' as saved;
 import '../signals/locale.dart';
-import '../signals/networks.dart' as saved_networks;
-import '../utils/bookmark_codec.dart';
 import '../utils/bookmark_search.dart';
 
-part 'bookmarks_actions.dart';
+part 'bookmarks_filters.dart';
 
-/// The state and mutations of the bookmarks page: what the search field and
-/// the filter chips narrow down, and the writes the page performs.
+/// The category a bookmark is filtered, listed and displayed under, trimmed.
+///
+/// One definition is what keeps `' Home '` behaving as `Home` in the filter,
+/// the section lists and the row's overline.
+String? bookmarkCategoryLabel(Bookmark bookmark) =>
+    trimmedOrNull(bookmark.category);
+
+/// [value] trimmed, or null when it is null or blank.
+String? trimmedOrNull(String? value) {
+  final trimmed = value?.trim();
+  return trimmed == null || trimmed.isEmpty ? null : trimmed;
+}
+
+/// Everything the bookmarks page binds to.
+///
+/// Holds the filter state as small signals, derives one signal per piece of UI
+/// above it, and owns the mutations; the page only builds widgets and calls
+/// these methods. The filter actions live in `bookmarks_filters.dart`.
 class BookmarksController {
-  BookmarksController({required this.showMessage, List<Bookmark>? builtins})
-    : builtins = builtins ?? builtinBookmarks;
+  BookmarksController({
+    required this.showMessage,
+    List<Bookmark>? builtins,
+    this.pickImportFile,
+    this.saveExportFile,
+  }) : _builtins = builtins ?? builtinBookmarks;
 
-  /// Reports a message the user should see, such as a failed import.
+  /// Reports a user-visible outcome; the page shows it in a snackbar.
   final void Function(String message) showMessage;
 
-  /// Shared nodes offered out of the box, listed before the saved ones.
-  final List<Bookmark> builtins;
+  final List<Bookmark> _builtins;
 
-  /// Text typed into the search field; empty shows everything.
+  /// The platform file picker and saver, overridden by the tests.
+  final Future<String?> Function()? pickImportFile;
+  final Future<bool> Function(String name, String content)? saveExportFile;
+
+  /// The search field's text, so [clearFilters] clears the field and the query
+  /// in one step whichever entry point asked for it.
+  final TextEditingController searchController = TextEditingController();
+
+  /// The current search text.
   final query = signal('');
 
-  /// The selected category, or null for every category.
+  /// The single selected category, null for all categories.
   final category = signal<String?>(null);
 
-  /// Tags every shown bookmark must carry; empty shows every tag.
-  final tags = signal<Set<String>>(const {});
+  /// The selected tags, matched with AND semantics.
+  final tags = signal<Set<String>>(const <String>{});
 
-  /// The built-in shared nodes followed by the user's saved bookmarks.
-  late final all = computed(() => [...builtins, ...saved.bookmarks.value]);
+  /// The built-in shared nodes first, then the user's bookmarks.
+  late final allBookmarks = computed(
+    () => [..._builtins, ...saved.bookmarks.value],
+  );
 
-  /// [all], narrowed down by [query], [category] and [tags].
-  late final visible = computed(
+  /// The distinct trimmed categories to filter by, sorted.
+  late final categoryOptions = computed(
+    () =>
+        _filterInventory(this, (bookmark) => [bookmarkCategoryLabel(bookmark)]),
+  );
+
+  /// The distinct trimmed tags to filter by, sorted.
+  late final tagOptions = computed(
+    () => _filterInventory(this, (bookmark) => bookmark.tags),
+  );
+
+  /// [allBookmarks] after the category, tag and search filters.
+  late final visibleBookmarks = computed(
     () => [
-      for (final bookmark in all.value)
-        if (_matches(bookmark)) bookmark,
+      for (final bookmark in allBookmarks.value)
+        if (_matchesFilters(this, bookmark)) bookmark,
     ],
   );
 
-  /// Categories in use by any bookmark, sorted, for the filter chips.
-  late final categories = computed(() {
-    final categories = {
-      for (final bookmark in all.value)
-        if (bookmark.category case final category?
-            when category.trim().isNotEmpty)
-          category,
-    };
-    return categories.toList()..sort();
-  });
+  /// The visible built-in shared nodes.
+  late final sharedBookmarks = computed(
+    () => [
+      for (final bookmark in visibleBookmarks.value)
+        if (isBuiltinBookmark(bookmark)) bookmark,
+    ],
+  );
 
-  /// Tags in use by any bookmark, sorted, for the filter chips.
-  late final availableTags = computed(() {
-    final tags = {for (final bookmark in all.value) ...bookmark.tags};
-    return tags.toList()..sort();
-  });
+  /// The visible bookmarks the user saved.
+  late final myBookmarks = computed(
+    () => [
+      for (final bookmark in visibleBookmarks.value)
+        if (!isBuiltinBookmark(bookmark)) bookmark,
+    ],
+  );
 
-  bool _matches(Bookmark bookmark) {
-    if (category.value case final category?
-        when bookmark.category != category) {
+  /// Whether there is anything at all, before filtering.
+  late final hasBookmarks = computed(() => allBookmarks.value.isNotEmpty);
+
+  /// Whether the filters left anything to show.
+  late final hasMatches = computed(() => visibleBookmarks.value.isNotEmpty);
+
+  /// The filter badge's count: the chosen category plus the selected tags. The
+  /// search query is not a filter and does not count.
+  late final activeFilterCount = computed(
+    () => (category.value == null ? 0 : 1) + tags.value.length,
+  );
+
+  /// Whether there is a user bookmark to export; built-ins do not count.
+  late final canExport = computed(() => saved.bookmarks.value.isNotEmpty);
+
+  /// Saves [bookmark], reporting a failure instead of throwing into the UI.
+  Future<bool> add(Bookmark bookmark) =>
+      _write(() => saved.addBookmark(bookmark), l10n.value.bookmarksSaveFailed);
+
+  /// Replaces the saved bookmark with the same id.
+  Future<bool> update(Bookmark bookmark) => _write(
+    () => saved.updateBookmark(bookmark),
+    l10n.value.bookmarksSaveFailed,
+  );
+
+  /// Removes [bookmark], reporting a failure instead of throwing into the UI.
+  Future<bool> delete(Bookmark bookmark) => _write(
+    () => saved.deleteBookmark(bookmark.id),
+    l10n.value.bookmarksDeleteFailed,
+  );
+
+  /// Runs a store mutation, turning a failure into [failed] and a false result.
+  Future<bool> _write(
+    Future<void> Function() mutation,
+    String Function(String error) failed,
+  ) async {
+    try {
+      await mutation();
+      return true;
+    } catch (error) {
+      showMessage(failed('$error'));
       return false;
     }
-    if (!tags.value.every(bookmark.tags.contains)) return false;
-    return bookmarkMatches(bookmark, query.value);
   }
 
-  /// Whether a filter beyond the search text is narrowing the list down.
-  bool get filtered => activeFilterCount > 0 || query.value.isNotEmpty;
-
-  /// How many sidebar filters — a category or tags — are narrowing the list.
-  int get activeFilterCount =>
-      (category.value == null ? 0 : 1) + tags.value.length;
-
-  /// Shows every bookmark again.
-  void clearFilters() {
-    query.value = '';
-    category.value = null;
-    tags.value = const {};
-  }
-
-  /// Adds [tag] to the required tags, or removes it when already selected.
-  void toggleTag(String tag) {
-    final selected = {...tags.value};
-    if (!selected.remove(tag)) selected.add(tag);
-    tags.value = selected;
-  }
-
-  /// Saves [bookmark], reporting a failure instead of throwing.
-  Future<void> add(Bookmark bookmark) async {
-    try {
-      await saved.addBookmark(bookmark);
-    } catch (error) {
-      showMessage(l10n.value.bookmarksSaveFailed('$error'));
-    }
-  }
-
-  /// Writes the changes made to an existing [bookmark].
-  Future<void> update(Bookmark bookmark) async {
-    try {
-      await saved.updateBookmark(bookmark);
-    } catch (error) {
-      showMessage(l10n.value.bookmarksSaveFailed('$error'));
-    }
-  }
-
-  /// Removes [bookmark] after the page confirmed it.
-  Future<void> delete(Bookmark bookmark) async {
-    try {
-      await saved.deleteBookmark(bookmark.id);
-    } catch (error) {
-      showMessage(l10n.value.bookmarksDeleteFailed('$error'));
-    }
-  }
-
+  /// Frees the search field and every signal this controller created.
   void dispose() {
-    query.dispose();
-    category.dispose();
-    tags.dispose();
-    all.dispose();
-    visible.dispose();
-    categories.dispose();
-    availableTags.dispose();
+    searchController.dispose();
+    for (final created in <ReadonlySignal<Object?>>[
+      query,
+      category,
+      tags,
+      allBookmarks,
+      categoryOptions,
+      tagOptions,
+      visibleBookmarks,
+      sharedBookmarks,
+      myBookmarks,
+      hasBookmarks,
+      hasMatches,
+      activeFilterCount,
+      canExport,
+    ]) {
+      created.dispose();
+    }
   }
 }

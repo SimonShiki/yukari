@@ -1073,5 +1073,7 @@
   "bookmarksFiltersDescription": "按分类或标签缩小书签范围。",
   "bookmarksNoFilters": "还没有分类或标签。编辑书签即可添加。",
   "bookmarksScanQr": "扫描二维码",
-  "bookmarksScanUnavailable": "通过二维码扫描书签的功能即将推出。"
+  "bookmarksScanUnavailable": "通过二维码扫描书签的功能即将推出。",
+  "advancedCopyPublicKey": "复制公钥",
+  "advancedPublicKeyCopied": "公钥已复制"
 }

@@ -140,7 +140,7 @@ class _FormSectionState extends State<FormSection> {
                 if (widget.footer case final footer?) ...[
                   const SizedBox(height: 12),
                   Align(
-                    alignment: AlignmentDirectional.centerStart,
+                    alignment: AlignmentDirectional.centerEnd,
                     child: footer,
                   ),
                 ],

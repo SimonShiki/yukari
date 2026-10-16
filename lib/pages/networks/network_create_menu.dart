@@ -1,42 +1,43 @@
+import 'dart:async';
+
 import 'package:m3e_core/m3e_core.dart';
 import 'package:material_ui/material_ui.dart';
 
+import '../../controllers/network_page_controller.dart';
 import '../../l10n/l10n.dart';
 
+/// The networks page's create menu: create a network by hand, import one from
+/// a TOML config, or scan a QR code (which only reports that it is coming).
 class NetworkCreateMenu extends StatelessWidget {
-  const NetworkCreateMenu({
-    super.key,
-    required this.onCreate,
-    required this.onImport,
-    required this.onScan,
-  });
+  const NetworkCreateMenu({super.key, required this.controller});
 
-  final VoidCallback onCreate;
-  final VoidCallback onImport;
-  final VoidCallback onScan;
+  final NetworkPageController controller;
 
   @override
   Widget build(BuildContext context) => M3EFabMenu(
-    icon: Icon(Icons.add_rounded, semanticLabel: context.l10n.networkAdd),
-    closeIcon: Icon(
-      Icons.close_rounded,
-      semanticLabel: context.l10n.networkCloseMenu,
+    icon: Tooltip(
+      message: context.l10n.networkAdd,
+      child: const Icon(Icons.add_rounded),
+    ),
+    closeIcon: Tooltip(
+      message: context.l10n.networkCloseMenu,
+      child: const Icon(Icons.close_rounded),
     ),
     items: [
       M3EFabMenuItem(
         icon: const Icon(Icons.edit_outlined),
         label: context.l10n.networkCreateManually,
-        onPressed: onCreate,
+        onPressed: controller.createManually,
       ),
       M3EFabMenuItem(
         icon: const Icon(Icons.file_open_outlined),
         label: context.l10n.networkImportFile,
-        onPressed: onImport,
+        onPressed: () => unawaited(controller.importFromFile()),
       ),
       M3EFabMenuItem(
         icon: const Icon(Icons.qr_code_scanner_rounded),
         label: context.l10n.networkScanQr,
-        onPressed: onScan,
+        onPressed: () => controller.showMessage(context.l10n.controllerQrComing),
       ),
     ],
   );

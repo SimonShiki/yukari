@@ -4,7 +4,6 @@ import 'widgets/navigation/app_shell.dart';
 import 'pages/home/home_page.dart';
 import 'pages/networks/networks_page.dart';
 import 'pages/networks/network_editor_page.dart';
-import 'controllers/network_instance_controller.dart';
 import 'pages/networks/network_instance_page.dart';
 import 'pages/networks/network_creator_page.dart';
 import 'pages/networks/editor_exit_guard.dart';

@@ -2,276 +2,411 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:material_ui/material_ui.dart';
-import 'package:yukari/controllers/network_instance_controller.dart';
+import 'package:go_router/go_router.dart';
 import 'package:yukari/l10n/l10n.dart';
-import 'package:yukari/pages/networks/network_instance_page.dart';
-import 'package:signals/signals.dart';
-import 'package:yukari/signals/instance_logs.dart';
 import 'package:yukari/widgets/peer_card/peer_card.dart';
+import 'package:material_ui/material_ui.dart';
+import 'package:signals_flutter/signals_flutter.dart';
+import 'package:yukari/controllers/network_instance_controller.dart';
+import 'package:yukari/pages/networks/network_instance_page.dart';
+import 'package:yukari/signals/instance_logs.dart';
 
 import '../fake_backend.dart';
 import '../networks_fixture.dart';
-
-List<String> _fixed() => _events;
-
-String _peer(int n) =>
-    '{"time":"2026-10-12T21:${(n ~/ 60).toString().padLeft(2, '0')}:${(n % 60).toString().padLeft(2, '0')}+08:00","event":{"PeerAdded":$n}}';
-
-const _events = [
-  '{"time":"2026-10-12T21:21:43+08:00","event":{"ConnectError":["tcp://1.2.3.4:11010","v4","timeout"]}}',
-  '{"time":"2026-10-12T21:21:42+08:00","event":{"PeerAdded":1269433021}}',
-  '{"time":"2026-10-12T21:21:41+08:00","event":{"ListenerAdded":"tcp://0.0.0.0:11010"}}',
-];
+import 'network_test_support.dart';
 
 void main() {
-  setUp(() async {
-    await seedNetworks();
-    clearInstanceLogs('n1');
-  });
+  useDeterministicCursor();
 
-  Future<NetworkInstanceController> pump(
+  const version = '{"time":"2024-01-01T00:00:03Z","event":"ConnectionError"}';
+  const peer = '{"time":"2024-01-01T00:00:02Z","event":{"PeerAdded":"2"}}';
+  const tun = '{"time":"2024-01-01T00:00:01Z","event":"TunDeviceError"}';
+  const listener =
+      '{"time":"2024-01-01T00:00:00Z","event":{"ListenerAdded":"tcp://0.0.0.0:11010"}}';
+
+  Future<NetworkInstanceController> pumpInstance(
     WidgetTester tester, {
+    InstanceTab initialTab = InstanceTab.peers,
+    Signal<InstanceTab>? tab,
     Map<String, Object?>? collected,
-    List<String> Function() events = _fixed,
-    InstanceTab tab = InstanceTab.logs,
-    Signal<InstanceTab>? tabSignal,
+    bool running = true,
   }) async {
     final controller = NetworkInstanceController(
       id: 'n1',
+      initialTab: initialTab,
+      tab: tab,
       backend: FakeBackend(
-        collected: () => {
-          'alpha': collected ?? {'running': true, 'events': events()},
-        },
+        collected: () => running ? {'alpha': collected ?? _instance} : {},
       ),
     );
-    await tester.pumpWidget(
-      MaterialApp(
-        localizationsDelegates: const [AppLocalizations.delegate],
-        home: NetworkInstancePage(
-          id: 'n1',
-          initialTab: tab,
-          tab: tabSignal,
-          controller: controller,
-        ),
+    addTearDown(controller.dispose);
+    await pumpApp(
+      tester,
+      NetworkInstancePage(
+        id: 'n1',
+        initialTab: initialTab,
+        tab: tab,
+        controller: controller,
       ),
     );
-    await tester.pump();
+    await tester.runAsync(controller.refresh);
+    await tester.pumpAndSettle();
     return controller;
   }
 
-  testWidgets('opens on the requested tab with structured entries', (
+  testWidgets('lists this device first, then the peers', (tester) async {
+    await tester.runAsync(seedNetworks);
+    await pumpInstance(tester);
+
+    expect(find.text('me'), findsOneWidget);
+    expect(find.text('peer-b'), findsOneWidget);
+    expect(tester.getRect(find.text('me')).top, lessThan(tester.getRect(find.text('peer-b')).top));
+    // One badge per protocol, and the identity and security tags.
+    expect(find.text('TCP'), findsOneWidget);
+    expect(find.text(strings.peerCredential), findsOneWidget);
+    expect(find.text(strings.peerKeyVerified), findsOneWidget);
+  });
+
+  testWidgets('a network that is not running says so', (tester) async {
+    await tester.runAsync(seedNetworks);
+    await pumpInstance(tester, running: false);
+
+    expect(find.text(strings.networkNotRunning), findsOneWidget);
+  });
+
+  testWidgets('an instance without peers has its own empty state', (
     tester,
   ) async {
-    await pump(tester);
-    expect(find.text('alpha'), findsOneWidget);
-    expect(find.text('Peer 1269433021 joined'), findsOneWidget);
-    expect(find.text('Listening on tcp://0.0.0.0:11010'), findsOneWidget);
+    await tester.runAsync(seedNetworks);
+    await pumpInstance(tester, collected: const {'running': true});
+
+    expect(find.text(strings.networkNoPeers), findsOneWidget);
   });
 
-  testWidgets('filters by category', (tester) async {
-    await pump(tester);
-    await tester.tap(find.text('Errors 1'));
-    await tester.pump();
-    expect(find.textContaining('Cannot connect'), findsOneWidget);
-    expect(find.text('Peer 1269433021 joined'), findsNothing);
+  testWidgets('a deleted network shows the not-found state', (tester) async {
+    await tester.runAsync(seedNetworks);
+    final controller = NetworkInstanceController(
+      id: 'gone',
+      backend: FakeBackend(),
+    );
+    addTearDown(controller.dispose);
+    await pumpApp(tester, NetworkInstancePage(id: 'gone', controller: controller));
+
+    expect(find.text(strings.networkMissing), findsWidgets);
+    expect(find.text(strings.commonGoBack), findsOneWidget);
   });
 
-  testWidgets('wraps filters on narrow screens', (tester) async {
+  testWidgets('the requested tab opens with the localized summaries', (
+    tester,
+  ) async {
+    await tester.runAsync(seedNetworks);
+    recordInstanceEvents('n1', [version, peer, tun, listener]);
+    addTearDown(() => clearInstanceLogs('n1'));
+    await pumpInstance(tester, initialTab: InstanceTab.logs);
+
+    expect(find.text(strings.logPeerAdded('2')), findsOneWidget);
+    expect(find.text(strings.logTunDeviceError('none')), findsOneWidget);
+    expect(find.text('me'), findsNothing);
+  });
+
+  testWidgets('the chips filter by category and wrap on a narrow screen', (
+    tester,
+  ) async {
+    await tester.runAsync(seedNetworks);
+    recordInstanceEvents('n1', [version, peer, tun, listener]);
+    addTearDown(() => clearInstanceLogs('n1'));
     tester.view.physicalSize = const Size(320, 640);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
-    await pump(tester);
+    await pumpInstance(tester, initialTab: InstanceTab.logs);
 
-    for (final label in [
-      'All 3',
-      'Errors 1',
-      'Peers 1',
-      'Connections 1',
-      'Listeners 1',
-    ]) {
-      final rect = tester.getRect(find.text(label));
-      expect(rect.left, greaterThanOrEqualTo(0));
-      expect(rect.right, lessThanOrEqualTo(320));
-    }
-    expect(tester.takeException(), isNull);
+    expect(find.text('${strings.networkFilterAll} 4'), findsOneWidget);
+    expect(find.text('${strings.networkFilterErrors} 2'), findsOneWidget);
+    expect(find.text('${strings.networkPeers} 1'), findsOneWidget);
+    // Wrapped onto more than one row.
+    expect(
+      tester.getRect(find.text('${strings.networkFilterAll} 4')).top,
+      lessThan(tester.getRect(find.text('${strings.networkFilterConnections} 1')).top),
+    );
+
+    await tester.tap(find.text('${strings.networkFilterErrors} 2'));
+    await tester.pumpAndSettle();
+
+    expect(find.text(strings.logTunDeviceError('none')), findsOneWidget);
+    expect(find.text(strings.logPeerAdded('2')), findsNothing);
   });
 
-  testWidgets('expands an entry to show its details', (tester) async {
-    await pump(tester);
-    await tester.tap(find.text('Peer 1269433021 joined'));
+  testWidgets('an entry expands into its details', (tester) async {
+    await tester.runAsync(seedNetworks);
+    recordInstanceEvents('n1', [peer]);
+    addTearDown(() => clearInstanceLogs('n1'));
+    await pumpInstance(tester, initialTab: InstanceTab.logs);
+
+    expect(find.byTooltip(strings.logCopyJson), findsNothing);
+    final chip = find.widgetWithText(
+      FilterChip,
+      '${strings.networkFilterAll} 1',
+    );
+    final chipBefore = tester.widget<FilterChip>(chip);
+
+    await tester.tap(find.text(strings.logPeerAdded('2')));
     await tester.pumpAndSettle();
+
+    expect(find.text('event'), findsOneWidget);
+    // Opening one entry rebuilds the list, not the chips above it.
+    expect(
+      identical(tester.widget<FilterChip>(chip), chipBefore),
+      isTrue,
+      reason: 'expanding an entry rebuilt the filter chips',
+    );
+    expect(find.byTooltip(strings.logCopyJson), findsOneWidget);
     expect(find.text('PeerAdded'), findsOneWidget);
-    expect(find.text('1269433021'), findsOneWidget);
   });
 
-  testWidgets('shows an empty peers state', (tester) async {
-    await pump(tester, tab: InstanceTab.peers);
-    expect(find.text('No peers yet'), findsOneWidget);
-  });
+  testWidgets('the route tab and the tab controller stay in sync both ways', (
+    tester,
+  ) async {
+    await tester.runAsync(seedNetworks);
+    recordInstanceEvents('n1', [peer]);
+    addTearDown(() => clearInstanceLogs('n1'));
+    final tab = signal(InstanceTab.logs);
+    addTearDown(tab.dispose);
+    await pumpInstance(tester, tab: tab);
 
-  testWidgets('lists this device first, then its peers', (tester) async {
-    final collected = jsonDecode(
-      File('test/fixtures/collected_instance.json').readAsStringSync(),
-    ) as Map<String, Object?>;
-    final pair =
-        (collected['peer_route_pairs'] as List<Object?>).single
-            as Map<String, Object?>;
-    final conn =
-        ((pair['peer'] as Map<String, Object?>)['conns'] as List<Object?>)
-                .single
-            as Map<String, Object?>;
-    conn['secure_auth_level'] = 'NetworkSecretConfirmed';
-    conn['peer_identity_type'] = 'SharedNode';
+    expect(find.text(strings.logPeerAdded('2')), findsOneWidget);
 
-    await pump(tester, collected: collected, tab: InstanceTab.peers);
-    expect(find.text('This device'), findsOneWidget);
-    expect(
-      tester.getTopLeft(find.text('host-b')).dy,
-      lessThan(tester.getTopLeft(find.text('host-a')).dy),
-    );
-    expect(find.text('P2P'), findsOneWidget);
-    // Latency is the headline's status, beside the name.
-    expect(
-      tester.getCenter(find.text('0 ms')).dy,
-      closeTo(tester.getCenter(find.text('host-a')).dy, 2),
-    );
-    expect(find.text('10.144.0.2'), findsOneWidget);
-    expect(find.text('10.144.0.1'), findsOneWidget);
-    // Every card has the same height, including our own.
-    final cards = find.byType(PeerCard);
-    expect(
-      tester.getSize(cards.first).height,
-      tester.getSize(cards.last).height,
-    );
-
-    // Tags are labeled, and explain themselves when tapped.
-    expect(find.text('Shared node'), findsOneWidget);
-    await tester.tap(find.text('Secret verified'));
-    await tester.pump(const Duration(milliseconds: 200));
-    expect(
-      find.textContaining('proved it knows the network secret'),
-      findsOneWidget,
-    );
-  });
-
-  testWidgets('switches tabs when asked to', (tester) async {
-    final tab = signal(InstanceTab.peers);
-    await pump(tester, tab: InstanceTab.peers, tabSignal: tab);
-    expect(find.text('No peers yet'), findsOneWidget);
-
-    tab.value = InstanceTab.logs;
-    await tester.pumpAndSettle();
-    expect(find.text('Peer 1269433021 joined'), findsOneWidget);
-
-    // Switching back by hand is reflected, so asking for logs again works.
-    await tester.tap(find.text('Peers'));
+    await tester.tap(find.text(strings.networkPeers));
     await tester.pumpAndSettle();
     expect(tab.value, InstanceTab.peers);
+    expect(find.text(strings.logPeerAdded('2')), findsNothing);
+
     tab.value = InstanceTab.logs;
     await tester.pumpAndSettle();
-    expect(find.text('Peer 1269433021 joined'), findsOneWidget);
+    expect(find.text(strings.logPeerAdded('2')), findsOneWidget);
   });
 
-  group('with a long history', () {
-    late List<String> events;
-    var newest = 0;
+  testWidgets('the not-found Go Back button opens the networks list', (
+    tester,
+  ) async {
+    await tester.runAsync(seedNetworks);
+    final controller = NetworkInstanceController(
+      id: 'gone',
+      backend: FakeBackend(),
+    );
+    addTearDown(controller.dispose);
+    final router = GoRouter(
+      initialLocation: '/instance',
+      routes: [
+        GoRoute(
+          path: '/instance',
+          builder: (context, state) =>
+              NetworkInstancePage(id: 'gone', controller: controller),
+        ),
+        GoRoute(
+          path: '/networks',
+          builder: (context, state) =>
+              const Scaffold(body: Text('networks list')),
+        ),
+      ],
+    );
+    addTearDown(router.dispose);
 
-    void arrive(int count, {bool varied = false}) {
-      // EasyTier reports its 20 most recent events, newest first.
-      for (var i = 0; i < count; i++) {
-        ++newest;
-        // Long errors wrap to two lines, so entry heights differ.
-        events.insert(
-          0,
-          varied && newest.isOdd
-              ? '{"time":"2026-10-12T21:00:00+08:00","event":{"ConnectError":'
-                    '["tcp://192.168.100.100:11010","V4","$newest ${'connect timeout ' * 8}"]}}'
-              : _peer(newest),
-        );
-      }
-      events = events.take(20).toList();
-    }
+    await tester.pumpWidget(
+      MaterialApp.router(
+        routerConfig: router,
+        localizationsDelegates: const [AppLocalizations.delegate],
+        supportedLocales: AppLocalizations.supportedLocales,
+      ),
+    );
+    await tester.pumpAndSettle();
 
-    setUp(() {
-      newest = 0;
-      events = [];
+    await tester.tap(find.text(strings.commonGoBack));
+    await tester.pumpAndSettle();
+
+    expect(find.text('networks list'), findsOneWidget);
+  });
+
+  testWidgets('a route tab signal drives the page it builds', (tester) async {
+    await tester.runAsync(seedNetworks);
+    final tab = signal(InstanceTab.logs);
+    addTearDown(tab.dispose);
+
+    // This page builds its own controller, which talks to the app's real
+    // backend: pump bounded frames instead of waiting for it.
+    await pumpApp(tester, NetworkInstancePage(id: 'n1', tab: tab), settle: false);
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(find.text(strings.networkNoEvents), findsOneWidget);
+
+    await tester.tap(find.text(strings.networkPeers));
+    await tester.pump(const Duration(milliseconds: 300));
+
+    expect(tab.value, InstanceTab.peers);
+  });
+
+  testWidgets('shows the collected instance details', (tester) async {
+    await tester.runAsync(seedNetworks);
+    final collected = await tester.runAsync(() async {
+      final raw = await File(
+        'test/fixtures/collected_instance.json',
+      ).readAsString();
+      return jsonDecode(raw) as Map<String, Object?>;
     });
+    await pumpInstance(tester, collected: collected);
 
-    Future<NetworkInstanceController> pumpHistory(WidgetTester tester) async {
-      for (var i = 0; i < 6; i++) {
-        arrive(20);
-        recordInstanceEvents('n1', events);
-      }
-      return pump(tester, events: () => events);
-    }
+    // This device first, then the peer, with their connection badges.
+    expect(find.text('host-b'), findsOneWidget);
+    expect(find.text('host-a'), findsOneWidget);
+    expect(find.text(strings.peerLocal), findsOneWidget);
+    expect(find.text('P2P'), findsOneWidget);
 
-    testWidgets('follows the newest entry while at the top', (tester) async {
-      final controller = await pumpHistory(tester);
-      arrive(2);
-      await controller.refresh();
-      await tester.pump();
-      expect(find.text('Peer $newest joined'), findsOneWidget);
-    });
+    // Both virtual addresses, and the peer's latency in milliseconds.
+    expect(find.text('10.144.0.2'), findsOneWidget);
+    expect(find.text('10.144.0.1'), findsOneWidget);
+    expect(find.text('0 ms'), findsOneWidget);
 
-    testWidgets('keeps the viewed entries still once scrolled', (tester) async {
-      final controller = await pumpHistory(tester);
-      await tester.drag(find.byType(CustomScrollView), const Offset(0, -300));
-      await tester.pumpAndSettle();
-      final viewed = find.text('Peer ${newest - 6} joined');
-      final before = tester.getTopLeft(viewed);
+    final heights = [
+      for (var index = 0; index < 2; index++)
+        tester.getSize(find.byType(PeerCard).at(index)).height,
+    ];
+    expect(heights.first, heights.last);
+    expect(heights.first, greaterThan(0));
+  });
 
-      arrive(3);
-      await controller.refresh();
-      await tester.pump();
-      expect(tester.getTopLeft(viewed), before);
-      expect(find.text('Peer $newest joined'), findsNothing);
-    });
-
-    testWidgets('offers a way back to the top', (tester) async {
-      final controller = await pumpHistory(tester);
-      final backToTop = find.byTooltip('Back to top');
-      expect(
-        tester
-            .widget<IgnorePointer>(
-              find
-                  .ancestor(of: backToTop, matching: find.byType(IgnorePointer))
-                  .first,
-            )
-            .ignoring,
-        isTrue,
-      );
-
-      await tester.drag(find.byType(CustomScrollView), const Offset(0, -3000));
-      await tester.pumpAndSettle();
-      arrive(3);
-      await controller.refresh();
-      await tester.pump();
-
-      await tester.tap(backToTop);
-      await tester.pumpAndSettle();
-      expect(find.text('Peer $newest joined'), findsOneWidget);
-    });
-
-    testWidgets('goes back to the very top when entries vary in height', (
+  testWidgets('the identity tags explain themselves on tap', (tester) async {
+    await tester.runAsync(seedNetworks);
+    await pumpInstance(
       tester,
-    ) async {
-      final controller = await pumpHistory(tester);
-      await tester.drag(find.byType(CustomScrollView), const Offset(0, -3000));
-      await tester.pumpAndSettle();
-      for (var i = 0; i < 4; i++) {
-        arrive(20, varied: true);
-        await controller.refresh();
-        await tester.pump();
-      }
+      collected: {
+        ..._instance,
+        'peer_route_pairs': [
+          {
+            'route': {
+              'peer_id': 2,
+              'hostname': 'peer-b',
+              'next_hop_peer_id': 3,
+              'stun_info': {'udp_nat_type': 'PortRestricted'},
+            },
+            'peer': {
+              'conns': [
+                {
+                  'peer_identity_type': 'SharedNode',
+                  'secure_auth_level': 'NetworkSecretConfirmed',
+                  'tunnel': {'tunnel_type': 'tcp'},
+                  'stats': {'latency_us': '5000'},
+                },
+              ],
+            },
+          },
+        ],
+      },
+    );
 
-      await tester.tap(find.byTooltip('Back to top'));
-      await tester.pumpAndSettle();
-      final position = tester
-          .state<ScrollableState>(find.byType(Scrollable).last)
-          .position;
-      expect(position.pixels, position.minScrollExtent);
-      expect(find.text('Peer $newest joined'), findsOneWidget);
-    });
+    expect(find.byTooltip(strings.peerSharedNodeDescription), findsOneWidget);
+    expect(
+      find.byTooltip(strings.peerSecretVerifiedDescription),
+      findsOneWidget,
+    );
+    // Tapping the tag explains it, rather than only wiring a Tooltip up.
+    expect(find.text(strings.peerSecretVerifiedDescription), findsNothing);
+
+    await tester.tap(find.text(strings.peerSecretVerified));
+    await tester.pumpAndSettle();
+
+    expect(find.text(strings.peerSecretVerifiedDescription), findsOneWidget);
+  });
+
+  testWidgets('a new entry arrives at the top, and back-to-top returns there', (
+    tester,
+  ) async {
+    // One summary is long enough to wrap, so the tiles differ in height.
+    const long =
+        '{"time":"2024-01-01T00:00:04Z","event":{"PeerConnAdded":{"peer_id":"7",'
+        '"tunnel":{"remote_addr":{"url":"tcp://a-rather-long-hostname-for-wrapping'
+        '.example.com:11010"},"tunnel_type":"tcp"}}}}';
+    await tester.runAsync(seedNetworks);
+    final versions = List.generate(30, (i) => version);
+    // Newest first: the peer joins after the thirty connections.
+    recordInstanceEvents('n1', [peer, long, ...versions]);
+    addTearDown(() => clearInstanceLogs('n1'));
+    await pumpInstance(tester, initialTab: InstanceTab.logs);
+
+    final connection = strings.logConnectionError('none', 'none', 'none');
+    expect(
+      tester.getRect(find.text(strings.logPeerAdded('2'))).top,
+      lessThan(tester.getRect(find.text(connection).first).top),
+    );
+
+    await tester.drag(find.byType(CustomScrollView), const Offset(0, -400));
+    await tester.pumpAndSettle();
+    final viewed = find.text(connection).first;
+    final before = tester.getRect(viewed);
+
+    recordInstanceEvents('n1', [
+      '{"time":"2024-01-01T00:00:09Z","event":{"PeerAdded":"9"}}',
+      peer,
+      long,
+      ...versions,
+    ]);
+    await tester.pumpAndSettle();
+
+    // Newer entries are laid out above the viewed one, so it does not move.
+    expect(tester.getRect(viewed), before);
+    expect(find.text(strings.logPeerAdded('9')), findsNothing);
+
+    await tester.tap(find.byTooltip(strings.logBackToTop));
+    await tester.pumpAndSettle();
+
+    expect(
+      tester.getRect(find.text(strings.logPeerAdded('9'))).top,
+      lessThan(tester.getRect(find.text(connection).first).top),
+    );
+
+    // The very top, with entries of different heights.
+    final position = tester
+        .state<ScrollableState>(
+          find.descendant(
+            of: find.byType(CustomScrollView),
+            matching: find.byType(Scrollable),
+          ),
+        )
+        .position;
+    expect(position.pixels, position.minScrollExtent);
   });
 }
+
+/// The EasyTier information of one running instance with one peer.
+final Map<String, Object?> _instance = {
+  'running': true,
+  'my_node_info': {
+    'peer_id': 1,
+    'hostname': 'me',
+    'version': '2.7.0',
+    'stun_info': {'udp_nat_type': 'FullCone'},
+    'virtual_ipv4': {
+      'address': {'addr': (10 << 24) | (144 << 16) | 1},
+    },
+  },
+  'peer_route_pairs': [
+    {
+      'route': {
+        'peer_id': 2,
+        'hostname': 'peer-b',
+        'next_hop_peer_id': 2,
+        'ipv4_addr': {
+          'address': {'addr': (10 << 24) | (144 << 16) | 2},
+        },
+        'stun_info': {'udp_nat_type': 'PortRestricted'},
+      },
+      'peer': {
+        'conns': [
+          {
+            'peer_identity_type': 'Credential',
+            'secure_auth_level': 'PeerVerified',
+            'tunnel': {'tunnel_type': 'tcp'},
+            'stats': {'latency_us': '5000'},
+          },
+        ],
+      },
+    },
+  ],
+};

@@ -1,410 +1,628 @@
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:go_router/go_router.dart';
 import 'package:material_ui/material_ui.dart';
-import 'package:yukari/l10n/l10n.dart';
+import 'package:yukari/controllers/network_editor_controller.dart';
+import 'package:yukari/widgets/form_section/form_segments.dart';
+import 'package:yukari/models/models.dart';
 import 'package:yukari/pages/networks/editor_exit_guard.dart';
 import 'package:yukari/pages/networks/network_editor_page.dart';
-import 'package:yukari/widgets/form_section/form_segments.dart';
-import 'package:yukari/signals/networks.dart';
-import 'package:yukari/utils/validator.dart';
+import 'package:yukari/pages/networks/widgets/advanced_flags_section.dart';
+import 'package:yukari/pages/networks/widgets/advanced_security_section.dart';
+import 'package:yukari/pages/networks/widgets/editor_fields.dart';
+import 'package:yukari/signals/networks.dart' as saved;
 
 import '../networks_fixture.dart';
+import 'network_test_support.dart';
 
 void main() {
-  setUp(seedNetworks);
+  useDeterministicCursor();
 
-  Future<void> pumpEditor(WidgetTester tester, [String id = 'n1']) async {
-    tester.view.physicalSize = const Size(1200, 4000);
-    tester.view.devicePixelRatio = 1;
-    addTearDown(tester.view.reset);
-    await tester.pumpWidget(
-      MaterialApp(
-        localizationsDelegates: const [AppLocalizations.delegate],
-        home: NetworkEditorPage(id: id),
+  late NetworkEditorController controller;
+  late BuildContext pageContext;
+
+  Future<void> pumpEditor(WidgetTester tester, {String id = 'n1'}) async {
+    controller = NetworkEditorController(id: id, showMessage: (_) {});
+    addTearDown(controller.dispose);
+    await pumpApp(
+      tester,
+      Builder(
+        builder: (context) {
+          pageContext = context;
+          return NetworkEditorPage(id: id, controller: controller);
+        },
       ),
     );
   }
 
-  Finder field(String label) => find.widgetWithText(TextFormField, label);
+  /// The `enabled`/`obscureText` flag of the field labelled [label].
+  bool? flagOf(
+    WidgetTester tester,
+    String label,
+    bool? Function(TextField) read,
+  ) => read(
+    tester.widget<TextField>(
+      find.descendant(of: field(label), matching: find.byType(TextField)),
+    ),
+  );
 
-  // The save queue outlives each test's fake-async zone, so trigger saves
-  // from the real zone and give them a turn of the real event loop.
-  Future<void> act(WidgetTester tester, void Function() action) async {
-    await tester.runAsync(() async {
-      action();
-      await Future<void>.delayed(const Duration(milliseconds: 10));
-      await settled();
-    });
-    await tester.pump();
-  }
-
-  Future<void> type(WidgetTester tester, String label, String text) async {
-    await tester.showKeyboard(field(label));
-    await act(tester, () => tester.testTextInput.enterText(text));
-  }
-
-  Future<void> toggle(WidgetTester tester, String title) {
-    final tile = tester.widget<SwitchSegment>(
-      find.widgetWithText(SwitchSegment, title),
-    );
-    return act(tester, () => tile.onChanged(!tile.value));
-  }
-
-  Future<void> openAdvanced(WidgetTester tester) async {
-    await tester.tap(find.text('Advanced'));
+  Future<void> savedTyping(
+    WidgetTester tester,
+    Finder finder,
+    String text,
+  ) async {
+    await tester.ensureVisible(finder);
     await tester.pumpAndSettle();
+    await saving(tester, () => tester.enterText(finder, text));
   }
 
   testWidgets('shows the saved configuration', (tester) async {
+    await tester.runAsync(
+      () => seedWith({
+        'n1': seededNetwork(
+          hostname: 'me',
+          dhcp: false,
+          ipv4: '10.144.0.2/24',
+          nodes: [
+            Node(
+              id: 'peer-a',
+              url: Uri.parse('relay.example.com'),
+              port: 11010,
+              protocols: const [NodeProtocol.tcp],
+            ),
+          ],
+        ),
+      }),
+    );
     await pumpEditor(tester);
-    expect(find.text('Edit alpha'), findsOneWidget);
-    expect(find.text('alpha'), findsOneWidget);
+
+    expect(find.text('alpha'), findsWidgets);
+    expect(find.text('me'), findsOneWidget);
+    expect(find.text('peer-a'), findsOneWidget);
+    expect(find.text('10.144.0.2/24'), findsOneWidget);
+    expect(flagOf(tester, strings.networkIpv4, (f) => f.enabled), isTrue);
   });
 
-  testWidgets('unknown network shows not found', (tester) async {
-    await pumpEditor(tester, 'missing');
-    expect(find.text('Network not found'), findsOneWidget);
+  testWidgets('an unknown id shows the not-found state', (tester) async {
+    await tester.runAsync(seedNetworks);
+    await pumpEditor(tester, id: 'gone');
+
+    expect(find.text(strings.networkMissing), findsWidgets);
+    expect(find.text(strings.networkMissingDescription), findsOneWidget);
+    expect(find.text(strings.commonGoBack), findsOneWidget);
   });
 
-  testWidgets('valid name is saved immediately and retitles the page', (
+  testWidgets('renaming retitles the page', (tester) async {
+    await tester.runAsync(seedNetworks);
+    await pumpEditor(tester);
+
+    await saving(
+      tester,
+      () => tester.enterText(field(strings.networkName), 'renamed'),
+    );
+
+    expect(controller.working.value!.networkName, 'renamed');
+    expect(find.text(strings.networkEditNamed('renamed')), findsOneWidget);
+    expect((await tester.runAsync(() => persisted('n1')))!.networkName, 'renamed');
+  });
+
+  testWidgets('an empty or duplicate name is rejected and never saved', (
     tester,
   ) async {
+    await tester.runAsync(seedNetworks);
     await pumpEditor(tester);
-    await type(tester, 'Network Name', 'gamma');
 
-    expect(networks.value['n1']!.networkName, 'gamma');
-    expect((await persisted('n1')).networkName, 'gamma');
-    expect(find.text('Edit gamma'), findsOneWidget);
+    await tester.enterText(field(strings.networkName), '   ');
+    await tester.pumpAndSettle();
+    expect(find.text(strings.validationNetworkEmpty), findsOneWidget);
+    expect(controller.working.value!.networkName, 'alpha');
+
+    await tester.enterText(field(strings.networkName), 'beta');
+    await tester.pumpAndSettle();
+    expect(find.text(strings.validationNetworkExists), findsOneWidget);
+    expect(controller.working.value!.networkName, 'alpha');
+    expect(find.text(strings.networkEditNamed('alpha')), findsOneWidget);
   });
 
-  testWidgets('duplicate or empty name is flagged and never saved', (
+  testWidgets('the DHCP switch saves and unlocks the IPv4 field', (tester) async {
+    await tester.runAsync(seedNetworks);
+    await pumpEditor(tester);
+    expect(flagOf(tester, strings.networkIpv4, (f) => f.enabled), isFalse);
+
+    await saving(tester, () => tester.tap(find.text(strings.networkDhcp)));
+
+    expect(controller.working.value!.dhcp, isFalse);
+    expect(flagOf(tester, strings.networkIpv4, (f) => f.enabled), isTrue);
+
+    await saving(
+      tester,
+      () => tester.enterText(field(strings.networkIpv4), '10.144.0.2/24'),
+    );
+    expect(controller.working.value!.ipv4, '10.144.0.2/24');
+  });
+
+  testWidgets('an invalid IPv4 is rejected, and fixing it saves', (tester) async {
+    await tester.runAsync(seedNetworks);
+    await pumpEditor(tester);
+    // DHCP keeps the address field disabled until it is turned off.
+    await saving(tester, () => tester.tap(find.text(strings.networkDhcp)));
+
+    await tester.enterText(field(strings.networkIpv4), 'nope');
+    await tester.pumpAndSettle();
+    expect(find.text(strings.validationIpv4Cidr), findsOneWidget);
+    expect(controller.working.value!.ipv4, isNull);
+
+    await saving(
+      tester,
+      () => tester.enterText(field(strings.networkIpv4), '10.144.0.2/24'),
+    );
+    expect(find.text(strings.validationIpv4Cidr), findsNothing);
+    expect(controller.working.value!.ipv4, '10.144.0.2/24');
+  });
+
+  testWidgets('invalid input and its error survive a tab switch', (tester) async {
+    await tester.runAsync(seedNetworks);
+    await pumpEditor(tester);
+    await saving(tester, () => tester.tap(find.text(strings.networkDhcp)));
+
+    await tester.enterText(field(strings.networkIpv4), 'nope');
+    await tester.pumpAndSettle();
+    expect(find.text(strings.validationIpv4Cidr), findsOneWidget);
+
+    await switchTab(tester, strings.networkAdvanced);
+    await switchTab(tester, strings.networkBasic);
+
+    expect(find.text('nope'), findsOneWidget);
+    expect(find.text(strings.validationIpv4Cidr), findsOneWidget);
+  });
+
+  testWidgets('an out-of-range MTU is rejected, and a valid one saves', (
     tester,
   ) async {
+    await tester.runAsync(seedNetworks);
     await pumpEditor(tester);
 
-    await type(tester, 'Network Name', 'beta');
-    expect(find.text('Network name already exists'), findsOneWidget);
+    await switchTab(tester, strings.networkAdvanced);
+    await expandSection(tester, strings.advancedNetworkFlags);
+    final mtu = field(strings.advancedMtuHelper);
 
-    await type(tester, 'Network Name', '');
-    expect(find.text('Network name cannot be empty'), findsOneWidget);
 
-    expect(networks.value['n1']!.networkName, 'alpha');
-    expect((await persisted('n1')).networkName, 'alpha');
+    await tester.enterText(mtu, '100');
+    await tester.pumpAndSettle();
+    expect(
+      find.text(strings.validationRange('MTU', '576', '65535')),
+      findsOneWidget,
+    );
+    expect(controller.working.value!.flags.mtu, 1380);
+
+    await savedTyping(tester, mtu, '1500');
+    expect(controller.working.value!.flags.mtu, 1500);
   });
 
-  testWidgets('DHCP switch saves immediately and unlocks IPv4', (tester) async {
+  testWidgets('the DNS suffix appears only with Magic DNS, keeping the MTU', (
+    tester,
+  ) async {
+    await tester.runAsync(seedNetworks);
     await pumpEditor(tester);
-    TextField ipv4() => tester.widget<TextField>(
-      find.descendant(
-        of: field('IPv4 Address (CIDR)'),
-        matching: find.byType(TextField),
+
+    await switchTab(tester, strings.networkAdvanced);
+    expect(find.text(strings.advancedDnsSuffix), findsNothing);
+
+    await typeInto(tester, strings.advancedMtuHelper, '1400');
+    expect(find.text(strings.advancedDnsSuffix), findsNothing);
+
+    await tapSaving(tester, find.text(strings.advancedMagicDns));
+    expect(find.text(strings.advancedDnsSuffix), findsOneWidget);
+    expect(controller.working.value!.flags.acceptDns, isTrue);
+
+    await tapSaving(tester, find.text(strings.advancedMagicDns));
+    expect(find.text(strings.advancedDnsSuffix), findsNothing);
+    expect(find.text('1400'), findsOneWidget);
+  });
+
+  testWidgets('only the uncommon sections start collapsed', (tester) async {
+    await tester.runAsync(seedNetworks);
+    await pumpEditor(tester);
+
+    await switchTab(tester, strings.networkAdvanced);
+    // Sections 1-5 are always open.
+    expect(find.text(strings.advancedSocks5Proxy), findsOneWidget);
+    expect(find.text(strings.advancedSubnetProxy), findsOneWidget);
+    expect(find.text(strings.advancedMtuHelper), findsOneWidget);
+    expect(find.text(strings.advancedSecureMode), findsOneWidget);
+
+    // P2P & NAT Traversal is collapsed until its title is tapped.
+    expect(find.text(strings.advancedDisableP2p), findsNothing);
+    await expandSection(tester, strings.advancedP2p);
+    expect(find.text(strings.advancedDisableP2p), findsOneWidget);
+  });
+
+  testWidgets('a change elsewhere rebuilds the flags and security sections not', (
+    tester,
+  ) async {
+    await tester.runAsync(seedNetworks);
+    controller = NetworkEditorController(id: 'n1', showMessage: (_) {});
+    addTearDown(controller.dispose);
+    // Alone, without a Form around them, so only their own subscriptions can
+    // make them rebuild.
+    await pumpApp(
+      tester,
+      Scaffold(
+        body: SingleChildScrollView(
+          child: Column(
+            children: [
+              AdvancedFlagsSection(controller: controller),
+              AdvancedSecuritySection(controller: controller),
+            ],
+          ),
+        ),
       ),
     );
-    expect(ipv4().enabled, isFalse);
 
-    await toggle(tester, 'Enable DHCP');
+    final mtu = find.ancestor(
+      of: find.text(strings.advancedMtuHelper),
+      matching: find.byType(EditorTextField),
+    );
+    final security = find.ancestor(
+      of: find.text(strings.advancedSecureMode),
+      matching: find.byType(SwitchSegment),
+    );
+    final mtuBefore = tester.widget<EditorTextField>(mtu);
+    final securityBefore = tester.widget<SwitchSegment>(security);
 
-    expect(networks.value['n1']!.dhcp, isFalse);
-    expect(ipv4().enabled, isTrue);
+    await tester.runAsync(() async {
+      controller.update((n) => n.flags.disableP2p = true);
+      await saved.settled();
+    });
+    await tester.pump(const Duration(milliseconds: 100));
+
+    expect(
+      identical(tester.widget<EditorTextField>(mtu), mtuBefore),
+      isTrue,
+      reason: 'the flags section rebuilt',
+    );
+    expect(
+      identical(tester.widget<SwitchSegment>(security), securityBefore),
+      isTrue,
+      reason: 'the security section rebuilt',
+    );
   });
 
-  testWidgets('invalid IPv4 is highlighted and rejected; fixing it saves', (
+  testWidgets('secure mode generates a key pair and can hide it again', (
     tester,
   ) async {
+    await tester.runAsync(seedNetworks);
     await pumpEditor(tester);
-    await toggle(tester, 'Enable DHCP');
 
-    await type(tester, 'IPv4 Address (CIDR)', '10.0.0.1');
-    expect(
-      find.text('Must be an IPv4 CIDR, e.g. 10.144.144.1/24'),
-      findsOneWidget,
+    await switchTab(tester, strings.networkAdvanced);
+    await expandSection(tester, strings.advancedSecurity);
+    expect(find.text(strings.advancedPrivateKey), findsNothing);
+
+    await tapSaving(tester, find.text(strings.advancedSecureMode));
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 50)),
     );
-    expect(networks.value['n1']!.ipv4, isNull);
-
-    await type(tester, 'IPv4 Address (CIDR)', '10.0.0.1/24');
-    expect(
-      find.text('Must be an IPv4 CIDR, e.g. 10.144.144.1/24'),
-      findsNothing,
-    );
-    expect(networks.value['n1']!.ipv4, '10.0.0.1/24');
-  });
-
-  testWidgets('out-of-range MTU is rejected', (tester) async {
-    await pumpEditor(tester);
-    await openAdvanced(tester);
-
-    await type(tester, 'MTU', '100');
-    expect(
-      find.text('MTU must be a number between 576 and 65535'),
-      findsOneWidget,
-    );
-    expect(networks.value['n1']!.flags.mtu, 1380);
-
-    await type(tester, 'MTU', '1400');
-    expect(networks.value['n1']!.flags.mtu, 1400);
-  });
-
-  testWidgets('invalid input and its error survive switching tabs', (
-    tester,
-  ) async {
-    await pumpEditor(tester);
-    await type(tester, 'Network Name', 'beta');
-
-    await openAdvanced(tester);
-    await tester.tap(find.text('Basic'));
     await tester.pumpAndSettle();
 
-    expect(find.text('beta'), findsOneWidget);
-    expect(find.text('Network name already exists'), findsOneWidget);
-  });
-
-  testWidgets('secure mode generates a key pair and hides it again', (
-    tester,
-  ) async {
-    await pumpEditor(tester);
-    await openAdvanced(tester);
-    expect(field('Node Private Key (Base64)'), findsNothing);
-
-    await toggle(tester, 'Secure Mode');
-
-    final mode = networks.value['n1']!.secureMode!;
-    expect(mode.enabled, isTrue);
-    expect(validatePrivateKey(mode.localPrivateKey!), isNull);
-    expect(mode.localPublicKey, isNotEmpty);
-    expect(field('Node Private Key (Base64)'), findsOneWidget);
+    expect(controller.working.value!.secureMode!.enabled, isTrue);
+    expect(controller.working.value!.secureMode!.localPublicKey, isNotNull);
     expect(
-      find.widgetWithText(TextField, 'Node Public Key (Base64)'),
-      findsOneWidget,
+      flagOf(tester, strings.advancedPrivateKey, (f) => f.obscureText),
+      isTrue,
     );
 
-    await toggle(tester, 'Secure Mode');
+    await tester.tap(find.byTooltip(strings.advancedShowPrivateKey));
+    await tester.pumpAndSettle();
 
-    expect(networks.value['n1']!.secureMode!.enabled, isFalse);
-    expect(field('Node Private Key (Base64)'), findsNothing);
-    // The key pair stays for the next time secure mode is on.
     expect(
-      networks.value['n1']!.secureMode!.localPrivateKey,
-      mode.localPrivateKey,
+      flagOf(tester, strings.advancedPrivateKey, (f) => f.obscureText),
+      isFalse,
     );
   });
 
-  testWidgets('invalid private key never reaches the model', (tester) async {
+  testWidgets('an invalid private key never reaches the model', (tester) async {
+    await tester.runAsync(seedNetworks);
     await pumpEditor(tester);
-    await openAdvanced(tester);
-    await toggle(tester, 'Secure Mode');
-    final generated = networks.value['n1']!.secureMode!.localPrivateKey;
 
-    await type(tester, 'Node Private Key (Base64)', 'AAAA');
-    expect(find.text('Must be a base64-encoded 32-byte key'), findsOneWidget);
-    expect(networks.value['n1']!.secureMode!.localPrivateKey, generated);
+    await switchTab(tester, strings.networkAdvanced);
+    await expandSection(tester, strings.advancedSecurity);
+    await tapSaving(tester, find.text(strings.advancedSecureMode));
+    final generated = controller.working.value!.secureMode!.localPrivateKey;
+
+    await tester.enterText(field(strings.advancedPrivateKey), 'not-a-key');
+    await tester.pumpAndSettle();
+
+    expect(find.text(strings.validationPrivateKey), findsOneWidget);
+    expect(controller.working.value!.secureMode!.localPrivateKey, generated);
   });
 
   testWidgets('subnet proxy lines are saved once valid', (tester) async {
-    await pumpEditor(tester);
-    await openAdvanced(tester);
-
-    await type(tester, 'Subnet Proxy', '192.168.1.0/24->10.0.0.0/16');
-    expect(find.textContaining('same prefix'), findsOneWidget);
-    expect(networks.value['n1']!.proxyNetworks, isEmpty);
-
-    await type(tester, 'Subnet Proxy', '192.168.1.0/24->10.1.1.0/24\n');
-    final proxy = networks.value['n1']!.proxyNetworks.single;
-    expect(proxy.cidr, '192.168.1.0/24');
-    expect(proxy.mappedCidr, '10.1.1.0/24');
-  });
-
-  testWidgets('DNS suffix shows only with Magic DNS and keeps MTU input', (
-    tester,
-  ) async {
-    await pumpEditor(tester);
-    await openAdvanced(tester);
-    expect(field('DNS Suffix'), findsNothing);
-
-    await type(tester, 'MTU', '1');
-    await toggle(tester, 'Magic DNS');
-    expect(find.widgetWithText(TextFormField, '1'), findsOneWidget);
-
-    await type(tester, 'DNS Suffix', 'not a domain');
-    expect(find.text('Must be a domain, e.g. et.net.'), findsOneWidget);
-    await type(tester, 'DNS Suffix', 'home.lan.');
-    expect(networks.value['n1']!.flags.dnsZone, 'home.lan.');
-
-    await toggle(tester, 'Magic DNS');
-    expect(field('DNS Suffix'), findsNothing);
-  });
-
-  testWidgets('uncommon sections start collapsed and expand on tap', (
-    tester,
-  ) async {
-    await pumpEditor(tester);
-    await openAdvanced(tester);
-    expect(find.text('Lazy P2P'), findsNothing);
-
-    await tester.tap(find.text('P2P & NAT Traversal'));
-    await tester.pumpAndSettle();
-    await toggle(tester, 'Lazy P2P');
-    expect(networks.value['n1']!.flags.lazyP2p, isTrue);
-  });
-
-  testWidgets('enabling the VPN portal gives it a key and an address', (
-    tester,
-  ) async {
-    await pumpEditor(tester);
-    await openAdvanced(tester);
-    await tester.tap(find.text('VPN Portal'));
-    await tester.pumpAndSettle();
-
-    await toggle(tester, 'Enable VPN Portal');
-    final portal = networks.value['n1']!.vpnPortal!;
-    expect(portal.enabled, isTrue);
-    expect(portal.wireguardListen, '0.0.0.0:22022');
-    expect(validatePrivateKey(portal.wireguardPrivateKey!), isNull);
-
-    await toggle(tester, 'Enable VPN Portal');
-    expect(networks.value['n1']!.vpnPortal!.enabled, isFalse);
-    expect(
-      networks.value['n1']!.vpnPortal!.wireguardPrivateKey,
-      portal.wireguardPrivateKey,
-    );
-  });
-
-  testWidgets('peer dialog highlights every invalid field', (tester) async {
-    await pumpEditor(tester);
-    await tester.tap(find.text('Add Peer'));
-    await tester.pumpAndSettle();
-
-    await tester.enterText(field('URL'), 'example.com:11010');
-    await tester.tap(find.text('Save'));
-    await tester.pump();
-
-    expect(find.text('Peer ID cannot be empty'), findsOneWidget);
-    expect(
-      find.text('Must be an address without port, query or fragment'),
-      findsOneWidget,
-    );
-    expect(
-      find.text('Port must be a number between 1 and 65535'),
-      findsOneWidget,
-    );
-    expect(find.text('At least one protocol must be selected'), findsOneWidget);
-    expect(find.byType(AlertDialog), findsOneWidget);
-    expect(networks.value['n1']!.nodes, isEmpty);
-  });
-
-  testWidgets('valid peer is added and saved', (tester) async {
-    await pumpEditor(tester);
-    await tester.tap(find.text('Add Peer'));
-    await tester.pumpAndSettle();
-
-    await tester.enterText(field('Peer ID'), 'relay');
-    await tester.enterText(field('URL'), 'example.com');
-    await tester.enterText(field('Port'), '11010');
-    await tester.tap(find.text('TCP'));
-    await tester.pump();
-    await act(
-      tester,
-      () => tester
-          .widget<FilledButton>(find.widgetWithText(FilledButton, 'Save'))
-          .onPressed!(),
-    );
-    await tester.pumpAndSettle();
-
-    final nodes = networks.value['n1']!.nodes;
-    expect(nodes.single.id, 'relay');
-    expect(
-      nodes.single.endpoint(nodes.single.protocols.single).toString(),
-      'tcp://example.com:11010',
-    );
-    expect(find.text('relay'), findsOneWidget);
-
-    // Tapping the peer opens it for editing.
-    await tester.tap(find.text('relay'));
-    await tester.pumpAndSettle();
-    expect(find.byType(AlertDialog), findsOneWidget);
-    expect(find.widgetWithText(TextFormField, 'relay'), findsOneWidget);
-    await tester.tap(find.text('Cancel'));
-    await tester.pumpAndSettle();
-
-    await act(tester, () => tester.tap(find.byTooltip('Delete peer')));
-    await tester.pumpAndSettle();
-    expect(networks.value['n1']!.nodes, isEmpty);
-    expect(find.text('No peers configured'), findsOneWidget);
-  });
-
-  group('leaving with invalid input', () {
-    Future<void> pumpRoutedEditor(WidgetTester tester) async {
-      tester.view.physicalSize = const Size(1200, 4000);
-      tester.view.devicePixelRatio = 1;
-      addTearDown(tester.view.reset);
-      final router = GoRouter(
-        initialLocation: '/edit/n1',
-        routes: [
-          GoRoute(
-            path: '/',
-            builder: (context, state) => const Text('Home'),
-            routes: [
-              GoRoute(
-                path: 'edit/:id',
-                builder: (context, state) =>
-                    NetworkEditorPage(id: state.pathParameters['id']!),
-                onExit: (context, state) =>
-                    confirmLeavingPage(context, state.pageKey),
-              ),
-            ],
-          ),
-        ],
-      );
-      addTearDown(router.dispose);
-      await tester.pumpWidget(
-        MaterialApp.router(
-          localizationsDelegates: const [AppLocalizations.delegate],
-          routerConfig: router,
+    await tester.runAsync(
+      () => seedWith({
+        'n1': seededNetwork(
+          proxyNetworks: [
+            ProxyNetwork(cidr: '10.0.0.0/24', allow: const ['10.0.0.1']),
+          ],
         ),
+      }),
+    );
+    await pumpEditor(tester);
+
+    await switchTab(tester, strings.networkAdvanced);
+    await expandSection(tester, strings.advancedRouting);
+    expect(find.text('10.0.0.0/24'), findsOneWidget);
+
+    await typeInto(
+      tester,
+      strings.advancedSubnetProxy,
+      '10.0.0.0/24->10.1.0.0/24',
+    );
+
+    final proxy = controller.working.value!.proxyNetworks.single;
+    expect(proxy.cidr, '10.0.0.0/24');
+    expect(proxy.mappedCidr, '10.1.0.0/24');
+    // The rewritten line keeps the allow list the CIDR already had.
+    expect(proxy.allow, ['10.0.0.1']);
+  });
+
+  testWidgets('enabling the VPN portal generates a key and an address', (
+    tester,
+  ) async {
+    await tester.runAsync(seedNetworks);
+    await pumpEditor(tester);
+
+    await switchTab(tester, strings.networkAdvanced);
+    await expandSection(tester, strings.advancedVpnPortal);
+
+    await tapSaving(tester, find.text(strings.advancedEnableVpnPortal));
+
+    final portal = controller.working.value!.vpnPortal!;
+    expect(portal.enabled, isTrue);
+    expect(portal.wireguardPrivateKey, isNotNull);
+    expect(find.text('0.0.0.0:22022'), findsWidgets);
+  });
+
+  testWidgets('the tuning dropdowns use the algorithm names', (tester) async {
+    await tester.runAsync(seedNetworks);
+    await pumpEditor(tester);
+    await switchTab(tester, strings.networkAdvanced);
+    await expandSection(tester, strings.advancedTuning);
+
+    // The closed dropdown shows the chosen algorithm's name.
+    expect(find.text('AES-128-GCM'), findsOneWidget);
+    expect(find.text(strings.advancedCompressionNone), findsOneWidget);
+
+    await tester.runAsync(() async {
+      controller.update(
+        (n) => n.flags.encryptionAlgorithm = EncryptionAlgorithm.chacha20,
       );
-      await tester.pumpAndSettle();
-    }
-
-    Future<void> goBack(WidgetTester tester) async {
-      await tester.tap(find.byType(BackButton));
-      await tester.pumpAndSettle();
-    }
-
-    testWidgets('valid edits leave without asking', (tester) async {
-      await pumpRoutedEditor(tester);
-      await type(tester, 'Network Name', 'gamma');
-      await goBack(tester);
-
-      expect(find.text('Discard invalid changes?'), findsNothing);
-      expect(find.text('Home'), findsOneWidget);
+      await saved.settled();
     });
+    await tester.pump(const Duration(milliseconds: 100));
+    expect(find.text('ChaCha20-Poly1305'), findsOneWidget);
 
-    testWidgets('asks before discarding, and can keep editing', (tester) async {
-      await pumpRoutedEditor(tester);
-      await type(tester, 'Network Name', 'beta');
-
-      await goBack(tester);
-      expect(find.text('Discard invalid changes?'), findsOneWidget);
-      await tester.tap(find.text('Keep Editing'));
-      await tester.pumpAndSettle();
-      expect(find.text('Edit alpha'), findsOneWidget);
-      expect(find.text('Network name already exists'), findsOneWidget);
-
-      await goBack(tester);
-      await tester.tap(find.text('Discard'));
-      await tester.pumpAndSettle();
-      expect(find.text('Home'), findsOneWidget);
-      expect(networks.value['n1']!.networkName, 'alpha');
+    await tester.runAsync(() async {
+      controller.update(
+        (n) => n.flags.compressionAlgorithm = CompressionAlgorithm.zstd,
+      );
+      await saved.settled();
     });
+    await tester.pump(const Duration(milliseconds: 100));
+    expect(find.text('Zstandard'), findsOneWidget);
+    expect(find.text('ChaCha20-Poly1305'), findsOneWidget);
+  });
 
-    testWidgets('also asks for invalid input on the other tab', (tester) async {
-      await pumpRoutedEditor(tester);
-      await openAdvanced(tester);
-      await type(tester, 'MTU', '1');
-      await tester.tap(find.text('Basic'));
-      await tester.pumpAndSettle();
+  testWidgets('the SOCKS5 field hints at its shape', (tester) async {
+    await tester.runAsync(seedNetworks);
+    await pumpEditor(tester);
+    await switchTab(tester, strings.networkAdvanced);
 
-      await goBack(tester);
-      expect(find.text('Discard invalid changes?'), findsOneWidget);
-    });
+    expect(find.text('socks5://host:port'), findsOneWidget);
+  });
+
+  testWidgets('a peer and a listener can be deleted', (tester) async {
+    await tester.runAsync(
+      () => seedWith({
+        'n1': seededNetwork(
+          nodes: [
+            Node(
+              id: 'peer-a',
+              url: Uri.parse('relay.example.com'),
+              port: 11010,
+              protocols: const [NodeProtocol.tcp],
+            ),
+          ],
+          listeners: [Uri.parse('tcp://0.0.0.0:11010')],
+        ),
+      }),
+    );
+    await pumpEditor(tester);
+
+    await tapSaving(tester, find.byTooltip(strings.networkDeletePeer));
+    expect(find.text('peer-a'), findsNothing);
+    expect(controller.nodes.value, isEmpty);
+
+    await switchTab(tester, strings.networkAdvanced);
+    await tapSaving(tester, find.byTooltip(strings.networkDeleteListener));
+
+    expect(find.text('tcp://0.0.0.0:11010'), findsNothing);
+    expect(controller.listeners.value, isEmpty);
+  });
+
+  testWidgets('an untouched editor never asks on a tab switch', (tester) async {
+    await tester.runAsync(seedNetworks);
+    await pumpEditor(tester);
+
+    await switchTab(tester, strings.networkAdvanced);
+    await switchTab(tester, strings.networkBasic);
+
+    expect(find.text(strings.networkDiscardTitle), findsNothing);
+    // Nothing was touched, so there is no invalid input to discard.
+    expect(hasInvalidInput(editorGuardKey('n1')), isFalse);
+  });
+
+  testWidgets('peer rows show protocol chips, not endpoint URLs', (tester) async {
+    await tester.runAsync(
+      () => seedWith({
+        'n1': seededNetwork(
+          nodes: [
+            Node(
+              id: 'peer-a',
+              url: Uri.parse('relay.example.com'),
+              port: 11010,
+              protocols: const [NodeProtocol.tcp],
+            ),
+          ],
+        ),
+      }),
+    );
+    await pumpEditor(tester);
+
+    expect(find.text('peer-a'), findsOneWidget);
+    expect(find.textContaining('relay.example.com'), findsNothing);
+    expect(find.text('TCP'), findsOneWidget);
+
+    final colors = Theme.of(tester.element(find.text('TCP'))).colorScheme;
+    final chip = tester.widget<Badge>(
+      find.ancestor(of: find.text('TCP'), matching: find.byType(Badge)),
+    );
+    expect(chip.backgroundColor, colors.secondaryContainer);
+    expect(chip.textColor, colors.onSecondaryContainer);
+    expect(chip.backgroundColor, isNot(colors.error));
+  });
+
+  testWidgets('the peer and listener footers are labeled, end aligned', (
+    tester,
+  ) async {
+    await tester.runAsync(seedNetworks);
+    await pumpEditor(tester);
+
+    expect(find.text(strings.networkAddPeer), findsOneWidget);
+    expect(find.text(strings.bookmarksFromBookmarks), findsOneWidget);
+    expect(
+      find.ancestor(
+        of: find.text(strings.networkAddPeer),
+        matching: find.byWidgetPredicate(
+          (widget) =>
+              widget is Align &&
+              widget.alignment == AlignmentDirectional.centerEnd,
+        ),
+      ),
+      findsWidgets,
+    );
+
+    await switchTab(tester, strings.networkAdvanced);
+
+    expect(
+      find.text(strings.networkAddListeners(strings.networkListeners)),
+      findsOneWidget,
+    );
+
+    await expandSection(tester, strings.advancedMappedListeners);
+
+    expect(
+      find.text(
+        strings.networkAddListeners(strings.advancedMappedListeners),
+      ),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('the public key is read-only and copyable', (tester) async {
+    await tester.runAsync(seedNetworks);
+    await pumpEditor(tester);
+    await switchTab(tester, strings.networkAdvanced);
+    await tapSaving(tester, find.text(strings.advancedSecureMode));
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 50)),
+    );
+    await tester.pumpAndSettle();
+    final publicKey = controller.working.value!.secureMode!.localPublicKey!;
+    expect(publicKey, isNotEmpty);
+
+    final publicKeyField = tester.widget<TextField>(
+      find.descendant(
+        of: field(strings.advancedPublicKey),
+        matching: find.byType(TextField),
+      ),
+    );
+    expect(publicKeyField.readOnly, isTrue);
+    expect(publicKeyField.enabled, isTrue);
+    expect(publicKeyField.controller!.text, publicKey);
+    expect(find.byTooltip(strings.advancedShowPublicKey), findsOneWidget);
+
+    final calls = <MethodCall>[];
+    tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+      SystemChannels.platform,
+      (call) async {
+        calls.add(call);
+        return null;
+      },
+    );
+    addTearDown(
+      () => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+        SystemChannels.platform,
+        null,
+      ),
+    );
+
+    await tester.tap(find.byTooltip(strings.advancedCopyPublicKey));
+    await tester.pumpAndSettle();
+
+    final copied = [
+      for (final call in calls)
+        if (call.method == 'Clipboard.setData')
+          (call.arguments as Map<Object?, Object?>)['text'],
+    ];
+    expect(copied, contains(publicKey), reason: 'clipboard calls: $calls');
+    expect(find.text(strings.advancedPublicKeyCopied), findsOneWidget);
+  });
+
+  testWidgets('valid edits leave silently', (tester) async {
+    await tester.runAsync(seedNetworks);
+    await pumpEditor(tester);
+    await typeInto(tester, strings.networkName, 'renamed');
+
+    final result = confirmLeavingPage(pageContext, editorGuardKey('n1'));
+    await tester.pumpAndSettle();
+
+    expect(find.text(strings.networkDiscardTitle), findsNothing);
+    expect(await result, isTrue);
+  });
+
+  testWidgets('invalid input asks, and can keep editing', (tester) async {
+    await tester.runAsync(seedNetworks);
+    await pumpEditor(tester);
+    await tester.enterText(field(strings.networkName), '');
+    await tester.pumpAndSettle();
+
+    final result = confirmLeavingPage(pageContext, editorGuardKey('n1'));
+    await tester.pumpAndSettle();
+    expect(find.text(strings.networkDiscardTitle), findsOneWidget);
+
+    await tester.tap(find.text(strings.networkKeepEditing));
+    await tester.pumpAndSettle();
+
+    expect(await result, isFalse);
+    expect(find.text(strings.networkBasic), findsOneWidget);
+  });
+
+  testWidgets('invalid input on the other tab blocks too', (tester) async {
+    await tester.runAsync(seedNetworks);
+    await pumpEditor(tester);
+    await switchTab(tester, strings.networkAdvanced);
+    await tester.enterText(field(strings.advancedSocks5Proxy), 'nope');
+    await tester.pumpAndSettle();
+    expect(find.text(strings.validationSocks), findsOneWidget);
+    await switchTab(tester, strings.networkBasic);
+    expect(find.text(strings.validationSocks), findsNothing);
+
+    final result = confirmLeavingPage(pageContext, editorGuardKey('n1'));
+    await tester.pumpAndSettle();
+    expect(find.text(strings.networkDiscardTitle), findsOneWidget);
+
+    await tester.tap(find.text(strings.networkDiscard));
+    await tester.pumpAndSettle();
+
+    expect(await result, isTrue);
   });
 }

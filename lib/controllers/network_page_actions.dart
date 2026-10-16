@@ -1,183 +1,200 @@
-part of 'network_page_controller.dart';
+import 'dart:io';
 
+import 'package:file_picker/file_picker.dart';
+import 'package:signals/signals.dart';
+import 'package:uuid/uuid.dart';
+
+import '../bindings/easytier_ffi_native.dart' show parseConfig;
+import '../models/models.dart';
+import '../signals/instance_logs.dart';
+import '../signals/locale.dart';
+import '../signals/networks.dart' as saved;
+import '../utils/easytier_config_parser.dart';
+import '../utils/validator.dart';
+import 'network_instance_controller.dart';
+import 'network_page_controller.dart';
+
+part 'network_creator_controller.dart';
+part 'network_page_import.dart';
+
+/// The actions the networks list and its detail pane invoke.
+///
+/// An extension, so the controller's state stays one job per file and the
+/// actions only reach it through the controller's own API.
 extension NetworkPageActions on NetworkPageController {
+  /// Opens the create-network page.
   void createManually() => navigate('/networks/create', null);
 
-  Future<void> importFromFile() async {
-    try {
-      final result = await FilePicker.pickFiles(
-        type: FileType.custom,
-        allowedExtensions: ['toml'],
-        dialogTitle: l10n.value.controllerSelectConfig,
-      );
+  /// Opens the instance page while [id] runs, else its editor: what the wide
+  /// layout's detail pane shows, reached by route on narrow windows.
+  void openDetail(String id) => navigate(
+    instances.value.containsKey(id) ? 'network-instance' : 'network-edit',
+    id,
+  );
 
-      if (result.isEmpty) return;
-
-      final file = result.first;
-      if (file.path == null) {
-        showMessage(l10n.value.controllerFileUnavailable);
-        return;
-      }
-
-      final content = await File(file.path!).readAsString();
-      // Imported files are untrusted: let EasyTier reject invalid configs.
-      native.parseConfig(content);
-      final network = parseEasyTierConfig(content);
-
-      final error =
-          validateNetworkName(network.networkName, networkNames()) ??
-          validateNetwork(network);
-      if (error != null) {
-        showMessage(
-          l10n.value.controllerImportInvalid(network.networkName, error),
-        );
-        return;
-      }
-
-      await addNetwork(const Uuid().v4(), network);
-    } catch (e) {
-      showMessage(l10n.value.controllerImportFailed(e.toString()));
-    }
-  }
-
-  void scanQrCode() => showMessage(l10n.value.controllerQrComing);
-
-  void openInNewRoute(String id) {
-    final network = networks.value[id];
-    if (network == null || transitions.value[id] == InstanceStatus.starting) {
-      return;
-    }
-    navigate(
-      instances.value.containsKey(id) ? 'network-instance' : 'network-edit',
-      id,
-    );
-  }
-
-  void edit(String id) {
-    final network = networks.value[id];
-    if (network == null ||
-        instances.value.containsKey(id) ||
-        transitions.value[id] == InstanceStatus.starting) {
+  /// Opens the editor of [id], unless it is running or starting.
+  ///
+  /// On wide windows the detail pane is the editor, so it only selects; narrow
+  /// windows navigate to the route.
+  Future<void> edit(String id) async {
+    if (instances.value.containsKey(id)) return;
+    if (transitions.value[id] == NetworkTransition.starting) return;
+    if (_paneIsOpen) {
+      await select(id);
       return;
     }
     navigate('network-edit', id);
   }
 
-  void log(String id) {
-    if (instances.value.containsKey(id)) navigate('network-logs', id);
+  /// Opens the log view of [id], which only exists while it runs.
+  ///
+  /// On wide windows the detail pane is the instance page, so it selects the
+  /// network and switches the pane to its logs tab; narrow windows navigate.
+  Future<void> log(String id) async {
+    if (!instances.value.containsKey(id)) return;
+    if (_paneIsOpen) {
+      if (await select(id)) instanceTab.value = InstanceTab.logs;
+      return;
+    }
+    navigate('network-logs', id);
   }
 
+  /// Selects [id], asking first when the editor that is leaving holds invalid
+  /// input. Exactly one prompt per selection change.
+  ///
+  /// The wide detail pane always shows a network, so clearing the selection is
+  /// a no-op there: a rebuilt list that re-emits "nothing selected" must not
+  /// drop the pane or prompt to discard.
+  Future<bool> select(String? id) async {
+    if (id == null && _paneIsOpen) return true;
+    if (id == selectedId.value) return true;
+    if ((invalidInput?.call() ?? false) && !await confirmDiscard()) return false;
+    selectedId.value = id;
+    return true;
+  }
+
+  /// Whether the list is beside its detail pane.
+  bool get _paneIsOpen => isWide?.call() ?? false;
+
+  /// Moves the network at [oldIndex] to [newIndex].
   Future<void> reorder(int oldIndex, int newIndex) async {
     try {
-      await reorderNetworks(oldIndex, newIndex);
+      await saved.reorderNetworks(oldIndex, newIndex);
     } catch (_) {
-      if (!_disposed) showMessage(l10n.value.controllerReorderFailed);
+      showMessage(l10n.value.controllerReorderFailed);
     }
   }
 
-  Future<void> toggle(String id, bool running) async {
-    final network = networks.value[id];
+  /// Starts [id] when [start], else stops it.
+  ///
+  /// A `failed` marker does not block a retry: the request is over, and the
+  /// card keeps its toggle enabled so the user can try again.
+  Future<void> toggle(String id, bool start) async {
+    final network = saved.networks.peek()[id];
+    final transition = transitions.value[id];
     if (network == null ||
-        _disposed ||
+        isDisposed ||
         deleting.value.contains(id) ||
         !loaded.value ||
-        error.value != null ||
-        transitions.value[id] == InstanceStatus.starting ||
-        transitions.value[id] == InstanceStatus.stopping) {
+        refreshError.value != null ||
+        transition == NetworkTransition.starting ||
+        transition == NetworkTransition.stopping ||
+        instances.value.containsKey(id) == start) {
       return;
     }
-    if (running == instances.value.containsKey(id)) return;
-
-    final backend = _backend;
-    if (running) {
-      if (backend.maxInstances case final limit?
-          when instances.value.length >= limit) {
-        showMessage(
-          limit == 1
-              ? l10n.value.controllerOneNetwork
-              : l10n.value.controllerNetworkLimit(limit.toString()),
-        );
-        return;
-      }
-      switch (await backend.tunAccess(network)) {
-        case TunAccess.granted:
-          break;
-        case TunAccess.denied:
-          return;
-        case TunAccess.elevationRequired:
-          await showTunPermissionWarning(network);
-          return;
-      }
-      if (_disposed) return;
-    }
-
-    transitions.value[id] = running
-        ? InstanceStatus.starting
-        : InstanceStatus.stopping;
-    transitions.set(transitions.value);
-    try {
-      if (running) {
-        clearInstanceLogs(id);
-        await backend.start(id, network);
-      } else {
-        await backend.stop([network.networkName]);
-        transitions.value.remove(id);
-        transitions.set(transitions.value);
-      }
-    } catch (e) {
-      if (running) {
-        transitions.value[id] = InstanceStatus.failed;
-      } else {
-        transitions.value.remove(id);
-      }
-      transitions.set(transitions.value);
-      if (!_disposed) {
-        showMessage(
-          running
-              ? l10n.value.controllerNetworkRun(
-                  network.networkName,
-                  e.toString(),
-                )
-              : l10n.value.controllerNetworkStop(
-                  network.networkName,
-                  e.toString(),
-                ),
-        );
-      }
-    }
-    if (_active && !_disposed) await refresh();
+    start ? await _start(id, network) : await _stop(id, network);
   }
 
+  /// Confirms, then deletes [id] and stops the instance it may have started.
   Future<void> delete(String id) async {
-    final network = networks.value[id];
-    if (network == null ||
-        _disposed ||
-        transitions.value[id] == InstanceStatus.starting ||
-        transitions.value[id] == InstanceStatus.stopping ||
-        !deleting.value.add(id)) {
-      return;
-    }
-    deleting.set(deleting.value);
+    final network = saved.networks.peek()[id];
+    if (network == null || isDisposed) return;
+    deleting.value = {...deleting.value, id};
     try {
-      if (!await confirmDelete(network) || _disposed) return;
-      // Stop first, including an instance started since the last status refresh.
-      final current = await _backend.collect(Map.of(networks.value));
-      if (_disposed) return;
-      if (current.containsKey(id)) await _backend.stop([network.networkName]);
-      if (_disposed) return;
-      await deleteNetwork(id);
-      clearInstanceLogs(id);
-      instances.value.remove(id);
-      instances.set(instances.value);
-      transitions.value.remove(id);
-      transitions.set(transitions.value);
-    } catch (_) {
-      if (!_disposed) {
-        showMessage(l10n.value.controllerDeleteFailed(network.networkName));
+      if (!await confirmDelete(network)) return;
+      // An instance may have started since the last refresh.
+      if ((await activeBackend.collect({id: network}))[id] != null) {
+        await activeBackend.stop([network.networkName]);
       }
+      await saved.deleteNetwork(id);
+      clearInstanceLogs(id);
+      instances.value = {...instances.value}..remove(id);
+      transitions.value = {...transitions.value}..remove(id);
+    } catch (_) {
+      showMessage(l10n.value.controllerDeleteFailed(network.networkName));
     } finally {
-      deleting.value.remove(id);
-      deleting.set(deleting.value);
+      deleting.value = {...deleting.value}..remove(id);
     }
   }
+
+  /// Imports a TOML config the user picked as a new network.
+  Future<void> importFromFile() async {
+    final picked = await readPickedConfig(pickConfig, showMessage);
+    if (picked == null) return;
+    try {
+      final network = parseImportedConfig(picked.content, validateConfig);
+      await saved.addNetwork(const Uuid().v4(), network);
+    } on _InvalidConfig catch (error) {
+      showMessage(l10n.value.controllerImportInvalid(picked.name, error.message));
+    } catch (error) {
+      showMessage(l10n.value.controllerImportFailed('$error'));
+    }
+  }
+
+  Future<void> _start(String id, Network network) async {
+    final limit = activeBackend.maxInstances;
+    if (limit != null && instances.value.length >= limit) {
+      showMessage(
+        limit == 1
+            ? l10n.value.controllerOneNetwork
+            : l10n.value.controllerNetworkLimit('$limit'),
+      );
+      return;
+    }
+    switch (await activeBackend.tunAccess(network)) {
+      case TunAccess.denied:
+        return;
+      case TunAccess.elevationRequired:
+        await showTunPermissionWarning(network);
+        return;
+      case TunAccess.granted:
+        break;
+    }
+    if (isDisposed) return;
+    transitions.value = {...transitions.value, id: NetworkTransition.starting};
+    clearInstanceLogs(id);
+    try {
+      await activeBackend.start(id, network);
+    } catch (error) {
+      transitions.value = {...transitions.value, id: NetworkTransition.failed};
+      showMessage(
+        l10n.value.controllerNetworkRun(network.networkName, '$error'),
+      );
+    }
+    await _refreshWhenActive();
+  }
+
+  Future<void> _stop(String id, Network network) async {
+    transitions.value = {...transitions.value, id: NetworkTransition.stopping};
+    try {
+      await activeBackend.stop([network.networkName]);
+    } catch (error) {
+      transitions.value = {...transitions.value}..remove(id);
+      showMessage(
+        l10n.value.controllerNetworkStop(network.networkName, '$error'),
+      );
+    }
+    await _refreshWhenActive();
+  }
+
+  Future<void> _refreshWhenActive() async {
+    if (active && !isDisposed) await refresh();
+  }
+}
+
+/// A picked config that EasyTier or the editor's rules reject.
+class _InvalidConfig implements Exception {
+  _InvalidConfig(this.message);
+
+  final String message;
 }

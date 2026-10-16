@@ -1,192 +1,173 @@
 import 'dart:async';
-import 'dart:io';
 
-import 'package:file_picker/file_picker.dart';
-import 'package:material_ui/material_ui.dart';
 import 'package:signals/signals.dart';
-import 'package:uuid/uuid.dart';
 
 import '../backend/backend.dart';
-import '../bindings/easytier_ffi_native.dart' as native;
 import '../models/models.dart';
-import '../signals/locale.dart';
-import 'network_instance_controller.dart';
-import '../signals/backend.dart';
+import '../signals/backend.dart' as backends;
 import '../signals/instance_logs.dart';
-import '../signals/networks.dart';
-import '../utils/easytier_config_parser.dart';
-import '../utils/validator.dart';
+import '../signals/locale.dart';
+import '../signals/networks.dart' as saved;
 import '../widgets/network_card/network_card_data.dart';
+import 'network_instance_controller.dart';
+import 'network_page_actions.dart';
 
-part 'network_page_actions.dart';
+export 'network_page_actions.dart';
 
+part 'network_page_refresh.dart';
+
+/// Where a network is in the middle of a start or stop request.
+enum NetworkTransition { starting, stopping, failed }
+
+/// Navigates: to the absolute [route] when [id] is null, else to the named
+/// [route] with that network [id].
+typedef NetworkNavigator = void Function(String route, String? id);
+
+/// A config file the user picked to import.
+class PickedConfig {
+  const PickedConfig({required this.name, required this.content});
+
+  /// File name, as a failed import reports it.
+  final String name;
+
+  /// The file's TOML content.
+  final String content;
+}
+
+/// Controller of the networks list, and of the editor it shows beside it on
+/// wide windows.
+///
+/// It owns every signal the page reads as a small primitive ([refreshing],
+/// [loaded], [refreshError], an instance per id in [instances], a transition per
+/// id in [transitions]) and derives the row data the list binds in [cards]. The
+/// actions it invokes with live in `network_page_actions.dart`.
 class NetworkPageController {
   NetworkPageController({
     required this.navigate,
     required this.showMessage,
     required this.confirmDelete,
     required this.showTunPermissionWarning,
-    NetworkBackend? backend,
+    this.backend,
     this.refreshInterval = const Duration(seconds: 10),
-  }) : _injected = backend {
-    _unsubscribe = effect(() {
-      networks.value;
-      _backend; // Refresh when the user switches backends too.
-      if (_active) unawaited(refresh());
-    });
-  }
-
-  final void Function(String route, String? id) navigate;
-  final ValueChanged<String> showMessage;
-  final Future<bool> Function(Network) confirmDelete;
-  final Future<void> Function(Network) showTunPermissionWarning;
-  final Duration refreshInterval;
-  final Map<String, Key> _keys = {};
-
-  /// The backend to use instead of the active one, such as in tests.
-  final NetworkBackend? _injected;
-  late final void Function() _unsubscribe;
-  Timer? _timer;
-  bool _active = false;
-  bool _disposed = false;
-
-  final instances = signal<Map<String, Instance>>({});
-  final transitions = signal<Map<String, InstanceStatus>>({});
-  final deleting = signal<Set<String>>({});
-  final refreshing = signal(false);
-  final loaded = signal(false);
-  final refreshError = signal<String?>(null);
-  final selectedNetwork = signal<String?>(null);
-
-  /// Tab of the selected running network, when it is shown beside the list.
-  /// The shown page keeps it in sync with the user's own tab switches.
-  final selectedTab = signal(InstanceTab.peers);
-
-  late final error = computed(() => refreshError.value);
-  late final selectedNetworkRunning = computed(
-    () =>
-        selectedNetwork.value != null &&
-        instances.value.containsKey(selectedNetwork.value),
-  );
-
-  late final cards = computed(() {
-    final saved = networks.value;
-    _keys.removeWhere((key, _) => !saved.containsKey(key));
-
-    // Auto-select first network if none selected and cards exist
-    if (saved.isNotEmpty && selectedNetwork.value == null) {
-      selectedNetwork.value = saved.keys.first;
-    } else if (saved.isEmpty) {
-      selectedNetwork.value = null;
-    } else if (selectedNetwork.value != null &&
-        !saved.containsKey(selectedNetwork.value)) {
-      // Selected network was deleted, select first available
-      selectedNetwork.value = saved.keys.first;
-    }
-
-    return [for (final entry in saved.entries) _card(entry.key, entry.value)];
+    this.isWide,
+    this.invalidInput,
+    this.confirmDiscardDialog,
+    this.pickConfig,
+    this.validateConfig,
   });
 
-  late final hasRunningNetwork = computed(() => instances.value.isNotEmpty);
+  final NetworkNavigator navigate;
+  final void Function(String message) showMessage;
+  final Future<bool> Function(Network network) confirmDelete;
+  final Future<void> Function(Network network) showTunPermissionWarning;
 
-  NetworkBackend get _backend => _injected ?? backend.value;
+  /// Whether the list is showing beside a detail pane, so its rows act on the
+  /// pane instead of navigating. The page injects this from its layout.
+  final bool Function()? isWide;
 
-  Key keyForIndex(int index) =>
-      _keys.putIfAbsent(networks.value.keys.elementAt(index), UniqueKey.new);
+  /// A backend to use instead of the app's active one, for tests.
+  final NetworkBackend? backend;
+  final Duration refreshInterval;
 
-  void selectNetwork(String id, {InstanceTab tab = InstanceTab.peers}) {
-    batch(() {
-      selectedNetwork.value = id;
-      selectedTab.value = tab;
-    });
-  }
+  /// Whether the editor the list would leave holds invalid input. The page
+  /// looks the editor's live form up.
+  final bool Function()? invalidInput;
 
-  NetworkCardData _card(String id, Network network) {
-    final instance = instances.value[id];
-    final transition = transitions.value[id];
-    final busy =
-        deleting.value.contains(id) ||
-        transition == InstanceStatus.starting ||
-        transition == InstanceStatus.stopping;
-    final running = instance != null;
+  /// Asks the user before invalid input is discarded; the page shows the
+  /// dialog. Null means every change is allowed.
+  final Future<bool> Function()? confirmDiscardDialog;
 
-    // Some backends run a limited number of instances, like Android's VPN.
-    final limitReached =
-        !running &&
-        switch (_backend.maxInstances) {
-          final limit? => instances.value.length >= limit,
-          null => false,
-        };
+  /// Picks a config file to import, for tests. Null uses the file picker.
+  final Future<PickedConfig?> Function()? pickConfig;
 
-    return NetworkCardData(
-      id: id,
-      name: network.networkName,
-      status:
-          transition ??
-          (error.value != null || !loaded.value
-              ? InstanceStatus.unknown
-              : instance?.status ?? InstanceStatus.stopped),
-      running: running,
-      busy: busy,
-      onOpen: () => selectNetwork(id),
-      onEdit: () => edit(id),
-      onLog: () => log(id),
-      onDelete: () => delete(id),
-      onToggle: busy || error.value != null || !loaded.value || limitReached
-          ? null
-          : (value) => toggle(id, value),
-    );
-  }
+  /// Validates a config before it is parsed, for tests. Null uses EasyTier.
+  final void Function(String config)? validateConfig;
 
-  void setActive(bool active) {
-    if (_disposed || _active == active) return;
-    _active = active;
-    _timer?.cancel();
-    if (active) {
-      unawaited(refresh());
-      _timer = Timer.periodic(refreshInterval, (_) {
-        if (hasRunningNetwork.peek()) {
-          unawaited(refresh());
-        }
-      });
-    }
-  }
+  /// Running instances, keyed by network id, as of the last refresh.
+  final Signal<Map<String, Instance>> instances = signal(const {});
 
-  Future<void> refresh() async {
-    if (_disposed || refreshing.value) return;
-    refreshing.value = true;
-    try {
-      final snapshot = Map<String, Network>.of(networks.value);
-      final newInstances = await _backend.collect(snapshot);
-      if (_disposed) return;
-      for (final MapEntry(:key, :value) in newInstances.entries) {
-        recordInstanceEvents(key, value.events);
-      }
-      instances.value = newInstances;
-      loaded.value = true;
-      refreshError.value = null;
-      transitions.value.removeWhere(
-        (name, status) =>
-            (status == InstanceStatus.starting &&
-                newInstances.containsKey(name)) ||
-            (status == InstanceStatus.stopping &&
-                !newInstances.containsKey(name)) ||
-            (status == InstanceStatus.failed &&
-                newInstances[name]?.status == InstanceStatus.running),
-      );
-      transitions.set(transitions.value);
-    } catch (e) {
-      if (!_disposed) {
-        refreshError.value = l10n.value.controllerRefresh(e.toString());
-      }
-    } finally {
-      refreshing.value = false;
-    }
-  }
+  /// Start/stop requests that have not settled yet, keyed by network id.
+  final Signal<Map<String, NetworkTransition>> transitions = signal(const {});
+
+  /// Ids whose deletion is in progress.
+  final Signal<Set<String>> deleting = signal(const {});
+
+  /// Whether a refresh is running; the refresh action is disabled meanwhile.
+  final Signal<bool> refreshing = signal(false);
+
+  /// Whether the backend answered at least once.
+  final Signal<bool> loaded = signal(false);
+
+  /// Why the last refresh failed, or null.
+  final Signal<String?> refreshError = signal(null);
+
+  /// The network the detail pane shows, or null when none is selected.
+  final Signal<String?> selectedId = signal(null);
+
+  /// The tab the detail pane's instance page shows.
+  final Signal<InstanceTab> instanceTab = signal(InstanceTab.peers);
+
+  /// Whether the selected network is running, which is what the detail pane
+  /// decides between the instance page and the editor.
+  late final ReadonlySignal<bool> selectionRunning = computed(
+    () => instances.value.containsKey(selectedId.value),
+  );
+
+  /// The rows of the list, in display order.
+  late final ReadonlySignal<List<NetworkCardData>> cards = computed(() {
+    final limit = activeBackend.maxInstances;
+    final limitReached = limit != null && instances.value.length >= limit;
+    final settled = loaded.value && refreshError.value == null;
+    return [
+      for (final MapEntry(:key, value: network) in saved.networks.value.entries)
+        _card(key, network, limitReached: limitReached, settled: settled),
+    ];
+  });
+
+  final List<void Function()> _cleanups = [];
+  bool _disposed = false;
+  bool _active = false;
+  Timer? _timer;
+
+  /// The backend to act on: the injected one, else the app's active one.
+  NetworkBackend get activeBackend => backend ?? backends.backend.value;
+
+  /// Whether this platform and build can run the background service.
+  bool get serviceSupported => backends.serviceControl.supported;
+
+  /// Whether this controller has been disposed.
+  bool get isDisposed => _disposed;
+
+  /// Whether the list is visible in the foreground, so its timer runs.
+  bool get active => _active;
+
+  /// Asks before discarding invalid input, when the page supplied a dialog.
+  Future<bool> confirmDiscard() async =>
+      await confirmDiscardDialog?.call() ?? true;
 
   void dispose() {
     _disposed = true;
+    _active = false;
     _timer?.cancel();
-    _unsubscribe();
+    _timer = null;
+    for (final cleanup in _cleanups) {
+      cleanup();
+    }
+    _cleanups.clear();
+    for (final signal in <ReadonlySignal<Object?>>[
+      instances,
+      transitions,
+      deleting,
+      refreshing,
+      loaded,
+      refreshError,
+      selectedId,
+      instanceTab,
+      selectionRunning,
+      cards,
+    ]) {
+      signal.dispose();
+    }
   }
+
 }

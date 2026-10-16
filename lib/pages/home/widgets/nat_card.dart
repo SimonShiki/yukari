@@ -6,130 +6,120 @@ import '../../../controllers/home_controller.dart';
 import '../../../l10n/l10n.dart';
 import '../../../models/peer.dart';
 import 'dashboard_card.dart';
+import 'dashboard_skeleton.dart';
+import 'dashboard_value.dart';
 
-/// How readily peers behind a NAT type connect to this device directly,
-/// rather than through relays.
-enum _Ease {
-  easy(Icons.bolt_rounded),
-  fair(Icons.swap_horiz_rounded),
-  hard(Icons.alt_route_rounded),
-  unknown(Icons.help_outline_rounded);
-
-  const _Ease(this.icon);
-
-  final IconData icon;
-  String summary(BuildContext context) => switch (this) {
-    easy => context.l10n.homeP2pEasy,
-    fair => context.l10n.homeP2pFair,
-    hard => context.l10n.homeP2pHard,
-    unknown => context.l10n.homeP2pUnknown,
-  };
-
-  Color color(ColorScheme colors) => switch (this) {
-    easy => colors.primary,
-    fair => colors.tertiary,
-    hard => colors.error,
-    unknown => colors.onSurfaceVariant,
-  };
-}
-
-/// How this device's NAT treats UDP, and so how readily peers connect to it
-/// directly.
+/// The NAT type EasyTier or STUN reported, and what it means for P2P.
 class NatCard extends StatelessWidget {
   const NatCard({super.key, required this.controller});
 
   final HomeController controller;
 
-  /// The type's name, how it behaves, and what that means for P2P.
-  static (String, String, _Ease) _describe(
-    BuildContext context,
-    NatType type,
-  ) => switch (type) {
-    NatType.unknown => (
-      context.l10n.homeNatUnknown,
-      context.l10n.homeNatUnknownDescription,
-      _Ease.unknown,
-    ),
-    NatType.openInternet => (
-      context.l10n.homeNatOpenInternet,
-      context.l10n.homeNatOpenInternetDescription,
-      _Ease.easy,
-    ),
-    NatType.noPat => (
-      context.l10n.homeNatNoPat,
-      context.l10n.homeNatNoPatDescription,
-      _Ease.easy,
-    ),
-    NatType.fullCone => (
-      context.l10n.homeNatFullCone,
-      context.l10n.homeNatFullConeDescription,
-      _Ease.easy,
-    ),
-    NatType.restricted => (
-      context.l10n.homeNatRestricted,
-      context.l10n.homeNatRestrictedDescription,
-      _Ease.easy,
-    ),
-    NatType.portRestricted => (
-      context.l10n.homeNatPortRestricted,
-      context.l10n.homeNatPortRestrictedDescription,
-      _Ease.fair,
-    ),
-    NatType.symmetricEasyIncrement || NatType.symmetricEasyDecrement => (
-      context.l10n.homeNatPredictableSymmetric,
-      context.l10n.homeNatPredictableSymmetricDescription,
-      _Ease.fair,
-    ),
-    NatType.symmetric => (
-      context.l10n.homeNatSymmetric,
-      context.l10n.homeNatSymmetricDescription,
-      _Ease.hard,
-    ),
-    NatType.symmetricUdpFirewall => (
-      context.l10n.homeNatSymmetricFirewall,
-      context.l10n.homeNatSymmetricFirewallDescription,
-      _Ease.hard,
-    ),
-  };
-
-  static Widget _report(
-    BuildContext context,
-    NatType type,
-    ColorScheme colors,
-  ) {
-    final (label, behavior, ease) = _describe(context, type);
-    return DashboardValue(
-      value: label,
-      supporting: ease.summary(context),
-      supportingIcon: ease.icon,
-      supportingColor: ease.color(colors),
-      tooltip: behavior,
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    return DashboardCard(
+      shape: Shapes.c6SidedCookie,
+      icon: Icons.router_rounded,
+      title: l10n.homeNatType,
+      trailing: SignalBuilder(
+        builder: (context) {
+          // A type EasyTier reported needs no re-detection.
+          if (controller.natReportedByEasytier.value) {
+            return const SizedBox.shrink();
+          }
+          return DashboardAction(
+            icon: Icons.refresh_rounded,
+            tooltip: l10n.homeDetectAgain,
+            onPressed: controller.probing.value ? null : controller.detectNat,
+          );
+        },
+      ),
+      child: SignalBuilder(
+        builder: (context) {
+          final nat = controller.natType.value;
+          return DashboardValueSwitcher(
+            child: nat == null
+                ? const DashboardSkeleton()
+                : _value(context, l10n, nat),
+          );
+        },
+      ),
     );
   }
 
-  @override
-  Widget build(BuildContext context) => SignalBuilder(
-    builder: (context) {
-      final colors = Theme.of(context).colorScheme;
-      final nat = controller.nat.value;
-      final probing = controller.probing.value;
-      return DashboardCard(
-        icon: Icons.router_rounded,
-        shape: Shapes.c6SidedCookie,
-        title: context.l10n.homeNatType,
-        // EasyTier keeps its report current; the probe needs a rerun.
-        trailing: nat?.reported ?? false
-            ? null
-            : DashboardAction(
-                icon: Icons.refresh_rounded,
-                tooltip: context.l10n.homeDetectAgain,
-                onPressed: probing ? null : controller.detectNat,
-              ),
-        child: switch (nat) {
-          null => const DashboardValue.loading(),
-          (:final type, reported: _) => _report(context, type, colors),
-        },
-      );
-    },
-  );
+  Widget _value(BuildContext context, AppLocalizations l10n, NatType nat) {
+    final p2p = _p2p(context, nat);
+    return DashboardValue(
+      value: _label(l10n, nat),
+      tooltip: _description(l10n, nat),
+      supporting: DashboardSupportingLine(
+        icon: p2p.icon,
+        label: p2p.label,
+        color: p2p.color,
+      ),
+    );
+  }
+}
+
+String _label(AppLocalizations l10n, NatType nat) => switch (nat) {
+  NatType.unknown => l10n.homeNatUnknown,
+  NatType.openInternet => l10n.homeNatOpenInternet,
+  NatType.noPat => l10n.homeNatNoPat,
+  NatType.fullCone => l10n.homeNatFullCone,
+  NatType.restricted => l10n.homeNatRestricted,
+  NatType.portRestricted => l10n.homeNatPortRestricted,
+  NatType.symmetricEasyIncrement ||
+  NatType.symmetricEasyDecrement => l10n.homeNatPredictableSymmetric,
+  NatType.symmetric => l10n.homeNatSymmetric,
+  NatType.symmetricUdpFirewall => l10n.homeNatSymmetricFirewall,
+};
+
+String _description(AppLocalizations l10n, NatType nat) => switch (nat) {
+  NatType.unknown => l10n.homeNatUnknownDescription,
+  NatType.openInternet => l10n.homeNatOpenInternetDescription,
+  NatType.noPat => l10n.homeNatNoPatDescription,
+  NatType.fullCone => l10n.homeNatFullConeDescription,
+  NatType.restricted => l10n.homeNatRestrictedDescription,
+  NatType.portRestricted => l10n.homeNatPortRestrictedDescription,
+  NatType.symmetricEasyIncrement ||
+  NatType.symmetricEasyDecrement => l10n.homeNatPredictableSymmetricDescription,
+  NatType.symmetric => l10n.homeNatSymmetricDescription,
+  NatType.symmetricUdpFirewall => l10n.homeNatSymmetricFirewallDescription,
+};
+
+/// How well peers can reach this device, and how to color that.
+({String label, IconData icon, Color color}) _p2p(
+  BuildContext context,
+  NatType nat,
+) {
+  final l10n = context.l10n;
+  final scheme = Theme.of(context).colorScheme;
+  return switch (nat) {
+    NatType.unknown => (
+      label: l10n.homeP2pUnknown,
+      icon: Icons.help_outline,
+      color: scheme.onSurfaceVariant,
+    ),
+    NatType.openInternet ||
+    NatType.noPat ||
+    NatType.fullCone ||
+    NatType.restricted => (
+      label: l10n.homeP2pEasy,
+      icon: Icons.bolt_rounded,
+      color: scheme.primary,
+    ),
+    NatType.portRestricted ||
+    NatType.symmetricEasyIncrement ||
+    NatType.symmetricEasyDecrement => (
+      label: l10n.homeP2pFair,
+      icon: Icons.swap_horiz_rounded,
+      color: scheme.tertiary,
+    ),
+    NatType.symmetric || NatType.symmetricUdpFirewall => (
+      label: l10n.homeP2pHard,
+      icon: Icons.alt_route_rounded,
+      color: scheme.error,
+    ),
+  };
 }

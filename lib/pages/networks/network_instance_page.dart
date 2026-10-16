@@ -5,10 +5,11 @@ import 'package:signals_flutter/signals_flutter.dart';
 import '../../controllers/network_instance_controller.dart';
 import '../../l10n/l10n.dart';
 import '../../widgets/empty_state/empty_state.dart';
-import 'widgets/instance_logs_tab.dart';
-import 'widgets/instance_peers_tab.dart';
+import 'widgets/instance_tabs.dart';
 
-/// Shows the peers and logs of the running network [id].
+export '../../controllers/network_instance_controller.dart' show InstanceTab;
+
+/// One network's instance: its peers, and its logs.
 class NetworkInstancePage extends StatefulWidget {
   const NetworkInstancePage({
     super.key,
@@ -18,11 +19,16 @@ class NetworkInstancePage extends StatefulWidget {
     this.controller,
   });
 
+  /// Key of the network in the saved network collection.
   final String id;
+
+  /// The tab the route asks for.
   final InstanceTab initialTab;
 
-  /// The shown tab, kept in sync both ways. Takes over [initialTab].
+  /// A signal the list page keeps its detail pane's tab in, kept in sync both
+  /// ways by the controller this page creates.
   final Signal<InstanceTab>? tab;
+
   final NetworkInstanceController? controller;
 
   @override
@@ -30,78 +36,103 @@ class NetworkInstancePage extends StatefulWidget {
 }
 
 class _NetworkInstancePageState extends State<NetworkInstancePage>
-    with SingleTickerProviderStateMixin {
-  late final _controller =
-      widget.controller ?? NetworkInstanceController(id: widget.id);
-  late final AppLifecycleListener _lifecycle;
-  late final _tabs = TabController(
-    length: InstanceTab.values.length,
-    initialIndex: (widget.tab?.peek() ?? widget.initialTab).index,
+    with SingleTickerProviderStateMixin, WidgetsBindingObserver {
+  late final NetworkInstanceController _controller =
+      widget.controller ??
+      NetworkInstanceController(
+        id: widget.id,
+        initialTab: widget.initialTab,
+        tab: widget.tab,
+      );
+  late final TabController _tabs = TabController(
+    length: 2,
     vsync: this,
+    initialIndex: _controller.selectedTab.value.index,
   );
-  void Function()? _unsubscribeTab;
+  late final void Function() _stopTabEffect;
+  bool _foreground = true;
 
   @override
   void initState() {
     super.initState();
-    _lifecycle = AppLifecycleListener(
-      onStateChange: (state) =>
-          _controller.setActive(state == AppLifecycleState.resumed),
-    );
-    _controller.setActive(true);
-    if (widget.tab case final tab?) {
-      _unsubscribeTab = tab.subscribe((tab) => _tabs.animateTo(tab.index));
-      _tabs.addListener(() => tab.value = InstanceTab.values[_tabs.index]);
-    }
+    WidgetsBinding.instance.addObserver(this);
+    _tabs.addListener(_pushTab);
+    // Controller -> widget: the controller owns the selected tab, and the
+    // listener below reports the user's own switches back to it.
+    _stopTabEffect = effect(() {
+      final tab = _controller.selectedTab.value;
+      if (_tabs.index != tab.index) _tabs.index = tab.index;
+    });
+  }
+
+  void _pushTab() => _controller.selectTab(InstanceTab.values[_tabs.index]);
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _syncActive();
   }
 
   @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    _foreground = state == AppLifecycleState.resumed;
+    _syncActive();
+  }
+
+  /// The 2s refresh only runs while the page is in the foreground.
+  void _syncActive() => _controller.setActive(
+    _foreground && (ModalRoute.isCurrentOf(context) ?? false),
+  );
+
+  @override
   void dispose() {
-    _unsubscribeTab?.call();
-    _tabs.dispose();
-    _lifecycle.dispose();
+    WidgetsBinding.instance.removeObserver(this);
     _controller.setActive(false);
+    _stopTabEffect();
+    _tabs.dispose();
     if (widget.controller == null) _controller.dispose();
     super.dispose();
   }
 
   @override
-  Widget build(BuildContext context) => SignalBuilder(
-    builder: (context) {
-      final network = _controller.network.value;
-      if (network == null) {
-        return Scaffold(
-          appBar: AppBar(title: Text(context.l10n.networkTitle)),
-          body: EmptyState(
-            icon: Icons.error_outline,
-            title: context.l10n.networkMissing,
-            message: context.l10n.networkMissingDescription,
-            action: FilledButton(
-              onPressed: () => context.go('/networks'),
-              child: Text(context.l10n.commonGoBack),
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    final missing = _controller.missing.value;
+    return Scaffold(
+      appBar: AppBar(
+        title: SignalBuilder(
+          builder: (context) => Text(
+            missing ? l10n.networkMissing : _controller.name.value,
+          ),
+        ),
+        bottom: missing
+            ? null
+            : TabBar(
+                controller: _tabs,
+                tabs: [
+                  Tab(text: l10n.networkPeers),
+                  Tab(text: l10n.networkLogs),
+                ],
+              ),
+      ),
+      body: missing
+          ? EmptyState(
+              icon: Icons.error_outline,
+              title: l10n.networkMissing,
+              message: l10n.networkMissingDescription,
+              action: FilledButton(
+                onPressed: () => context.go('/networks'),
+                child: Text(l10n.commonGoBack),
+              ),
+            )
+          : TabBarView(
+              controller: _tabs,
+              children: [
+                InstancePeersTab(controller: _controller),
+                InstanceLogsTab(controller: _controller),
+              ],
             ),
-          ),
-        );
-      }
-      return Scaffold(
-        appBar: AppBar(
-          title: Text(network.networkName),
-          bottom: TabBar(
-            controller: _tabs,
-            tabs: [
-              Tab(text: context.l10n.networkPeers),
-              Tab(text: context.l10n.networkLogs),
-            ],
-          ),
-        ),
-        body: TabBarView(
-          controller: _tabs,
-          children: [
-            InstancePeersTab(controller: _controller),
-            InstanceLogsTab(controller: _controller),
-          ],
-        ),
-      );
-    },
-  );
+    );
+  }
+
 }
