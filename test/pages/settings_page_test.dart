@@ -18,7 +18,8 @@ import 'package:yukari/models/models.dart';
 import 'package:yukari/pages/settings/settings_page.dart';
 import 'package:yukari/pages/settings/widgets/switch_backend_dialog.dart';
 import 'package:yukari/signals/backend.dart' as backend_signals;
-import 'package:yukari/signals/locale.dart' as locale_signals;
+import 'package:yukari/signals/settings.dart';
+import 'package:yukari/system/autostart.dart';
 import 'package:yukari/widgets/context_menu/m3e_menu_panel.dart';
 import 'package:yukari/widgets/select_item/select_item.dart';
 
@@ -94,7 +95,7 @@ void main() {
 
   setUp(() => SharedPreferences.setMockInitialValues({}));
 
-  tearDown(() => locale_signals.setPreferredLocale(null));
+  tearDown(() => settings.interface.setLocale(null));
 
   Future<BackendSettingsController> pump(
     WidgetTester tester,
@@ -269,7 +270,7 @@ void main() {
     );
   });
 
-  testWidgets('persists the interface language', (tester) async {
+  testWidgets('picks the interface language', (tester) async {
     await pump(tester, ServiceState.running);
     final row = find.byType(SelectItem<Locale?>);
     expect(row, findsOneWidget);
@@ -293,7 +294,7 @@ void main() {
     await tester.tap(find.text('简体中文').last);
     await tester.pumpAndSettle();
 
-    expect(locale_signals.preferredLocale.value, const Locale('zh'));
+    expect(settings.interface.locale.value, const Locale('zh'));
     expect(
       find.descendant(of: row, matching: find.text('简体中文')),
       findsOneWidget,
@@ -466,5 +467,32 @@ void main() {
       );
       expect(backend_signals.backend.value.kind, BackendKind.ffi);
     });
+  });
+
+  testWidgets('toggles the page swipe and animation', (tester) async {
+    await initSettings(autostart: const UnsupportedAutostart());
+    addTearDown(() => settings.interface.setPageTransitions(true));
+    await pump(tester, ServiceState.running);
+
+    await tester.ensureVisible(find.text('Page swipe and animation'));
+    await tester.pumpAndSettle();
+    expect(
+      find.text(
+        'Swipe between pages on compact layouts, and animate the switch',
+      ),
+      findsOneWidget,
+    );
+    expect(settings.interface.pageTransitions.value, isTrue);
+
+    await tester.tap(find.byType(Switch));
+    await tester.pumpAndSettle();
+    expect(settings.interface.pageTransitions.value, isFalse);
+    final prefs = await SharedPreferences.getInstance();
+    expect(prefs.getBool('interface.pageTransitions'), isFalse);
+
+    // A change made elsewhere shows on the switch.
+    settings.interface.setPageTransitions(true);
+    await tester.pumpAndSettle();
+    expect(tester.widget<Switch>(find.byType(Switch)).value, isTrue);
   });
 }

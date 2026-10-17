@@ -1,23 +1,10 @@
 import 'dart:ui';
 
 import 'package:flutter/widgets.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:signals/signals.dart';
 
 import '../l10n/l10n.dart';
-
-/// Private backing signal for the language the user picked.
-/// Use [preferredLocale] for readonly access and [setPreferredLocale] for
-/// changes.
-final Signal<Locale?> _preferred = signal(null);
-
-/// The language the user picked, or null to follow the system.
-///
-/// **Initialization**: Call [initLocale] once at app startup.
-///
-/// **Mutation**: Use [setPreferredLocale]; the choice persists across
-/// launches.
-ReadonlySignal<Locale?> get preferredLocale => _preferred;
+import 'settings.dart';
 
 final _systemLocales = signal(PlatformDispatcher.instance.locales);
 
@@ -25,7 +12,7 @@ final _systemLocales = signal(PlatformDispatcher.instance.locales);
 /// language, else English.
 final appLocale = computed(
   () =>
-      _preferred.value ??
+      settings.interface.locale.value ??
       basicLocaleListResolution(
         _systemLocales.value,
         AppLocalizations.supportedLocales,
@@ -36,31 +23,15 @@ final appLocale = computed(
 /// Widgets use `context.l10n` instead.
 final l10n = computed(() => lookupAppLocalizations(appLocale.value));
 
-const _localeKey = 'locale';
+bool _followingSystemLocales = false;
 
-/// Restores the language the user picked and follows system changes.
-Future<void> initLocale() async {
+/// Follows the OS language while the user has not picked one.
+///
+/// Call once at app startup; later calls do nothing.
+void initLocale() {
+  if (_followingSystemLocales) return;
+  _followingSystemLocales = true;
   WidgetsBinding.instance.addObserver(_SystemLocaleObserver());
-  final saved = (await SharedPreferences.getInstance()).getString(_localeKey);
-  _preferred.value = _supported(saved);
-}
-
-/// Shows the app in [locale], or in the system language when null.
-Future<void> setPreferredLocale(Locale? locale) async {
-  _preferred.value = locale;
-  final prefs = await SharedPreferences.getInstance();
-  if (locale == null) {
-    await prefs.remove(_localeKey);
-  } else {
-    await prefs.setString(_localeKey, locale.toLanguageTag());
-  }
-}
-
-Locale? _supported(String? tag) {
-  for (final locale in AppLocalizations.supportedLocales) {
-    if (locale.toLanguageTag() == tag) return locale;
-  }
-  return null;
 }
 
 class _SystemLocaleObserver with WidgetsBindingObserver {

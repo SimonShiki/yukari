@@ -1184,5 +1184,59 @@
       }
     }
   },
-  "settingsLanguageDescription": "The language the app shows"
+  "settingsLanguageDescription": "The language the app shows",
+  "settingsUseSystemColor": "Use system color",
+  "@settingsUseSystemColor": {
+    "description": "Switch that makes the app draw with the system's wallpaper colors"
+  },
+  "settingsUseSystemColorDescription": "Follow the wallpaper palette from the system",
+  "settingsThemeSettings": "Theme settings",
+  "@settingsThemeSettings": {
+    "description": "Title of the theming page, also the label of the settings row that opens it"
+  },
+  "settingsThemeSettingsDescription": "Customize more theme options",
+  "settingsPageTransitions": "Page swipe and animation",
+  "@settingsPageTransitions": {
+    "description": "Switch that allows swiping between top pages on compact layouts and animating the switch"
+  },
+  "settingsPageTransitionsDescription": "Swipe between pages on compact layouts, and animate the switch",
+  "settingsBehavior": "Behavior",
+  "@settingsBehavior": {
+    "description": "Settings section that holds what the app does around launch"
+  },
+  "settingsStartOnBoot": "Start on boot",
+  "@settingsStartOnBoot": {
+    "description": "Switch that launches the app when the user signs in"
+  },
+  "settingsStartOnBootDescription": "Launch Yukari when you sign in",
+  "themingPalette": "Color scheme",
+  "themingMode": "Appearance",
+  "themingModeSystem": "System",
+  "themingModeLight": "Light",
+  "themingModeDark": "Dark",
+  "themingModeOled": "OLED",
+  "themingVariant": "Color style",
+  "themingVariantDescription": "How the seed color shapes the palette",
+  "themingPaletteDeepPurple": "Deep purple",
+  "@themingPaletteDeepPurple": {
+    "description": "Accessibility label of a color scheme preset"
+  },
+  "themingPaletteBlue": "Blue",
+  "themingPaletteTeal": "Teal",
+  "themingPaletteGreen": "Green",
+  "themingPaletteAmber": "Amber",
+  "themingPaletteOrange": "Orange",
+  "themingPalettePink": "Pink",
+  "themingPaletteRed": "Red",
+  "themingVariantTonalSpot": "Tonal spot",
+  "@themingVariantTonalSpot": {
+    "description": "Name of a generated color scheme variant"
+  },
+  "themingVariantVibrant": "Vibrant",
+  "themingVariantFidelity": "Fidelity",
+  "themingVariantExpressive": "Expressive",
+  "themingVariantMonochrome": "Monochrome",
+  "themingVariantNeutral": "Neutral",
+  "themingVariantRainbow": "Rainbow",
+  "themingVariantFruitSalad": "Fruit salad"
 }

@@ -2,40 +2,29 @@ import 'package:flutter/foundation.dart'
     show TargetPlatform, defaultTargetPlatform;
 import 'package:material_ui/material_ui.dart';
 import 'package:m3e_core/m3e_core.dart';
-import 'package:signals/signals.dart';
 
-const Color _defaultSeedColor = Colors.deepPurple;
+import '../models/theme.dart';
 
-/// Global theme preference signals.
-///
-/// These signals control the application's visual theme and are directly mutable
-/// by UI components (e.g., settings screens). Direct mutation is intentional
-/// for user preference controls.
+/// The colour [palette] seeds the app's colour scheme with.
+extension ThemePaletteSeed on ThemePalette {
+  Color get seedColor => switch (this) {
+    ThemePalette.deepPurple => Colors.deepPurple,
+    ThemePalette.blue => Colors.blue,
+    ThemePalette.teal => Colors.teal,
+    ThemePalette.green => Colors.green,
+    ThemePalette.amber => Colors.amber,
+    ThemePalette.orange => Colors.orange,
+    ThemePalette.pink => Colors.pink,
+    ThemePalette.red => Colors.red,
+  };
+}
 
-/// Whether to use system dynamic colors (Material You).
-///
-/// **Mutation**: Set directly via `useDynamicColors.value = bool`
-/// **Read**: Access via `useDynamicColors.value` or subscribe in effects
-///
-/// When true, extracts colors from system wallpaper (Android 12+).
-/// When false, uses [_defaultSeedColor] for theme generation.
-final useDynamicColors = signal(true);
-
-/// Current theme mode (light, dark, or system).
-///
-/// **Mutation**: Set directly via `themeMode.value = ThemeMode`
-/// **Read**: Access via `themeMode.value` or subscribe in effects
-///
-/// Use [ThemeMode.system] to follow platform brightness settings.
-final themeMode = signal(ThemeMode.system);
-
-/// Material 3 color variant for theme generation.
-///
-/// **Mutation**: Set directly via `variant.value = M3EColorVariant`
-/// **Read**: Access via `variant.value` or subscribe in effects
-///
-/// Controls the tonal palette variant (neutral, vibrant, expressive, etc.).
-final variant = signal(M3EColorVariant.neutral);
+/// The [ThemeMode] that applies [preference].
+ThemeMode themeModeFor(ThemePreference preference) => switch (preference) {
+  ThemePreference.system => ThemeMode.system,
+  ThemePreference.light => ThemeMode.light,
+  ThemePreference.dark || ThemePreference.oled => ThemeMode.dark,
+};
 
 // See https://github.com/flutter/flutter/issues/103811
 const _windowsFontFamily = 'Segoe UI';
@@ -57,43 +46,64 @@ const _windowsFontFallback = <String>[
   _ => null,
 };
 
-/// Internal theme builder that generates [ThemeData] based on current signals.
+/// Builds the colour scheme the app draws [brightness] with.
 ///
-/// Reacts to [useDynamicColors] and [variant] signals to construct the color scheme.
-/// Called by [getLightTheme] and [getDarkTheme] with the appropriate brightness.
-ThemeData _buildTheme(Brightness brightness, ColorScheme? dynamicColorScheme) {
-  final systemScheme = useDynamicColors.value ? dynamicColorScheme : null;
-  final colorScheme = brightness == Brightness.light
-      ? M3EColorScheme.light(
-          seedColor: _defaultSeedColor,
-          variant: variant.value,
-          systemColorScheme: systemScheme,
-        )
-      : M3EColorScheme.dark(
-          seedColor: _defaultSeedColor,
-          variant: variant.value,
-          systemColorScheme: systemScheme,
-        );
-  final fonts = _fontStackFor(defaultTargetPlatform);
+/// [systemScheme] supplies the OS dynamic colours, and is used only when
+/// [useSystemColor] is true. [ThemePreference.oled] darkens the dark scheme's
+/// surfaces to black.
+ColorScheme buildColorScheme({
+  required Brightness brightness,
+  required ThemePreference mode,
+  required ThemePalette palette,
+  required M3EColorVariant variant,
+  required bool useSystemColor,
+  ColorScheme? systemScheme,
+}) {
+  final scheme = M3EColorScheme.generate(
+    seedColor: palette.seedColor,
+    brightness: brightness,
+    variant: variant,
+    systemColorScheme: useSystemColor ? systemScheme : null,
+  );
+  return mode == ThemePreference.oled && brightness == Brightness.dark
+      ? _oledSurfaces(scheme)
+      : scheme;
+}
 
+/// Builds the app's theme for [brightness] from a set of theme settings.
+///
+/// Pass the OS dynamic schemes from `DynamicColorBuilder` as [systemScheme].
+ThemeData buildTheme({
+  required Brightness brightness,
+  required ThemePreference mode,
+  required ThemePalette palette,
+  required M3EColorVariant variant,
+  required bool useSystemColor,
+  ColorScheme? systemScheme,
+}) {
+  final fonts = _fontStackFor(defaultTargetPlatform);
   return ThemeData(
     useMaterial3: true,
-    colorScheme: colorScheme,
+    colorScheme: buildColorScheme(
+      brightness: brightness,
+      mode: mode,
+      palette: palette,
+      variant: variant,
+      useSystemColor: useSystemColor,
+      systemScheme: systemScheme,
+    ),
     fontFamily: fonts?.family,
     fontFamilyFallback: fonts?.fallback,
   );
 }
 
-/// Build a light theme using current signal values.
-///
-/// Pass system [dynamicColorScheme] if available (Android 12+).
-/// Returns a [ThemeData] that reacts to [useDynamicColors] and [variant] signals.
-ThemeData getLightTheme(ColorScheme? dynamicColorScheme) =>
-    _buildTheme(Brightness.light, dynamicColorScheme);
-
-/// Build a dark theme using current signal values.
-///
-/// Pass system [dynamicColorScheme] if available (Android 12+).
-/// Returns a [ThemeData] that reacts to [useDynamicColors] and [variant] signals.
-ThemeData getDarkTheme(ColorScheme? dynamicColorScheme) =>
-    _buildTheme(Brightness.dark, dynamicColorScheme);
+/// The dark scheme's surface ramp, stepped from pure black for OLED panels.
+ColorScheme _oledSurfaces(ColorScheme scheme) => scheme.copyWith(
+  surface: Colors.black,
+  surfaceDim: Colors.black,
+  surfaceContainerLowest: Colors.black,
+  surfaceContainerLow: const Color(0xFF0A0A0A),
+  surfaceContainer: const Color(0xFF121212),
+  surfaceContainerHigh: const Color(0xFF1A1A1A),
+  surfaceContainerHighest: const Color(0xFF222222),
+);

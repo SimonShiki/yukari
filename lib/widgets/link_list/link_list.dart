@@ -12,11 +12,15 @@ final class LinkListEntry {
     required this.icon,
     required this.label,
     required this.onTap,
+    this.supportingText,
   });
 
   /// The leading icon, a widget so a brand mark that is not an [IconData] fits.
   final Widget icon;
   final String label;
+
+  /// Explains what the link leads to; omitted for a one-line row.
+  final String? supportingText;
   final VoidCallback onTap;
 }
 
@@ -39,6 +43,9 @@ class LinkList extends StatelessWidget {
         M3EListItem(
           leading: entry.icon,
           headline: Text(entry.label),
+          supportingText: entry.supportingText == null
+              ? null
+              : Text(entry.supportingText!),
           trailing: const Icon(Icons.chevron_right_rounded),
         ),
     ],

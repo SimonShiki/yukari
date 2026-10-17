@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:ui' show Locale;
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -9,31 +10,63 @@ import 'package:yukari/backend/system/service_control.dart';
 import 'package:yukari/controllers/backend_settings_controller.dart';
 import 'package:yukari/models/models.dart';
 import 'package:yukari/signals/backend.dart' as backend_signals;
+import 'package:yukari/signals/settings.dart';
 
 import '../fake_backend.dart';
+import '../fake_service_control.dart';
 import '../networks_fixture.dart';
 
 void main() {
   // Switching modes persists the choice.
   setUp(() => SharedPreferences.setMockInitialValues({}));
 
-  test('disposing during the service check writes no disposed signal', () async {
-    final gate = Completer<void>();
-    final controller = _build(control: _GatedControl(stateGate: gate));
+  test('reads and writes the interface language through the settings', () {
+    final controller = _build(control: FakeServiceControl());
+    addTearDown(controller.dispose);
 
-    final checking = controller.refresh();
-    expect(controller.stateKnown.value, isFalse);
-    controller.dispose();
-    gate.complete();
+    controller.selectLanguage(const Locale('zh'));
 
-    await expectLater(checking, completes);
-    expect(controller.stateKnown.peek(), isFalse);
-    expect(controller.serviceState.peek(), ServiceState.unsupported);
+    expect(controller.language.value, const Locale('zh'));
+    expect(settings.interface.locale.value, const Locale('zh'));
+
+    controller.selectLanguage(null);
+    expect(controller.language.value, isNull);
   });
+
+  test('reads and writes the page transitions through the settings', () {
+    final controller = _build(control: FakeServiceControl());
+    addTearDown(controller.dispose);
+    addTearDown(() => settings.interface.setPageTransitions(true));
+
+    controller.setPageTransitions(false);
+
+    expect(controller.pageTransitions.value, isFalse);
+    expect(settings.interface.pageTransitions.value, isFalse);
+
+    settings.interface.setPageTransitions(true);
+    expect(controller.pageTransitions.value, isTrue);
+  });
+
+  test(
+    'disposing during the service check writes no disposed signal',
+    () async {
+      final gate = Completer<void>();
+      final controller = _build(control: FakeServiceControl(stateGate: gate));
+
+      final checking = controller.refresh();
+      expect(controller.stateKnown.value, isFalse);
+      controller.dispose();
+      gate.complete();
+
+      await expectLater(checking, completes);
+      expect(controller.stateKnown.peek(), isFalse);
+      expect(controller.serviceState.peek(), ServiceState.unsupported);
+    },
+  );
 
   test('disposing during an install writes no disposed signal', () async {
     final gate = Completer<void>();
-    final controller = _build(control: _GatedControl(actionGate: gate));
+    final controller = _build(control: FakeServiceControl(actionGate: gate));
 
     final installing = controller.install();
     controller.dispose();
@@ -51,7 +84,7 @@ void main() {
 
   test('disposing during a service action writes no disposed signal', () async {
     final gate = Completer<void>();
-    final controller = _build(control: _GatedControl(actionGate: gate));
+    final controller = _build(control: FakeServiceControl(actionGate: gate));
 
     final starting = controller.start();
     expect(controller.busy.value, isTrue);
@@ -66,7 +99,7 @@ void main() {
     final gate = Completer<void>();
     final messages = <String>[];
     final controller = _build(
-      control: _GatedControl(actionGate: gate, fail: true),
+      control: FakeServiceControl(actionGate: gate, fail: true),
       messages: messages,
     );
 
@@ -87,7 +120,7 @@ void main() {
     final confirm = Completer<bool>();
     final messages = <String>[];
     final controller = _build(
-      control: _GatedControl(),
+      control: FakeServiceControl(),
       backend: backend,
       messages: messages,
       stop: (_, _) {
@@ -108,46 +141,49 @@ void main() {
     expect(messages, isEmpty);
   });
 
-  test('disposing during the version probe writes no disposed signal', () async {
-    final entered = Completer<void>();
-    final gate = Completer<void>();
-    final controller = _build(
-      control: _GatedControl(),
-      probe: () async {
-        entered.complete();
-        await gate.future;
-        return 7;
-      },
-    );
+  test(
+    'disposing during the version probe writes no disposed signal',
+    () async {
+      final entered = Completer<void>();
+      final gate = Completer<void>();
+      final controller = _build(
+        control: FakeServiceControl(),
+        probe: () async {
+          entered.complete();
+          await gate.future;
+          return 7;
+        },
+      );
 
-    // The service answers first, so the refresh is parked in the version
-    // probe, not in the service check.
-    final refreshing = controller.refresh();
-    await entered.future;
-    expect(controller.serviceState.value, ServiceState.running);
-    expect(
-      controller.stateKnown.value,
-      isTrue,
-      reason: 'the page shows the state while the version is still coming',
-    );
-    controller.dispose();
-    gate.complete();
+      // The service answers first, so the refresh is parked in the version
+      // probe, not in the service check.
+      final refreshing = controller.refresh();
+      await entered.future;
+      expect(controller.serviceState.value, ServiceState.running);
+      expect(
+        controller.stateKnown.value,
+        isTrue,
+        reason: 'the page shows the state while the version is still coming',
+      );
+      controller.dispose();
+      gate.complete();
 
-    await expectLater(refreshing, completes);
-    expect(
-      controller.runningVersion.peek(),
-      isNull,
-      reason: 'the probe result is not written after dispose',
-    );
-    expect(controller.stateKnown.peek(), isTrue, reason: 'it landed first');
-  });
+      await expectLater(refreshing, completes);
+      expect(
+        controller.runningVersion.peek(),
+        isNull,
+        reason: 'the probe result is not written after dispose',
+      );
+      expect(controller.stateKnown.peek(), isTrue, reason: 'it landed first');
+    },
+  );
 
   test('a probe that outlives the version signal is not reported', () async {
     final entered = Completer<void>();
     final gate = Completer<void>();
     final messages = <String>[];
     final controller = _build(
-      control: _GatedControl(),
+      control: FakeServiceControl(),
       messages: messages,
       probe: () async {
         entered.complete();
@@ -170,7 +206,7 @@ void main() {
   });
 
   test('the shared status signals outlive the controller', () async {
-    final controller = _build(control: _GatedControl());
+    final controller = _build(control: FakeServiceControl());
     await controller.refresh();
 
     controller.dispose();
@@ -183,7 +219,7 @@ void main() {
 
   test('refresh asks the backend for one more check', () async {
     final backend = _UnreachableBackend();
-    final controller = _build(control: _GatedControl(), backend: backend);
+    final controller = _build(control: FakeServiceControl(), backend: backend);
     addTearDown(controller.dispose);
 
     await controller.refresh();
@@ -199,7 +235,7 @@ void main() {
     final messages = <String>[];
     var asked = 0;
     final controller = _build(
-      control: _GatedControl(),
+      control: FakeServiceControl(),
       backend: backend,
       messages: messages,
       stop: (_, _) async {
@@ -257,48 +293,3 @@ BackendSettingsController _build({
   probeVersion: probe ?? () async => 1,
   backend: backend == null ? null : signal<NetworkBackend>(backend),
 );
-
-/// A service that answers only when the test releases it.
-class _GatedControl implements ServiceControl {
-  _GatedControl({this.stateGate, this.actionGate, this.fail = false});
-
-  final Completer<void>? stateGate;
-  final Completer<void>? actionGate;
-
-  /// Whether the actions throw once released.
-  final bool fail;
-
-  @override
-  String get dataDir => '/data';
-
-  @override
-  bool get supported => true;
-
-  @override
-  Future<ServiceState> state() async {
-    await stateGate?.future;
-    return ServiceState.running;
-  }
-
-  @override
-  Future<void> install({void Function(double? progress)? onProgress}) async {
-    onProgress?.call(0.25);
-    await actionGate?.future;
-    // The page may be gone by now: this report must be dropped.
-    onProgress?.call(0.75);
-  }
-
-  @override
-  Future<void> uninstall() => _action();
-
-  @override
-  Future<void> start() => _action();
-
-  @override
-  Future<void> stop() => _action();
-
-  Future<void> _action() async {
-    await actionGate?.future;
-    if (fail) throw StateError('stuck');
-  }
-}

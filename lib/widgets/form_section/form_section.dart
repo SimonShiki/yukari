@@ -4,7 +4,7 @@ import 'package:material_ui/material_ui.dart';
 import 'form_segments.dart';
 
 /// A titled group of settings. Its [children] are laid out as the segments of
-/// one [FormSegments] container.
+/// one [FormSegments] container unless [segments] says otherwise.
 class FormSection extends StatefulWidget {
   const FormSection({
     super.key,
@@ -17,12 +17,19 @@ class FormSection extends StatefulWidget {
     this.onTap,
     this.semanticLabelBuilder,
     this.collapsible = false,
+    this.segments = true,
   });
 
   final String title;
   final IconData icon;
   final String? description;
   final List<Widget> children;
+
+  /// Whether the children form the segments of one [FormSegments] container.
+  ///
+  /// When false they are a plain stretched column, for content that brings its
+  /// own surface; [onTap] and [semanticLabelBuilder] then do not apply.
+  final bool segments;
 
   /// Shown between the title and the segments, such as a warning about the
   /// section's current state.
@@ -132,11 +139,16 @@ class _FormSectionState extends State<FormSection> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                FormSegments(
-                  onTap: widget.onTap,
-                  semanticLabelBuilder: widget.semanticLabelBuilder,
-                  children: widget.children,
-                ),
+                widget.segments
+                    ? FormSegments(
+                        onTap: widget.onTap,
+                        semanticLabelBuilder: widget.semanticLabelBuilder,
+                        children: widget.children,
+                      )
+                    : Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: widget.children,
+                      ),
                 if (widget.footer case final footer?) ...[
                   const SizedBox(height: 12),
                   Align(

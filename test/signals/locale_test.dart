@@ -2,6 +2,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:yukari/signals/locale.dart';
+import 'package:yukari/signals/settings.dart';
+import 'package:yukari/system/autostart.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -9,9 +11,13 @@ void main() {
 
   setUp(() async {
     SharedPreferences.setMockInitialValues({});
-    await initLocale();
+    await initSettings(autostart: const UnsupportedAutostart());
+    initLocale();
   });
-  tearDown(dispatcher.clearLocalesTestValue);
+  tearDown(() {
+    settings.interface.setLocale(null);
+    dispatcher.clearLocalesTestValue();
+  });
 
   test('follows the system language', () {
     dispatcher.localesTestValue = const [Locale('zh', 'CN')];
@@ -26,21 +32,22 @@ void main() {
 
   test('keeps the picked language across launches', () async {
     dispatcher.localesTestValue = const [Locale('en', 'US')];
-    await setPreferredLocale(const Locale('zh'));
+    settings.interface.setLocale(const Locale('zh'));
     expect(appLocale.value, const Locale('zh'));
 
-    await initLocale();
-    expect(preferredLocale.value, const Locale('zh'));
+    await initSettings(autostart: const UnsupportedAutostart());
+    expect(settings.interface.locale.value, const Locale('zh'));
+    expect(appLocale.value, const Locale('zh'));
 
-    await setPreferredLocale(null);
-    await initLocale();
-    expect(preferredLocale.value, isNull);
+    settings.interface.setLocale(null);
+    await initSettings(autostart: const UnsupportedAutostart());
+    expect(settings.interface.locale.value, isNull);
     expect(appLocale.value, const Locale('en'));
   });
 
   test('ignores a saved language the app no longer has', () async {
     SharedPreferences.setMockInitialValues({'locale': 'xx'});
-    await initLocale();
-    expect(preferredLocale.value, isNull);
+    await initSettings(autostart: const UnsupportedAutostart());
+    expect(settings.interface.locale.value, isNull);
   });
 }

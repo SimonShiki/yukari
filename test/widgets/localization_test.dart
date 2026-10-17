@@ -5,6 +5,7 @@ import 'package:signals_flutter/signals_flutter.dart';
 import 'package:yukari/l10n/l10n.dart';
 import 'package:yukari/models/instance.dart';
 import 'package:yukari/signals/locale.dart';
+import 'package:yukari/signals/settings.dart';
 import 'package:yukari/utils/validator.dart';
 import 'package:yukari/widgets/navigation/app_shell.dart';
 import 'package:yukari/widgets/network_card/network_card.dart';
@@ -14,8 +15,10 @@ void main() {
     tester,
   ) async {
     SharedPreferences.setMockInitialValues({});
-    await setPreferredLocale(const Locale('en'));
-    addTearDown(() => setPreferredLocale(null));
+    settings.interface.setLocale(const Locale('en'));
+    addTearDown(() => settings.interface.setLocale(null));
+    final transitions = signal(true);
+    addTearDown(transitions.dispose);
     await tester.pumpWidget(
       SignalBuilder(
         builder: (context) => MaterialApp(
@@ -27,15 +30,21 @@ void main() {
           ],
           home: AppShell(
             currentIndex: 0,
-            child: Center(
-              child: NetworkCard(
-                name: 'alpha',
-                running: true,
-                status: InstanceStatus.running,
-                onToggle: (_) {},
-                menuButton: const SizedBox.shrink(),
+            pages: [
+              Center(
+                child: NetworkCard(
+                  name: 'alpha',
+                  running: true,
+                  status: InstanceStatus.running,
+                  onToggle: (_) {},
+                  menuButton: const SizedBox.shrink(),
+                ),
               ),
-            ),
+              // One page per destination; the other three need no content.
+              ...List.filled(3, const SizedBox.shrink()),
+            ],
+            transitions: transitions,
+            onDestinationSelected: (_) {},
           ),
         ),
       ),
@@ -45,7 +54,7 @@ void main() {
     expect(find.text('Running'), findsOneWidget);
     expect(validateNetworkName('', []), 'Network name cannot be empty');
 
-    await setPreferredLocale(const Locale('zh'));
+    settings.interface.setLocale(const Locale('zh'));
     await tester.pumpAndSettle();
     expect(find.text('设置'), findsOneWidget);
     expect(find.text('运行中'), findsOneWidget);

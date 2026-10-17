@@ -1,6 +1,5 @@
 import 'dart:io';
 
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:signals/signals.dart';
 
 import '../backend/android_backend.dart';
@@ -11,6 +10,7 @@ import '../backend/service_backend.dart';
 import '../backend/system/module_service_control.dart';
 import '../backend/system/service_control.dart';
 import '../models/models.dart';
+import 'settings.dart';
 
 /// Private backing signal for the active backend.
 /// Use [backend] for readonly access and [switchBackend] for changes.
@@ -18,7 +18,8 @@ final Signal<NetworkBackend> _backend = signal(FfiBackend());
 
 /// The backend that runs network instances: in process, or in the service.
 ///
-/// **Initialization**: Call [initBackend] once at app startup.
+/// **Initialization**: Call [initBackend] once at app startup, after
+/// [initSettings].
 ///
 /// **Mutation**: Use [switchBackend]; the choice persists across launches.
 ///
@@ -37,20 +38,13 @@ final Computed<BackendStatus> backendStatus = computed(
 /// Controls the background service, which [BackendKind.service] talks to.
 late final ServiceControl serviceControl;
 
-const _kindKey = 'backend';
-
 /// Restores the backend the user chose, for the app data directory [dataDir].
 Future<void> initBackend(String dataDir) async {
   serviceControl = Platform.isAndroid
       ? ModuleServiceControl(dataDir: dataDir)
       : SystemServiceControl(dataDir: dataDir);
-  final saved = (await SharedPreferences.getInstance()).getString(_kindKey);
-  final kind = BackendKind.values.asNameMap()[saved] ?? BackendKind.ffi;
-  _backend.value = _create(
-    kind == BackendKind.service && serviceControl.supported
-        ? kind
-        : BackendKind.ffi,
-  );
+  final preferred = settings.workingMode.backend.value;
+  _backend.value = _create(_available(preferred));
 }
 
 /// Switches to the [kind] backend. Instances of an in-process backend stop.
@@ -58,9 +52,15 @@ Future<void> switchBackend(BackendKind kind) async {
   if (_backend.peek().kind == kind) return;
   final previous = _backend.peek();
   _backend.value = _create(kind);
-  await (await SharedPreferences.getInstance()).setString(_kindKey, kind.name);
+  settings.workingMode.setBackend(kind);
   await previous.dispose();
 }
+
+/// [kind], or the in-process backend when the service cannot run here.
+BackendKind _available(BackendKind kind) =>
+    kind == BackendKind.service && serviceControl.supported
+    ? kind
+    : BackendKind.ffi;
 
 NetworkBackend _create(BackendKind kind) => switch (kind) {
   BackendKind.service => ServiceBackend(

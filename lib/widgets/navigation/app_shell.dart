@@ -1,123 +1,100 @@
 import 'package:material_ui/material_ui.dart';
-import 'package:go_router/go_router.dart';
+import 'package:signals_flutter/signals_flutter.dart';
 
 import '../../l10n/l10n.dart';
+import 'top_page_view.dart';
 
+/// The shell that hosts the top pages and the destination bar or rail.
+///
+/// The pages live in a [TopPageView] and every visited page stays mounted so
+/// its state and navigation stack survive the switch. Only the compact layout
+/// swipes between pages, horizontally; the wide layout changes pages by
+/// destination only. [transitions] turns the swipe and the slide off. The
+/// shell is UI-only.
 class AppShell extends StatelessWidget {
-  final Widget child;
+  const AppShell({
+    super.key,
+    required this.currentIndex,
+    required this.pages,
+    required this.onDestinationSelected,
+    required this.transitions,
+    this.swipeEnabled = true,
+  });
+
+  /// The index of the visible page, mirrored by the destination bar or rail.
   final int currentIndex;
 
-  const AppShell({super.key, required this.child, required this.currentIndex});
+  /// The top pages, one per destination, in destination order.
+  final List<Widget> pages;
 
-  void _onDestinationSelected(BuildContext context, int index) {
-    switch (index) {
-      case 0:
-        context.go('/');
-        break;
-      case 1:
-        context.go('/networks');
-        break;
-      case 2:
-        context.go('/bookmarks');
-        break;
-      case 3:
-        context.go('/settings');
-        break;
-    }
-  }
+  /// Reports the destination index the user picked by tapping or swiping.
+  final ValueChanged<int> onDestinationSelected;
+
+  /// Whether top pages follow a swipe and slide when switched.
+  final ReadonlySignal<bool> transitions;
+
+  /// Whether a drag may change the page; callers disable it off top pages.
+  final bool swipeEnabled;
 
   @override
   Widget build(BuildContext context) {
-    final destinations = [
-      NavigationDestination(
-        icon: Icon(Icons.home_outlined),
-        selectedIcon: Icon(Icons.home),
-        label: context.l10n.navHome,
-      ),
-      NavigationDestination(
-        icon: Icon(Icons.hub_outlined),
-        selectedIcon: Icon(Icons.hub),
-        label: context.l10n.navNetworks,
-      ),
-      NavigationDestination(
-        icon: Icon(Icons.bookmark_outline),
-        selectedIcon: Icon(Icons.bookmark),
-        label: context.l10n.navBookmarks,
-      ),
-      NavigationDestination(
-        icon: Icon(Icons.settings_outlined),
-        selectedIcon: Icon(Icons.settings),
-        label: context.l10n.navSettings,
-      ),
+    final l10n = context.l10n;
+    final List<(IconData, IconData, String)> destinations = [
+      (Icons.home_outlined, Icons.home, l10n.navHome),
+      (Icons.hub_outlined, Icons.hub, l10n.navNetworks),
+      (Icons.bookmark_outline, Icons.bookmark, l10n.navBookmarks),
+      (Icons.settings_outlined, Icons.settings, l10n.navSettings),
     ];
+    final bool useRail = MediaQuery.sizeOf(context).width >= 600;
+    // Only the paging area follows the switch: the destinations never change.
+    final pageView = SignalBuilder(
+      builder: (context) => TopPageView(
+        currentIndex: currentIndex,
+        pages: pages,
+        // The wide layout has no switch gesture; taps still slide.
+        swipeEnabled: swipeEnabled && !useRail,
+        transitionsEnabled: transitions.value,
+        onPageChanged: onDestinationSelected,
+      ),
+    );
 
-    final railDestinations = [
-      NavigationRailDestination(
-        icon: Icon(Icons.home_outlined),
-        selectedIcon: Icon(Icons.home),
-        label: Text(context.l10n.navHome),
-      ),
-      NavigationRailDestination(
-        icon: Icon(Icons.hub_outlined),
-        selectedIcon: Icon(Icons.hub),
-        label: Text(context.l10n.navNetworks),
-      ),
-      NavigationRailDestination(
-        icon: Icon(Icons.bookmark_outline),
-        selectedIcon: Icon(Icons.bookmark),
-        label: Text(context.l10n.navBookmarks),
-      ),
-      NavigationRailDestination(
-        icon: Icon(Icons.settings_outlined),
-        selectedIcon: Icon(Icons.settings),
-        label: Text(context.l10n.navSettings),
-      ),
-    ];
-
-    final bool useRail = MediaQuery.of(context).size.width >= 600;
-
-    if (useRail) {
-      return Scaffold(
-        body: Row(
-          children: [
+    return Scaffold(
+      // The paging area keeps the same keyed slot in both layouts, so crossing
+      // the breakpoint keeps the pages mounted.
+      body: Row(
+        children: [
+          if (useRail)
             NavigationRail(
               backgroundColor: Theme.of(context).colorScheme.surfaceContainer,
               selectedIndex: currentIndex,
-              onDestinationSelected: (index) =>
-                  _onDestinationSelected(context, index),
+              onDestinationSelected: onDestinationSelected,
               labelType: NavigationRailLabelType.all,
-              destinations: railDestinations,
+              destinations: [
+                for (final (icon, selectedIcon, label) in destinations)
+                  NavigationRailDestination(
+                    icon: Icon(icon),
+                    selectedIcon: Icon(selectedIcon),
+                    label: Text(label),
+                  ),
+              ],
             ),
-            Expanded(child: _PageMessenger(child: child)),
-          ],
-        ),
-      );
-    }
-
-    return Scaffold(
-      body: _PageMessenger(child: child),
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: currentIndex,
-        onDestinationSelected: (index) =>
-            _onDestinationSelected(context, index),
-        destinations: destinations,
+          Expanded(key: const ValueKey('top-pages'), child: pageView),
+        ],
       ),
+      bottomNavigationBar: useRail
+          ? null
+          : NavigationBar(
+              selectedIndex: currentIndex,
+              onDestinationSelected: onDestinationSelected,
+              destinations: [
+                for (final (icon, selectedIcon, label) in destinations)
+                  NavigationDestination(
+                    icon: Icon(icon),
+                    selectedIcon: Icon(selectedIcon),
+                    label: label,
+                  ),
+              ],
+            ),
     );
   }
-}
-
-/// Presents the pages' snackbars through their own Scaffold.
-///
-/// A ScaffoldMessenger only shows a snackbar in the root Scaffold of a nested
-/// set, and the shell Scaffold has no floating action button. Giving the shell
-/// body its own messenger makes each page Scaffold that root, so a floating
-/// snackbar is nudged above that page's FAB and above the navigation bar
-/// instead of covering them.
-class _PageMessenger extends StatelessWidget {
-  const _PageMessenger({required this.child});
-
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) => ScaffoldMessenger(child: child);
 }

@@ -13,6 +13,7 @@ import '../models/models.dart';
 import '../signals/backend.dart' as backend_signals;
 import '../signals/locale.dart';
 import '../signals/networks.dart';
+import '../signals/settings.dart';
 
 /// How often the version probe retries while a just-restarted service is
 /// briefly unreachable, and how long it waits in between.
@@ -20,7 +21,7 @@ const _probeAttempts = 6;
 const _probeInterval = Duration(milliseconds: 500);
 
 /// The settings page's signals and actions: where the networks run, the state
-/// of the background service, and the interface language.
+/// of the background service, the interface language, and how the app starts.
 class BackendSettingsController {
   BackendSettingsController({
     required this.showMessage,
@@ -97,10 +98,29 @@ class BackendSettingsController {
   );
 
   /// The language the user picked, or null to follow the system.
-  ReadonlySignal<Locale?> get language => preferredLocale;
+  ReadonlySignal<Locale?> get language => settings.interface.locale;
 
   /// Shows the app in [locale], or in the system language when null.
-  Future<void> selectLanguage(Locale? locale) => setPreferredLocale(locale);
+  void selectLanguage(Locale? locale) => settings.interface.setLocale(locale);
+
+  /// Whether the top pages follow a swipe and slide when switched.
+  ReadonlySignal<bool> get pageTransitions =>
+      settings.interface.pageTransitions;
+
+  /// Enables or disables the top-page swipe gesture and switching animation.
+  void setPageTransitions(bool enabled) =>
+      settings.interface.setPageTransitions(enabled);
+
+  /// Whether the app starts when the user signs in.
+  ReadonlySignal<bool> get startOnBoot => settings.behavior.startOnBoot;
+
+  /// Whether this platform can launch the app at sign-in. The settings page
+  /// hides the option where it cannot, as on Android.
+  bool get startOnBootSupported => settings.behavior.startOnBootSupported;
+
+  /// Starts the app at sign-in when [startOnBoot] is true.
+  void setStartOnBoot(bool startOnBoot) =>
+      settings.behavior.setStartOnBoot(startOnBoot);
 
   /// Re-reads the service state and, while it runs, its version.
   ///
@@ -207,7 +227,9 @@ class BackendSettingsController {
         },
       );
     } catch (error) {
-      if (!_disposed) showMessage(l10n.value.controllerServiceInstall('$error'));
+      if (!_disposed) {
+        showMessage(l10n.value.controllerServiceInstall('$error'));
+      }
     } finally {
       if (!_disposed) {
         installing.value = false;

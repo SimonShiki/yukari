@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
+import 'package:signals/signals.dart';
 import 'package:yukari/controllers/network_page_controller.dart';
 import 'package:yukari/l10n/l10n.dart';
 import 'package:yukari/pages/networks/network_create_menu.dart';
@@ -9,6 +10,9 @@ import 'package:yukari/widgets/snackbar/app_snackbar.dart';
 
 import '../fake_backend.dart';
 import '../networks_fixture.dart';
+
+/// The shell's pages never switch in these tests; transitions stay on.
+final Signal<bool> _transitions = signal(true);
 
 /// A page shaped like the bookmarks page: its own Scaffold with a FAB.
 class _PageWithFab extends StatelessWidget {
@@ -31,6 +35,12 @@ class _PageWithFab extends StatelessWidget {
   );
 }
 
+/// The shell's four pages, one per destination, with [page] at [index].
+List<Widget> pagesAt(int index, Widget page) => [
+  for (var slot = 0; slot < 4; slot++)
+    if (slot == index) page else const SizedBox.shrink(),
+];
+
 void main() {
   Future<void> pump(
     WidgetTester tester, {
@@ -43,7 +53,12 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         localizationsDelegates: const [AppLocalizations.delegate],
-        home: AppShell(currentIndex: 2, child: _PageWithFab(withFab: withFab)),
+        home: AppShell(
+          currentIndex: 2,
+          pages: pagesAt(2, _PageWithFab(withFab: withFab)),
+          transitions: _transitions,
+          onDestinationSelected: (_) {},
+        ),
       ),
     );
   }
@@ -130,7 +145,9 @@ void main() {
         localizationsDelegates: const [AppLocalizations.delegate],
         home: AppShell(
           currentIndex: 1,
-          child: NetworksPage(controller: controller),
+          pages: pagesAt(1, NetworksPage(controller: controller)),
+          transitions: _transitions,
+          onDestinationSelected: (_) {},
         ),
       ),
     );
