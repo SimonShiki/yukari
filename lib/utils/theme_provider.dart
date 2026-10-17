@@ -1,3 +1,5 @@
+import 'package:flutter/foundation.dart'
+    show TargetPlatform, defaultTargetPlatform;
 import 'package:material_ui/material_ui.dart';
 import 'package:m3e_core/m3e_core.dart';
 import 'package:signals/signals.dart';
@@ -35,6 +37,26 @@ final themeMode = signal(ThemeMode.system);
 /// Controls the tonal palette variant (neutral, vibrant, expressive, etc.).
 final variant = signal(M3EColorVariant.neutral);
 
+// See https://github.com/flutter/flutter/issues/103811
+const _windowsFontFamily = 'Segoe UI';
+const _windowsFontFallback = <String>[
+  'Microsoft YaHei UI',
+  'Microsoft YaHei',
+  'Segoe UI Symbol',
+];
+
+/// The fixed font set [platform] renders with, or null to keep Flutter's
+/// default.
+({String family, List<String> fallback})? _fontStackFor(
+  TargetPlatform platform,
+) => switch (platform) {
+  TargetPlatform.windows => (
+    family: _windowsFontFamily,
+    fallback: _windowsFontFallback,
+  ),
+  _ => null,
+};
+
 /// Internal theme builder that generates [ThemeData] based on current signals.
 ///
 /// Reacts to [useDynamicColors] and [variant] signals to construct the color scheme.
@@ -52,8 +74,14 @@ ThemeData _buildTheme(Brightness brightness, ColorScheme? dynamicColorScheme) {
           variant: variant.value,
           systemColorScheme: systemScheme,
         );
+  final fonts = _fontStackFor(defaultTargetPlatform);
 
-  return ThemeData(useMaterial3: true, colorScheme: colorScheme);
+  return ThemeData(
+    useMaterial3: true,
+    colorScheme: colorScheme,
+    fontFamily: fonts?.family,
+    fontFamilyFallback: fonts?.fallback,
+  );
 }
 
 /// Build a light theme using current signal values.
