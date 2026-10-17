@@ -133,4 +133,9 @@ endif()
 
 # Installed by launcher_icons: freedesktop icons + desktop entry from linux/share/.
 install(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/share/icons" DESTINATION "share" COMPONENT Runtime)
-install(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/share/applications" DESTINATION "share" COMPONENT Runtime)
+
+set(YUKARI_DESKTOP_EXEC "${CMAKE_INSTALL_PREFIX}/${BINARY_NAME}")
+set(YUKARI_DESKTOP_TEMPLATE "${CMAKE_CURRENT_SOURCE_DIR}/share/applications/yukari.desktop.in")
+configure_file("${YUKARI_DESKTOP_TEMPLATE}" "${CMAKE_CURRENT_BINARY_DIR}/yukari.desktop" @ONLY)
+install(FILES "${CMAKE_CURRENT_BINARY_DIR}/yukari.desktop"
+  DESTINATION "share/applications" COMPONENT Runtime)

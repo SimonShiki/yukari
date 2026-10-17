@@ -1,0 +1,9 @@
+[Desktop Entry]
+Name=Yukari
+Comment=Cross-platform decentralized networking tool.
+Exec=@YUKARI_DESKTOP_EXEC@
+Icon=yukari
+Terminal=false
+Type=Application
+Categories=Network;Utility;
+StartupWMClass=top.simonshiki.yukari

@@ -75,5 +75,23 @@ void main() {
         expect(File(source).existsSync(), isTrue, reason: '$source does not exist');
       }
     });
+
+    test('the desktop entry launches an absolute path and no field codes', () {
+      // `Exec=yukari` fails with "cannot find program" (the app is at
+      // <prefix>/yukari, off $PATH) and `%U` is rejected by the launcher, so the
+      // template must be substituted by CMake and carry neither.
+      final template = File('linux/share/applications/yukari.desktop.in').readAsStringSync();
+      expect(template, contains('Exec=@YUKARI_DESKTOP_EXEC@'));
+      expect(template, isNot(matches(RegExp(r'Exec=.*%[fFuU]'))));
+      expect(template, contains('Categories=Network;'));
+
+      final cmake = File('linux/CMakeLists.txt').readAsStringSync();
+      expect(cmake, contains('configure_file('));
+      expect(
+        cmake,
+        isNot(contains(r'install(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/share/applications"')),
+        reason: 'the raw template must not be installed unsubstituted',
+      );
+    });
   });
 }
