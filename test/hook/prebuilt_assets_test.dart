@@ -154,7 +154,7 @@ void main() {
         windowsRuntimeLibraries,
       );
       for (final uri in libraries) {
-        expect(File.fromUri(uri).parent.path, local.path);
+        expect(File.fromUri(uri).parent.uri, local.uri);
       }
     });
 
@@ -177,7 +177,7 @@ void main() {
         windowsRuntimeLibraries,
       );
       for (final uri in libraries) {
-        expect(File.fromUri(uri).parent.path, cached.path);
+        expect(File.fromUri(uri).parent.uri, cached.uri);
       }
     });
   });
