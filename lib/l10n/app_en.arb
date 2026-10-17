@@ -510,6 +510,7 @@
     }
   },
   "commonEdit": "Edit",
+  "cardExport": "Export",
   "cardLog": "Log",
   "peerLocal": "Local",
   "peerRelay": "Relay",
@@ -546,6 +547,7 @@
   "controllerRootRequired": "Grant Yukari root access first.",
   "controllerInstallRequired": "Install the background service first.",
   "controllerSelectConfig": "Select EasyTier Config File",
+  "controllerSaveConfig": "Save EasyTier Config File",
   "controllerFileUnavailable": "Could not access the selected file.",
   "controllerQrComing": "QR code scanning is coming soon.",
   "controllerReorderFailed": "Could not reorder networks. Try again.",
@@ -659,6 +661,15 @@
   },
   "controllerImportFailed": "Failed to import config: {error}",
   "@controllerImportFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "controllerExported": "Config exported",
+  "controllerExportFailed": "Failed to export config: {error}",
+  "@controllerExportFailed": {
     "placeholders": {
       "error": {
         "type": "String"

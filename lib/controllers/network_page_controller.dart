@@ -54,6 +54,7 @@ class NetworkPageController {
     this.invalidInput,
     this.confirmDiscardDialog,
     this.pickConfig,
+    this.saveExportFile,
     this.validateConfig,
   });
 
@@ -80,6 +81,10 @@ class NetworkPageController {
 
   /// Picks a config file to import, for tests. Null uses the file picker.
   final Future<PickedConfig?> Function()? pickConfig;
+
+  /// Writes an exported config, for tests. Null uses the save dialog; it
+  /// returns false when the user cancelled the dialog.
+  final Future<bool> Function(String name, String content)? saveExportFile;
 
   /// Validates a config before it is parsed, for tests. Null uses EasyTier.
   final void Function(String config)? validateConfig;

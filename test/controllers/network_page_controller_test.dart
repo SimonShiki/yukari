@@ -10,6 +10,7 @@ import 'package:yukari/models/models.dart';
 import 'package:yukari/signals/instance_logs.dart';
 import 'package:yukari/signals/instances.dart';
 import 'package:yukari/signals/networks.dart' as saved;
+import 'package:yukari/utils/easytier_config_serializer.dart';
 
 import '../fake_backend.dart';
 import '../networks_fixture.dart';
@@ -26,6 +27,7 @@ void main() {
     bool Function()? invalidInput,
     Future<bool> Function()? confirmDiscardDialog,
     Future<PickedConfig?> Function()? pickConfig,
+    Future<bool> Function(String, String)? saveExportFile,
     void Function(String)? validateConfig,
     Duration refreshInterval = const Duration(seconds: 10),
     bool Function()? isWide,
@@ -38,6 +40,7 @@ void main() {
     invalidInput: invalidInput,
     confirmDiscardDialog: confirmDiscardDialog,
     pickConfig: pickConfig,
+    saveExportFile: saveExportFile,
     validateConfig: validateConfig,
     refreshInterval: refreshInterval,
     isWide: isWide,
@@ -527,6 +530,54 @@ void main() {
     expect(messages, isEmpty);
   });
 
+  test('exports a network as its raw EasyTier TOML', () async {
+    await seedNetworks();
+    final messages = <String>[];
+    final writes = <(String, String)>[];
+    final controller = build(
+      backend: FakeBackend(),
+      messages: messages,
+      saveExportFile: (name, content) async {
+        writes.add((name, content));
+        return true;
+      },
+    );
+    addTearDown(controller.dispose);
+
+    await controller.exportConfig('n1');
+
+    final (name, content) = writes.single;
+    expect(name, 'alpha.toml');
+    expect(content, (await persisted('n1')).toEasyTierToml());
+    expect(messages, [strings.controllerExported]);
+  });
+
+  test('a cancelled export is silent, a failed one is reported', () async {
+    await seedNetworks();
+    final messages = <String>[];
+    final cancelled = build(
+      backend: FakeBackend(),
+      messages: messages,
+      saveExportFile: (_, _) async => false,
+    );
+    addTearDown(cancelled.dispose);
+    await cancelled.exportConfig('n1');
+    expect(messages, isEmpty);
+
+    final failing = build(
+      backend: FakeBackend(),
+      messages: messages,
+      saveExportFile: (_, _) async => throw StateError('disk full'),
+    );
+    addTearDown(failing.dispose);
+    await failing.exportConfig('n1');
+    expect(messages.single, startsWith('Failed to export config:'));
+  });
+
+  test('an export suggests a file name every platform accepts', () {
+    expect(exportFileName('home:1/2'), 'home_1_2.toml');
+  });
+
   test('the periodic refresh exists only while something runs', () async {
     await seedNetworks();
     final backend = CountingBackend();
@@ -695,6 +746,24 @@ void main() {
       InstanceTab.peers,
       reason: 'the late tab switch is dropped',
     );
+  });
+
+  test('disposing while the save dialog is open writes no message', () async {
+    await seedNetworks();
+    final messages = <String>[];
+    final gate = Completer<bool>();
+    final controller = build(
+      backend: FakeBackend(),
+      messages: messages,
+      saveExportFile: (_, _) => gate.future,
+    );
+
+    final exporting = controller.exportConfig('n1');
+    controller.dispose();
+    gate.complete(true);
+
+    await expectLater(exporting, completes);
+    expect(messages, isEmpty, reason: 'the page that would show it is gone');
   });
 }
 

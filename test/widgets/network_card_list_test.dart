@@ -8,9 +8,11 @@ import 'package:yukari/widgets/network_card/network_card_list.dart';
 
 void main() {
   var deleted = 0;
+  var exported = 0;
 
-  Future<void> pumpList(WidgetTester tester) async {
+  Future<void> pumpList(WidgetTester tester, {bool running = false}) async {
     deleted = 0;
+    exported = 0;
     await tester.pumpWidget(
       MaterialApp(
         localizationsDelegates: const [AppLocalizations.delegate],
@@ -20,10 +22,13 @@ void main() {
               NetworkCardData(
                 id: 'a',
                 name: 'Home',
-                status: InstanceStatus.stopped,
-                running: false,
+                status: running
+                    ? InstanceStatus.running
+                    : InstanceStatus.stopped,
+                running: running,
                 onOpen: () {},
                 onEdit: () {},
+                onExport: () => exported++,
                 onLog: () {},
                 onDelete: () async => deleted++,
               ),
@@ -59,5 +64,30 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Delete'), findsOneWidget);
+  });
+
+  testWidgets('the menu exports the network, then closes', (tester) async {
+    await pumpList(tester);
+    await tester.tap(find.byTooltip('More options for Home'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Export'));
+    await tester.pumpAndSettle();
+
+    expect(exported, 1);
+    expect(find.text('Export'), findsNothing);
+  });
+
+  // Export reads the saved config, so it stays available where Edit and Log
+  // are not.
+  testWidgets('the menu exports a running network', (tester) async {
+    await pumpList(tester, running: true);
+    await tester.tap(find.byTooltip('More options for Home'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Export'));
+    await tester.pumpAndSettle();
+
+    expect(exported, 1);
   });
 }

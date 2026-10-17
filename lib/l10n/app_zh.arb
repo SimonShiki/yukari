@@ -432,6 +432,7 @@
     }
   },
   "commonEdit": "编辑",
+  "cardExport": "导出",
   "cardLog": "日志",
   "peerLocal": "本机",
   "peerRelay": "中继",
@@ -468,6 +469,7 @@
   "controllerRootRequired": "请先授予 Yukari root 权限。",
   "controllerInstallRequired": "请先安装后台服务。",
   "controllerSelectConfig": "选择 EasyTier 配置文件",
+  "controllerSaveConfig": "保存 EasyTier 配置文件",
   "controllerFileUnavailable": "无法访问所选文件。",
   "controllerQrComing": "二维码扫描功能即将推出。",
   "controllerReorderFailed": "无法调整网络顺序，请重试。",
@@ -581,6 +583,15 @@
   },
   "controllerImportFailed": "导入配置失败：{error}",
   "@controllerImportFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "controllerExported": "配置已导出",
+  "controllerExportFailed": "导出配置失败：{error}",
+  "@controllerExportFailed": {
     "placeholders": {
       "error": {
         "type": "String"

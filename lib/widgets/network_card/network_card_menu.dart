@@ -9,6 +9,7 @@ class NetworkCardMenu extends StatelessWidget {
     required this.name,
     required this.running,
     required this.onEdit,
+    required this.onExport,
     required this.onLog,
     required this.onDelete,
     required this.builder,
@@ -19,6 +20,7 @@ class NetworkCardMenu extends StatelessWidget {
   final bool running;
   final bool busy;
   final VoidCallback onEdit;
+  final VoidCallback onExport;
   final VoidCallback onLog;
   final VoidCallback onDelete;
   final Widget Function(BuildContext, Widget) builder;
@@ -31,6 +33,11 @@ class NetworkCardMenu extends StatelessWidget {
         icon: Icons.edit_outlined,
         label: context.l10n.commonEdit,
         onPressed: running || busy ? null : onEdit,
+      ),
+      M3EMenuAction(
+        icon: Icons.file_download_outlined,
+        label: context.l10n.cardExport,
+        onPressed: onExport,
       ),
       M3EMenuAction(
         icon: Icons.article_outlined,

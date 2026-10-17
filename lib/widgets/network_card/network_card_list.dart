@@ -46,6 +46,7 @@ class NetworkCardList extends StatelessWidget {
           running: network.running,
           busy: network.busy,
           onEdit: network.onEdit,
+          onExport: network.onExport,
           onLog: network.onLog,
           onDelete: network.onDelete,
           builder: (context, menuButton) => NetworkCard(
