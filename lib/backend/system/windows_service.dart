@@ -2,6 +2,7 @@ import 'dart:ffi';
 import 'dart:io';
 
 import 'package:ffi/ffi.dart';
+import 'package:path/path.dart' as p;
 import 'package:win32/win32.dart';
 
 import '../../models/backend.dart';
@@ -11,8 +12,61 @@ import 'system_service.dart';
 /// The service as registered with the Windows service control manager.
 ///
 /// Changes go through sc.exe, which exits with the Win32 error code.
+///
+/// The service runs from a copy of the app's own files, in
+/// `%ProgramFiles%\Yukari\service`, rather than from the app's directory. A
+/// running service holds its own executable open, so a service registered in the
+/// app's directory keeps every later build from replacing it. The copy also has
+/// to be somewhere the people using the app cannot write: the service runs as
+/// LocalSystem, and in a development build the app's directory is the user's own
+/// build output. `%ProgramFiles%` grants users read and execute alone, and the
+/// app's files stay free to replace.
 final class WindowsService extends SystemService {
+  WindowsService({String? root}) : root = root ?? defaultRoot;
+
   static const _name = SystemService.name;
+
+  /// Where the copy the service runs from lives.
+  final String root;
+
+  static String get defaultRoot => p.join(
+    Platform.environment['ProgramFiles'] ?? r'C:\Program Files',
+    'Yukari',
+    'service',
+  );
+
+  @override
+  Future<String> prepare(String executable) async {
+    // The copy being replaced is the file the service runs from.
+    await stop();
+    return stage(executable);
+  }
+
+  /// Replaces the copy with the bundle around [executable] and returns the copy
+  /// to register.
+  ///
+  /// [executable] is the app's `bin/yukari-service.exe`; the service finds its
+  /// native libraries in the `lib` directory beside that `bin`, so the copy
+  /// keeps the same layout. [prepare] stops the service first, because the copy
+  /// being replaced is the file it runs from.
+  Future<String> stage(String executable) async {
+    final bin = File(executable).parent;
+    final lib = Directory(p.join(bin.parent.path, 'lib'));
+    final directory = Directory(root);
+    if (await directory.exists()) await directory.delete(recursive: true);
+    await directory.create(recursive: true);
+    await _copyInto(bin, Directory(p.join(root, 'bin')));
+    if (await lib.exists()) {
+      await _copyInto(lib, Directory(p.join(root, 'lib')));
+    }
+    return p.join(root, 'bin', p.basename(executable));
+  }
+
+  /// Removes the copy, if there is one.
+  Future<void> removeBundle() async {
+    final directory = Directory(root);
+    if (await directory.exists()) await directory.delete(recursive: true);
+  }
 
   @override
   Future<ServiceState> state() async => switch (_query()) {
@@ -84,6 +138,7 @@ final class WindowsService extends SystemService {
   Future<void> uninstall() async {
     await stop();
     await _sc(['delete', _name], ignore: [ERROR_SERVICE_DOES_NOT_EXIST]);
+    await removeBundle();
   }
 
   @override
@@ -118,5 +173,21 @@ final class WindowsService extends SystemService {
       '${result.stdout}'.trim(),
       result.exitCode,
     );
+  }
+}
+
+/// Copies every file of [source] into [target], keeping the layout.
+Future<void> _copyInto(Directory source, Directory target) async {
+  await target.create(recursive: true);
+  await for (final entry in source.list(recursive: true)) {
+    final destination = p.join(
+      target.path,
+      p.relative(entry.path, from: source.path),
+    );
+    if (entry is Directory) {
+      await Directory(destination).create(recursive: true);
+    } else if (entry is File) {
+      await entry.copy(destination);
+    }
   }
 }

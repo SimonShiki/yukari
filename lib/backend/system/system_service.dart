@@ -23,6 +23,14 @@ abstract class SystemService {
 
   Future<ServiceState> state();
 
+  /// Prepares the app's bundled [executable] for registration and returns the
+  /// path to register.
+  ///
+  /// A service manager that runs the file where it lies registers [executable]
+  /// itself. Windows registers a privileged copy instead, so that a running
+  /// service does not hold the app's own file open.
+  Future<String> prepare(String executable) async => executable;
+
   /// Registers [executable] with [arguments] to start on boot, and starts it.
   /// Reinstalling replaces the registration and restarts the service.
   Future<void> install(String executable, List<String> arguments);

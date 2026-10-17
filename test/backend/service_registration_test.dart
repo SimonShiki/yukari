@@ -20,6 +20,13 @@ void main() {
     expect(unit, contains('WantedBy=multi-user.target'));
   });
 
+  test('Unix registers the app executable where it lies', () async {
+    expect(
+      await SystemdService().prepare('/opt/yukari/bin/yukari-service'),
+      '/opt/yukari/bin/yukari-service',
+    );
+  });
+
   test('Windows arguments survive CommandLineToArgvW', () {
     expect(quoteArgument('run'), 'run');
     expect(quoteArgument(''), '""');

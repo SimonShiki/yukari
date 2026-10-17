@@ -29,12 +29,7 @@ Future<int> runServiceCli(List<String> arguments) async {
           _Command(
             'install',
             'Register the service to start on boot, then start it.',
-            (command) => _system.install(Platform.resolvedExecutable, [
-              'run',
-              '--data-dir',
-              p.absolute(command.dataDir),
-              if (command.ownerUid case final uid?) ...['--owner-uid', '$uid'],
-            ]),
+            _install,
             servesNetworks: true,
           ),
         )
@@ -76,6 +71,18 @@ Future<int> runServiceCli(List<String> arguments) async {
     stderr.writeln(error);
     return 1;
   }
+}
+
+/// Registers the service from the copy [SystemService.prepare] answers, so the
+/// registration never points into the app's own files.
+Future<void> _install(_Command command) async {
+  final executable = await _system.prepare(Platform.resolvedExecutable);
+  await _system.install(executable, [
+    'run',
+    '--data-dir',
+    p.absolute(command.dataDir),
+    if (command.ownerUid case final uid?) ...['--owner-uid', '$uid'],
+  ]);
 }
 
 final class _Command extends Command<void> {
