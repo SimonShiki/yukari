@@ -11,7 +11,7 @@ const List<({String source, String output})> masters = [
 
 const List<int> hicolorSizes = [16, 22, 24, 32, 48, 64, 128, 256, 512];
 
-Future<void> main(final List<String> args) async {
+Future<void> main(List<String> args) async {
   final checkOnly = args.contains('--check');
   final assets = Directory('../../assets');
   final generated = Directory('${assets.path}/generated');
@@ -81,10 +81,10 @@ Future<void> main(final List<String> args) async {
   stdout.writeln(checkOnly ? 'verified ${jobs.length} rendered assets' : 'wrote $written rendered assets');
 }
 
-(int, int)? _pngSize(final File file) {
+(int, int)? _pngSize(File file) {
   final bytes = file.readAsBytesSync();
   if (bytes.length < 24 || bytes[1] != 0x50 || bytes[2] != 0x4e || bytes[3] != 0x47) return null;
-  int read32(final int at) =>
+  int read32(int at) =>
       (bytes[at] << 24) | (bytes[at + 1] << 16) | (bytes[at + 2] << 8) | bytes[at + 3];
   return (read32(16), read32(20));
 }
