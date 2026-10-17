@@ -7,9 +7,9 @@
     <application
         android:allowBackup="false"
         android:fullBackupContent="false"
-        android:label="yukari"
+        android:label="Yukari"
         android:name="${applicationName}"
-        android:icon="@mipmap/ic_launcher"
+        android:icon="@mipmap/ic_launcher" android:roundIcon="@mipmap/ic_launcher_round"
         android:enableOnBackInvokedCallback="true">
         <activity
             android:name=".MainActivity"

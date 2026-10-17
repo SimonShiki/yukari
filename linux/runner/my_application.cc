@@ -6,6 +6,7 @@
 #endif
 
 #include "flutter/generated_plugin_registrant.h"
+#include <gio/gio.h>
 
 struct _MyApplication {
   GtkApplication parent_instance;
@@ -20,6 +21,15 @@ static void first_frame_cb(MyApplication* self, FlView* view) {
 }
 
 // Implements GApplication::activate.
+static gchar* get_flutter_asset_path(const gchar* asset_path) {
+  g_autofree gchar* executable = g_file_read_link("/proc/self/exe", NULL);
+  if (executable == NULL) {
+    return g_strdup(asset_path);
+  }
+  g_autofree gchar* executable_dir = g_path_get_dirname(executable);
+  return g_build_filename(executable_dir, "data", "flutter_assets", asset_path, NULL);
+}
+
 static void my_application_activate(GApplication* application) {
   MyApplication* self = MY_APPLICATION(application);
   GtkWindow* window =
@@ -52,6 +62,8 @@ static void my_application_activate(GApplication* application) {
     gtk_window_set_title(window, "yukari");
   }
 
+  g_autofree gchar* linux_icon_path = get_flutter_asset_path("assets/generated/yukari-with-background-1024.png");
+  gtk_window_set_icon_from_file(window, linux_icon_path, NULL);
   gtk_window_set_default_size(window, 1280, 720);
 
   g_autoptr(FlDartProject) project = fl_dart_project_new();

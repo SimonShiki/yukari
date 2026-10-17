@@ -130,3 +130,7 @@ if(NOT CMAKE_BUILD_TYPE MATCHES "Debug")
   install(FILES "${AOT_LIBRARY}" DESTINATION "${INSTALL_BUNDLE_LIB_DIR}"
     COMPONENT Runtime)
 endif()
+
+# Installed by launcher_icons: freedesktop icons + desktop entry from linux/share/.
+install(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/share/icons" DESTINATION "share" COMPONENT Runtime)
+install(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/share/applications" DESTINATION "share" COMPONENT Runtime)

@@ -1,0 +1,10 @@
+name: yukari_launcher_icons
+description: Generates Yukari's launcher icons.
+publish_to: none
+version: 0.0.1
+
+environment:
+  sdk: ^3.0.0
+
+dependencies:
+  launcher_icons: ^0.16.0
