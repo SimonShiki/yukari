@@ -125,6 +125,11 @@ void main() {
     final refreshing = controller.refresh();
     await entered.future;
     expect(controller.serviceState.value, ServiceState.running);
+    expect(
+      controller.stateKnown.value,
+      isTrue,
+      reason: 'the page shows the state while the version is still coming',
+    );
     controller.dispose();
     gate.complete();
 
@@ -134,7 +139,7 @@ void main() {
       isNull,
       reason: 'the probe result is not written after dispose',
     );
-    expect(controller.stateKnown.peek(), isFalse, reason: 'the finally guard');
+    expect(controller.stateKnown.peek(), isTrue, reason: 'it landed first');
   });
 
   test('a probe that outlives the version signal is not reported', () async {

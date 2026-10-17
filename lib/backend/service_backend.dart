@@ -19,11 +19,15 @@ final class ServiceUnavailableException implements Exception {
 /// Runs instances in the privileged background service, reached over IPC.
 ///
 /// The service reads networks from the shared store itself, so starting one
-/// sends only its id. It is checked once, when this backend is created: every
-/// request afterwards reports the answer that check gave, and [status] stays
-/// [BackendStatus.unavailable], until [retry] asks for another check. Nothing
-/// here reaches out on its own, so a service that is down is reported once
-/// instead of being re-detected behind the user's back.
+/// sends only its id. The connection is opened once and kept: while it is there
+/// every request reuses it, and nothing reaches out on its own.
+///
+/// A service that restarts publishes the port and token it listens on again, so
+/// the connection the app holds is gone. The next request then opens a new one
+/// from what the service published, and only [retry] asks for a check before
+/// that. [status] reports the answer the last attempt gave rather than
+/// announcing each attempt, so a service that is down does not make the pages
+/// that show it flicker.
 class ServiceBackend extends NetworkBackend {
   ServiceBackend(this._locate) {
     _connect().ignore();
@@ -35,11 +39,6 @@ class ServiceBackend extends NetworkBackend {
   final _status = signal(BackendStatus.connecting);
   Client? _client;
   Future<Client>? _connecting;
-
-  /// The check that failed, once one has: requests then fail with it rather
-  /// than run a check of their own.
-  ServiceUnavailableException? _unavailable;
-
   bool _disposed = false;
 
   @override
@@ -51,7 +50,6 @@ class ServiceBackend extends NetworkBackend {
   @override
   Future<void> retry() async {
     if (_disposed) return;
-    _unavailable = null;
     try {
       await _connect();
     } catch (_) {
@@ -90,26 +88,18 @@ class ServiceBackend extends NetworkBackend {
     if (_client case final client? when !client.isClosed) {
       return Future.value(client);
     }
-    if (_unavailable case final failure?) return Future.error(failure);
     return _connecting ??= _open().whenComplete(() => _connecting = null);
   }
 
   Future<Client> _open() async {
-    if (_status.peek() != BackendStatus.ready) {
-      _status.value = BackendStatus.connecting;
-    }
     final Client client;
     try {
       client = await connectIpc(await _locate());
     } catch (error) {
-      final failure = ServiceUnavailableException(error);
       // The backend may have been disposed while locating the service, and
       // its status signal was disposed with it.
-      if (!_disposed) {
-        _status.value = BackendStatus.unavailable;
-        _unavailable = failure;
-      }
-      throw failure;
+      if (!_disposed) _status.value = BackendStatus.unavailable;
+      throw ServiceUnavailableException(error);
     }
     if (_disposed) {
       await client.close();
@@ -118,9 +108,6 @@ class ServiceBackend extends NetworkBackend {
     client.done.whenComplete(() {
       if (!_disposed && identical(_client, client)) {
         _status.value = BackendStatus.unavailable;
-        _unavailable = ServiceUnavailableException(
-          'the service closed the connection',
-        );
       }
     }).ignore();
     _status.value = BackendStatus.ready;

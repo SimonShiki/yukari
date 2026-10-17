@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/widgets.dart';
 import 'package:signals/signals.dart';
 
@@ -102,30 +104,42 @@ class BackendSettingsController {
 
   /// Re-reads the service state and, while it runs, its version.
   ///
-  /// This is what starts another check of the service connection; nothing else
-  /// does, so a service that is down is reported once. See
-  /// [NetworkBackend.retry].
+  /// The state is what the page shows, so it lands first: a service that has
+  /// stopped answering must not hold the section spinning while the version
+  /// probe retries. The version then arrives through [runningVersion].
   Future<void> refresh() async {
     if (_disposed) return;
     try {
+      // The connection reopens by itself when the app next needs it, so this
+      // only makes the user's own refresh ask sooner. See [NetworkBackend.retry].
       await _backend.value.retry();
       if (_disposed) return;
       final state = await control.state();
       if (_disposed) return;
       serviceState.value = state;
-      final version = state == ServiceState.running
-          ? await _probeVersion()
-          : null;
-      // The probe can outlive both this controller and the signal it is
-      // written to: neither may be touched once gone.
-      if (_disposed || runningVersion.disposed) return;
-      runningVersion.value = version;
+      stateKnown.value = true;
+      if (state == ServiceState.running) unawaited(_readVersion());
     } catch (error) {
       if (!_disposed) showMessage(l10n.value.controllerCheckService('$error'));
     } finally {
       // Success or failure, the page may now show the real state.
       if (!_disposed) stateKnown.value = true;
     }
+  }
+
+  /// Reads the running service's version, and reports it when one answers.
+  Future<void> _readVersion() async {
+    final int? version;
+    try {
+      version = await _probeVersion();
+    } catch (error) {
+      if (!_disposed) showMessage(l10n.value.controllerCheckService('$error'));
+      return;
+    }
+    // The probe can outlive both this controller and the signal it is
+    // written to: neither may be touched once gone.
+    if (_disposed || runningVersion.disposed) return;
+    runningVersion.value = version;
   }
 
   /// Switches to [kind], stopping the running networks once confirmed.

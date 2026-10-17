@@ -19,6 +19,7 @@ void main() {
   late FakeBackend runtime;
   late ServiceDaemon daemon;
   late ServiceBackend client;
+  late int locates;
   final logs = <String>[];
 
   Future<void> serve() async {
@@ -30,7 +31,10 @@ void main() {
       log: logs.add,
     );
     await daemon.start(await ServerSocket.bind(address, 0));
-    client = ServiceBackend(() async => IpcEndpoint(address, 0));
+    client = ServiceBackend(() async {
+      locates++;
+      return IpcEndpoint(address, 0);
+    });
     addTearDown(() async {
       await client.dispose();
       await daemon.stop();
@@ -39,6 +43,7 @@ void main() {
 
   setUp(() async {
     logs.clear();
+    locates = 0;
     store = temporaryStore();
     runtime = FakeBackend();
     await store.save({
@@ -98,22 +103,28 @@ void main() {
     expect(await runningServiceVersion(IpcEndpoint(address, 0)), isNull);
   });
 
-  test('checks once, and reports that answer until asked again', () async {
-    var locates = 0;
+  test('opens the connection again without announcing a new check', () async {
+    var checks = 0;
     final backend = ServiceBackend(() async {
-      locates++;
+      checks++;
       return IpcEndpoint(_missingAddress(store), 0);
     });
     addTearDown(backend.dispose);
 
     await expectLater(backend.collectInfos(), throwsException);
-    await expectLater(backend.collectInfos(), throwsException);
+    expect(backend.status.value, BackendStatus.unavailable);
 
-    expect(locates, 1, reason: 'a request never starts a check of its own');
+    // The next request tries the service again, but a check that fails again is
+    // not announced as a new one: the pages showing the status must not flicker.
+    final pending = backend.collectInfos();
+    expect(backend.status.value, BackendStatus.unavailable);
+
+    await expectLater(pending, throwsException);
+    expect(checks, greaterThan(1), reason: 'the endpoint is read again');
     expect(backend.status.value, BackendStatus.unavailable);
   });
 
-  test('reconnects when retried, not on its own', () async {
+  test('finds the service again after it restarts', () async {
     await serve();
     await client.collectInfos();
     final socket = File(p.join(p.dirname(store.file.path), 'service.sock'));
@@ -139,17 +150,18 @@ void main() {
       ),
     );
     addTearDown(restarted.stop);
+    final published = locates;
 
-    // The service is back, but nothing reaches out on its own: the status
-    // still reports the check that failed.
-    await expectLater(
-      client.collectInfos(),
-      throwsA(isA<ServiceUnavailableException>()),
+    // Nothing reaches out on its own. The next request is what finds the
+    // service that came back, at the endpoint it published when it restarted.
+    await client.collectInfos();
+
+    expect(
+      locates,
+      greaterThan(published),
+      reason: 'the endpoint is read again, not reused',
     );
-    expect(client.status.value, BackendStatus.unavailable);
-
-    await client.retry();
-    await until(BackendStatus.ready);
+    expect(client.status.value, BackendStatus.ready);
   });
 
   test('reports the service as unavailable when it is not running', () async {
