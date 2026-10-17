@@ -54,6 +54,7 @@ class AdvancedRoutingSection extends StatelessWidget {
           onSaved: (lines) => controller.update((n) => n.exitNodes = lines),
         ),
         EditorSwitch(
+          icon: Icons.logout_rounded,
           controller: controller,
           name: 'flags.enableExitNode',
           read: (n) => n.flags.enableExitNode,
@@ -62,6 +63,7 @@ class AdvancedRoutingSection extends StatelessWidget {
           subtitle: l10n.advancedEnableExitNodeSubtitle,
         ),
         EditorSwitch(
+          icon: Icons.router_outlined,
           controller: controller,
           name: 'flags.proxyForwardBySystem',
           read: (n) => n.flags.proxyForwardBySystem,

@@ -29,6 +29,7 @@ class AdvancedVpnPortalSection extends StatelessWidget {
         collapsible: true,
         children: [
           SwitchSegment(
+            icon: Icons.vpn_lock_rounded,
             title: l10n.advancedEnableVpnPortal,
             subtitle: l10n.advancedEnableVpnPortalSubtitle,
             value: enabled,

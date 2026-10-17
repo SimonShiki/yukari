@@ -10,6 +10,7 @@ import 'package:yukari/pages/networks/widgets/advanced_flags_section.dart';
 import 'package:yukari/pages/networks/widgets/advanced_security_section.dart';
 import 'package:yukari/pages/networks/widgets/editor_fields.dart';
 import 'package:yukari/signals/networks.dart' as saved;
+import 'package:yukari/widgets/context_menu/m3e_menu_panel.dart';
 
 import '../networks_fixture.dart';
 import 'network_test_support.dart';
@@ -198,6 +199,33 @@ void main() {
     expect(controller.working.value!.flags.mtu, 1500);
   });
 
+  testWidgets('a switch row shows its icon and toggles from the row', (
+    tester,
+  ) async {
+    await tester.runAsync(seedNetworks);
+    await pumpEditor(tester);
+    await switchTab(tester, strings.networkAdvanced);
+    await expandSection(tester, strings.advancedNetworkFlags);
+
+    final title = find.text(strings.advancedEnableEncryption);
+    expect(title, findsOneWidget);
+    final row = find.ancestor(of: title, matching: find.byType(SwitchSegment));
+    expect(row, findsOneWidget);
+    expect(
+      find.descendant(
+        of: row,
+        matching: find.byIcon(Icons.enhanced_encryption_rounded),
+      ),
+      findsOneWidget,
+      reason: 'the switch row has a leading icon',
+    );
+
+    final enabled = controller.working.value!.flags.enableEncryption;
+    // The whole row is the tap target, not only the switch thumb.
+    await tapSaving(tester, title);
+    expect(controller.working.value!.flags.enableEncryption, isNot(enabled));
+  });
+
   testWidgets('the DNS suffix appears only with Magic DNS, keeping the MTU', (
     tester,
   ) async {
@@ -381,23 +409,39 @@ void main() {
     expect(find.text('0.0.0.0:22022'), findsWidgets);
   });
 
-  testWidgets('the tuning dropdowns use the algorithm names', (tester) async {
+  testWidgets('the tuning rows pick algorithms from a menu', (tester) async {
     await tester.runAsync(seedNetworks);
     await pumpEditor(tester);
     await switchTab(tester, strings.networkAdvanced);
     await expandSection(tester, strings.advancedTuning);
 
-    // The closed dropdown shows the chosen algorithm's name.
+    // The closed rows show the chosen algorithm's name as trailing text.
     expect(find.text('AES-128-GCM'), findsOneWidget);
     expect(find.text(strings.advancedCompressionNone), findsOneWidget);
 
-    await tester.runAsync(() async {
-      controller.update(
-        (n) => n.flags.encryptionAlgorithm = EncryptionAlgorithm.chacha20,
-      );
-      await saved.settled();
-    });
-    await tester.pump(const Duration(milliseconds: 100));
+    await tapVisible(tester, find.text('AES-128-GCM'));
+    final menu = find.byType(M3EMenuPanel);
+    expect(menu, findsOneWidget);
+    // Every algorithm is offered once and the current one is checkmarked.
+    expect(
+      find.descendant(of: menu, matching: find.text('ChaCha20-Poly1305')),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(of: menu, matching: find.byIcon(Icons.check_rounded)),
+      findsOneWidget,
+    );
+
+    // Picking one saves it and closes the menu.
+    await tapSaving(tester, find.text('ChaCha20-Poly1305'));
+    // The tap ran in the real zone, so flush its microtasks before pumping.
+    await tester.runAsync(() async {});
+    await tester.pumpAndSettle();
+    expect(menu, findsNothing);
+    expect(
+      controller.working.value!.flags.encryptionAlgorithm,
+      EncryptionAlgorithm.chacha20,
+    );
     expect(find.text('ChaCha20-Poly1305'), findsOneWidget);
 
     await tester.runAsync(() async {

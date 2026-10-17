@@ -47,6 +47,7 @@ class AdvancedServicesSection extends StatelessWidget {
               controller.update((n) => n.netNamespace = value.isEmpty ? null : value),
         ),
         EditorSwitch(
+          icon: Icons.desktop_access_disabled_rounded,
           controller: controller,
           name: 'flags.noTun',
           read: (n) => n.flags.noTun,

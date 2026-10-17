@@ -10,6 +10,7 @@ import 'package:yukari/l10n/l10n.dart';
 import 'package:yukari/models/backend.dart';
 import 'package:yukari/models/peer.dart';
 import 'package:yukari/pages/home/home_page.dart';
+import 'package:yukari/widgets/link_list/link_list.dart';
 import 'package:yukari/pages/home/widgets/dashboard_card.dart';
 import 'package:yukari/pages/home/widgets/dashboard_skeleton.dart';
 import 'package:yukari/pages/home/widgets/dashboard_value.dart';
@@ -100,6 +101,10 @@ void main() {
             GoRoute(
               path: '/settings',
               builder: (context, state) => const _Route('settings route'),
+            ),
+            GoRoute(
+              path: '/about',
+              builder: (context, state) => const _Route('about route'),
             ),
           ],
         ),
@@ -507,6 +512,45 @@ void main() {
     await settle(tester);
 
     expect(find.text('create route'), findsOneWidget);
+    home.dispose();
+  });
+
+  testWidgets('lists About below the dashboard cards', (tester) async {
+    final home = controller(backend: _HomeBackend());
+    await tester.runAsync(seedNetworks);
+    await pumpHome(tester, controller: home);
+    await settle(tester);
+
+    // The Logs entry is hidden until its backend feeding is implemented.
+    expect(find.text('Logs'), findsNothing);
+    expect(find.text('About'), findsOneWidget);
+    expect(find.byIcon(Icons.info_outline_rounded), findsOneWidget);
+    expect(find.byIcon(Icons.article_outlined), findsNothing);
+
+    // The group sits below the last card, aligned with the cards' column.
+    final links = find.byType(LinkList);
+    expect(links, findsOneWidget);
+    expect(
+      tester.getTopLeft(links).dy,
+      greaterThan(tester.getBottomLeft(cardAt(3)).dy),
+    );
+    expect(tester.getTopLeft(links).dx, tester.getTopLeft(cardAt(0)).dx);
+    home.dispose();
+  });
+
+  testWidgets('the About row opens its page from the chevron too', (
+    tester,
+  ) async {
+    final home = controller(backend: _HomeBackend());
+    await tester.runAsync(seedNetworks);
+    await pumpHome(tester, controller: home);
+    await settle(tester);
+
+    // Tapping the trailing chevron, not the label, must still navigate.
+    await tester.tap(find.byIcon(Icons.chevron_right_rounded));
+    await settle(tester);
+
+    expect(find.text('about route'), findsOneWidget);
     home.dispose();
   });
 

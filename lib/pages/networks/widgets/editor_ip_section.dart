@@ -24,6 +24,7 @@ class EditorIpSection extends StatelessWidget {
       icon: Icons.network_check,
       children: [
         EditorSwitch(
+          icon: Icons.autorenew_rounded,
           controller: controller,
           name: 'dhcp',
           read: (n) => n.dhcp,

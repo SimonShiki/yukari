@@ -26,6 +26,7 @@ class AdvancedPublicIpv6Section extends StatelessWidget {
       collapsible: true,
       children: [
         EditorSwitch(
+          icon: Icons.travel_explore_rounded,
           controller: controller,
           name: 'ipv6PublicAddressAuto',
           read: (n) => n.ipv6PublicAddressAuto,
@@ -34,6 +35,7 @@ class AdvancedPublicIpv6Section extends StatelessWidget {
           subtitle: l10n.advancedAutoPublicIpv6Subtitle,
         ),
         EditorSwitch(
+          icon: Icons.cloud_upload_outlined,
           controller: controller,
           name: 'ipv6PublicAddressProvider',
           read: (n) => n.ipv6PublicAddressProvider,

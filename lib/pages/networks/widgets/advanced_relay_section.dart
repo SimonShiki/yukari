@@ -33,6 +33,7 @@ class AdvancedRelaySection extends StatelessWidget {
           ),
         ),
         EditorSwitch(
+          icon: Icons.hub_rounded,
           controller: controller,
           name: 'flags.relayAllPeerRpc',
           read: (n) => n.flags.relayAllPeerRpc,
@@ -41,6 +42,7 @@ class AdvancedRelaySection extends StatelessWidget {
           subtitle: l10n.advancedRelayAllPeerRpcSubtitle,
         ),
         EditorSwitch(
+          icon: Icons.cloud_off_outlined,
           controller: controller,
           name: 'flags.disableRelayData',
           read: (n) => n.flags.disableRelayData,
@@ -49,6 +51,7 @@ class AdvancedRelaySection extends StatelessWidget {
           subtitle: l10n.advancedDisableRelayDataSubtitle,
         ),
         EditorSwitch(
+          icon: Icons.compare_arrows_rounded,
           controller: controller,
           name: 'flags.preferPeerRelay',
           read: (n) => n.flags.preferPeerRelay,
@@ -57,6 +60,7 @@ class AdvancedRelaySection extends StatelessWidget {
           subtitle: l10n.advancedPreferPeerRelaySubtitle,
         ),
         EditorSwitch(
+          icon: Icons.speed_rounded,
           controller: controller,
           name: 'flags.disableRelayKcp',
           read: (n) => n.flags.disableRelayKcp,
@@ -65,6 +69,7 @@ class AdvancedRelaySection extends StatelessWidget {
           subtitle: l10n.advancedDisableRelayKcpSubtitle,
         ),
         EditorSwitch(
+          icon: Icons.public_rounded,
           controller: controller,
           name: 'flags.enableRelayForeignNetworkKcp',
           read: (n) => n.flags.enableRelayForeignNetworkKcp,
@@ -73,6 +78,7 @@ class AdvancedRelaySection extends StatelessWidget {
           subtitle: l10n.advancedRelayForeignKcpSubtitle,
         ),
         EditorSwitch(
+          icon: Icons.bolt_rounded,
           controller: controller,
           name: 'flags.disableRelayQuic',
           read: (n) => n.flags.disableRelayQuic,
@@ -81,6 +87,7 @@ class AdvancedRelaySection extends StatelessWidget {
           subtitle: l10n.advancedDisableRelayQuicSubtitle,
         ),
         EditorSwitch(
+          icon: Icons.language_rounded,
           controller: controller,
           name: 'flags.enableRelayForeignNetworkQuic',
           read: (n) => n.flags.enableRelayForeignNetworkQuic,
@@ -89,6 +96,7 @@ class AdvancedRelaySection extends StatelessWidget {
           subtitle: l10n.advancedRelayForeignQuicSubtitle,
         ),
         EditorSwitch(
+          icon: Icons.podcasts_rounded,
           controller: controller,
           name: 'flags.enableUdpBroadcastRelay',
           read: (n) => n.flags.enableUdpBroadcastRelay,

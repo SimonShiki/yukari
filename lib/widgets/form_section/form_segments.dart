@@ -109,12 +109,14 @@ class FieldSegment extends StatelessWidget {
 class SwitchSegment extends StatelessWidget {
   const SwitchSegment({
     super.key,
+    required this.icon,
     required this.title,
     required this.subtitle,
     required this.value,
     required this.onChanged,
   });
 
+  final IconData icon;
   final String title;
   final String subtitle;
   final bool value;
@@ -130,6 +132,7 @@ class SwitchSegment extends StatelessWidget {
     child: InkWell(
       onTap: () => onChanged(!value),
       child: M3EListItem(
+        leading: Icon(icon),
         headline: Text(title),
         supportingText: Text(subtitle),
         trailing: Switch(

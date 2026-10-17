@@ -10,6 +10,7 @@ import '../signals/bookmarks.dart' as saved;
 import '../signals/locale.dart';
 import '../signals/networks.dart' as networks;
 import '../utils/bookmark_codec.dart';
+import '../utils/file_save.dart';
 import 'bookmarks_controller.dart';
 
 /// The file an export writes.
@@ -188,13 +189,5 @@ Future<String?> _pickJsonFile() async {
 }
 
 /// Writes [content] under [name] where the user chose to; false when cancelled.
-Future<bool> _saveJsonFile(String name, String content) async {
-  final location = await FilePicker.saveFile(
-    fileName: name,
-    bytes: Uint8List.fromList(utf8.encode(content)),
-    mimeType: 'application/json',
-    type: FileType.custom,
-    allowedExtensions: const ['json'],
-  );
-  return location != null;
-}
+Future<bool> _saveJsonFile(String name, String content) =>
+    saveTextFile(name, content, mimeType: 'application/json');

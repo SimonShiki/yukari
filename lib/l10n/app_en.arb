@@ -1164,5 +1164,25 @@
   "bookmarksScanQr": "Scan QR Code",
   "bookmarksScanUnavailable": "Scanning a bookmark from a QR code is coming soon.",
   "advancedCopyPublicKey": "Copy public key",
-  "advancedPublicKeyCopied": "Public key copied"
+  "advancedPublicKeyCopied": "Public key copied",
+  "aboutTitle": "About",
+  "aboutVersion": "Version {version}",
+  "@aboutVersion": {
+    "placeholders": {
+      "version": {
+        "type": "String"
+      }
+    }
+  },
+  "aboutSourceCode": "Source code",
+  "aboutLicenses": "View licenses",
+  "aboutOpenFailed": "Could not open the link: {error}",
+  "@aboutOpenFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "settingsLanguageDescription": "The language the app shows"
 }

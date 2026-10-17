@@ -3,6 +3,7 @@ import 'package:material_ui/material_ui.dart';
 
 import '../../controllers/home_controller.dart';
 import '../../l10n/l10n.dart';
+import '../../widgets/link_list/link_list.dart';
 import 'widgets/address_card.dart';
 import 'widgets/backend_header.dart';
 import 'widgets/nat_card.dart';
@@ -35,8 +36,9 @@ class _HomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     return Scaffold(
-      appBar: AppBar(title: Text(context.l10n.navHome)),
+      appBar: AppBar(title: Text(l10n.navHome)),
       body: SafeArea(
         child: LayoutBuilder(
           builder: (context, constraints) {
@@ -56,6 +58,15 @@ class _HomePageState extends State<HomePage> {
                     children: [
                       BackendHeader(controller: _controller),
                       _StatGrid(controller: _controller),
+                      LinkList(
+                        entries: [
+                          LinkListEntry(
+                            icon: const Icon(Icons.info_outline_rounded),
+                            label: l10n.aboutTitle,
+                            onTap: () => context.push('/about'),
+                          ),
+                        ],
+                      ),
                     ],
                   ),
                 ),

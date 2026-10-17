@@ -10,6 +10,7 @@ import '../../../widgets/form_section/form_segments.dart';
 class EditorSwitch extends StatelessWidget {
   const EditorSwitch({
     super.key,
+    required this.icon,
     required this.controller,
     required this.name,
     required this.read,
@@ -18,6 +19,8 @@ class EditorSwitch extends StatelessWidget {
     required this.subtitle,
   });
 
+  /// The leading icon naming the setting.
+  final IconData icon;
   final NetworkEditorController controller;
 
   /// Unique key of this switch's primitive.
@@ -32,6 +35,7 @@ class EditorSwitch extends StatelessWidget {
     builder: (context) {
       final value = controller.select('switch.$name', read, false).value;
       return SwitchSegment(
+        icon: icon,
         title: title,
         subtitle: subtitle,
         value: value,
@@ -39,44 +43,5 @@ class EditorSwitch extends StatelessWidget {
             controller.update((network) => write(network, value)),
       );
     },
-  );
-}
-
-/// A single-select dropdown segment that saves the chosen option.
-class EditorDropdown<T> extends StatelessWidget {
-  const EditorDropdown({
-    super.key,
-    required this.label,
-    this.helper,
-    required this.value,
-    required this.options,
-    required this.labelOf,
-    required this.onSelected,
-  });
-
-  final String label;
-  final String? helper;
-  final T value;
-  final List<T> options;
-  final String Function(T option) labelOf;
-  final ValueChanged<T> onSelected;
-
-  @override
-  Widget build(BuildContext context) => FieldSegment(
-    child: DropdownMenu<T>(
-      // A new selection from outside rebuilds the menu with it.
-      key: ValueKey(value),
-      initialSelection: value,
-      label: Text(label),
-      helperText: helper,
-      expandedInsets: EdgeInsets.zero,
-      dropdownMenuEntries: [
-        for (final option in options)
-          DropdownMenuEntry<T>(value: option, label: labelOf(option)),
-      ],
-      onSelected: (option) {
-        if (option != null) onSelected(option);
-      },
-    ),
   );
 }

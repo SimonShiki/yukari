@@ -21,6 +21,7 @@ class AdvancedP2pSection extends StatelessWidget {
       collapsible: true,
       children: [
         EditorSwitch(
+          icon: Icons.device_hub_rounded,
           controller: controller,
           name: 'flags.disableP2p',
           read: (n) => n.flags.disableP2p,
@@ -29,6 +30,7 @@ class AdvancedP2pSection extends StatelessWidget {
           subtitle: l10n.advancedDisableP2pSubtitle,
         ),
         EditorSwitch(
+          icon: Icons.hub_outlined,
           controller: controller,
           name: 'flags.p2pOnly',
           read: (n) => n.flags.p2pOnly,
@@ -37,6 +39,7 @@ class AdvancedP2pSection extends StatelessWidget {
           subtitle: l10n.advancedP2pOnlySubtitle,
         ),
         EditorSwitch(
+          icon: Icons.snooze_rounded,
           controller: controller,
           name: 'flags.lazyP2p',
           read: (n) => n.flags.lazyP2p,
@@ -45,6 +48,7 @@ class AdvancedP2pSection extends StatelessWidget {
           subtitle: l10n.advancedLazyP2pSubtitle,
         ),
         EditorSwitch(
+          icon: Icons.alt_route_rounded,
           controller: controller,
           name: 'flags.needP2p',
           read: (n) => n.flags.needP2p,
@@ -53,6 +57,7 @@ class AdvancedP2pSection extends StatelessWidget {
           subtitle: l10n.advancedNeedP2pSubtitle,
         ),
         EditorSwitch(
+          icon: Icons.settings_ethernet_rounded,
           controller: controller,
           name: 'flags.disableUdpHolePunching',
           read: (n) => n.flags.disableUdpHolePunching,
@@ -61,6 +66,7 @@ class AdvancedP2pSection extends StatelessWidget {
           subtitle: l10n.advancedDisableUdpHolePunchingSubtitle,
         ),
         EditorSwitch(
+          icon: Icons.cable_rounded,
           controller: controller,
           name: 'flags.disableTcpHolePunching',
           read: (n) => n.flags.disableTcpHolePunching,
@@ -69,6 +75,7 @@ class AdvancedP2pSection extends StatelessWidget {
           subtitle: l10n.advancedDisableTcpHolePunchingSubtitle,
         ),
         EditorSwitch(
+          icon: Icons.call_split_rounded,
           controller: controller,
           name: 'flags.disableSymmetricHolePunching',
           read: (n) => n.flags.disableSymmetricHolePunching,
@@ -77,6 +84,7 @@ class AdvancedP2pSection extends StatelessWidget {
           subtitle: l10n.advancedDisableSymmetricHolePunchingSubtitle,
         ),
         EditorSwitch(
+          icon: Icons.router_outlined,
           controller: controller,
           name: 'flags.disableUpnp',
           read: (n) => n.flags.disableUpnp,
@@ -85,6 +93,7 @@ class AdvancedP2pSection extends StatelessWidget {
           subtitle: l10n.advancedDisableUpnpSubtitle,
         ),
         EditorSwitch(
+          icon: Icons.link_rounded,
           controller: controller,
           name: 'flags.bindDevice',
           read: (n) => n.flags.bindDevice,

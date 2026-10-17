@@ -23,6 +23,7 @@ class AdvancedAccessSection extends StatelessWidget {
       collapsible: true,
       children: [
         EditorSwitch(
+          icon: Icons.lock_outline_rounded,
           controller: controller,
           name: 'flags.privateMode',
           read: (n) => n.flags.privateMode,

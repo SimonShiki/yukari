@@ -29,14 +29,9 @@ String exportFileName(String networkName) =>
     '${networkName.replaceAll(RegExp(r'[\\/:*?"<>|\x00-\x1F]'), '_')}.toml';
 
 /// The save dialog the app uses; tests inject `saveExportFile`.
-Future<bool> _saveTomlFile(String name, String content) async {
-  final location = await FilePicker.saveFile(
-    fileName: name,
-    bytes: Uint8List.fromList(utf8.encode(content)),
-    mimeType: 'application/toml',
-    type: FileType.custom,
-    allowedExtensions: const ['toml'],
-    dialogTitle: l10n.value.controllerSaveConfig,
-  );
-  return location != null;
-}
+Future<bool> _saveTomlFile(String name, String content) => saveTextFile(
+  name,
+  content,
+  mimeType: 'application/toml',
+  dialogTitle: l10n.value.controllerSaveConfig,
+);

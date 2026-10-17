@@ -8,6 +8,7 @@ import 'pages/networks/network_instance_page.dart';
 import 'pages/networks/network_creator_page.dart';
 import 'pages/networks/editor_exit_guard.dart';
 import 'pages/bookmarks/bookmarks_page.dart';
+import 'pages/about/about_page.dart';
 import 'pages/settings/settings_page.dart';
 
 final GoRouter appRouter = GoRouter(
@@ -82,6 +83,10 @@ final GoRouter appRouter = GoRouter(
           pageBuilder: (context, state) =>
               const NoTransitionPage(child: SettingsPage()),
           routes: [],
+        ),
+        GoRoute(
+          path: '/about',
+          builder: (context, state) => const AboutPage(),
         ),
       ],
     ),

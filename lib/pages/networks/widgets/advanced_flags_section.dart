@@ -32,6 +32,7 @@ class AdvancedFlagsSection extends StatelessWidget {
           description: l10n.advancedNetworkFlagsDescription,
           children: [
             EditorSwitch(
+              icon: Icons.enhanced_encryption_rounded,
               controller: controller,
               name: 'flags.enableEncryption',
               read: (n) => n.flags.enableEncryption,
@@ -40,6 +41,7 @@ class AdvancedFlagsSection extends StatelessWidget {
               subtitle: l10n.advancedEnableEncryptionSubtitle,
             ),
             EditorSwitch(
+              icon: Icons.lan_outlined,
               controller: controller,
               name: 'flags.enableIpv6',
               read: (n) => n.flags.enableIpv6,
@@ -48,6 +50,7 @@ class AdvancedFlagsSection extends StatelessWidget {
               subtitle: l10n.advancedEnableIpv6Subtitle,
             ),
             EditorSwitch(
+              icon: Icons.speed_rounded,
               controller: controller,
               name: 'flags.latencyFirst',
               read: (n) => n.flags.latencyFirst,
@@ -56,6 +59,7 @@ class AdvancedFlagsSection extends StatelessWidget {
               subtitle: l10n.advancedLatencyFirstSubtitle,
             ),
             EditorSwitch(
+              icon: Icons.memory_rounded,
               controller: controller,
               name: 'flags.multiThread',
               read: (n) => n.flags.multiThread,
@@ -64,6 +68,7 @@ class AdvancedFlagsSection extends StatelessWidget {
               subtitle: l10n.advancedMultiThreadSubtitle,
             ),
             EditorSwitch(
+              icon: Icons.swap_calls_rounded,
               controller: controller,
               name: 'flags.enableKcpProxy',
               read: (n) => n.flags.enableKcpProxy,
@@ -72,6 +77,7 @@ class AdvancedFlagsSection extends StatelessWidget {
               subtitle: l10n.advancedKcpProxySubtitle,
             ),
             EditorSwitch(
+              icon: Icons.bolt_rounded,
               controller: controller,
               name: 'flags.enableQuicProxy',
               read: (n) => n.flags.enableQuicProxy,
@@ -80,6 +86,7 @@ class AdvancedFlagsSection extends StatelessWidget {
               subtitle: l10n.advancedQuicProxySubtitle,
             ),
             EditorSwitch(
+              icon: Icons.dns_outlined,
               controller: controller,
               name: 'flags.acceptDns',
               read: (n) => n.flags.acceptDns,

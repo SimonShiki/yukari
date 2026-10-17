@@ -6,6 +6,7 @@ import '../../../l10n/l10n.dart';
 import '../../../models/models.dart';
 import '../../../utils/validator.dart';
 import '../../../widgets/form_section/form_section.dart';
+import '../../../widgets/select_item/select_item.dart';
 import 'editor_fields.dart';
 
 /// Tuning: protocols, algorithms and resource limits.
@@ -25,9 +26,10 @@ class AdvancedTuningSection extends StatelessWidget {
       collapsible: true,
       children: [
         SignalBuilder(
-          builder: (context) => EditorDropdown<NodeProtocol>(
+          builder: (context) => SelectItem<NodeProtocol>(
+            icon: Icons.swap_horiz_rounded,
             label: l10n.advancedDefaultProtocol,
-            helper: l10n.advancedDefaultProtocolHelper,
+            supportingText: l10n.advancedDefaultProtocolHelper,
             value: controller
                 .select(
                   'flags.defaultProtocol',
@@ -43,9 +45,10 @@ class AdvancedTuningSection extends StatelessWidget {
           ),
         ),
         SignalBuilder(
-          builder: (context) => EditorDropdown<EncryptionAlgorithm>(
+          builder: (context) => SelectItem<EncryptionAlgorithm>(
+            icon: Icons.lock_outline_rounded,
             label: l10n.advancedEncryptionAlgorithm,
-            helper: l10n.advancedEncryptionAlgorithmHelper,
+            supportingText: l10n.advancedEncryptionAlgorithmHelper,
             value: controller
                 .select(
                   'flags.encryptionAlgorithm',
@@ -66,9 +69,10 @@ class AdvancedTuningSection extends StatelessWidget {
           ),
         ),
         SignalBuilder(
-          builder: (context) => EditorDropdown<CompressionAlgorithm>(
+          builder: (context) => SelectItem<CompressionAlgorithm>(
+            icon: Icons.archive_outlined,
             label: l10n.advancedCompression,
-            helper: l10n.advancedCompressionHelper,
+            supportingText: l10n.advancedCompressionHelper,
             value: controller
                 .select(
                   'flags.compressionAlgorithm',
@@ -115,6 +119,7 @@ class AdvancedTuningSection extends StatelessWidget {
           ),
         ),
         EditorSwitch(
+          icon: Icons.settings_ethernet_rounded,
           controller: controller,
           name: 'flags.useSmoltcp',
           read: (n) => n.flags.useSmoltcp,

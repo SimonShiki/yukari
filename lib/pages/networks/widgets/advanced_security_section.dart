@@ -46,6 +46,7 @@ class AdvancedSecuritySection extends StatelessWidget {
           description: l10n.advancedSecurityDescription,
           children: [
             SwitchSegment(
+              icon: Icons.shield_outlined,
               title: l10n.advancedSecureMode,
               subtitle: l10n.advancedSecureModeSubtitle,
               value: enabled,

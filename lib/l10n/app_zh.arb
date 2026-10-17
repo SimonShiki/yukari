@@ -1086,5 +1086,25 @@
   "bookmarksScanQr": "扫描二维码",
   "bookmarksScanUnavailable": "通过二维码扫描书签的功能即将推出。",
   "advancedCopyPublicKey": "复制公钥",
-  "advancedPublicKeyCopied": "公钥已复制"
+  "advancedPublicKeyCopied": "公钥已复制",
+  "aboutTitle": "关于",
+  "aboutVersion": "版本 {version}",
+  "@aboutVersion": {
+    "placeholders": {
+      "version": {
+        "type": "String"
+      }
+    }
+  },
+  "aboutSourceCode": "源代码",
+  "aboutLicenses": "查看许可证",
+  "aboutOpenFailed": "无法打开链接：{error}",
+  "@aboutOpenFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "settingsLanguageDescription": "应用显示的语言"
 }

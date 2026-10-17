@@ -27,6 +27,7 @@ class EditorStartupSection extends StatelessWidget {
       icon: Icons.power_settings_new_rounded,
       children: [
         EditorSwitch(
+          icon: Icons.rocket_launch_outlined,
           controller: controller,
           name: 'autoStart',
           read: (n) => n.autoStart,

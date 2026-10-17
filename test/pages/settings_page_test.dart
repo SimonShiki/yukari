@@ -19,6 +19,8 @@ import 'package:yukari/pages/settings/settings_page.dart';
 import 'package:yukari/pages/settings/widgets/switch_backend_dialog.dart';
 import 'package:yukari/signals/backend.dart' as backend_signals;
 import 'package:yukari/signals/locale.dart' as locale_signals;
+import 'package:yukari/widgets/context_menu/m3e_menu_panel.dart';
+import 'package:yukari/widgets/select_item/select_item.dart';
 
 import '../fake_backend.dart';
 import '../networks_fixture.dart';
@@ -269,15 +271,33 @@ void main() {
 
   testWidgets('persists the interface language', (tester) async {
     await pump(tester, ServiceState.running);
-    final field = tester.widget<EditableText>(find.byType(EditableText));
-    expect(field.controller.text, 'Follow system');
+    final row = find.byType(SelectItem<Locale?>);
+    expect(row, findsOneWidget);
+    // The closed row shows the current choice as plain trailing text.
+    expect(
+      find.descendant(of: row, matching: find.text('Follow system')),
+      findsOneWidget,
+    );
+    expect(find.byType(EditableText), findsNothing);
 
-    await tester.tap(find.byType(EditableText));
+    await tester.tap(find.text('Language'));
     await tester.pumpAndSettle();
+    // The menu names every language in its own language.
+    expect(
+      find.descendant(
+        of: find.byType(M3EMenuPanel),
+        matching: find.text('简体中文'),
+      ),
+      findsOneWidget,
+    );
     await tester.tap(find.text('简体中文').last);
     await tester.pumpAndSettle();
 
     expect(locale_signals.preferredLocale.value, const Locale('zh'));
+    expect(
+      find.descendant(of: row, matching: find.text('简体中文')),
+      findsOneWidget,
+    );
   });
 
   testWidgets('reads the language row left to right', (tester) async {
@@ -286,22 +306,23 @@ void main() {
     addTearDown(tester.view.reset);
     await pump(tester, ServiceState.running);
 
+    final row = find.byType(SelectItem<Locale?>);
     final label = find.text('Language');
-    final dropdown = find.byType(DropdownMenu<Locale?>);
-    expect(label, findsOneWidget);
-    expect(dropdown, findsOneWidget);
-    // The label sits left of the control, on the same line, as in the
-    // backend-mode rows. The 360px width also proves the row fits a phone.
+    final value = find.text('Follow system');
+    expect(row, findsOneWidget);
+    expect(find.descendant(of: row, matching: label), findsOneWidget);
+    expect(find.descendant(of: row, matching: value), findsOneWidget);
+
+    // The label leads the row and the value sits at its trailing edge, as in
+    // the backend-mode rows. The 360px width also proves the row fits a phone.
+    expect(tester.getTopLeft(label).dx, lessThan(tester.getTopLeft(value).dx));
     expect(
-      tester.getTopLeft(label).dx,
-      lessThan(tester.getTopLeft(dropdown).dx),
+      tester.getTopRight(value).dx,
+      moreOrLessEquals(tester.getTopRight(row).dx - 16, epsilon: 1),
     );
-    expect(tester.getCenter(label).dy, tester.getCenter(dropdown).dy);
-    // The field no longer carries "Language" as its floating label.
-    expect(
-      find.descendant(of: dropdown, matching: find.text('Language')),
-      findsNothing,
-    );
+    // The setting explains itself under the headline.
+    expect(find.text('The language the app shows'), findsOneWidget);
+    expect(tester.takeException(), isNull);
   });
 
   testWidgets('fails closed when the switch is dismissed', (tester) async {

@@ -4,7 +4,7 @@ import '../../../l10n/l10n.dart';
 import '../../../models/models.dart';
 import '../../../utils/validator.dart';
 import '../../../widgets/dialog/confirm_dialog.dart';
-import 'editor_fields.dart';
+import '../../../widgets/select_item/select_item.dart';
 
 /// Asks for one listener address; null when dismissed or still invalid.
 Future<Uri?> showListenerDialog(BuildContext context, {Uri? listener}) =>
@@ -78,13 +78,19 @@ class _ListenerDialogState extends State<_ListenerDialog> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               spacing: 16,
               children: [
-                EditorDropdown<NodeProtocol>(
-                  label: l10n.networkProtocol,
-                  helper: null,
-                  value: _protocol,
-                  options: NodeProtocol.values,
-                  labelOf: (protocol) => protocol.name.toUpperCase(),
-                  onSelected: (protocol) => setState(() => _protocol = protocol),
+                Material(
+                  color: Theme.of(context).colorScheme.surfaceContainer,
+                  borderRadius: const BorderRadius.all(Radius.circular(12)),
+                  clipBehavior: Clip.antiAlias,
+                  child: SelectItem<NodeProtocol>(
+                    icon: Icons.settings_ethernet_rounded,
+                    label: l10n.networkProtocol,
+                    value: _protocol,
+                    options: NodeProtocol.values,
+                    labelOf: (protocol) => protocol.name.toUpperCase(),
+                    onSelected: (protocol) =>
+                        setState(() => _protocol = protocol),
+                  ),
                 ),
                 TextFormField(
                   controller: _host,
