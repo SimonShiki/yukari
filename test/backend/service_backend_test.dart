@@ -30,10 +30,7 @@ void main() {
       log: logs.add,
     );
     await daemon.start(await ServerSocket.bind(address, 0));
-    client = ServiceBackend(
-      () async => IpcEndpoint(address, 0),
-      retryInterval: const Duration(milliseconds: 20),
-    );
+    client = ServiceBackend(() async => IpcEndpoint(address, 0));
     addTearDown(() async {
       await client.dispose();
       await daemon.stop();
@@ -101,7 +98,22 @@ void main() {
     expect(await runningServiceVersion(IpcEndpoint(address, 0)), isNull);
   });
 
-  test('reconnects by itself once a restarted service is back', () async {
+  test('checks once, and reports that answer until asked again', () async {
+    var locates = 0;
+    final backend = ServiceBackend(() async {
+      locates++;
+      return IpcEndpoint(_missingAddress(store), 0);
+    });
+    addTearDown(backend.dispose);
+
+    await expectLater(backend.collectInfos(), throwsException);
+    await expectLater(backend.collectInfos(), throwsException);
+
+    expect(locates, 1, reason: 'a request never starts a check of its own');
+    expect(backend.status.value, BackendStatus.unavailable);
+  });
+
+  test('reconnects when retried, not on its own', () async {
     await serve();
     await client.collectInfos();
     final socket = File(p.join(p.dirname(store.file.path), 'service.sock'));
@@ -127,6 +139,16 @@ void main() {
       ),
     );
     addTearDown(restarted.stop);
+
+    // The service is back, but nothing reaches out on its own: the status
+    // still reports the check that failed.
+    await expectLater(
+      client.collectInfos(),
+      throwsA(isA<ServiceUnavailableException>()),
+    );
+    expect(client.status.value, BackendStatus.unavailable);
+
+    await client.retry();
     await until(BackendStatus.ready);
   });
 

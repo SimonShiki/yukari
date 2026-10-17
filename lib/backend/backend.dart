@@ -16,6 +16,9 @@ abstract class NetworkBackend {
   /// Whether the backend can currently take requests.
   ReadonlySignal<BackendStatus> get status;
 
+  /// Checks again whether the backend can take requests.
+  Future<void> retry() async {}
+
   /// How many instances may run at once, or null when unlimited.
   int? get maxInstances => null;
 

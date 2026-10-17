@@ -1,8 +1,10 @@
 import 'dart:async';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:signals/signals.dart';
 import 'package:yukari/backend/backend.dart';
+import 'package:yukari/backend/service_backend.dart';
 import 'package:yukari/backend/system/service_control.dart';
 import 'package:yukari/controllers/backend_settings_controller.dart';
 import 'package:yukari/models/models.dart';
@@ -12,6 +14,9 @@ import '../fake_backend.dart';
 import '../networks_fixture.dart';
 
 void main() {
+  // Switching modes persists the choice.
+  setUp(() => SharedPreferences.setMockInitialValues({}));
+
   test('disposing during the service check writes no disposed signal', () async {
     final gate = Completer<void>();
     final controller = _build(control: _GatedControl(stateGate: gate));
@@ -170,6 +175,68 @@ void main() {
     expect(backend_signals.backendKind.value, BackendKind.ffi);
     expect(backend_signals.backendStatus.value, isNotNull);
   });
+
+  test('refresh asks the backend for one more check', () async {
+    final backend = _UnreachableBackend();
+    final controller = _build(control: _GatedControl(), backend: backend);
+    addTearDown(controller.dispose);
+
+    await controller.refresh();
+
+    expect(backend.retries, 1);
+  });
+
+  test('an unreachable service does not block switching back', () async {
+    final backend = _UnreachableBackend();
+    final global = backend_signals.backend as Signal<NetworkBackend>;
+    final previous = global.value;
+    global.value = backend;
+    final messages = <String>[];
+    var asked = 0;
+    final controller = _build(
+      control: _GatedControl(),
+      backend: backend,
+      messages: messages,
+      stop: (_, _) async {
+        asked++;
+        return true;
+      },
+    );
+    addTearDown(() {
+      controller.dispose();
+      global.value = previous;
+    });
+
+    await controller.select(BackendKind.ffi);
+
+    expect(global.value.kind, BackendKind.ffi, reason: 'the switch happened');
+    expect(messages, isEmpty, reason: 'the switch is not a failure');
+    expect(asked, 0, reason: 'it cannot say what it runs');
+  });
+}
+
+/// A service backend that cannot be reached, and counts its checks.
+class _UnreachableBackend extends FakeBackend {
+  @override
+  BackendKind get kind => BackendKind.service;
+
+  final _status = signal(BackendStatus.unavailable);
+
+  @override
+  ReadonlySignal<BackendStatus> get status => _status;
+
+  /// How often [retry] was called.
+  int retries = 0;
+
+  @override
+  Future<void> retry() async {
+    retries++;
+  }
+
+  @override
+  Future<Map<String, String>> collectInfos() async {
+    throw const ServiceUnavailableException('gone');
+  }
 }
 
 BackendSettingsController _build({

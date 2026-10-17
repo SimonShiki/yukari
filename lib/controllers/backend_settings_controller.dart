@@ -4,9 +4,10 @@ import 'package:signals/signals.dart';
 import '../backend/backend.dart';
 import '../backend/ipc/ipc_client.dart';
 import '../backend/ipc/ipc_endpoint.dart';
+import '../backend/service_backend.dart';
 import '../backend/service_version.dart';
 import '../backend/system/service_control.dart';
-import '../models/backend.dart';
+import '../models/models.dart';
 import '../signals/backend.dart' as backend_signals;
 import '../signals/locale.dart';
 import '../signals/networks.dart';
@@ -100,9 +101,15 @@ class BackendSettingsController {
   Future<void> selectLanguage(Locale? locale) => setPreferredLocale(locale);
 
   /// Re-reads the service state and, while it runs, its version.
+  ///
+  /// This is what starts another check of the service connection; nothing else
+  /// does, so a service that is down is reported once. See
+  /// [NetworkBackend.retry].
   Future<void> refresh() async {
     if (_disposed) return;
     try {
+      await _backend.value.retry();
+      if (_disposed) return;
       final state = await control.state();
       if (_disposed) return;
       serviceState.value = state;
@@ -137,19 +144,40 @@ class BackendSettingsController {
     }
     busy.value = true;
     try {
-      final running = await _backend.value.collect(networks.value);
-      if (running.isNotEmpty) {
-        if (!await confirmStopNetworks(kind, running.length)) return;
-        await _backend.value.stop([
-          for (final instance in running.values) instance.network.networkName,
-        ]);
-      }
+      if (!await _stopRunning(kind)) return;
       await backend_signals.switchBackend(kind);
     } catch (error) {
       if (!_disposed) showMessage(l10n.value.controllerStopNetworks('$error'));
     } finally {
       if (!_disposed) busy.value = false;
     }
+  }
+
+  /// Stops what the outgoing backend runs, so switching modes does not leave
+  /// instances behind. False when the user cancels the switch.
+  ///
+  /// A backend that cannot answer is not an obstacle. Its networks belong to
+  /// it, and refusing to switch would strand the user in a mode where every
+  /// request fails, unable to get back out of it.
+  Future<bool> _stopRunning(BackendKind kind) async {
+    final backend = _backend.value;
+    final Map<String, Instance> running;
+    try {
+      running = await backend.collect(networks.value);
+    } on ServiceUnavailableException {
+      // An unreachable service cannot say what it runs.
+      return true;
+    }
+    if (running.isEmpty) return true;
+    if (!await confirmStopNetworks(kind, running.length)) return false;
+    try {
+      await backend.stop([
+        for (final instance in running.values) instance.network.networkName,
+      ]);
+    } on ServiceUnavailableException {
+      // It stopped answering between the two calls: nothing is left to stop.
+    }
+    return true;
   }
 
   /// Installs or reinstalls the service, streaming the download's progress.

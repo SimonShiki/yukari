@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:json_rpc_2/json_rpc_2.dart';
 import 'package:signals/signals.dart';
 
@@ -21,24 +19,27 @@ final class ServiceUnavailableException implements Exception {
 /// Runs instances in the privileged background service, reached over IPC.
 ///
 /// The service reads networks from the shared store itself, so starting one
-/// sends only its id. While the service is unreachable, such as when an
-/// update restarts it, tries again every [retryInterval] until it answers.
+/// sends only its id. It is checked once, when this backend is created: every
+/// request afterwards reports the answer that check gave, and [status] stays
+/// [BackendStatus.unavailable], until [retry] asks for another check. Nothing
+/// here reaches out on its own, so a service that is down is reported once
+/// instead of being re-detected behind the user's back.
 class ServiceBackend extends NetworkBackend {
-  ServiceBackend(
-    this._locate, {
-    this.retryInterval = const Duration(seconds: 2),
-  }) {
+  ServiceBackend(this._locate) {
     _connect().ignore();
   }
 
   /// Finds the running service; see [IpcEndpoint.locate].
   final Future<IpcEndpoint> Function() _locate;
-  final Duration retryInterval;
 
   final _status = signal(BackendStatus.connecting);
   Client? _client;
   Future<Client>? _connecting;
-  Timer? _retry;
+
+  /// The check that failed, once one has: requests then fail with it rather
+  /// than run a check of their own.
+  ServiceUnavailableException? _unavailable;
+
   bool _disposed = false;
 
   @override
@@ -46,6 +47,17 @@ class ServiceBackend extends NetworkBackend {
 
   @override
   ReadonlySignal<BackendStatus> get status => _status;
+
+  @override
+  Future<void> retry() async {
+    if (_disposed) return;
+    _unavailable = null;
+    try {
+      await _connect();
+    } catch (_) {
+      // The check reported its answer through [status].
+    }
+  }
 
   @override
   Future<Map<String, String>> collectInfos() async =>
@@ -66,7 +78,6 @@ class ServiceBackend extends NetworkBackend {
   Future<void> dispose() async {
     if (_disposed) return;
     _disposed = true;
-    _retry?.cancel();
     _status.dispose();
     await _client?.close();
   }
@@ -79,6 +90,7 @@ class ServiceBackend extends NetworkBackend {
     if (_client case final client? when !client.isClosed) {
       return Future.value(client);
     }
+    if (_unavailable case final failure?) return Future.error(failure);
     return _connecting ??= _open().whenComplete(() => _connecting = null);
   }
 
@@ -90,13 +102,14 @@ class ServiceBackend extends NetworkBackend {
     try {
       client = await connectIpc(await _locate());
     } catch (error) {
+      final failure = ServiceUnavailableException(error);
       // The backend may have been disposed while locating the service, and
       // its status signal was disposed with it.
       if (!_disposed) {
         _status.value = BackendStatus.unavailable;
-        _retryLater();
+        _unavailable = failure;
       }
-      throw ServiceUnavailableException(error);
+      throw failure;
     }
     if (_disposed) {
       await client.close();
@@ -105,18 +118,12 @@ class ServiceBackend extends NetworkBackend {
     client.done.whenComplete(() {
       if (!_disposed && identical(_client, client)) {
         _status.value = BackendStatus.unavailable;
-        _retryLater();
+        _unavailable = ServiceUnavailableException(
+          'the service closed the connection',
+        );
       }
     }).ignore();
     _status.value = BackendStatus.ready;
     return _client = client;
-  }
-
-  void _retryLater() {
-    if (_disposed || _retry != null) return;
-    _retry = Timer(retryInterval, () {
-      _retry = null;
-      _connect().ignore();
-    });
   }
 }
