@@ -43,26 +43,32 @@ final class MagicDnsSystem {
   /// Whether this platform has any system DNS support to show.
   bool get supported => platform != MagicDnsPlatform.other;
 
-  static final _dev = RegExp(r'\bdev\s+(\S+)');
   static final _interface = RegExp(r'^[A-Za-z0-9_.-]+$');
+  static final _link = RegExp(r'^\d+:\s+([^\s:]+)', multiLine: true);
 
   /// Whether the system DNS sends [zone] to the Magic DNS server, and the
   /// EasyTier interface the probe found.
   ///
-  /// [interfaceName] is the network's configured TUN name, used when the route
-  /// to the Magic DNS server is not there yet.
+  /// [interfaceName] is the network's configured TUN name and [address] its
+  /// virtual IPv4; together they name the interface the system DNS has to be
+  /// set on, or none when the EasyTier link cannot be identified yet.
   Future<MagicDnsProbe> probe({
     required String zone,
     required String interfaceName,
+    String? address,
   }) async {
     if (!supported) {
       return (state: MagicDnsState.unsupported, interface: null);
     }
     if (automatic) return _probeWindows();
     if (platform == MagicDnsPlatform.android) {
-      return _probeAndroid(zone: zone, interfaceName: interfaceName);
+      return _probeAndroid(
+        zone: zone,
+        interfaceName: interfaceName,
+        address: address,
+      );
     }
-    final interface = await _findInterface(interfaceName);
+    final interface = await _findInterface(interfaceName, address);
     if (interface == null) {
       return (state: MagicDnsState.noInterface, interface: null);
     }
@@ -85,19 +91,29 @@ final class MagicDnsSystem {
     );
   }
 
-  /// Sends [zone]'s lookups to the Magic DNS server.
+  /// Sends [zone]'s lookups to the Magic DNS server on the network's own link.
   ///
-  /// Linux points [interfaceName] at it through systemd-resolved, asking to
-  /// elevate once: both values are validated and quoted, because one shell
+  /// Linux resolves the interface from [interfaceName] and [address] through
+  /// the same helper [probe] uses, so both agree on the link this network
+  /// owns, and points that link at the server through systemd-resolved, asking
+  /// to elevate once: both values are validated and quoted, because one shell
   /// runs both commands so the user authorizes once. Android installs its
   /// redirect chain, which needs no interface.
+  ///
+  /// Nothing is applied when no EasyTier interface is identified: a fail-closed
+  /// setup leaves another VPN's link alone.
   Future<void> apply({
     required String zone,
     required String interfaceName,
+    String? address,
   }) async {
     if (platform == MagicDnsPlatform.android) return _applyAndroid(zone: zone);
     final base = _checked(magicDnsZoneBase(zone), _zoneName, 'zone');
-    final name = _checked(interfaceName, _interface, 'interfaceName');
+    if (interfaceName.isNotEmpty) {
+      _checked(interfaceName, _interface, 'interfaceName');
+    }
+    final name = await _findInterface(interfaceName, address);
+    if (name == null) return;
     await _command.runElevated('sh', [
       '-c',
       'resolvectl dns ${_quote(name)} $magicDnsServer && '
@@ -130,15 +146,23 @@ final class MagicDnsSystem {
     );
   }
 
-  /// The EasyTier interface: the route to the Magic DNS server, else the
-  /// configured TUN name when that still exists.
-  Future<String?> _findInterface(String configuredName) async {
-    final route = await _try('ip', ['-4', 'route', 'get', magicDnsServer]);
-    final name = _dev.firstMatch(route?.stdout ?? '')?.group(1);
-    if (name != null) return name;
-    if (configuredName.isEmpty) return null;
-    final link = await _try('ip', ['link', 'show', configuredName]);
-    return link != null && link.exitCode == 0 ? configuredName : null;
+  /// The EasyTier interface of one network: the configured TUN name when that
+  /// link is up, else the link that owns the network's virtual IPv4.
+  ///
+  /// The route to [magicDnsServer] is deliberately not consulted: another
+  /// VPN's TUN can own it, and its DNS is not this network's to change. Null
+  /// when neither name identifies a link, so a caller fails closed instead.
+  Future<String?> _findInterface(String configuredName, String? address) async {
+    if (configuredName.isNotEmpty) {
+      final link = await _try('ip', ['link', 'show', configuredName]);
+      if (link != null && link.exitCode == 0) return configuredName;
+    }
+    final host = magicDnsIpv4Host(address);
+    if (host == null) return null;
+    final owned = await _try('ip', ['-4', '-o', 'addr', 'show', 'to', host]);
+    if (owned == null || owned.exitCode != 0) return null;
+    final name = _link.firstMatch(owned.stdout)?.group(1);
+    return name != null && _interface.hasMatch(name) ? name : null;
   }
 
   Future<CommandResult?> _try(String executable, List<String> arguments) async {

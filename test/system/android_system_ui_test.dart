@@ -338,6 +338,28 @@ void main() {
     expect(methodCalls('openApp'), isEmpty);
   });
 
+  test('a tile tap leaves a network the backend has no room for', () async {
+    SharedPreferences.setMockInitialValues({
+      'android.lastBootedNetwork': 'n2',
+    });
+    // The store shows the running instance as stopped, so the tile cannot see
+    // it, while the backend still holds its single TUN slot.
+    backend = _TestBackend(maxTunInstances: 1, notRunning: true);
+    backends.value = backend;
+    backend.started['n1'] = saved.networks.value['n1']!;
+    await startUi();
+    await pumpEventQueue();
+
+    await sendAction('toggle');
+
+    expect(
+      backend.started.keys,
+      ['n1'],
+      reason: 'the one TUN slot is taken, so beta was not booted',
+    );
+    expect(methodCalls('openApp'), isEmpty);
+  });
+
   test('the tile turns the background service off', () async {
     kinds.value = BackendKind.service;
     control.current = ServiceState.running;
@@ -391,17 +413,25 @@ void main() {
 /// A backend that reports the networks it started, each with [peerCount]
 /// peers, like EasyTier as they connect.
 class _TestBackend extends FakeBackend {
-  _TestBackend({this.peerCount = 0});
+  _TestBackend({
+    this.peerCount = 0,
+    this.notRunning = false,
+    super.maxTunInstances,
+  });
 
   final int peerCount;
+
+  /// Whether every instance it reports is not running.
+  final bool notRunning;
 
   @override
   Future<Map<String, String>> collectInfos() async => {
     for (final network in started.values)
-      network.networkName: jsonEncode(
-        instanceInfo(
+      network.networkName: jsonEncode({
+        ...instanceInfo(
           peers: [for (var i = 0; i < peerCount; i++) instancePeer()],
         ),
-      ),
+        'running': !notRunning,
+      }),
   };
 }

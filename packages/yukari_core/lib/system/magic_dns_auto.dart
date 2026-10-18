@@ -37,6 +37,7 @@ final class MagicDnsAuto implements MagicDnsSetup {
     MagicDnsSystem? system,
     this.attempts = 40,
     this.retryDelay = const Duration(milliseconds: 500),
+    this.assignedAddress,
   }) : system = system ?? MagicDnsSystem();
 
   final MagicDnsSystem system;
@@ -46,6 +47,13 @@ final class MagicDnsAuto implements MagicDnsSetup {
 
   /// How long each of those waits is.
   final Duration retryDelay;
+
+  /// The virtual IPv4 EasyTier assigned to the instance running [networkId].
+  ///
+  /// A network configured for DHCP has no address of its own until its
+  /// instance reports one, so this is read again on every attempt. Null reads
+  /// the saved network only.
+  final Future<String?> Function(String networkId)? assignedAddress;
 
   /// The configurations this setup installed, by network id: the EasyTier
   /// interface and the zone each was installed for.
@@ -59,11 +67,15 @@ final class MagicDnsAuto implements MagicDnsSetup {
   Future<String?> start(String networkId, Network network) async {
     if (!appliesTo(network)) return null;
     final zone = network.flags.dnsZone;
+    final deviceName = network.flags.deviceName;
     try {
       for (var attempt = 0; attempt < attempts; attempt++) {
+        final address =
+            await assignedAddress?.call(networkId) ?? network.ipv4;
         final probe = await system.probe(
           zone: zone,
-          interfaceName: network.flags.deviceName,
+          interfaceName: deviceName,
+          address: address,
         );
         switch (probe.state) {
           case MagicDnsState.configured:
@@ -80,14 +92,20 @@ final class MagicDnsAuto implements MagicDnsSetup {
           case MagicDnsState.failed:
             return null;
           case MagicDnsState.missing:
+            // The interface the probe resolved is the one apply configures:
+            // both read the same hints through the same helper.
             final interface = probe.interface;
             if (interface == null) return null;
-            await system.apply(zone: zone, interfaceName: interface);
+            await system.apply(
+              zone: zone,
+              interfaceName: deviceName,
+              address: address,
+            );
             _configured[networkId] = (interface: interface, zone: zone);
             return interface;
           case MagicDnsState.noInterface:
-            // The network just started: its TUN device and the route to the
-            // Magic DNS server may still be coming up.
+            // The network just started: its TUN device and the address it
+            // owns may still be coming up.
             if (attempt + 1 < attempts) {
               await Future<void>.delayed(retryDelay);
             }

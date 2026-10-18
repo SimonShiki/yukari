@@ -460,6 +460,7 @@
   "settingsModeApp": "App",
   "settingsModeService": "Service",
   "settingsModeAppDescription": "Run networks inside Yukari. Requires administrator or root privileges.",
+  "settingsModeAppVpnDescription": "It uses the system VPN, which has some limitations.",
   "settingsModeServiceDescription": "Run networks as system service. Can start on boot and work without Yukari app.",
   "settingsWorkingMode": "Working mode",
   "settingsNeedsRoot": "Needs root.",

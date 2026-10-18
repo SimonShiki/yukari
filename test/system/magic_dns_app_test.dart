@@ -19,6 +19,21 @@ const _info = <String, Object?>{
   'events': <Object?>[],
 };
 
+/// The same, with the address EasyTier assigned in the shape it reports.
+const _assignedInfo = <String, Object?>{
+  'running': true,
+  'my_node_info': <String, Object?>{
+    'peer_id': 1,
+    'hostname': 'laptop',
+    'virtual_ipv4': {
+      'address': {'addr': 176061954},
+      'network_length': 24,
+    },
+  },
+  'peer_route_pairs': <Object?>[],
+  'events': <Object?>[],
+};
+
 Network _network(String name, {bool acceptDns = true, bool noTun = false}) =>
     Network()
       ..networkName = name
@@ -142,6 +157,24 @@ void main() {
     await running.refreshInstances(FakeBackend(collected: () => {}));
     await pumpEventQueue();
     expect(magicDnsDismissedCards.value, isEmpty);
+  });
+
+  test('the app setup reads the address the running instance reported', () async {
+    // Magic DNS is off, so the effect leaves this instance alone and the test
+    // only asks the setup where its address comes from.
+    await seedWith({'n1': _network('alpha', acceptDns: false)});
+    await running.refreshInstances(
+      FakeBackend(collected: () => {'alpha': _assignedInfo}),
+    );
+    final auto = initMagicDnsAuto();
+    addTearDown(auto.dispose);
+
+    final setup = auto.setup;
+    expect(setup, isA<MagicDnsAuto>());
+    expect(
+      await (setup as MagicDnsAuto).assignedAddress!('n1'),
+      '10.126.126.2',
+    );
   });
 
   test('dismissed cards are session state that a stop restores', () {

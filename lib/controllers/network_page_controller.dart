@@ -122,12 +122,10 @@ class NetworkPageController {
 
   /// The rows of the list, in display order.
   late final ReadonlySignal<List<NetworkCardData>> cards = computed(() {
-    final limit = activeBackend.maxInstances;
-    final limitReached = limit != null && instances.value.length >= limit;
     final settled = loaded.value && refreshError.value == null;
     return [
       for (final MapEntry(:key, value: network) in saved.networks.value.entries)
-        _card(key, network, limitReached: limitReached, settled: settled),
+        _card(key, network, settled: settled),
     ];
   });
 

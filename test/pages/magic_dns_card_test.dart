@@ -30,15 +30,40 @@ const _instance = <String, Object?>{
   'events': <Object?>[],
 };
 
+/// The same for a network EasyTier addressed itself: the DHCP-assigned address
+/// in the shape `my_node_info` reports.
+const _assignedInstance = <String, Object?>{
+  'running': true,
+  'my_node_info': <String, Object?>{
+    'peer_id': 1,
+    'hostname': 'laptop',
+    'virtual_ipv4': {
+      'address': {'addr': 176061954},
+      'network_length': 24,
+    },
+  },
+  'peer_route_pairs': <Object?>[],
+  'events': <Object?>[],
+};
+
+/// The same for an instance EasyTier has not addressed yet.
+const _unaddressedInstance = <String, Object?>{
+  'running': true,
+  'peer_route_pairs': <Object?>[],
+  'events': <Object?>[],
+};
+
 Network _network({
   bool acceptDns = true,
   bool noTun = false,
   String? hostname = 'laptop',
   String zone = 'et.net.',
   String deviceName = '',
+  String? ipv4 = '10.126.126.2/24',
 }) => Network()
   ..networkName = 'alpha'
   ..hostname = hostname
+  ..ipv4 = ipv4
   ..flags = (NetworkFlags()
     ..acceptDns = acceptDns
     ..noTun = noTun
@@ -50,11 +75,12 @@ Future<void> _seed(
   WidgetTester tester, {
   required Network network,
   bool running = false,
+  Map<String, Object?> instance = _instance,
 }) => tester.runAsync(() async {
   await seedWith({'n1': network});
   if (running) {
     await instances.refreshInstances(
-      FakeBackend(collected: () => {'alpha': _instance}),
+      FakeBackend(collected: () => {'alpha': instance}),
     );
   }
 });
@@ -242,6 +268,101 @@ void main() {
     expect(command.elevated, isEmpty);
   });
 
+  testWidgets("the route to another VPN's TUN is not this network's DNS", (
+    tester,
+  ) async {
+    var configured = false;
+    final command = FakeSystemCommand(
+      runHandler: linuxHost(configured: () => configured),
+    );
+    await _seed(tester, network: _network(), running: true);
+
+    final controller = await _pumpCard(tester, linuxSystem(command));
+
+    // The other VPN owns the route to the Magic DNS server and still carries
+    // the leaked zone; the EasyTier TUN is the one the card reads.
+    expect(controller.interfaceName.value, 'et_12_xoih');
+    expect(controller.state.value, MagicDnsState.missing);
+    expect(find.text(strings.magicDnsMissing('et.net')), findsOneWidget);
+
+    // The service finishes on that same link: the next collection hides it.
+    configured = true;
+    await instances.refreshInstances(
+      FakeBackend(collected: () => {'alpha': _instance}),
+    );
+    await tester.pumpAndSettle();
+
+    expect(controller.state.value, MagicDnsState.configured);
+    expect(find.text(strings.magicDnsTitle), findsNothing);
+  });
+
+  testWidgets('a DHCP network probes the address EasyTier assigned', (
+    tester,
+  ) async {
+    final command = FakeSystemCommand(
+      runHandler: linuxHost(configured: () => true),
+    );
+    await _seed(
+      tester,
+      network: _network(ipv4: null),
+      running: true,
+      instance: _assignedInstance,
+    );
+
+    final controller = await _pumpCard(tester, linuxSystem(command));
+
+    expect(controller.address.value, '10.126.126.2');
+    expect(controller.interfaceName.value, 'et_12_xoih');
+    expect(controller.state.value, MagicDnsState.configured);
+    expect(find.text(strings.magicDnsTitle), findsNothing);
+    expect(command.elevated, isEmpty);
+  });
+
+  testWidgets('without an instance the saved address is the probe hint', (
+    tester,
+  ) async {
+    final command = FakeSystemCommand(runHandler: linuxHost());
+    await _seed(tester, network: _network());
+
+    final controller = await _pumpCard(tester, linuxSystem(command));
+
+    expect(controller.state.value, MagicDnsState.notRunning);
+    expect(controller.address.value, '10.126.126.2/24');
+    expect(command.runs, isEmpty, reason: 'a stopped network is not probed');
+  });
+
+  testWidgets('an instance without an address uses the saved one', (
+    tester,
+  ) async {
+    final command = FakeSystemCommand(runHandler: linuxHost());
+    await _seed(tester, network: _network(), running: true);
+
+    final controller = await _pumpCard(tester, linuxSystem(command));
+
+    expect(controller.interfaceName.value, 'et_12_xoih');
+    expect(controller.state.value, MagicDnsState.missing);
+  });
+
+  testWidgets('no assigned and no saved address stays noInterface', (
+    tester,
+  ) async {
+    final command = FakeSystemCommand(runHandler: linuxHost());
+    await _seed(
+      tester,
+      network: _network(ipv4: null),
+      running: true,
+      instance: _unaddressedInstance,
+    );
+
+    final controller = await _pumpCard(tester, linuxSystem(command));
+
+    expect(controller.address.value, isNull);
+    expect(controller.state.value, MagicDnsState.noInterface);
+    expect(find.text(strings.magicDnsNoInterface), findsOneWidget);
+    expect(command.runs, isEmpty, reason: 'nothing may be guessed');
+    expect(command.elevated, isEmpty);
+  });
+
   testWidgets('a failed apply can be cleaned up with reset', (tester) async {
     final command = FakeSystemCommand(
       runHandler: linuxHost(),
@@ -360,11 +481,7 @@ void main() {
   testWidgets('a host without resolved shows the resolv.conf fallback', (
     tester,
   ) async {
-    final command = FakeSystemCommand(
-      runHandler: (executable, _) => executable == 'ip'
-          ? ok('100.100.100.101 dev et_12_xoih src 10.126.126.2 uid 1000')
-          : null,
-    );
+    final command = FakeSystemCommand(runHandler: linuxHost(resolvectl: false));
     await _seed(tester, network: _network(), running: true);
 
     await _pumpCard(tester, linuxSystem(command));
@@ -380,13 +497,12 @@ void main() {
   ) async {
     var found = false;
     final command = FakeSystemCommand(
-      runHandler: (executable, arguments) => executable == 'ip'
-          ? ok(
-              found
-                  ? '100.100.100.101 dev et_12_xoih src 10.126.126.2 uid 1000'
-                  : '',
-            )
-          : linuxHost()(executable, arguments),
+      runHandler: (executable, arguments) {
+        if (executable == 'ip' && arguments.contains('addr') && !found) {
+          return ok('');
+        }
+        return linuxHost()(executable, arguments);
+      },
     );
     await _seed(tester, network: _network(), running: true);
     await _pumpCard(tester, linuxSystem(command));

@@ -24,12 +24,13 @@ extension MagicDnsAndroid on MagicDnsSystem {
   Future<MagicDnsProbe> _probeAndroid({
     required String zone,
     required String interfaceName,
+    String? address,
   }) async {
     final pattern = magicDnsZoneHex(zone);
     if (pattern == null) {
       return (state: MagicDnsState.unsupported, interface: null);
     }
-    final interface = await _findInterface(interfaceName);
+    final interface = await _findInterface(interfaceName, address);
     if (interface == null) {
       return (state: MagicDnsState.noInterface, interface: null);
     }

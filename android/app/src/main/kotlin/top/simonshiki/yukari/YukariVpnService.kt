@@ -2,6 +2,7 @@ package top.simonshiki.yukari
 
 import android.app.Notification
 import android.app.NotificationManager
+import android.app.Service
 import android.content.Intent
 import android.net.VpnService
 import android.os.Build
@@ -55,6 +56,7 @@ class YukariVpnService : VpnService() {
             instance = this
         } catch (e: Exception) {
             onTunFailed?.invoke(e.message ?: "Could not establish the VPN")
+            clearForegroundNotification()
             stopSelf()
             return START_NOT_STICKY
         }
@@ -66,6 +68,12 @@ class YukariVpnService : VpnService() {
     fun updateNotification(notification: Notification) {
         val manager = getSystemService(NotificationManager::class.java) ?: return
         manager.notify(YukariNotifications.VPN_NOTIFICATION_ID, notification)
+    }
+
+    /** Takes back the notification of a start that could not establish. */
+    private fun clearForegroundNotification() {
+        stopForeground(Service.STOP_FOREGROUND_REMOVE)
+        YukariNotifications.clearVpn(this)
     }
 
     private fun createVpnInterface(

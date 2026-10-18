@@ -72,6 +72,13 @@ class MagicDnsController {
     return flags != null && magicDnsRequested(flags);
   });
 
+  /// The network's virtual IPv4: the address EasyTier assigned to the running
+  /// instance, else the saved one. Null when neither knows one, which is what
+  /// makes the probe fail closed rather than guess an interface.
+  late final ReadonlySignal<String?> address = computed(
+    () => instance.value?.myself?.virtualIpv4 ?? network.value?.ipv4,
+  );
+
   /// The zone names this network's peers live under, such as `et.net.`.
   late final ReadonlySignal<String> zone = computed(
     () =>
@@ -121,6 +128,7 @@ class MagicDnsController {
       network,
       instance,
       enabled,
+      address,
       zone,
       magicName,
       dismissed,

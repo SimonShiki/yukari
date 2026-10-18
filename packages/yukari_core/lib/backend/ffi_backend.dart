@@ -34,11 +34,22 @@ class FfiBackend extends NetworkBackend {
   @override
   Future<void> start(String id, Network network) {
     if (_disposed) return Future.error(StateError('Backend disposed'));
-    return _run(_instanceConfig(network));
+    return runInstance(_instanceConfig(network));
   }
 
   @override
-  Future<void> stop(List<String> names) => _delete(names);
+  Future<void> stop(List<String> names) => deleteInstances(names);
+
+  /// Runs [config] through EasyTier in a helper isolate. Overridable, so an
+  /// in-process backend can be exercised without the EasyTier library.
+  Future<void> runInstance(String config) =>
+      Isolate.run(() => native.runNetworkInstance(config));
+
+  /// Stops the instances named [names]. Overridable, so an in-process backend
+  /// can be exercised without the EasyTier library.
+  Future<void> deleteInstances(List<String> names) => names.isEmpty
+      ? Future.value()
+      : Isolate.run(() => native.deleteNetworkInstances(names));
 
   @override
   Future<TunAccess> tunAccess(Network network) async =>
@@ -76,12 +87,3 @@ class FfiBackend extends NetworkBackend {
 String _instanceConfig(Network network) =>
     'instance_name = ${jsonEncode(network.networkName)}\n'
     '${network.toEasyTierToml()}';
-
-// Isolate entry points stay top-level so they capture nothing unsendable.
-
-Future<void> _run(String config) =>
-    Isolate.run(() => native.runNetworkInstance(config));
-
-Future<void> _delete(List<String> names) => names.isEmpty
-    ? Future.value()
-    : Isolate.run(() => native.deleteNetworkInstances(names));

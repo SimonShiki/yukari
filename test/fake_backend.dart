@@ -6,7 +6,7 @@ import 'package:yukari_core/models/models.dart';
 
 /// A backend that pretends to run instances, recording what it was asked.
 class FakeBackend extends NetworkBackend {
-  FakeBackend({this.collected, this.maxInstances});
+  FakeBackend({this.collected, this.maxTunInstances});
 
   /// EasyTier information by instance name; defaults to the started ones.
   final Map<String, Object?> Function()? collected;
@@ -16,7 +16,7 @@ class FakeBackend extends NetworkBackend {
   TunAccess access = TunAccess.granted;
 
   @override
-  final int? maxInstances;
+  final int? maxTunInstances;
 
   @override
   BackendKind get kind => BackendKind.ffi;

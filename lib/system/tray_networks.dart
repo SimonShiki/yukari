@@ -40,8 +40,7 @@ final class TrayNetworkActions {
     final backend = _backend.value;
     if (running.instances.peek().containsKey(id) == start) return true;
     if (start) {
-      final limit = backend.maxInstances;
-      if (limit != null && running.instances.peek().length >= limit) {
+      if (!backend.canStart(network, running.instances.peek().values)) {
         return true;
       }
       if (await backend.tunAccess(network) != TunAccess.granted) return false;

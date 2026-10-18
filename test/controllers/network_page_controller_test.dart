@@ -111,9 +111,9 @@ void main() {
     expect(instanceLogs('n1').value.single.kind, 'TunDeviceReady');
   });
 
-  test('the instance limit refuses another network', () async {
+  test('one TUN network runs, stays stoppable, and refuses the next', () async {
     await seedNetworks();
-    final backend = FakeBackend(maxInstances: 1);
+    final backend = FakeBackend(maxTunInstances: 1);
     final messages = <String>[];
     final controller = build(backend: backend, messages: messages);
     controller.start();
@@ -122,11 +122,48 @@ void main() {
     await controller.toggle('n1', true);
     await controller.refresh();
 
-    expect(controller.cards.value.first.onToggle, isNull);
+    // The running network is always stoppable...
+    expect(controller.cards.value.first.onToggle, isNotNull);
+    // ...while one that cannot start is not offered.
+    expect(controller.cards.value.last.onToggle, isNull);
     await controller.toggle('n2', true);
 
     expect(messages, [strings.controllerOneNetwork]);
     expect(backend.started.keys, ['n1']);
+  });
+
+  test('a no-TUN network does not take the TUN slot', () async {
+    await seedWith({
+      'n1': Network()..networkName = 'alpha',
+      'n2': (Network()..networkName = 'beta')..flags.noTun = true,
+    });
+    final backend = FakeBackend(maxTunInstances: 1);
+    final controller = build(backend: backend, messages: <String>[]);
+    controller.start();
+    addTearDown(controller.dispose);
+    await controller.refresh();
+    await controller.toggle('n1', true);
+    await controller.refresh();
+
+    expect(controller.cards.value.last.onToggle, isNotNull);
+    await controller.toggle('n2', true);
+
+    expect(backend.started.keys, ['n1', 'n2']);
+  });
+
+  test('a refusal from a rule without a limit names one network', () async {
+    await seedNetworks();
+    final backend = _LimitlessRefusingBackend();
+    final messages = <String>[];
+    final controller = build(backend: backend, messages: messages);
+    controller.start();
+    addTearDown(controller.dispose);
+    await controller.refresh();
+
+    await controller.toggle('n1', true);
+
+    expect(messages, [strings.controllerOneNetwork]);
+    expect(backend.started, isEmpty);
   });
 
   test('missing privileges are explained instead of starting', () async {
@@ -832,4 +869,11 @@ class _FlakyStartBackend extends FakeBackend {
     if (starts == 1) throw Exception('no tun');
     return super.start(id, network);
   }
+}
+
+/// A backend whose capacity rule refuses without naming a limit, as an
+/// override of the contract's own rule may.
+class _LimitlessRefusingBackend extends FakeBackend {
+  @override
+  bool canStart(Network network, Iterable<Instance> running) => false;
 }

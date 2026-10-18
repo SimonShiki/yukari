@@ -23,17 +23,11 @@ extension MagicDnsActions on MagicDnsController {
     final network = _currentNetwork;
     if (network == null) return;
     await _guard(() async {
-      var name = interfaceName.peek();
-      if (name.isEmpty) {
-        final probe = await system.probe(
-          zone: network.flags.dnsZone,
-          interfaceName: network.flags.deviceName,
-        );
-        _report(probe);
-        name = interfaceName.peek();
-        if (name.isEmpty) return;
-      }
-      await system.apply(zone: network.flags.dnsZone, interfaceName: name);
+      await system.apply(
+        zone: network.flags.dnsZone,
+        interfaceName: network.flags.deviceName,
+        address: address.value,
+      );
       await _probe(network);
     });
   }
@@ -59,6 +53,7 @@ extension MagicDnsActions on MagicDnsController {
       final probe = await system.probe(
         zone: network.flags.dnsZone,
         interfaceName: network.flags.deviceName,
+        address: address.value,
       );
       if (_disposed) return;
       _report(probe);
@@ -85,6 +80,7 @@ extension MagicDnsActions on MagicDnsController {
     final probe = await system.probe(
       zone: network.flags.dnsZone,
       interfaceName: network.flags.deviceName,
+      address: address.value,
     );
     if (_disposed) return;
     _report(probe);

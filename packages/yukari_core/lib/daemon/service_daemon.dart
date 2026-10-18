@@ -23,14 +23,15 @@ final class ServiceDaemon {
     required this.backend,
     MagicDnsSetup? magicDns,
     this.log = _log,
-  }) : assert(store.readOnly, 'The service must not write the network store'),
-       magicDns = magicDns ?? MagicDnsAuto();
+  }) : assert(store.readOnly, 'The service must not write the network store') {
+    this.magicDns = magicDns ?? MagicDnsAuto(assignedAddress: _assignedAddress);
+  }
 
   final NetworkStore store;
   final NetworkBackend backend;
 
   /// The system DNS of the networks this service runs.
-  final MagicDnsSetup magicDns;
+  late final MagicDnsSetup magicDns;
   final void Function(String message) log;
   IpcServer? _server;
 
@@ -140,6 +141,20 @@ final class ServiceDaemon {
       await magicDns.revertAll();
     } catch (error) {
       log('Could not revert Magic DNS: $error');
+    }
+  }
+
+  /// The virtual IPv4 EasyTier assigned to the instance running as [id].
+  ///
+  /// A network configured for DHCP carries no address of its own, so Magic DNS
+  /// asks the running instance. Null when the collection fails: a setup then
+  /// finds no interface and waits, rather than breaking the network's start.
+  Future<String?> _assignedAddress(String id) async {
+    try {
+      final instances = await backend.collect(await _savedNetworks());
+      return instances[id]?.myself?.virtualIpv4;
+    } catch (_) {
+      return null;
     }
   }
 

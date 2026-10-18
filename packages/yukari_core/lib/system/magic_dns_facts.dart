@@ -18,6 +18,19 @@ String magicDnsZoneBase(String zone) {
       : trimmed;
 }
 
+/// The IPv4 address inside [cidr], such as `10.126.126.2` for
+/// `10.126.126.2/24`; null when [cidr] is not an IPv4 address with an
+/// optional prefix.
+///
+/// A network's virtual IPv4 is user-written configuration, so anything that
+/// does not parse never reaches an `ip` command.
+String? magicDnsIpv4Host(String? cidr) {
+  final parts = cidr?.split('/') ?? const <String>[];
+  if (parts.isEmpty || parts.length > 2) return null;
+  final address = InternetAddress.tryParse(parts.first);
+  return address?.type == InternetAddressType.IPv4 ? address!.address : null;
+}
+
 /// The Magic DNS name of [host] under [zone], such as `laptop.et.net`.
 String magicDnsNameOf({required String host, required String zone}) =>
     '$host.${magicDnsZoneBase(zone)}';

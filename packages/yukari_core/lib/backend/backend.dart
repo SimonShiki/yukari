@@ -19,8 +19,23 @@ abstract class NetworkBackend {
   /// Checks again whether the backend can take requests.
   Future<void> retry() async {}
 
-  /// How many instances may run at once, or null when unlimited.
-  int? get maxInstances => null;
+  /// How many instances that create a TUN device may run at once, or null
+  /// when unlimited. An instance the network runs without a TUN device does
+  /// not take a slot, so this is non-null whenever [canStart] can refuse one.
+  int? get maxTunInstances => null;
+
+  /// Whether [network] may start while the [running] instances are up.
+  ///
+  /// The one place the TUN capacity is counted: Android allows a single VPN,
+  /// so its backend reports one slot here, and every page and the tray ask
+  /// this instead of comparing instance counts themselves.
+  bool canStart(Network network, Iterable<Instance> running) {
+    final slots = maxTunInstances;
+    return slots == null ||
+        network.flags.noTun ||
+        running.where((instance) => !instance.network.flags.noTun).length <
+            slots;
+  }
 
   /// Raw EasyTier information of the running instances, keyed by name.
   Future<Map<String, String>> collectInfos();

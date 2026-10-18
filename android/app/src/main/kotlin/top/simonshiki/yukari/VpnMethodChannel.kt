@@ -17,6 +17,13 @@ class VpnMethodChannel(private val activity: FlutterActivity) : MethodChannel.Me
     private var pendingPermissionResult: MethodChannel.Result? = null
     private var pendingStartResult: MethodChannel.Result? = null
 
+    /**
+     * The failure that arrived before its start result existed. The service can
+     * fail while the start call is still on the stack, and a start that is
+     * never answered hangs in Dart.
+     */
+    private var startFailure: String? = null
+
     init {
         YukariVpnService.onTunFdReady = { fd ->
             activity.runOnUiThread {
@@ -26,8 +33,13 @@ class VpnMethodChannel(private val activity: FlutterActivity) : MethodChannel.Me
         }
         YukariVpnService.onTunFailed = { message ->
             activity.runOnUiThread {
-                pendingStartResult?.error("vpn_start_failed", message, null)
+                val pending = pendingStartResult
                 pendingStartResult = null
+                if (pending != null) {
+                    pending.error("vpn_start_failed", message, null)
+                } else {
+                    startFailure = message
+                }
             }
         }
     }
@@ -55,6 +67,7 @@ class VpnMethodChannel(private val activity: FlutterActivity) : MethodChannel.Me
                     putExtra(YukariVpnService.EXTRA_DNS, call.argument<String>("dns"))
                 }
 
+                startFailure = null
                 try {
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                         activity.startForegroundService(intent)
@@ -73,6 +86,14 @@ class VpnMethodChannel(private val activity: FlutterActivity) : MethodChannel.Me
                 }
 
                 pendingStartResult = result
+                // The service may have failed while the start call was on the
+                // stack, before its result existed: answer that caller now.
+                val failure = startFailure
+                if (failure != null) {
+                    startFailure = null
+                    pendingStartResult = null
+                    result.error("vpn_start_failed", failure, null)
+                }
             }
             "stopVpn" -> {
                 activity.stopService(Intent(activity, YukariVpnService::class.java))
@@ -97,5 +118,6 @@ class VpnMethodChannel(private val activity: FlutterActivity) : MethodChannel.Me
         YukariVpnService.onTunFailed = null
         pendingPermissionResult = null
         pendingStartResult = null
+        startFailure = null
     }
 }

@@ -305,6 +305,39 @@ void main() {
     await expectLater(pending, throwsA(isA<ServiceUnavailableException>()));
   });
 
+  test('the default setup reads the address the backend assigned', () async {
+    await store.save({'n1': _dnsNetwork('alpha')});
+    final backend = CountingBackend(
+      collected: () => {
+        'alpha': {
+          'running': true,
+          'my_node_info': {
+            'peer_id': 1,
+            'hostname': 'laptop',
+            'virtual_ipv4': {
+              'address': {'addr': 176061954},
+              'network_length': 24,
+            },
+          },
+        },
+      },
+    );
+    final daemon = ServiceDaemon(
+      store: NetworkStore(store.file, readOnly: true),
+      backend: backend,
+      log: logs.add,
+    );
+    addTearDown(daemon.stop);
+
+    final setup = daemon.magicDns;
+    expect(setup, isA<MagicDnsAuto>());
+
+    final assigned = (setup as MagicDnsAuto).assignedAddress;
+    expect(await assigned!('n1'), '10.126.126.2');
+    expect(await assigned('gone'), isNull);
+    expect(backend.collects, 2, reason: 'every read comes from the backend');
+  });
+
   test('the daemon never writes the store', () {
     expect(
       () => ServiceDaemon(store: store, backend: runtime),

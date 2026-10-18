@@ -157,8 +157,10 @@ extension NetworkPageActions on NetworkPageController {
   }
 
   Future<void> _start(String id, Network network) async {
-    final limit = activeBackend.maxInstances;
-    if (limit != null && instances.value.length >= limit) {
+    if (!activeBackend.canStart(network, instances.value.values)) {
+      // A rule that refuses without naming a limit protects the one network
+      // its message describes.
+      final limit = activeBackend.maxTunInstances ?? 1;
       showMessage(
         limit == 1
             ? l10n.value.controllerOneNetwork

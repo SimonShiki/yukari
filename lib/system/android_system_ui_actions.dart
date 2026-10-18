@@ -78,13 +78,18 @@ extension _AndroidSystemUiActions on AndroidSystemUi {
     }
   }
 
-  /// Whether [network] may start now. The VPN consent dialog needs the app in
-  /// the foreground, so a background tile tap asks for the consent without a
-  /// dialog, and the app is brought forward when that is not enough.
+  /// Whether [network] may start now. A network the backend has no room for
+  /// cannot start at all, so the tile leaves it alone; the VPN consent dialog
+  /// needs the app in the foreground, so a background tile tap asks for the
+  /// consent without a dialog, and the app is brought forward when that is not
+  /// enough.
   Future<bool> _mayStartSilently(
     Network network, {
     required bool fromTile,
   }) async {
+    if (!_backend.canStart(network, running.instances.peek().values)) {
+      return false;
+    }
     if (network.flags.noTun) return true;
     if (!fromTile || _foreground) {
       return await _backend.tunAccess(network) == TunAccess.granted;

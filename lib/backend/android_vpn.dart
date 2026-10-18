@@ -2,6 +2,28 @@ import 'dart:io';
 
 import 'package:flutter/services.dart';
 
+/// The Android VPN head of a backend drives: the method channel in the app, a
+/// recorder in tests.
+typedef AndroidVpn = ({
+  Future<int> Function({
+    required String networkName,
+    required String ipv4,
+    required int mtu,
+    required List<String> routes,
+    String? dns,
+  })
+  start,
+  Future<void> Function() stop,
+  Future<bool> Function() requestPermission,
+});
+
+/// The app's real VPN, through Android's VpnService.
+final AndroidVpn systemAndroidVpn = (
+  start: AndroidVpnService.startVpn,
+  stop: AndroidVpnService.stopVpn,
+  requestPermission: AndroidVpnService.requestVpnPermission,
+);
+
 class AndroidVpnService {
   static const _channel = MethodChannel('top.simonshiki.yukari/vpn');
 

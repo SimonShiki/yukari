@@ -10,8 +10,10 @@ Network _network({
   bool noTun = false,
   String zone = 'et.net.',
   String deviceName = '',
+  String? ipv4 = '10.126.126.2/24',
 }) => Network()
   ..networkName = 'alpha'
+  ..ipv4 = ipv4
   ..flags = (NetworkFlags()
     ..acceptDns = acceptDns
     ..noTun = noTun
@@ -53,16 +55,88 @@ void main() {
     );
   });
 
+  test("another VPN's TUN keeps its DNS", () async {
+    final command = FakeSystemCommand(runHandler: linuxHost());
+
+    final interface = await _auto(command).start('n1', _network());
+
+    expect(interface, 'et_12_xoih');
+    expect(command.elevated.single.$2.last, contains("'et_12_xoih'"));
+    expect(command.elevated.single.$2.last, isNot(contains('FlClash')));
+  });
+
+  test('names no TUN and no address, so nothing is applied', () async {
+    final command = FakeSystemCommand(runHandler: linuxHost());
+
+    final interface = await _auto(command, attempts: 2)
+        .start('n1', _network(ipv4: ''));
+
+    expect(interface, isNull);
+    expect(command.runs, isEmpty, reason: 'nothing may be guessed');
+    expect(command.elevated, isEmpty);
+  });
+
+  test('applies the address EasyTier assigned to a DHCP network', () async {
+    var reads = 0;
+    final command = FakeSystemCommand(runHandler: linuxHost());
+    final auto = MagicDnsAuto(
+      system: linuxSystem(command),
+      attempts: 5,
+      retryDelay: Duration.zero,
+      // The instance reports the address it was assigned only after a retry.
+      assignedAddress: (_) async =>
+          reads++ < 2 ? null : '10.126.126.2/24',
+    );
+
+    final interface = await auto.start('n1', _network(ipv4: null));
+
+    expect(interface, 'et_12_xoih');
+    expect(reads, 3, reason: 'read again on every attempt');
+    expect(
+      command.elevated.single.$2.last,
+      contains("resolvectl dns 'et_12_xoih' 100.100.100.101"),
+    );
+  });
+
+  test('an assigned address that never comes keeps failing closed', () async {
+    final command = FakeSystemCommand(runHandler: linuxHost());
+    final auto = MagicDnsAuto(
+      system: linuxSystem(command),
+      attempts: 2,
+      retryDelay: Duration.zero,
+      assignedAddress: (_) async => null,
+    );
+
+    final interface = await auto.start('n1', _network(ipv4: null));
+
+    expect(interface, isNull);
+    expect(command.runs, isEmpty, reason: 'nothing may be guessed');
+    expect(command.elevated, isEmpty);
+  });
+
+  test('the saved address is the fallback when the provider has none', () async {
+    final command = FakeSystemCommand(runHandler: linuxHost());
+    final auto = MagicDnsAuto(
+      system: linuxSystem(command),
+      attempts: 2,
+      retryDelay: Duration.zero,
+      assignedAddress: (_) async => null,
+    );
+
+    final interface = await auto.start('n1', _network());
+
+    expect(interface, 'et_12_xoih');
+    expect(command.elevated, hasLength(1));
+  });
+
   test('waits for an interface that is still being created', () async {
-    var routes = 0;
+    var missing = 2;
     final command = FakeSystemCommand(
-      // The first route lookups find nothing; the interface appears afterwards.
+      // The first address lookups find nothing; the TUN appears afterwards.
       runHandler: (executable, arguments) {
-        if (executable == 'ip' && arguments.first == '-4') {
-          routes++;
-          return routes < 3
-              ? ok('')
-              : ok('100.100.100.101 dev et_12_xoih src 10.126.126.2 uid 1000');
+        if (executable == 'ip' && arguments.contains('addr') && missing > 0) {
+          missing--;
+          return ok('');
         }
         return linuxHost()(executable, arguments);
       },
@@ -71,7 +145,7 @@ void main() {
     final interface = await _auto(command).start('n1', _network());
 
     expect(interface, 'et_12_xoih');
-    expect(routes, 3);
+    expect(missing, 0, reason: 'the probe retried until the TUN appeared');
     expect(command.elevated, hasLength(1));
   });
 
@@ -159,5 +233,27 @@ void main() {
 
     expect(command.elevated.single.$1, 'resolvectl');
     expect(command.elevated.single.$2, ['revert', 'et_12_xoih']);
+  });
+
+  test('a second start configures nothing again', () async {
+    var configured = false;
+    final command = FakeSystemCommand(
+      runHandler: linuxHost(configured: () => configured),
+      elevateHandler: (_, _) async => configured = true,
+    );
+    final auto = _auto(command);
+    final network = _network();
+
+    expect(await auto.start('n1', network), 'et_12_xoih');
+    expect(
+      await auto.start('n1', network),
+      isNull,
+      reason: 'the second probe finds the configuration in place',
+    );
+
+    expect(command.elevated, hasLength(1), reason: 'applied once, not twice');
+
+    await auto.revert('n1');
+    expect(command.elevated.last.$2, ['revert', 'et_12_xoih']);
   });
 }

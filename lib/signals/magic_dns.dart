@@ -103,7 +103,15 @@ final class AppMagicDnsAuto {
 AppMagicDnsAuto? _auto;
 
 /// Starts app-mode automatic Magic DNS; call once, after [initBackend].
-void initMagicDnsAuto() {
+///
+/// The setup reads the address EasyTier assigned to the running instance, so a
+/// network configured for DHCP can be resolved to its own TUN.
+AppMagicDnsAuto initMagicDnsAuto() {
   _auto?.dispose();
-  _auto = AppMagicDnsAuto();
+  return _auto = AppMagicDnsAuto(
+    setup: MagicDnsAuto(
+      assignedAddress: (id) async =>
+          running.instances.peek()[id]?.myself?.virtualIpv4,
+    ),
+  );
 }

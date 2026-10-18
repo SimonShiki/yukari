@@ -93,6 +93,11 @@ object YukariNotifications {
         manager(context)?.cancel(APP_NOTIFICATION_ID)
     }
 
+    /** Removes the VPN service's foreground notification. */
+    fun clearVpn(context: Context) {
+        manager(context)?.cancel(VPN_NOTIFICATION_ID)
+    }
+
     private fun pending(context: Context, requestCode: Int, intent: Intent): PendingIntent =
         PendingIntent.getActivity(
             context,

@@ -36,7 +36,9 @@ class BackendModeSection extends StatelessWidget {
               kind: BackendKind.ffi,
               icon: Icons.apps_rounded,
               title: l10n.settingsModeApp,
-              description: l10n.settingsModeAppDescription,
+              description: controller.appUsesSystemVpn
+                  ? l10n.settingsModeAppVpnDescription
+                  : l10n.settingsModeAppDescription,
             ),
             SignalBuilder(builder: _serviceRow),
           ],

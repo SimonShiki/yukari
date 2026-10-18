@@ -103,6 +103,7 @@ void main() {
     ServiceState state, {
     int version = serviceVersion,
     NetworkBackend? backend,
+    bool? appUsesSystemVpn,
   }) async {
     messages = [];
     final controller = BackendSettingsController(
@@ -110,6 +111,7 @@ void main() {
       confirmStopNetworks: (_, _) async => true,
       probeVersion: () async => version,
       backend: backend == null ? null : signal<NetworkBackend>(backend),
+      appVpn: appUsesSystemVpn,
       control: SystemServiceControl(
         dataDir: '/data',
         system: _FakeSystemService(state),
@@ -199,6 +201,37 @@ void main() {
     final paragraph = tester.renderObject<RenderParagraph>(detail);
     expect(paragraph.didExceedMaxLines, isFalse);
     expect(paragraph.size.height, greaterThan(paragraph.preferredLineHeight));
+  });
+
+  testWidgets('explains the Android app mode by its system VPN', (
+    tester,
+  ) async {
+    await pump(tester, ServiceState.running, appUsesSystemVpn: true);
+
+    expect(
+      find.text('It uses the system VPN, which has some limitations.'),
+      findsOneWidget,
+    );
+    expect(
+      find.textContaining('Requires administrator or root privileges'),
+      findsNothing,
+      reason: 'Android does not need privileges the app mode cannot get',
+    );
+  });
+
+  testWidgets('keeps the desktop privileges on other platforms', (
+    tester,
+  ) async {
+    await pump(tester, ServiceState.running, appUsesSystemVpn: false);
+
+    expect(
+      find.textContaining('Requires administrator or root privileges'),
+      findsOneWidget,
+    );
+    expect(
+      find.text('It uses the system VPN, which has some limitations.'),
+      findsNothing,
+    );
   });
 
   testWidgets('explains a platform without a service', (tester) async {

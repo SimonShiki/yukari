@@ -412,6 +412,7 @@
   "settingsModeApp": "应用",
   "settingsModeService": "服务",
   "settingsModeAppDescription": "随应用运行网络。应用本身需要管理员或 root 权限。",
+  "settingsModeAppVpnDescription": "使用系统 VPN，因此有一些限制。",
   "settingsModeServiceDescription": "以系统服务运行网络。可随系统启动，并可在 Yukari 应用关闭后继续运行。",
   "settingsWorkingMode": "运行模式",
   "settingsNeedsRoot": "需要 root 权限。",

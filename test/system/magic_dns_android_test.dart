@@ -33,12 +33,17 @@ const _zoneRule =
     '-p udp --dport 53 -m string --algo bm --hex-string '
     '|02|et|03|net|00| -j DNAT --to-destination 100.100.100.101:53';
 
+/// The virtual IPv4 the service hands the probe so it can find its own TUN.
+const _address = '10.126.126.2/24';
+
 Network _network({
   bool acceptDns = true,
   bool noTun = false,
   String zone = 'et.net.',
+  String? ipv4 = '10.126.126.2/24',
 }) => Network()
   ..networkName = 'alpha'
+  ..ipv4 = ipv4
   ..flags = (NetworkFlags()
     ..acceptDns = acceptDns
     ..noTun = noTun
@@ -82,8 +87,8 @@ CommandResult? Function(String, List<String>) _chainHost(
   bool jumped = false,
 }) => (executable, arguments) {
   if (executable == 'cat') return ok(resolvConf);
-  if (executable == 'ip' && arguments.first == '-4') {
-    return ok('100.100.100.101 dev et_12_xoih src 10.126.126.2 uid 0');
+  if (executable == 'ip') {
+    return androidHost()(executable, arguments);
   }
   if (executable != 'iptables') return null;
   if (arguments.contains('--help')) return ok('');
@@ -170,7 +175,7 @@ void main() {
 
       final probe = await androidSystem(
         command,
-      ).probe(zone: 'et.net.', interfaceName: '');
+      ).probe(zone: 'et.net.', interfaceName: '', address: _address);
 
       expect(probe.state, MagicDnsState.configured);
       expect(probe.interface, 'et_12_xoih');
@@ -184,7 +189,7 @@ void main() {
 
       final probe = await androidSystem(
         command,
-      ).probe(zone: 'et.net.', interfaceName: '');
+      ).probe(zone: 'et.net.', interfaceName: '', address: _address);
 
       expect(probe.state, MagicDnsState.missing);
       expect(probe.interface, 'et_12_xoih');
@@ -197,7 +202,7 @@ void main() {
 
       final probe = await androidSystem(
         command,
-      ).probe(zone: 'et.net.', interfaceName: '');
+      ).probe(zone: 'et.net.', interfaceName: '', address: _address);
 
       expect(probe.state, MagicDnsState.missing);
     });
@@ -210,10 +215,26 @@ void main() {
 
       final probe = await androidSystem(
         command,
+      ).probe(zone: 'et.net.', interfaceName: '', address: _address);
+
+      expect(probe.state, MagicDnsState.noInterface);
+      expect(probe.interface, isNull);
+    });
+
+    test('no TUN name and no address identify nothing', () async {
+      final command = FakeSystemCommand(
+        runHandler: (executable, arguments) => executable == 'ip'
+            ? androidHost()(executable, arguments)
+            : null,
+      );
+
+      final probe = await androidSystem(
+        command,
       ).probe(zone: 'et.net.', interfaceName: '');
 
       expect(probe.state, MagicDnsState.noInterface);
       expect(probe.interface, isNull);
+      expect(command.runs, isEmpty, reason: 'nothing may be guessed');
     });
 
     test('reports unsupported without iptables', () async {
@@ -223,7 +244,7 @@ void main() {
 
       final probe = await androidSystem(
         command,
-      ).probe(zone: 'et.net.', interfaceName: '');
+      ).probe(zone: 'et.net.', interfaceName: '', address: _address);
 
       expect(probe.state, MagicDnsState.unsupported);
       expect(probe.interface, 'et_12_xoih');
@@ -370,7 +391,11 @@ void main() {
         isNot(contains('-F')),
         reason: 'another zone\'s rule is never flushed',
       );
-      final probe = await system.probe(zone: 'et.net.', interfaceName: '');
+      final probe = await system.probe(
+        zone: 'et.net.',
+        interfaceName: '',
+        address: _address,
+      );
       expect(probe.state, MagicDnsState.configured);
     });
 

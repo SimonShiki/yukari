@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:flutter/widgets.dart';
 import 'package:signals/signals.dart';
@@ -30,11 +31,13 @@ class BackendSettingsController {
     Future<int?> Function()? probeVersion,
     ReadonlySignal<NetworkBackend>? backend,
     bool? traySupport,
+    bool? appVpn,
   }) : control = control ?? backend_signals.serviceControl,
        _probe = probeVersion,
        _backend = backend ?? backend_signals.backend,
        _injected = backend != null,
-       _traySupported = traySupport;
+       _traySupported = traySupport,
+       _appUsesSystemVpn = appVpn;
 
   /// Reports a user-visible outcome.
   final void Function(String message) showMessage;
@@ -57,6 +60,9 @@ class BackendSettingsController {
 
   /// The tray support this page reports, for tests; null reads the platform.
   final bool? _traySupported;
+
+  /// The app-mode VPN this page reports, for tests; null reads the platform.
+  final bool? _appUsesSystemVpn;
   final List<void Function()> _disposers = [];
   bool _disposed = false;
 
@@ -130,6 +136,11 @@ class BackendSettingsController {
   /// Whether this platform can keep the app in a system tray. The settings page
   /// hides the option where it cannot, as on Android.
   bool get traySupported => _traySupported ?? settings.behavior.traySupported;
+
+  /// Whether the App mode runs through Android's system VPN, which is what
+  /// limits it: the settings page explains that instead of the desktop
+  /// privileges it does not need.
+  bool get appUsesSystemVpn => _appUsesSystemVpn ?? Platform.isAndroid;
 
   /// Whether this session actually has a tray icon to hide the window in. The
   /// settings page hides the option until the tray reports one.
