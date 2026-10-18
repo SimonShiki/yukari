@@ -8,6 +8,7 @@ import 'package:signals/signals.dart';
 import '../l10n/l10n.dart';
 import '../models/models.dart';
 import '../system/autostart.dart';
+import '../system/tray_support.dart';
 
 part 'settings_groups.dart';
 part 'settings_start_on_boot.dart';
@@ -63,6 +64,9 @@ class Settings {
     behavior._autostart = autostart;
     _startOnBoot = _StartOnBootApplier(behavior._startOnBoot, autostart);
     behavior._startOnBoot.value = _storedBool(prefs, _startOnBootKey, false);
+    behavior._useSystemTray.value = _storedBool(prefs, _useSystemTrayKey, true);
+    // Discovered by the tray at startup, never saved.
+    behavior._trayAvailable.value = false;
     workingMode._backend.value = _storedEnum(
       prefs,
       _backendKey,
@@ -112,6 +116,10 @@ class Settings {
         if (_restoring || prefs == null) return;
         _startOnBoot.request(prefs, enabled);
       }),
+    );
+    _persist(
+      behavior._useSystemTray,
+      (prefs, value) => prefs.setBool(_useSystemTrayKey, value),
     );
     _persist(
       workingMode._backend,

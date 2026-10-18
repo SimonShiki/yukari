@@ -21,6 +21,7 @@ import 'package:yukari/signals/backend.dart' as backend_signals;
 import 'package:yukari/signals/settings.dart';
 import 'package:yukari/system/autostart.dart';
 import 'package:yukari/widgets/context_menu/m3e_menu_panel.dart';
+import 'package:yukari/widgets/form_section/form_segments.dart';
 import 'package:yukari/widgets/select_item/select_item.dart';
 
 import '../fake_backend.dart';
@@ -484,7 +485,14 @@ void main() {
     );
     expect(settings.interface.pageTransitions.value, isTrue);
 
-    await tester.tap(find.byType(Switch));
+    final pageTransitions = find.descendant(
+      of: find.ancestor(
+        of: find.text('Page swipe and animation'),
+        matching: find.byType(SwitchSegment),
+      ),
+      matching: find.byType(Switch),
+    );
+    await tester.tap(pageTransitions);
     await tester.pumpAndSettle();
     expect(settings.interface.pageTransitions.value, isFalse);
     final prefs = await SharedPreferences.getInstance();
@@ -493,6 +501,6 @@ void main() {
     // A change made elsewhere shows on the switch.
     settings.interface.setPageTransitions(true);
     await tester.pumpAndSettle();
-    expect(tester.widget<Switch>(find.byType(Switch)).value, isTrue);
+    expect(tester.widget<Switch>(pageTransitions).value, isTrue);
   });
 }

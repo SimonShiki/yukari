@@ -17,6 +17,10 @@ written to the wrong place.
 
 `dart run render_svg.dart --check` verifies the rasters without rewriting them.
 
+`render_svg.dart` needs `rsvg-convert` (librsvg) to draw the PNGs. The tray
+icons are trimmed and centred with `magick` (ImageMagick), so regenerating them
+needs `magick` too.
+
 ## Sources
 
 | File | Use |
@@ -36,6 +40,7 @@ cannot draw the mark, so it is only ever given PNGs.
 | Android | `mipmap-*/ic_launcher.png`, `drawable-*/ic_launcher_{foreground,monochrome,round}.png`, `mipmap-anydpi-v26/ic_launcher{,_round}.xml`, `values/colors.xml` |
 | Windows | `windows/runner/resources/app_icon.ico`, `windows/images/` |
 | Linux | `assets/generated/yukari-with-background-1024.png`, `linux/share/`, `linux/runner/my_application.cc` patch, `linux/CMakeLists.txt` install block |
+| Tray | `assets/generated/yukari-tray-{dark,light}.png`, the bare mark trimmed and centred at 32px |
 
 Generated icons are committed: platform manifests reference them by path and
 `flutter pub get` needs the declared Linux asset. Regeneration is deterministic.

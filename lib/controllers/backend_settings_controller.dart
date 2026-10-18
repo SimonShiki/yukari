@@ -29,10 +29,12 @@ class BackendSettingsController {
     ServiceControl? control,
     Future<int?> Function()? probeVersion,
     ReadonlySignal<NetworkBackend>? backend,
+    bool? traySupport,
   }) : control = control ?? backend_signals.serviceControl,
        _probe = probeVersion,
        _backend = backend ?? backend_signals.backend,
-       _injected = backend != null;
+       _injected = backend != null,
+       _traySupported = traySupport;
 
   /// Reports a user-visible outcome.
   final void Function(String message) showMessage;
@@ -52,6 +54,9 @@ class BackendSettingsController {
   /// only the [kind] and [status] derivations over it are disposed with this
   /// controller.
   final bool _injected;
+
+  /// The tray support this page reports, for tests; null reads the platform.
+  final bool? _traySupported;
   final List<void Function()> _disposers = [];
   bool _disposed = false;
 
@@ -121,6 +126,21 @@ class BackendSettingsController {
   /// Starts the app at sign-in when [startOnBoot] is true.
   void setStartOnBoot(bool startOnBoot) =>
       settings.behavior.setStartOnBoot(startOnBoot);
+
+  /// Whether this platform can keep the app in a system tray. The settings page
+  /// hides the option where it cannot, as on Android.
+  bool get traySupported => _traySupported ?? settings.behavior.traySupported;
+
+  /// Whether this session actually has a tray icon to hide the window in. The
+  /// settings page hides the option until the tray reports one.
+  ReadonlySignal<bool> get trayAvailable => settings.behavior.trayAvailable;
+
+  /// Whether closing the window hides the app in the system tray.
+  ReadonlySignal<bool> get useSystemTray => settings.behavior.useSystemTray;
+
+  /// Hides the window in the system tray when [useSystemTray] is true.
+  void setUseSystemTray(bool useSystemTray) =>
+      settings.behavior.setUseSystemTray(useSystemTray);
 
   /// Re-reads the service state and, while it runs, its version.
   ///

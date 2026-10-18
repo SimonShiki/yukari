@@ -1,18 +1,32 @@
+import 'dart:math' as math;
+
 import 'package:m3e_core/m3e_core.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:signals_flutter/signals_flutter.dart';
 
 import '../../../controllers/network_instance_controller.dart';
 import '../../../l10n/l10n.dart';
+import '../../../system/magic_dns.dart';
 import '../../../widgets/empty_state/empty_state.dart';
 import '../../../widgets/log_entry/log_entry_list.dart';
-import '../../../widgets/peer_card/peer_card_list.dart';
+import '../../../widgets/peer_card/peer_card.dart';
+import 'magic_dns_card.dart';
 
-/// The peers of one running network, this device first.
+/// The peers of one running network, this device first, with the Magic DNS
+/// helper above them while it needs attention.
 class InstancePeersTab extends StatelessWidget {
-  const InstancePeersTab({super.key, required this.controller});
+  const InstancePeersTab({
+    super.key,
+    required this.controller,
+    this.magicDnsSystem,
+  });
 
   final NetworkInstanceController controller;
+
+  /// Test-only: the system reader the Magic DNS card uses. Null reads the
+  /// host; production never sets this.
+  @visibleForTesting
+  final MagicDnsSystem? magicDnsSystem;
 
   @override
   Widget build(BuildContext context) => SignalBuilder(
@@ -29,18 +43,50 @@ class InstancePeersTab extends StatelessWidget {
         );
       }
       final peers = controller.peerCards.value;
-      if (peers.isEmpty) {
-        return EmptyState(
-          icon: Icons.group_outlined,
-          title: l10n.networkNoPeers,
-          message: l10n.networkNoPeersDescription,
-        );
-      }
-      return Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 840),
-          child: PeerCardList(peers: peers),
-        ),
+      return CustomScrollView(
+        slivers: [
+          SliverToBoxAdapter(
+            child: Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 840),
+                child: MagicDnsCard(
+                  networkId: controller.id,
+                  system: magicDnsSystem,
+                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                ),
+              ),
+            ),
+          ),
+          if (peers.isEmpty)
+            SliverFillRemaining(
+              hasScrollBody: false,
+              child: EmptyState(
+                icon: Icons.group_outlined,
+                title: l10n.networkNoPeers,
+                message: l10n.networkNoPeersDescription,
+              ),
+            )
+          else
+            SliverLayoutBuilder(
+              builder: (context, constraints) {
+                // Keep the peers in the same 840 wide column as the helper
+                // above them on wide windows, without losing laziness.
+                final inset = math.max(
+                  0.0,
+                  (constraints.crossAxisExtent - 840) / 2,
+                );
+                return SliverPadding(
+                  padding: EdgeInsets.fromLTRB(16 + inset, 12, 16 + inset, 16),
+                  sliver: SliverM3ESegmentedList(
+                    itemCount: peers.length,
+                    itemBuilder: (context, index) =>
+                        PeerCard(data: peers[index]),
+                    padding: const EdgeInsets.all(12),
+                  ),
+                );
+              },
+            ),
+        ],
       );
     },
   );

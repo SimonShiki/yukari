@@ -6,6 +6,7 @@ import '../../../l10n/l10n.dart';
 import '../../../utils/validator.dart';
 import '../../../widgets/form_section/form_section.dart';
 import 'editor_fields.dart';
+import 'magic_dns_card.dart';
 
 /// Network Flags: the protocol and performance switches, Magic DNS and the MTU.
 class AdvancedFlagsSection extends StatelessWidget {
@@ -94,7 +95,7 @@ class AdvancedFlagsSection extends StatelessWidget {
               title: l10n.advancedMagicDns,
               subtitle: l10n.advancedMagicDnsSubtitle,
             ),
-            if (magicDns)
+            if (magicDns) ...[
               EditorTextField(
                 key: const ValueKey('dnsSuffix'),
                 label: l10n.advancedDnsSuffix,
@@ -105,6 +106,12 @@ class AdvancedFlagsSection extends StatelessWidget {
                 onSaved: (value) =>
                     controller.update((n) => n.flags.dnsZone = value.trim()),
               ),
+              MagicDnsCard(
+                key: const ValueKey('magicDnsCard'),
+                networkId: controller.id,
+                padding: const EdgeInsets.all(8),
+              ),
+            ],
             EditorTextField(
               key: const ValueKey('mtu'),
               label: l10n.advancedMtuHelper,

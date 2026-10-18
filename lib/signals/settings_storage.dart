@@ -8,6 +8,7 @@ const _paletteKey = 'theme.palette';
 const _variantKey = 'theme.variant';
 const _modeKey = 'theme.mode';
 const _startOnBootKey = 'behavior.startOnBoot';
+const _useSystemTrayKey = 'behavior.useSystemTray';
 
 Locale? _storedLocale(SharedPreferences prefs) {
   final saved = prefs.get(_localeKey);

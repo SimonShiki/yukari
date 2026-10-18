@@ -7,10 +7,13 @@ import 'l10n/l10n.dart';
 import 'signals/locale.dart';
 import 'signals/settings.dart';
 import 'signals/system_color.dart';
+import 'system/tray_launch.dart';
+import 'system/tray_support.dart';
 import 'router.dart';
 
 import 'signals/backend.dart';
 import 'signals/bookmarks.dart' as bookmarks;
+import 'signals/magic_dns.dart';
 import 'signals/networks.dart' as networks;
 import 'storage/bookmark_store.dart';
 import 'storage/network_store.dart';
@@ -25,7 +28,9 @@ Future<void> main() async {
   await bookmarks.init(BookmarkStore.inDirectory(dataDir));
   await initSettings();
   await initBackend(dataDir);
+  initMagicDnsAuto();
   initLocale();
+  if (systemTraySupported) launchSystemTray();
 
   runApp(const Yukari());
 }

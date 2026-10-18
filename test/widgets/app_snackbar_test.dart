@@ -162,4 +162,46 @@ void main() {
     expect(bar.overlaps(menu), isFalse, reason: 'snackbar covers the menu');
     expect(bar.bottom, lessThanOrEqualTo(menu.top));
   });
+
+  testWidgets('shrinks out of the way after the display duration', (
+    tester,
+  ) async {
+    await pump(tester, size: const Size(400, 780));
+    await tester.tap(find.text('show'));
+    await tester.pumpAndSettle();
+    final shown = snackBarRect(tester);
+
+    // The display duration elapses, so the show animation starts reversing.
+    await tester.pump(const Duration(seconds: 4));
+    await tester.pump(const Duration(milliseconds: 100));
+
+    // The surface is still there, collapsing towards the bottom edge.
+    expect(
+      find.byType(SnackBar),
+      findsOneWidget,
+      reason: 'the snackbar was removed without animating out',
+    );
+    final hiding = snackBarRect(tester);
+    expect(
+      hiding.height,
+      lessThan(shown.height),
+      reason: 'the height did not animate out',
+    );
+    expect(
+      hiding.top,
+      greaterThan(shown.top),
+      reason: 'the surface did not move towards the edge',
+    );
+    expect(hiding.bottom, closeTo(shown.bottom, 0.1));
+
+    // It is gone only once the reverse transition has finished.
+    await tester.pump(const Duration(milliseconds: 125));
+    expect(
+      find.byType(SnackBar),
+      findsOneWidget,
+      reason: 'the reverse was cut short',
+    );
+    await tester.pumpAndSettle();
+    expect(find.byType(SnackBar), findsNothing);
+  });
 }

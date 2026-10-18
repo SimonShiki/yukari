@@ -44,6 +44,46 @@
   "advancedMagicDnsSubtitle": "通过名称访问节点；会修改系统 DNS 设置",
   "advancedDnsSuffix": "DNS 后缀",
   "advancedDnsSuffixHelper": "节点名称为 <主机名>.<后缀>",
+  "magicDnsTitle": "魔法 DNS 设置",
+  "magicDnsServer": "DNS 服务器",
+  "magicDnsName": "魔法 DNS 名称",
+  "magicDnsNameUnknown": "使用本机主机名",
+  "magicDnsStartAutomatic": "启动此网络后，EasyTier 会自动在其接口上设置本机 DNS。",
+  "magicDnsStartManual": "启动此网络后，在其节点页面配置系统 DNS。",
+  "magicDnsDismiss": "关闭",
+  "magicDnsMissing": "系统 DNS 尚未将 {zone} 的查询交给魔法 DNS 服务器。",
+  "@magicDnsMissing": {
+    "placeholders": {
+      "zone": {
+        "type": "String"
+      }
+    }
+  },
+  "magicDnsWindowsMissing": "未在本机找到 EasyTier 的 DNS。请以管理员身份（或通过服务）运行网络后重新检查。",
+  "magicDnsNoResolved": "未找到 systemd-resolved（resolvectl）。请改为在 /etc/resolv.conf 中添加以下内容：",
+  "magicDnsNoInterface": "尚未找到 EasyTier 接口，网络可能仍在启动。",
+  "magicDnsFailed": "魔法 DNS 设置失败：{error}",
+  "@magicDnsFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "magicDnsApply": "配置系统 DNS",
+  "magicDnsReset": "重置系统 DNS",
+  "magicDnsManual": "手动配置",
+  "magicDnsWindowsTest": "直接测试魔法 DNS 服务器（绕过系统解析器）：",
+  "magicDnsConflictNote": "其他 TUN 代理（例如 FlClash）可能拦截 DNS 查询：请在其 fake-IP DNS 中排除 {zone}，或关闭其 TUN。",
+  "@magicDnsConflictNote": {
+    "placeholders": {
+      "zone": {
+        "type": "String"
+      }
+    }
+  },
+  "magicDnsCopy": "复制",
+  "magicDnsCopied": "已复制",
   "advancedMtuHelper": "最大传输单元（576-65535）",
   "advancedMappedListeners": "映射监听器",
   "advancedMappedListenersDescription": "其他节点访问本节点所用的公网地址",
@@ -339,6 +379,7 @@
   "homeNoTraffic": "暂无流量",
   "homeNoRunningNetwork": "没有正在运行的网络。",
   "homeTrafficTotals": "已接收 {received} · 已发送 {sent}",
+  "androidNotificationPeers": "{count} 个节点",
   "homeNoNetworks": "暂无网络",
   "homeCreateNetworkHint": "点击创建网络。",
   "homeStartNetworkHint": "启动网络以连接。",
@@ -1116,6 +1157,14 @@
   "settingsBehavior": "行为",
   "settingsStartOnBoot": "开机启动",
   "settingsStartOnBootDescription": "登录时自动启动 Yukari",
+  "settingsUseSystemTray": "使用系统托盘",
+  "settingsUseSystemTrayDescription": "关闭窗口时隐藏到托盘而不是退出",
+  "trayOpen": "打开",
+  "trayNoNetworks": "暂无已保存的网络",
+  "trayPeers": "{count} 个节点",
+  "trayExit": "退出",
+  "trayNoticeTitle": "Yukari 仍在运行",
+  "trayNoticeBody": "Yukari 仍在系统托盘中运行，点击托盘图标即可重新打开。",
   "themingPalette": "配色方案",
   "themingMode": "外观",
   "themingModeSystem": "跟随系统",

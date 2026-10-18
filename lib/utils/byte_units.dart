@@ -11,3 +11,8 @@ String formatBytes(num bytes) {
   final digits = unit == 0 || value >= 100 ? 0 : 1;
   return '${value.toStringAsFixed(digits)} ${_units[unit]}';
 }
+
+/// The receive and send rates as the app writes them, such as
+/// `↓ 1.5 MB/s  ↑ 300 KB/s`. The arrows and `/s` are symbols, not text.
+String formatTrafficRates({required num receive, required num send}) =>
+    '↓ ${formatBytes(receive)}/s  ↑ ${formatBytes(send)}/s';

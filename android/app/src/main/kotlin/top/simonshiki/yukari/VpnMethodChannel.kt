@@ -24,6 +24,12 @@ class VpnMethodChannel(private val activity: FlutterActivity) : MethodChannel.Me
                 pendingStartResult = null
             }
         }
+        YukariVpnService.onTunFailed = { message ->
+            activity.runOnUiThread {
+                pendingStartResult?.error("vpn_start_failed", message, null)
+                pendingStartResult = null
+            }
+        }
     }
 
     override fun onMethodCall(call: MethodCall, result: MethodChannel.Result) {
@@ -37,6 +43,7 @@ class VpnMethodChannel(private val activity: FlutterActivity) : MethodChannel.Me
                     result.success(true)
                 }
             }
+            "hasVpnPermission" -> result.success(VpnService.prepare(activity) == null)
             "startVpn" -> {
                 val intent = Intent(activity, YukariVpnService::class.java).apply {
                     putExtra(YukariVpnService.EXTRA_NETWORK_NAME, call.argument<String>("networkName"))
@@ -48,10 +55,21 @@ class VpnMethodChannel(private val activity: FlutterActivity) : MethodChannel.Me
                     putExtra(YukariVpnService.EXTRA_DNS, call.argument<String>("dns"))
                 }
 
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                    activity.startForegroundService(intent)
-                } else {
-                    activity.startService(intent)
+                try {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                        activity.startForegroundService(intent)
+                    } else {
+                        activity.startService(intent)
+                    }
+                } catch (error: Exception) {
+                    // Android 12+ refuses a foreground service start from the
+                    // background; the caller reports it instead of waiting.
+                    result.error(
+                        "vpn_start_failed",
+                        error.message ?: "Could not start the VPN service",
+                        null,
+                    )
+                    return
                 }
 
                 pendingStartResult = result
@@ -72,5 +90,12 @@ class VpnMethodChannel(private val activity: FlutterActivity) : MethodChannel.Me
             pendingPermissionResult?.success(resultCode == Activity.RESULT_OK)
             pendingPermissionResult = null
         }
+    }
+
+    fun detach() {
+        YukariVpnService.onTunFdReady = null
+        YukariVpnService.onTunFailed = null
+        pendingPermissionResult = null
+        pendingStartResult = null
     }
 }

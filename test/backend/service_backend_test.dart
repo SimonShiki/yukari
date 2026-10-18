@@ -1,3 +1,8 @@
+// The service these tests talk to listens on a Unix domain socket, which
+// Windows does not have.
+@TestOn('linux')
+library;
+
 import 'dart:async';
 import 'dart:io';
 
@@ -10,6 +15,7 @@ import 'package:yukari/backend/service_version.dart';
 import 'package:yukari/daemon/service_daemon.dart';
 import 'package:yukari/models/models.dart';
 import 'package:yukari/storage/network_store.dart';
+import 'package:yukari/system/magic_dns_auto.dart';
 
 import '../fake_backend.dart';
 import '../networks_fixture.dart';
@@ -20,6 +26,7 @@ void main() {
   late ServiceDaemon daemon;
   late ServiceBackend client;
   late int locates;
+  late _FakeMagicDnsSetup magicDns;
   final logs = <String>[];
 
   Future<void> serve() async {
@@ -28,6 +35,7 @@ void main() {
     daemon = ServiceDaemon(
       store: NetworkStore(store.file, readOnly: true),
       backend: runtime,
+      magicDns: magicDns,
       log: logs.add,
     );
     await daemon.start(await ServerSocket.bind(address, 0));
@@ -44,6 +52,7 @@ void main() {
   setUp(() async {
     logs.clear();
     locates = 0;
+    magicDns = _FakeMagicDnsSetup();
     store = temporaryStore();
     runtime = FakeBackend();
     await store.save({
@@ -57,6 +66,104 @@ void main() {
   test('starts the networks marked to start on boot', () async {
     await serve();
     expect(runtime.started.keys, ['n2']);
+    expect(magicDns.started, isEmpty, reason: 'no Magic DNS asked for');
+  });
+
+  test('sets Magic DNS up for a network it starts', () async {
+    await store.save({'n1': _dnsNetwork('alpha')});
+    await serve();
+
+    await client.start('n1', Network());
+
+    expect(magicDns.started, ['n1']);
+  });
+
+  test('sets Magic DNS up for boot networks, and skips no-TUN ones', () async {
+    await store.save({
+      'n1': _dnsNetwork('boot')..autoStart = true,
+      'n2': _dnsNetwork('no-tun')
+        ..autoStart = true
+        ..flags.noTun = true,
+    });
+    await serve();
+
+    expect(magicDns.started, ['n1']);
+  });
+
+  test('a start request does not wait for its Magic DNS setup', () async {
+    await store.save({'n1': _dnsNetwork('alpha')});
+    await serve();
+    magicDns.gate = Completer<String?>();
+
+    await client.start('n1', Network()).timeout(const Duration(seconds: 5));
+
+    expect(magicDns.started, ['n1']);
+    expect(
+      magicDns.gate!.isCompleted,
+      isFalse,
+      reason: 'the RPC returned while the setup still waited for its interface',
+    );
+
+    await client.stop(['alpha']);
+    expect(magicDns.reverted, contains('n1'));
+
+    // The interface appears after the stop: the run reverts what it set up.
+    magicDns.gate!.complete('et_n1');
+    await Future<void>.delayed(Duration.zero);
+
+    expect(
+      magicDns.applied,
+      isEmpty,
+      reason: 'the run that finished after the stop reverted its own interface',
+    );
+    expect(
+      magicDns.reverted.where((id) => id == 'n1'),
+      hasLength(2),
+      reason: 'the stop request and the late-finishing run both reverted',
+    );
+
+    // The service stop still reverts everything the setup owns.
+    await daemon.stop();
+    expect(magicDns.revertAllCalls, 1);
+  });
+
+  test('boot auto-start does not wait for the Magic DNS setups', () async {
+    await store.save({
+      'n1': _dnsNetwork('first')..autoStart = true,
+      'n2': _dnsNetwork('second')..autoStart = true,
+    });
+    magicDns.gate = Completer<String?>();
+
+    await serve().timeout(const Duration(seconds: 5));
+
+    expect(runtime.started.keys, [
+      'n1',
+      'n2',
+    ], reason: 'the next network starts while the first DNS setup waits');
+    expect(magicDns.started, ['n1', 'n2']);
+
+    magicDns.gate!.complete(null);
+    await Future<void>.delayed(Duration.zero);
+  });
+
+  test('reverts Magic DNS when a network stops', () async {
+    await store.save({'n1': _dnsNetwork('alpha')});
+    await serve();
+    await client.start('n1', Network());
+
+    await client.stop(['alpha']);
+
+    expect(magicDns.reverted, ['n1']);
+  });
+
+  test('reverts every DNS it set up when the service stops', () async {
+    await store.save({'n1': _dnsNetwork('alpha')});
+    await serve();
+    await client.start('n1', Network());
+
+    await daemon.stop();
+
+    expect(magicDns.revertAllCalls, 1);
   });
 
   test('runs saved networks by id and reports them to the app', () async {
@@ -204,6 +311,45 @@ void main() {
       throwsA(isA<AssertionError>()),
     );
   });
+}
+
+/// A network with Magic DNS on.
+Network _dnsNetwork(String name) => Network()
+  ..networkName = name
+  ..flags = (NetworkFlags()..acceptDns = true);
+
+/// Records the Magic DNS setup the service asked for.
+final class _FakeMagicDnsSetup implements MagicDnsSetup {
+  final started = <String>[];
+  final reverted = <String>[];
+  final applied = <String, String>{};
+  var revertAllCalls = 0;
+
+  /// When set, [start] waits for it: a setup whose interface never appears.
+  Completer<String?>? gate;
+
+  @override
+  bool appliesTo(Network network) =>
+      network.flags.acceptDns && !network.flags.noTun;
+
+  @override
+  Future<String?> start(String networkId, Network network) async {
+    if (!appliesTo(network)) return null;
+    started.add(networkId);
+    final waiting = gate;
+    final interface = waiting == null ? 'et_$networkId' : await waiting.future;
+    if (interface != null) applied[networkId] = interface;
+    return interface;
+  }
+
+  @override
+  Future<void> revert(String networkId) async {
+    reverted.add(networkId);
+    applied.remove(networkId);
+  }
+
+  @override
+  Future<void> revertAll() async => revertAllCalls++;
 }
 
 /// An endpoint with no service listening beside [store].

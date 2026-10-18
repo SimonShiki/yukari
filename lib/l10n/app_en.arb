@@ -50,6 +50,46 @@
   "advancedMagicDnsSubtitle": "Reach peers by name; changes system DNS settings",
   "advancedDnsSuffix": "DNS Suffix",
   "advancedDnsSuffixHelper": "Peers are named <hostname>.<suffix>",
+  "magicDnsTitle": "Magic DNS setup",
+  "magicDnsServer": "DNS server",
+  "magicDnsName": "Magic DNS name",
+  "magicDnsNameUnknown": "Uses this device's hostname",
+  "magicDnsStartAutomatic": "Start this network. EasyTier then sets this machine's DNS on its own interface.",
+  "magicDnsStartManual": "Start this network, then configure the system DNS from its peers tab.",
+  "magicDnsDismiss": "Dismiss",
+  "magicDnsMissing": "System DNS does not send {zone} to the Magic DNS server yet.",
+  "@magicDnsMissing": {
+    "placeholders": {
+      "zone": {
+        "type": "String"
+      }
+    }
+  },
+  "magicDnsWindowsMissing": "EasyTier's DNS was not found on this machine. Run the network as administrator (or through the service), then check again.",
+  "magicDnsNoResolved": "systemd-resolved (resolvectl) is not available. Add these lines to /etc/resolv.conf instead:",
+  "magicDnsNoInterface": "The EasyTier interface was not found yet. The network may still be starting.",
+  "magicDnsFailed": "Magic DNS setup failed: {error}",
+  "@magicDnsFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "magicDnsApply": "Configure system DNS",
+  "magicDnsReset": "Reset system DNS",
+  "magicDnsManual": "Manual setup",
+  "magicDnsWindowsTest": "Test the Magic DNS server directly (it bypasses the system resolver):",
+  "magicDnsConflictNote": "Another TUN proxy (for example FlClash) can capture DNS queries: exclude {zone} from its fake-IP DNS or turn off its TUN.",
+  "@magicDnsConflictNote": {
+    "placeholders": {
+      "zone": {
+        "type": "String"
+      }
+    }
+  },
+  "magicDnsCopy": "Copy",
+  "magicDnsCopied": "Copied",
   "advancedMtuHelper": "Maximum Transmission Unit (576-65535)",
   "advancedMappedListeners": "Mapped Listeners",
   "advancedMappedListenersDescription": "Public addresses peers use to reach this node",
@@ -366,6 +406,15 @@
       },
       "sent": {
         "type": "String"
+      }
+    }
+  },
+  "androidNotificationPeers": "{count, plural, =1{1 peer} other{{count} peers}}",
+  "@androidNotificationPeers": {
+    "description": "How many peers the running network is connected to, in its notification",
+    "placeholders": {
+      "count": {
+        "type": "int"
       }
     }
   },
@@ -1209,6 +1258,40 @@
     "description": "Switch that launches the app when the user signs in"
   },
   "settingsStartOnBootDescription": "Launch Yukari when you sign in",
+  "settingsUseSystemTray": "Use system tray",
+  "@settingsUseSystemTray": {
+    "description": "Switch that keeps the app running in the system tray when the window closes"
+  },
+  "settingsUseSystemTrayDescription": "Hide the window to the tray instead of quitting",
+  "trayOpen": "Open",
+  "@trayOpen": {
+    "description": "Tray menu item that shows the app window again"
+  },
+  "trayNoNetworks": "No saved networks",
+  "@trayNoNetworks": {
+    "description": "Disabled tray menu row shown when no network is saved yet"
+  },
+  "trayPeers": "{count, plural, =0{no peers} =1{1 peer} other{{count} peers}}",
+  "@trayPeers": {
+    "description": "How many peers the tray's network row says the network is connected to",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "trayExit": "Exit",
+  "@trayExit": {
+    "description": "Tray menu item that quits the app"
+  },
+  "trayNoticeTitle": "Yukari keeps running",
+  "@trayNoticeTitle": {
+    "description": "Title of the one-time notification shown when the app first hides to the system tray"
+  },
+  "trayNoticeBody": "Yukari is still running in the system tray. Open it from the tray icon.",
+  "@trayNoticeBody": {
+    "description": "Body of the one-time notification shown when the app first hides to the system tray"
+  },
   "themingPalette": "Color scheme",
   "themingMode": "Appearance",
   "themingModeSystem": "System",

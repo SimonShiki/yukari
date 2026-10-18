@@ -25,17 +25,24 @@ void main() {
         ..networkName = 'yukari-test-manual'
         ..flags.noTun = true,
     });
-    final address = InternetAddress(
-      p.join(p.dirname(store.file.path), 'service.sock'),
-      type: InternetAddressType.unix,
+    // The Linux service listens on a Unix socket, Windows on loopback.
+    final socket = await ServerSocket.bind(
+      Platform.isWindows
+          ? InternetAddress.loopbackIPv4
+          : InternetAddress(
+              p.join(p.dirname(store.file.path), 'service.sock'),
+              type: InternetAddressType.unix,
+            ),
+      0,
     );
+    final endpoint = IpcEndpoint(socket.address, socket.port);
     final daemon = ServiceDaemon(
       store: NetworkStore(store.file, readOnly: true),
       backend: FfiBackend(),
       log: (_) {},
     );
-    await daemon.start(await ServerSocket.bind(address, 0));
-    final client = ServiceBackend(() async => IpcEndpoint(address, 0));
+    await daemon.start(socket);
+    final client = ServiceBackend(() async => endpoint);
     addTearDown(() async {
       await client.dispose();
       await daemon.stop();

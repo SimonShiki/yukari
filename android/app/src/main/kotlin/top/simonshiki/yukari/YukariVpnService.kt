@@ -1,14 +1,11 @@
 package top.simonshiki.yukari
 
 import android.app.Notification
-import android.app.NotificationChannel
 import android.app.NotificationManager
-import android.app.PendingIntent
 import android.content.Intent
 import android.net.VpnService
 import android.os.Build
 import android.os.ParcelFileDescriptor
-import androidx.core.app.NotificationCompat
 
 class YukariVpnService : VpnService() {
     companion object {
@@ -18,14 +15,15 @@ class YukariVpnService : VpnService() {
         @JvmStatic
         var onTunFdReady: ((Int) -> Unit)? = null
 
+        /** Reports why the TUN device could not be created, to the app. */
+        @JvmStatic
+        var onTunFailed: ((String) -> Unit)? = null
+
         const val EXTRA_NETWORK_NAME = "network_name"
         const val EXTRA_IPV4_ADDR = "ipv4_addr"
         const val EXTRA_MTU = "mtu"
         const val EXTRA_ROUTES = "routes"
         const val EXTRA_DNS = "dns"
-
-        private const val NOTIFICATION_ID = 1
-        private const val CHANNEL_ID = "yukari_vpn"
     }
 
     private var vpnInterface: ParcelFileDescriptor? = null
@@ -38,8 +36,16 @@ class YukariVpnService : VpnService() {
         val routes = intent?.getStringArrayExtra(EXTRA_ROUTES) ?: arrayOf()
         val dns = intent?.getStringExtra(EXTRA_DNS)
 
-        createNotificationChannel()
-        startForeground(NOTIFICATION_ID, createNotification(networkName!!))
+        YukariNotifications.createChannel(this)
+        startForeground(
+            YukariNotifications.VPN_NOTIFICATION_ID,
+            YukariNotifications.build(
+                this,
+                getString(R.string.tile_label),
+                getString(R.string.notification_connected, networkName),
+                getString(R.string.notification_stop),
+            ),
+        )
 
         try {
             vpnInterface = createVpnInterface(ipv4Addr, mtu, routes, dns)
@@ -48,11 +54,18 @@ class YukariVpnService : VpnService() {
             onTunFdReady?.invoke(fd)
             instance = this
         } catch (e: Exception) {
+            onTunFailed?.invoke(e.message ?: "Could not establish the VPN")
             stopSelf()
             return START_NOT_STICKY
         }
 
         return START_STICKY
+    }
+
+    /** Redraws the foreground notification with the running network's state. */
+    fun updateNotification(notification: Notification) {
+        val manager = getSystemService(NotificationManager::class.java) ?: return
+        manager.notify(YukariNotifications.VPN_NOTIFICATION_ID, notification)
     }
 
     private fun createVpnInterface(
@@ -90,38 +103,6 @@ class YukariVpnService : VpnService() {
 
         return builder.establish()
             ?: throw IllegalStateException("Failed to establish VPN")
-    }
-
-    private fun createNotificationChannel() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val channel = NotificationChannel(
-                CHANNEL_ID,
-                "VPN Service",
-                NotificationManager.IMPORTANCE_LOW
-            ).apply {
-                description = "Shows when Yukari VPN is active"
-            }
-            val manager = getSystemService(NotificationManager::class.java)
-            manager?.createNotificationChannel(channel)
-        }
-    }
-
-    private fun createNotification(networkName: String): Notification {
-        val intent = packageManager.getLaunchIntentForPackage(packageName)
-        val pendingIntent = PendingIntent.getActivity(
-            this,
-            0,
-            intent,
-            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
-        )
-
-        return NotificationCompat.Builder(this, CHANNEL_ID)
-            .setContentTitle("Yukari VPN Active")
-            .setContentText("Connected to $networkName")
-            .setSmallIcon(android.R.drawable.ic_dialog_info)
-            .setContentIntent(pendingIntent)
-            .setOngoing(true)
-            .build()
     }
 
     override fun onDestroy() {

@@ -32,6 +32,7 @@ dependencies:
   code_assets: ^2.1.0
   crypto: ^3.0.6
   cryptography: ^2.9.0
+  dbus: ^0.8.0
   dynamic_color: ^2.1.0
   ffi: ^2.1.4
   file_picker: ^13.1.0
@@ -44,8 +45,10 @@ dependencies:
   intl: ^0.20.2
   json_annotation: ^4.12.0
   json_rpc_2: ^4.1.0
+  local_notifier: ^0.1.6
   material_ui: ^1.4.0
   m3e_core: ^1.1.4
+  nativeapi_flutter: ^0.5.2
   path: ^1.9.1
   path_provider: ^2.1.6
   shared_preferences: ^2.5.5
@@ -53,6 +56,7 @@ dependencies:
   signals_flutter: ^7.1.0
   stream_channel: ^2.1.4
   toml: ^0.18.0
+  tray_manager: ^0.8.0
   uuid: ^4.6.0
   win32: ^6.4.0
   url_launcher: ^6.3.3
@@ -77,6 +81,8 @@ flutter:
 
   assets:
     - "assets/generated/yukari-with-background-1024.png"
+    - "assets/generated/yukari-tray-dark.png"
+    - "assets/generated/yukari-tray-light.png"
 
   # The following line ensures that the Material Icons font is
   # included with your application, so that you can use the icons in

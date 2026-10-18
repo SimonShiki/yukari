@@ -7,15 +7,12 @@ class AndroidVpnService {
 
   /// Request VPN permission from the system
   /// Returns true if permission is granted
-  static Future<bool> requestVpnPermission() async {
-    if (!Platform.isAndroid) return false;
-    try {
-      final result = await _channel.invokeMethod<bool>('requestVpnPermission');
-      return result ?? false;
-    } catch (e) {
-      return false;
-    }
-  }
+  static Future<bool> requestVpnPermission() =>
+      _invokeBool('requestVpnPermission');
+
+  /// Whether the system already lets this app create a TUN device, without
+  /// asking the user: the check the background actions may run.
+  static Future<bool> hasVpnPermission() => _invokeBool('hasVpnPermission');
 
   /// Start VPN service and get TUN file descriptor
   /// Returns the TUN fd on success
@@ -55,9 +52,17 @@ class AndroidVpnService {
   }
 
   /// Check if VPN is currently active
-  static Future<bool> isVpnActive() async {
+  static Future<bool> isVpnActive() => _invokeBool('isVpnActive');
+
+  /// Runs the boolean [method]: false where Android is absent, or when the
+  /// platform has no answer.
+  static Future<bool> _invokeBool(String method) async {
     if (!Platform.isAndroid) return false;
-    final result = await _channel.invokeMethod<bool>('isVpnActive');
-    return result ?? false;
+    try {
+      final result = await _channel.invokeMethod<bool>(method);
+      return result ?? false;
+    } catch (_) {
+      return false;
+    }
   }
 }

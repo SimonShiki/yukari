@@ -55,6 +55,8 @@ class ThemeSettings {
 /// What the app does around launch and sign-in.
 class BehaviorSettings {
   final Signal<bool> _startOnBoot = signal(false);
+  final Signal<bool> _useSystemTray = signal(true);
+  final Signal<bool> _trayAvailable = signal(false);
   Autostart _autostart = const UnsupportedAutostart();
 
   /// Whether the app starts when the user signs in.
@@ -69,6 +71,26 @@ class BehaviorSettings {
 
   /// Starts the app at sign-in when [enabled].
   void setStartOnBoot(bool enabled) => _startOnBoot.value = enabled;
+
+  /// Whether closing the window hides the app in the system tray instead of
+  /// quitting it.
+  ReadonlySignal<bool> get useSystemTray => _useSystemTray;
+
+  /// Whether the OS can show the app in a system tray. The settings page hides
+  /// the option when it cannot.
+  bool get traySupported => systemTraySupported;
+
+  /// Whether this session actually has a tray icon the app can hide the window
+  /// in. The OS may support trays while the desktop shows none, as on GNOME
+  /// without its AppIndicator extension, so the tray controller reports the
+  /// real answer after trying; the settings page hides the option until then.
+  ReadonlySignal<bool> get trayAvailable => _trayAvailable;
+
+  /// Hides the window in the system tray when [enabled].
+  void setUseSystemTray(bool enabled) => _useSystemTray.value = enabled;
+
+  /// Records whether a tray icon exists in this session.
+  void setTrayAvailable(bool available) => _trayAvailable.value = available;
 }
 
 /// Where the app runs its networks.

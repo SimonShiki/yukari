@@ -9,6 +9,13 @@ void main() {
     String markup(String name) =>
         asset(name).readAsStringSync().replaceAll(RegExp(r'<!--.*?-->', dotAll: true), '');
 
+    /// Asserts the PNG header says [size] by [size].
+    void expectPngSize(File icon, int size) {
+      final bytes = icon.readAsBytesSync();
+      expect((bytes[16] << 24) | (bytes[17] << 16) | (bytes[18] << 8) | bytes[19], size);
+      expect((bytes[20] << 24) | (bytes[21] << 16) | (bytes[22] << 8) | bytes[23], size);
+    }
+
     for (final (:String file, :List<String> fills) in <({String file, List<String> fills})>[
       (file: 'yukari.svg', fills: ['#ffffff']),
       (file: 'yukari-on-light.svg', fills: ['#52298c']),
@@ -51,15 +58,26 @@ void main() {
       );
     });
 
+    test('the tray icons exist as 32px squares and are declared', () {
+      final pubspec = File('pubspec.yaml').readAsStringSync();
+      for (final name in [
+        'yukari-tray-dark.png',
+        'yukari-tray-light.png',
+      ]) {
+        final icon = File('assets/generated/$name');
+        expect(icon.existsSync(), isTrue, reason: 'run tool/icons/render_svg.dart');
+        expectPngSize(icon, 32);
+        expect(pubspec, contains(name), reason: '$name is not bundled');
+      }
+    });
+
     test('the Linux hicolor set has every size the SVG is rasterised to', () {
       // The generator would downscale one master PNG instead, which fades the
       // mark at small sizes. These must come from render_svg.dart.
       for (final size in [16, 22, 24, 32, 48, 64, 128, 256, 512]) {
         final icon = File('linux/share/icons/hicolor/${size}x$size/apps/yukari.png');
         expect(icon.existsSync(), isTrue, reason: 'run tool/icons/render_svg.dart');
-        final bytes = icon.readAsBytesSync();
-        expect((bytes[16] << 24) | (bytes[17] << 16) | (bytes[18] << 8) | bytes[19], size);
-        expect((bytes[20] << 24) | (bytes[21] << 16) | (bytes[22] << 8) | bytes[23], size);
+        expectPngSize(icon, size);
       }
     });
 

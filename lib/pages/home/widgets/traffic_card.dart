@@ -36,11 +36,11 @@ class TrafficCard extends StatelessWidget {
         supporting: DashboardSupporting(l10n.homeNoRunningNetwork),
       );
     }
-    // The arrows and /s are symbols, not translatable text.
     return DashboardValue(
-      value:
-          '↓ ${formatBytes(controller.receiveRate.value)}/s  '
-          '↑ ${formatBytes(controller.sendRate.value)}/s',
+      value: formatTrafficRates(
+        receive: controller.receiveRate.value,
+        send: controller.sendRate.value,
+      ),
       supporting: DashboardSupporting(
         l10n.homeTrafficTotals(
           formatBytes(controller.totalReceived.value),

@@ -47,6 +47,12 @@ void main() {
     expect(settings.theme.variant.value, M3EColorVariant.fidelity);
     expect(settings.theme.mode.value, ThemePreference.system);
     expect(settings.behavior.startOnBoot.value, isFalse);
+    expect(settings.behavior.useSystemTray.value, isTrue);
+    expect(
+      settings.behavior.trayAvailable.value,
+      isFalse,
+      reason: 'the tray reports a real icon after startup',
+    );
     expect(settings.workingMode.backend.value, BackendKind.ffi);
   });
 
@@ -59,6 +65,7 @@ void main() {
       'theme.variant': 'expressive',
       'theme.mode': 'oled',
       'behavior.startOnBoot': true,
+      'behavior.useSystemTray': false,
       'backend': 'service',
     });
 
@@ -71,6 +78,7 @@ void main() {
     expect(settings.theme.variant.value, M3EColorVariant.expressive);
     expect(settings.theme.mode.value, ThemePreference.oled);
     expect(settings.behavior.startOnBoot.value, isTrue);
+    expect(settings.behavior.useSystemTray.value, isFalse);
     expect(settings.workingMode.backend.value, BackendKind.service);
     expect(
       autostart.applied,
@@ -88,6 +96,7 @@ void main() {
       'theme.variant': 'loud',
       'theme.mode': 'dusk',
       'behavior.startOnBoot': 'yes',
+      'behavior.useSystemTray': 'yes',
       'backend': 'remote',
     });
 
@@ -100,6 +109,7 @@ void main() {
     expect(settings.theme.variant.value, M3EColorVariant.fidelity);
     expect(settings.theme.mode.value, ThemePreference.system);
     expect(settings.behavior.startOnBoot.value, isFalse);
+    expect(settings.behavior.useSystemTray.value, isTrue);
     expect(settings.workingMode.backend.value, BackendKind.ffi);
   });
 
@@ -113,6 +123,7 @@ void main() {
     settings.theme.setVariant(M3EColorVariant.vibrant);
     settings.theme.setMode(ThemePreference.dark);
     settings.behavior.setStartOnBoot(true);
+    settings.behavior.setUseSystemTray(false);
     settings.workingMode.setBackend(BackendKind.service);
     await pumpEventQueue();
 
@@ -124,6 +135,7 @@ void main() {
     expect(prefs.getString('theme.variant'), 'vibrant');
     expect(prefs.getString('theme.mode'), 'dark');
     expect(prefs.getBool('behavior.startOnBoot'), isTrue);
+    expect(prefs.getBool('behavior.useSystemTray'), isFalse);
     expect(prefs.getString('backend'), 'service');
 
     settings.interface.setLocale(null);
@@ -141,6 +153,7 @@ void main() {
     settings.theme.setVariant(M3EColorVariant.fidelity);
     settings.theme.setMode(ThemePreference.light);
     settings.behavior.setStartOnBoot(true);
+    settings.behavior.setUseSystemTray(false);
     settings.workingMode.setBackend(BackendKind.service);
     await pumpEventQueue();
 
@@ -154,6 +167,7 @@ void main() {
     expect(settings.theme.variant.value, M3EColorVariant.fidelity);
     expect(settings.theme.mode.value, ThemePreference.light);
     expect(settings.behavior.startOnBoot.value, isTrue);
+    expect(settings.behavior.useSystemTray.value, isFalse);
     expect(settings.workingMode.backend.value, BackendKind.service);
     expect(restarted.applied, [true], reason: 'it is applied at startup again');
   });
@@ -179,6 +193,8 @@ void main() {
     expect(settings.theme.variant, isA<ReadonlySignal<M3EColorVariant>>());
     expect(settings.theme.mode, isA<ReadonlySignal<ThemePreference>>());
     expect(settings.behavior.startOnBoot, isA<ReadonlySignal<bool>>());
+    expect(settings.behavior.useSystemTray, isA<ReadonlySignal<bool>>());
+    expect(settings.behavior.trayAvailable, isA<ReadonlySignal<bool>>());
     expect(settings.workingMode.backend, isA<ReadonlySignal<BackendKind>>());
   });
 
