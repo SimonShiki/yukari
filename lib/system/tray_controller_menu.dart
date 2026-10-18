@@ -51,7 +51,6 @@ extension _TrayMenuData on TrayController {
       label: trayNetworkLabel(
         network.networkName,
         peers: running ? l10n.value.trayPeers(instance!.peers.length) : null,
-        address: running ? instance!.myself?.virtualIpv4 : null,
         traffic: running ? _samples[id] : null,
       ),
       checked: running,

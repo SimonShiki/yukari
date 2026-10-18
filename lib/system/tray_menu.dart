@@ -1,5 +1,4 @@
 import '../controllers/home_controller.dart' show TrafficSample;
-import '../utils/byte_units.dart';
 
 /// The tray context menu: a plain description the platform adapter turns into
 /// a native menu, and the tests read without any plugin.
@@ -51,19 +50,15 @@ const String _separator = ' · ';
 /// [name] with the connected-peer count, the node's own address and its live
 /// traffic, in one line; just [name] when the network is not running.
 ///
-/// [traffic] is not null only while the network runs, which is also when the
-/// peer count and [address] are known.
+/// [traffic] is not null only while the network runs
 String trayNetworkLabel(
   String name, {
   required String? peers,
-  required String? address,
   required TrafficSample? traffic,
 }) {
   if (traffic == null) return name;
   return [
     name,
-    if (peers != null && peers.isNotEmpty) peers,
-    if (address != null && address.isNotEmpty) address,
-    formatTrafficRates(receive: traffic.receiveRate, send: traffic.sendRate),
+    if (peers != null && peers.isNotEmpty) peers
   ].join(_separator);
 }
