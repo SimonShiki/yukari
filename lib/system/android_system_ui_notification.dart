@@ -19,7 +19,7 @@ extension _AndroidSystemUiNotification on AndroidSystemUi {
     final next = (
       title: entry.value.network.networkName,
       text:
-          '${l10n.value.androidNotificationPeers(entry.value.peers.length)} · '
+          '${l10n.value.androidNotificationPeers(entry.value.memberCount)} · '
           '${formatTrafficRates(receive: sample.receiveRate, send: sample.sendRate)}',
     );
     if (next == _notification) return;

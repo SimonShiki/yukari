@@ -119,7 +119,7 @@ void main() {
   });
 
   test('shows a running network on the tile and in the notification', () async {
-    backend = _TestBackend(peerCount: 2);
+    backend = _TestBackend(peerCount: 1);
     backends.value = backend;
     await startUi();
 
@@ -132,11 +132,25 @@ void main() {
     });
     final notification = lastArguments('updateNotification');
     expect(notification['title'], 'alpha');
+    // One reported peer, plus this device.
     expect(notification['text'], '2 peers · ↓ 0 B/s  ↑ 0 B/s');
     expect(notification['stopLabel'], 'Stop');
     expect(
       calls.where((call) => call.method == 'requestNotificationPermission'),
       hasLength(1),
+    );
+  });
+
+  test('counts this device in a lone running network', () async {
+    backend = _TestBackend();
+    backends.value = backend;
+    await startUi();
+
+    await sendAction('toggle');
+
+    expect(
+      lastArguments('updateNotification')['text'],
+      '1 peer · ↓ 0 B/s  ↑ 0 B/s',
     );
   });
 

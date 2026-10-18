@@ -50,7 +50,7 @@ extension _TrayMenuData on TrayController {
       id: 'network:$id',
       label: trayNetworkLabel(
         network.networkName,
-        peers: running ? l10n.value.trayPeers(instance!.peers.length) : null,
+        peers: running ? l10n.value.trayPeers(instance!.memberCount) : null,
         traffic: running ? _samples[id] : null,
       ),
       checked: running,

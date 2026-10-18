@@ -156,10 +156,7 @@ void main() {
     final backend = FakeBackend(
       collected: () => {
         'alpha': instanceInfo(
-          peers: [
-            instancePeer(rx: received, tx: 0),
-            instancePeer(rx: received, tx: 0),
-          ],
+          peers: [instancePeer(rx: received, tx: 0)],
         ),
       },
     );
@@ -173,7 +170,7 @@ void main() {
     expect(
       platform.item('network:n1')!.label,
       'alpha · 2 peers',
-      reason: 'the first sample has no rate yet',
+      reason: 'one reported peer and this device; the first sample has no rate',
     );
 
     await Future<void>.delayed(const Duration(milliseconds: 20));
@@ -188,6 +185,15 @@ void main() {
       'beta',
       reason: 'a stopped network has no details',
     );
+  });
+
+  test('counts this device in a lone running network', () async {
+    final backend = FakeBackend(collected: () => {'alpha': instanceInfo()});
+    final platform = FakeTrayPlatform();
+    await controller(platform, backend: backend).start();
+    await pumpEventQueue();
+
+    expect(platform.item('network:n1')!.label, 'alpha · 1 peer');
   });
 
   test('shows a disabled row when no network is saved', () async {

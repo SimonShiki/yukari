@@ -31,6 +31,24 @@ void main() {
     expect(peer.secureAuthLevel, SecureAuthLevel.none);
   });
 
+  test('counts this device with the peers EasyTier reports', () {
+    final instance = Instance.fromJsonAndNetwork(collected(), Network());
+
+    // EasyTier's peer_route_pairs lists remote peers only.
+    expect(instance.peers, hasLength(1));
+    expect(instance.myself, isNotNull);
+    expect(instance.memberCount, 2);
+  });
+
+  test('counts only the reported peers when this device is unknown', () {
+    final json = collected()..remove('my_node_info');
+
+    final instance = Instance.fromJsonAndNetwork(json, Network());
+
+    expect(instance.myself, isNull);
+    expect(instance.memberCount, 1);
+  });
+
   test('lists each protocol of a peer once, in first-seen order', () {
     final json = collected();
     final pair =

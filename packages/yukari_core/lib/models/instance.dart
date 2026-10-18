@@ -23,6 +23,10 @@ final class Instance {
   /// The EasyTier version running the instance, such as `2.7.0-1649ec00`.
   final String? version;
 
+  /// The members of the network: the remote peers EasyTier reports plus this
+  /// device, which `peer_route_pairs` leaves out.
+  int get memberCount => peers.length + (myself == null ? 0 : 1);
+
   factory Instance.fromJsonAndNetwork(
     Map<String, Object?> json,
     Network network,
