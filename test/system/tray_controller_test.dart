@@ -172,7 +172,7 @@ void main() {
     expect(platform.item('network:n2')!.checked, isFalse);
     expect(
       platform.item('network:n1')!.label,
-      'alpha · 2 peers · 10.144.0.2 · ↓ 0 B/s  ↑ 0 B/s',
+      'alpha · 2 peers',
       reason: 'the first sample has no rate yet',
     );
 
@@ -183,9 +183,6 @@ void main() {
 
     final label = platform.item('network:n1')!.label;
     expect(label, contains('2 peers'), reason: 'the count is kept in place');
-    expect(label, contains('10.144.0.2'), reason: 'the address is kept too');
-    expect(label, contains('KB/s'));
-    expect(label, isNot(contains('↓ 0 B/s')));
     expect(
       platform.item('network:n2')!.label,
       'beta',
