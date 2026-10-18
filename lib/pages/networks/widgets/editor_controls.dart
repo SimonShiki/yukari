@@ -17,6 +17,7 @@ class EditorSwitch extends StatelessWidget {
     required this.write,
     required this.title,
     required this.subtitle,
+    this.enabled = true,
   });
 
   /// The leading icon naming the setting.
@@ -30,18 +31,36 @@ class EditorSwitch extends StatelessWidget {
   final String title;
   final String subtitle;
 
+  /// Whether the setting can still move.
+  final bool enabled;
+
   @override
   Widget build(BuildContext context) => SignalBuilder(
     builder: (context) {
-      final value = controller.select('switch.$name', read, false).value;
+      final value = editorSwitch(controller, name, read).value;
       return SwitchSegment(
         icon: icon,
         title: title,
         subtitle: subtitle,
         value: value,
+        enabled: enabled,
         onChanged: (bool value) =>
             controller.update((network) => write(network, value)),
       );
     },
   );
 }
+
+/// The primitive one editor switch binds, so the switch that conflicts with it
+/// subscribes to the very same signal.
+ReadonlySignal<bool> editorSwitch(
+  NetworkEditorController controller,
+  String name,
+  bool Function(Network) read,
+) => controller.select('switch.$name', read, false);
+
+/// Rule between two conflicting switches: turning [value] off is always
+/// allowed, turning it on waits for [conflicts] to be off. A saved network
+/// that has both on therefore stays repairable from either side.
+bool editorSwitchEnabled({required bool value, required bool conflicts}) =>
+    !conflicts || value;

@@ -48,6 +48,7 @@
   "advancedQuicProxySubtitle": "Carry TCP over QUIC for lower latency and speed",
   "advancedMagicDns": "Magic DNS",
   "advancedMagicDnsSubtitle": "Reach peers by name; changes system DNS settings",
+  "advancedMagicDnsNeedsTun": "Magic DNS needs the TUN device; the two options cannot both be on.",
   "advancedDnsSuffix": "DNS Suffix",
   "advancedDnsSuffixHelper": "Peers are named <hostname>.<suffix>",
   "magicDnsTitle": "Magic DNS setup",

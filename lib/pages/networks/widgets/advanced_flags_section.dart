@@ -24,9 +24,11 @@ class AdvancedFlagsSection extends StatelessWidget {
       // Only the DNS suffix row depends on a switch; it carries its own key, so
       // the MTU input below it survives the toggle.
       builder: (context) {
-        final magicDns = controller
-            .select('flags.acceptDns', (n) => n.flags.acceptDns, false)
-            .value;
+        final magicDns = editorSwitch(
+          controller,
+          'flags.acceptDns',
+          (n) => n.flags.acceptDns,
+        ).value;
         return FormSection(
           title: l10n.advancedNetworkFlags,
           icon: Icons.flag,
@@ -86,14 +88,37 @@ class AdvancedFlagsSection extends StatelessWidget {
               title: l10n.advancedQuicProxy,
               subtitle: l10n.advancedQuicProxySubtitle,
             ),
-            EditorSwitch(
-              icon: Icons.dns_outlined,
-              controller: controller,
-              name: 'flags.acceptDns',
-              read: (n) => n.flags.acceptDns,
-              write: (n, value) => n.flags.acceptDns = value,
-              title: l10n.advancedMagicDns,
-              subtitle: l10n.advancedMagicDnsSubtitle,
+            SignalBuilder(
+              builder: (context) {
+                final acceptDns = editorSwitch(
+                  controller,
+                  'flags.acceptDns',
+                  (n) => n.flags.acceptDns,
+                ).value;
+                final noTun = editorSwitch(
+                  controller,
+                  'flags.noTun',
+                  (n) => n.flags.noTun,
+                ).value;
+                // Magic DNS answers on the instance's TUN device, so it cannot
+                // be turned on again while the network has none.
+                final enabled = editorSwitchEnabled(
+                  value: acceptDns,
+                  conflicts: noTun,
+                );
+                return EditorSwitch(
+                  icon: Icons.dns_outlined,
+                  controller: controller,
+                  name: 'flags.acceptDns',
+                  read: (n) => n.flags.acceptDns,
+                  write: (n, value) => n.flags.acceptDns = value,
+                  title: l10n.advancedMagicDns,
+                  subtitle: enabled
+                      ? l10n.advancedMagicDnsSubtitle
+                      : l10n.advancedMagicDnsNeedsTun,
+                  enabled: enabled,
+                );
+              },
             ),
             if (magicDns) ...[
               EditorTextField(

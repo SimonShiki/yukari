@@ -32,6 +32,7 @@ const _instance = <String, Object?>{
 
 Network _network({
   bool acceptDns = true,
+  bool noTun = false,
   String? hostname = 'laptop',
   String zone = 'et.net.',
   String deviceName = '',
@@ -40,6 +41,7 @@ Network _network({
   ..hostname = hostname
   ..flags = (NetworkFlags()
     ..acceptDns = acceptDns
+    ..noTun = noTun
     ..dnsZone = zone
     ..deviceName = deviceName);
 
@@ -102,6 +104,53 @@ void main() {
     expect(find.text(strings.magicDnsStartManual), findsOneWidget);
     expect(find.text(strings.magicDnsApply), findsNothing);
     expect(command.runs, isEmpty);
+  });
+
+  testWidgets('a network without a TUN shows no card, one with it does', (
+    tester,
+  ) async {
+    // The store is seeded once: `seedWith` replaces the signals a live
+    // controller is following, so both cases share this one seed.
+    final command = FakeSystemCommand(runHandler: linuxHost());
+    await tester.runAsync(
+      () => seedWith({'n1': _network(noTun: true), 'n2': _network()}),
+    );
+    final noTun = MagicDnsController(
+      networkId: 'n1',
+      system: linuxSystem(command),
+    );
+    final withTun = MagicDnsController(
+      networkId: 'n2',
+      system: linuxSystem(command),
+    );
+    addTearDown(noTun.dispose);
+    addTearDown(withTun.dispose);
+
+    await pumpApp(
+      tester,
+      Scaffold(
+        body: SingleChildScrollView(
+          child: Column(
+            children: [
+              MagicDnsCard(networkId: 'n1', controller: noTun),
+              MagicDnsCard(networkId: 'n2', controller: withTun),
+            ],
+          ),
+        ),
+      ),
+    );
+    await tester.pump(const Duration(milliseconds: 1300));
+    await tester.pumpAndSettle();
+
+    expect(
+      noTun.state.value,
+      MagicDnsState.off,
+      reason: 'a network without a TUN can never have an interface',
+    );
+    expect(withTun.state.value, MagicDnsState.notRunning);
+    expect(find.text(strings.magicDnsTitle), findsOneWidget);
+    expect(find.text(strings.magicDnsNoInterface), findsNothing);
+    expect(command.runs, isEmpty, reason: 'nothing is probed for either');
   });
 
   testWidgets('a problem state waits for the automatic setup before showing', (

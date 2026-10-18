@@ -46,6 +46,17 @@ void main() {
     ),
   );
 
+  /// The trailing switch of the row titled [title].
+  Switch switchOf(WidgetTester tester, String title) => tester.widget<Switch>(
+    find.descendant(
+      of: find.ancestor(
+        of: find.text(title),
+        matching: find.byType(SwitchSegment),
+      ),
+      matching: find.byType(Switch),
+    ),
+  );
+
   Future<void> savedTyping(
     WidgetTester tester,
     Finder finder,
@@ -245,6 +256,88 @@ void main() {
     await tapSaving(tester, find.text(strings.advancedMagicDns));
     expect(find.text(strings.advancedDnsSuffix), findsNothing);
     expect(find.text('1400'), findsOneWidget);
+  });
+
+  testWidgets('Magic DNS blocks No-TUN until it is turned off', (tester) async {
+    await tester.runAsync(seedNetworks);
+    await pumpEditor(tester);
+    await switchTab(tester, strings.networkAdvanced);
+
+    await tapSaving(tester, find.text(strings.advancedMagicDns));
+    expect(controller.working.value!.flags.acceptDns, isTrue);
+
+    // The row says why it cannot move, and swallows the tap.
+    expect(switchOf(tester, strings.advancedNoTun).onChanged, isNull);
+    expect(find.text(strings.advancedMagicDnsNeedsTun), findsOneWidget);
+
+    await tapSaving(tester, find.text(strings.advancedNoTun));
+    expect(controller.working.value!.flags.noTun, isFalse);
+
+    await tapSaving(tester, find.text(strings.advancedMagicDns));
+    expect(controller.working.value!.flags.acceptDns, isFalse);
+    expect(switchOf(tester, strings.advancedNoTun).onChanged, isNotNull);
+    expect(find.text(strings.advancedMagicDnsNeedsTun), findsNothing);
+    expect(find.text(strings.advancedNoTunSubtitle), findsOneWidget);
+
+    await tapSaving(tester, find.text(strings.advancedNoTun));
+    expect(controller.working.value!.flags.noTun, isTrue);
+  });
+
+  testWidgets('No-TUN blocks Magic DNS until it is turned off', (tester) async {
+    await tester.runAsync(seedNetworks);
+    await pumpEditor(tester);
+    await switchTab(tester, strings.networkAdvanced);
+
+    await tapSaving(tester, find.text(strings.advancedNoTun));
+    expect(controller.working.value!.flags.noTun, isTrue);
+
+    expect(switchOf(tester, strings.advancedMagicDns).onChanged, isNull);
+    expect(find.text(strings.advancedMagicDnsNeedsTun), findsOneWidget);
+
+    await tapSaving(tester, find.text(strings.advancedMagicDns));
+    expect(controller.working.value!.flags.acceptDns, isFalse);
+    expect(find.text(strings.advancedDnsSuffix), findsNothing);
+
+    await tapSaving(tester, find.text(strings.advancedNoTun));
+    expect(controller.working.value!.flags.noTun, isFalse);
+    expect(switchOf(tester, strings.advancedMagicDns).onChanged, isNotNull);
+
+    await tapSaving(tester, find.text(strings.advancedMagicDns));
+    expect(controller.working.value!.flags.acceptDns, isTrue);
+    expect(find.text(strings.advancedDnsSuffix), findsOneWidget);
+  });
+
+  testWidgets('a saved network with both on can still turn either one off', (
+    tester,
+  ) async {
+    await tester.runAsync(
+      () => seedWith({
+        'n1': seededNetwork(
+          flags: NetworkFlags()
+            ..acceptDns = true
+            ..noTun = true,
+        ),
+      }),
+    );
+    await pumpEditor(tester);
+    await switchTab(tester, strings.networkAdvanced);
+
+    // Neither row is dead, so either side can break the pair up.
+    expect(switchOf(tester, strings.advancedMagicDns).onChanged, isNotNull);
+    expect(switchOf(tester, strings.advancedNoTun).onChanged, isNotNull);
+
+    await tapSaving(tester, find.text(strings.advancedMagicDns));
+    expect(controller.working.value!.flags.acceptDns, isFalse);
+    expect(controller.working.value!.flags.noTun, isTrue);
+
+    await saving(tester, () async {
+      controller.update((n) => n.flags.acceptDns = true);
+    });
+    expect(switchOf(tester, strings.advancedNoTun).onChanged, isNotNull);
+
+    await tapSaving(tester, find.text(strings.advancedNoTun));
+    expect(controller.working.value!.flags.noTun, isFalse);
+    expect(controller.working.value!.flags.acceptDns, isTrue);
   });
 
   testWidgets('only the uncommon sections start collapsed', (tester) async {

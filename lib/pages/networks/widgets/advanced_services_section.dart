@@ -1,4 +1,5 @@
 import 'package:material_ui/material_ui.dart';
+import 'package:signals_flutter/signals_flutter.dart';
 
 import '../../../controllers/network_editor_controller.dart';
 import '../../../l10n/l10n.dart';
@@ -46,14 +47,37 @@ class AdvancedServicesSection extends StatelessWidget {
           onSaved: (value) =>
               controller.update((n) => n.netNamespace = value.isEmpty ? null : value),
         ),
-        EditorSwitch(
-          icon: Icons.desktop_access_disabled_rounded,
-          controller: controller,
-          name: 'flags.noTun',
-          read: (n) => n.flags.noTun,
-          write: (n, value) => n.flags.noTun = value,
-          title: l10n.advancedNoTun,
-          subtitle: l10n.advancedNoTunSubtitle,
+        SignalBuilder(
+          builder: (context) {
+            final acceptDns = editorSwitch(
+              controller,
+              'flags.acceptDns',
+              (n) => n.flags.acceptDns,
+            ).value;
+            final noTun = editorSwitch(
+              controller,
+              'flags.noTun',
+              (n) => n.flags.noTun,
+            ).value;
+            // Dropping the TUN device also drops Magic DNS, so the two cannot
+            // both be on; either one can still be turned off again.
+            final enabled = editorSwitchEnabled(
+              value: noTun,
+              conflicts: acceptDns,
+            );
+            return EditorSwitch(
+              icon: Icons.desktop_access_disabled_rounded,
+              controller: controller,
+              name: 'flags.noTun',
+              read: (n) => n.flags.noTun,
+              write: (n, value) => n.flags.noTun = value,
+              title: l10n.advancedNoTun,
+              subtitle: enabled
+                  ? l10n.advancedNoTunSubtitle
+                  : l10n.advancedMagicDnsNeedsTun,
+              enabled: enabled,
+            );
+          },
         ),
       ],
     );

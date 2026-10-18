@@ -42,6 +42,7 @@
   "advancedQuicProxySubtitle": "通过 QUIC 承载 TCP，降低延迟、提升速度",
   "advancedMagicDns": "魔法 DNS",
   "advancedMagicDnsSubtitle": "通过名称访问节点；会修改系统 DNS 设置",
+  "advancedMagicDnsNeedsTun": "魔法 DNS 需要 TUN 设备；这两项不能同时开启。",
   "advancedDnsSuffix": "DNS 后缀",
   "advancedDnsSuffixHelper": "节点名称为 <主机名>.<后缀>",
   "magicDnsTitle": "魔法 DNS 设置",

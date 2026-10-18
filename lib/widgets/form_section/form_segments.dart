@@ -114,6 +114,7 @@ class SwitchSegment extends StatelessWidget {
     required this.subtitle,
     required this.value,
     required this.onChanged,
+    this.enabled = true,
   });
 
   final IconData icon;
@@ -121,6 +122,10 @@ class SwitchSegment extends StatelessWidget {
   final String subtitle;
   final bool value;
   final ValueChanged<bool> onChanged;
+
+  /// Whether the setting can move at all; a disabled row shows no thumb
+  /// response and swallows taps.
+  final bool enabled;
 
   static final _thumbIcon = WidgetStateProperty<Icon>.fromMap({
     WidgetState.selected: const Icon(Icons.check_rounded),
@@ -130,7 +135,7 @@ class SwitchSegment extends StatelessWidget {
   @override
   Widget build(BuildContext context) => MergeSemantics(
     child: InkWell(
-      onTap: () => onChanged(!value),
+      onTap: enabled ? () => onChanged(!value) : null,
       child: M3EListItem(
         leading: Icon(icon),
         headline: Text(title),
@@ -138,7 +143,7 @@ class SwitchSegment extends StatelessWidget {
         trailing: Switch(
           value: value,
           thumbIcon: _thumbIcon,
-          onChanged: onChanged,
+          onChanged: enabled ? onChanged : null,
         ),
       ),
     ),
