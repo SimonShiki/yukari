@@ -14,6 +14,9 @@ extension MagicDnsManual on MagicDnsSystem {
     String? name,
   }) {
     if (!supported) return const [];
+    // Android's redirect belongs to the root service, which installs it by
+    // itself: the app has no command to offer.
+    if (platform == MagicDnsPlatform.android) return const [];
     final base = magicDnsZoneBase(zone);
     if (automatic) {
       return [

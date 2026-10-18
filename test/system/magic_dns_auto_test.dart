@@ -143,4 +143,21 @@ void main() {
     await auto.revertAll();
     expect(command.elevated, hasLength(4), reason: 'only n2 was left');
   });
+
+  test('reverts a configuration it inherited', () async {
+    final command = FakeSystemCommand(
+      runHandler: linuxHost(configured: () => true),
+    );
+    final auto = _auto(command);
+
+    // A killed service left the link configured: the probe finds it, and the
+    // network still owns it once it runs here.
+    expect(await auto.start('n1', _network()), isNull);
+    expect(command.elevated, isEmpty, reason: 'nothing had to be installed');
+
+    await auto.revert('n1');
+
+    expect(command.elevated.single.$1, 'resolvectl');
+    expect(command.elevated.single.$2, ['revert', 'et_12_xoih']);
+  });
 }

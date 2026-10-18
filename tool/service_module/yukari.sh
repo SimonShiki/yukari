@@ -43,7 +43,10 @@ case $1 in
     set -- "$MODDIR"/lib/ld-linux-*
     loader=$1
     # Restarts the service after it fails, not after it is stopped.
-    until "$loader" --library-path "$MODDIR/lib" "$MODDIR/bin/dartaotruntime" \
+    # The Linux build is told it runs on Android, where only packet
+    # interception can send a zone's lookups to Magic DNS.
+    until YUKARI_ANDROID_DNS=1 "$loader" --library-path "$MODDIR/lib" \
+      "$MODDIR/bin/dartaotruntime" \
       "$MODDIR/bin/yukari-service.aot" run \
       --data-dir "$APP_DATA/files" --owner-uid "$owner"; do
       sleep 2

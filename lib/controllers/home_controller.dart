@@ -10,6 +10,7 @@ import '../models/models.dart';
 import '../signals/backend.dart' as active;
 import '../signals/instances.dart' as running;
 import '../signals/networks.dart';
+import '../system/magic_dns.dart';
 import '../utils/stun_probe.dart';
 
 part 'home_actions.dart';

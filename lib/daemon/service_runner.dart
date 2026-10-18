@@ -8,9 +8,23 @@ import 'package:path/path.dart' as p;
 import '../backend/ffi_backend.dart';
 import '../backend/system/system_service.dart';
 import '../storage/network_store.dart';
+import '../system/magic_dns.dart';
+import '../system/magic_dns_auto.dart';
 import 'service_daemon.dart';
 import 'service_socket.dart';
 import 'windows_service_host.dart';
+
+/// The environment variable the Android module starts this service with.
+const _androidDnsEnv = 'YUKARI_ANDROID_DNS';
+
+/// The system DNS of the platform this service runs on.
+///
+/// Android's module runs this Linux build as root, where only packet
+/// interception can send a zone's lookups to Magic DNS, so the module marks
+/// the process. Elsewhere the service's own platform decides.
+MagicDnsSetup? _magicDns() => Platform.environment[_androidDnsEnv] == '1'
+    ? MagicDnsAuto(system: MagicDnsSystem(platform: MagicDnsPlatform.android))
+    : null;
 
 /// Runs the service for the data directory [dataDir] until the OS stops it,
 /// or until SIGINT or SIGTERM in the console.
@@ -19,6 +33,7 @@ Future<void> runService({required String dataDir, int? ownerUid}) async {
     final daemon = ServiceDaemon(
       store: NetworkStore.inDirectory(dataDir, readOnly: true),
       backend: FfiBackend(),
+      magicDns: _magicDns(),
       log: log,
     );
     final (socket, token) = await bindServiceSocket(

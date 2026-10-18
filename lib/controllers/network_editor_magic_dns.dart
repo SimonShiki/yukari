@@ -67,9 +67,10 @@ class MagicDnsController {
   );
 
   /// Whether this network asks for Magic DNS at all.
-  late final ReadonlySignal<bool> enabled = computed(
-    () => network.value?.flags.acceptDns ?? false,
-  );
+  late final ReadonlySignal<bool> enabled = computed(() {
+    final flags = network.value?.flags;
+    return flags != null && magicDnsRequested(flags);
+  });
 
   /// The zone names this network's peers live under, such as `et.net.`.
   late final ReadonlySignal<String> zone = computed(

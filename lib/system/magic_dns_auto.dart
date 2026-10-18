@@ -47,12 +47,13 @@ final class MagicDnsAuto implements MagicDnsSetup {
   /// How long each of those waits is.
   final Duration retryDelay;
 
-  /// The interfaces this setup configured, by network id.
-  final _configured = <String, String>{};
+  /// The configurations this setup installed, by network id: the EasyTier
+  /// interface and the zone each was installed for.
+  final _configured = <String, ({String interface, String zone})>{};
 
   @override
   bool appliesTo(Network network) =>
-      system.configurable && network.flags.acceptDns && !network.flags.noTun;
+      system.configurable && magicDnsRequested(network.flags);
 
   @override
   Future<String?> start(String networkId, Network network) async {
@@ -66,6 +67,13 @@ final class MagicDnsAuto implements MagicDnsSetup {
         );
         switch (probe.state) {
           case MagicDnsState.configured:
+            // Nothing was installed here, but the configuration is this
+            // network's: remembering it is what lets a redirect a killed
+            // service left behind be reverted when its network stops.
+            if (probe.interface case final interface?) {
+              _configured[networkId] = (interface: interface, zone: zone);
+            }
+            return null;
           case MagicDnsState.unsupported:
           case MagicDnsState.off:
           case MagicDnsState.notRunning:
@@ -75,7 +83,7 @@ final class MagicDnsAuto implements MagicDnsSetup {
             final interface = probe.interface;
             if (interface == null) return null;
             await system.apply(zone: zone, interfaceName: interface);
-            _configured[networkId] = interface;
+            _configured[networkId] = (interface: interface, zone: zone);
             return interface;
           case MagicDnsState.noInterface:
             // The network just started: its TUN device and the route to the
@@ -93,10 +101,13 @@ final class MagicDnsAuto implements MagicDnsSetup {
 
   @override
   Future<void> revert(String networkId) async {
-    final interface = _configured.remove(networkId);
-    if (interface == null) return;
+    final configured = _configured.remove(networkId);
+    if (configured == null) return;
     try {
-      await system.reset(interfaceName: interface);
+      await system.reset(
+        interfaceName: configured.interface,
+        zone: configured.zone,
+      );
     } catch (_) {
       // Nothing is left to revert, such as after the interface is gone.
     }

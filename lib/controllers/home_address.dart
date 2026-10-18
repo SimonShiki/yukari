@@ -22,14 +22,11 @@ List<HomeAddressEntry> homeAddressesOf(List<Instance> running) => [
 /// The Magic DNS name of [network], when it asks for one: its configured
 /// hostname under its DNS zone, without the zone's one trailing dot.
 String? _magicDnsHostOf(Network network) {
-  if (!network.flags.acceptDns) return null;
+  if (!magicDnsRequested(network.flags)) return null;
   final hostname = network.hostname ?? '';
   final zone = network.flags.dnsZone;
   if (hostname.isEmpty || zone.isEmpty) return null;
-  final trimmed = zone.endsWith('.')
-      ? zone.substring(0, zone.length - 1)
-      : zone;
-  return '$hostname.$trimmed';
+  return magicDnsNameOf(host: hostname, zone: zone);
 }
 
 /// Which address the card shows, from the first refresh and the STUN answer.

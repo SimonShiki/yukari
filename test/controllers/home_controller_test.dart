@@ -259,6 +259,28 @@ void main() {
     expect(home.addressTooltip.value, isNull);
   });
 
+  test('a Magic DNS network without a TUN has no Magic DNS host', () async {
+    final network = saved.networks.value['n1']!;
+    network.hostname = 'alpha-host';
+    network.flags.acceptDns = true;
+    await saved.updateNetwork('n1', network);
+    final home = controller(
+      backend: FakeBackend(collected: () => {'alpha': _info()}),
+    );
+
+    await home.refresh();
+    expect(home.addressSupporting.value, 'alpha-host.et.net · alpha');
+
+    // Magic DNS answers on the tunnel's own device: without one, the name
+    // cannot resolve and is not shown.
+    network.flags.noTun = true;
+    await saved.updateNetwork('n1', network);
+    await home.refresh();
+
+    expect(home.addressSupporting.value, 'alpha');
+    expect(home.addressTooltip.value, isNull);
+  });
+
   test('start refreshes now and when a network is saved', () async {
     final infos = <String, Object?>{'alpha': _info()};
     final home = controller(backend: FakeBackend(collected: () => infos));

@@ -1,8 +1,13 @@
 import 'dart:io';
 
+import '../models/models.dart';
 import 'system_command.dart';
 
+part 'magic_dns_android.dart';
+part 'magic_dns_android_rules.dart';
+part 'magic_dns_facts.dart';
 part 'magic_dns_manual.dart';
+part 'magic_dns_platform.dart';
 
 /// The address EasyTier Magic DNS answers from inside the tunnel.
 const magicDnsServer = '100.100.100.101';
@@ -10,72 +15,13 @@ const magicDnsServer = '100.100.100.101';
 /// The zone EasyTier uses when the network does not name one.
 const magicDnsDefaultZone = 'et.net.';
 
-/// The platforms Yukari ships on, as far as the system DNS setup goes.
-enum MagicDnsPlatform {
-  /// The app points systemd-resolved at the EasyTier interface.
-  linux,
-
-  /// EasyTier writes the DNS servers of its own TUN interface itself.
-  windows,
-
-  /// No supported system DNS setup; the helper stays hidden.
-  other,
-}
-
-/// The [MagicDnsPlatform] of the running system.
-MagicDnsPlatform _runningPlatform() {
-  if (Platform.isLinux) return MagicDnsPlatform.linux;
-  if (Platform.isWindows) return MagicDnsPlatform.windows;
-  return MagicDnsPlatform.other;
-}
-
-/// Everything the Magic DNS helper shows.
-///
-/// [off] and [notRunning] are the network's state, added by the controller;
-/// [MagicDnsSystem.probe] reports the others.
-enum MagicDnsState {
-  /// Magic DNS is off for this network.
-  off,
-
-  /// Magic DNS is on, but the network is not running.
-  notRunning,
-
-  /// No systemd-resolved: DNS has to be configured by hand.
-  unsupported,
-
-  /// No EasyTier interface yet: the network is not running, or still starting.
-  noInterface,
-
-  /// The system DNS does not send the zone to the Magic DNS server.
-  missing,
-
-  /// The system DNS sends the zone to the Magic DNS server.
-  configured,
-
-  /// The last probe or elevated command failed; the error says why.
-  failed,
-}
-
-/// One look at the system DNS, with the EasyTier interface found on the way.
-typedef MagicDnsProbe = ({MagicDnsState state, String? interface});
-
-/// [zone] without its trailing dot, as DNS tools spell it.
-String magicDnsZoneBase(String zone) {
-  final trimmed = zone.trim();
-  return trimmed.endsWith('.')
-      ? trimmed.substring(0, trimmed.length - 1)
-      : trimmed;
-}
-
-/// The Magic DNS name of [host] under [zone], such as `laptop.et.net`.
-String magicDnsNameOf({required String host, required String zone}) =>
-    '$host.${magicDnsZoneBase(zone)}';
-
 /// The system DNS side of EasyTier Magic DNS.
 ///
 /// Windows lets EasyTier set the DNS servers of its own interface, so it is
 /// only read here. Linux has no such setup in EasyTier and is configured
-/// through systemd-resolved's `resolvectl`, with administrator rights.
+/// through systemd-resolved's `resolvectl`, with administrator rights. The
+/// Android root service redirects the zone's own lookups into the tunnel
+/// instead; see `MagicDnsAndroid`.
 final class MagicDnsSystem {
   MagicDnsSystem({MagicDnsPlatform? platform, SystemCommand? command})
     : platform = platform ?? _runningPlatform(),
@@ -88,16 +34,16 @@ final class MagicDnsSystem {
   /// Whether EasyTier configures this platform's system DNS itself.
   bool get automatic => platform == MagicDnsPlatform.windows;
 
-  /// Whether the app configures this platform's system DNS.
-  bool get configurable => platform == MagicDnsPlatform.linux;
+  /// Whether this process configures this platform's system DNS: the app on
+  /// Linux, the root service on Android.
+  bool get configurable =>
+      platform == MagicDnsPlatform.linux ||
+      platform == MagicDnsPlatform.android;
 
   /// Whether this platform has any system DNS support to show.
   bool get supported => platform != MagicDnsPlatform.other;
 
   static final _dev = RegExp(r'\bdev\s+(\S+)');
-  static final _zoneBase = RegExp(
-    r'^[A-Za-z0-9]([A-Za-z0-9-]*[A-Za-z0-9])?(\.[A-Za-z0-9]([A-Za-z0-9-]*[A-Za-z0-9])?)*$',
-  );
   static final _interface = RegExp(r'^[A-Za-z0-9_.-]+$');
 
   /// Whether the system DNS sends [zone] to the Magic DNS server, and the
@@ -113,6 +59,9 @@ final class MagicDnsSystem {
       return (state: MagicDnsState.unsupported, interface: null);
     }
     if (automatic) return _probeWindows();
+    if (platform == MagicDnsPlatform.android) {
+      return _probeAndroid(zone: zone, interfaceName: interfaceName);
+    }
     final interface = await _findInterface(interfaceName);
     if (interface == null) {
       return (state: MagicDnsState.noInterface, interface: null);
@@ -136,16 +85,18 @@ final class MagicDnsSystem {
     );
   }
 
-  /// Points [interfaceName]'s DNS at the Magic DNS server, with [zone] routed
-  /// only to it, asking to elevate once.
+  /// Sends [zone]'s lookups to the Magic DNS server.
   ///
-  /// Both values are validated and quoted, because one shell runs both
-  /// commands so the user authorizes once.
+  /// Linux points [interfaceName] at it through systemd-resolved, asking to
+  /// elevate once: both values are validated and quoted, because one shell
+  /// runs both commands so the user authorizes once. Android installs its
+  /// redirect chain, which needs no interface.
   Future<void> apply({
     required String zone,
     required String interfaceName,
   }) async {
-    final base = _checked(magicDnsZoneBase(zone), _zoneBase, 'zone');
+    if (platform == MagicDnsPlatform.android) return _applyAndroid(zone: zone);
+    final base = _checked(magicDnsZoneBase(zone), _zoneName, 'zone');
     final name = _checked(interfaceName, _interface, 'interfaceName');
     await _command.runElevated('sh', [
       '-c',
@@ -154,8 +105,12 @@ final class MagicDnsSystem {
     ]);
   }
 
-  /// Gives [interfaceName] back the DNS configuration it had before [apply].
-  Future<void> reset({required String interfaceName}) async {
+  /// Gives the system DNS back the configuration it had before [apply].
+  ///
+  /// [zone] names the configuration on platforms that serve several zones at
+  /// once; Linux reverts [interfaceName] as a whole and ignores it.
+  Future<void> reset({required String interfaceName, String? zone}) async {
+    if (platform == MagicDnsPlatform.android) return _resetAndroid(zone: zone);
     final name = _checked(interfaceName, _interface, 'interfaceName');
     await _command.runElevated('resolvectl', ['revert', name]);
   }
