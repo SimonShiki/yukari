@@ -1,8 +1,8 @@
 import 'dart:convert';
 
 import 'package:signals/signals.dart';
-import 'package:yukari/backend/backend.dart';
-import 'package:yukari/models/models.dart';
+import 'package:yukari_core/backend/backend.dart';
+import 'package:yukari_core/models/models.dart';
 
 /// A backend that pretends to run instances, recording what it was asked.
 class FakeBackend extends NetworkBackend {

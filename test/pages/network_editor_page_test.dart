@@ -3,7 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:yukari/controllers/network_editor_controller.dart';
 import 'package:yukari/widgets/form_section/form_segments.dart';
-import 'package:yukari/models/models.dart';
+import 'package:yukari_core/models/models.dart';
 import 'package:yukari/pages/networks/editor_exit_guard.dart';
 import 'package:yukari/pages/networks/network_editor_page.dart';
 import 'package:yukari/pages/networks/widgets/advanced_flags_section.dart';

@@ -3,14 +3,14 @@ import 'dart:math';
 
 import 'package:signals/signals.dart';
 
-import '../backend/backend.dart';
+import 'package:yukari_core/backend/backend.dart';
 import '../backend/ipc/ipc_client.dart';
-import '../backend/ipc/ipc_endpoint.dart';
-import '../models/models.dart';
+import 'package:yukari_core/backend/ipc/ipc_endpoint.dart';
+import 'package:yukari_core/models/models.dart';
 import '../signals/backend.dart' as active;
 import '../signals/instances.dart' as running;
 import '../signals/networks.dart';
-import '../system/magic_dns.dart';
+import 'package:yukari_core/system/magic_dns.dart';
 import '../utils/stun_probe.dart';
 
 part 'home_actions.dart';

@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:yukari/controllers/home_controller.dart';
 import 'package:yukari/controllers/network_page_controller.dart';
-import 'package:yukari/models/peer.dart';
+import 'package:yukari_core/models/peer.dart';
 import 'package:yukari/signals/instances.dart';
 import 'package:yukari/utils/stun_probe.dart';
 

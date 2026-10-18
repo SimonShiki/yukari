@@ -6,7 +6,7 @@ import 'package:signals_flutter/signals_flutter.dart';
 
 import '../../../controllers/network_instance_controller.dart';
 import '../../../l10n/l10n.dart';
-import '../../../system/magic_dns.dart';
+import 'package:yukari_core/system/magic_dns.dart';
 import '../../../widgets/empty_state/empty_state.dart';
 import '../../../widgets/log_entry/log_entry_list.dart';
 import '../../../widgets/peer_card/peer_card.dart';

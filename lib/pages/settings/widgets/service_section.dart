@@ -2,10 +2,10 @@ import 'package:m3e_core/m3e_core.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:signals_flutter/signals_flutter.dart';
 
-import '../../../backend/service_version.dart';
+import 'package:yukari_core/backend/service_version.dart';
 import '../../../controllers/backend_settings_controller.dart';
 import '../../../l10n/l10n.dart';
-import '../../../models/backend.dart';
+import 'package:yukari_core/models/backend.dart';
 import '../../../widgets/form_section/form_section.dart';
 import 'install_progress.dart';
 import 'service_loading_header.dart';

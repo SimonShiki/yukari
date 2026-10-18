@@ -1,5 +1,5 @@
 import '../../l10n/l10n.dart';
-import '../../models/log_entry.dart';
+import 'package:yukari_core/models/log_entry.dart';
 
 /// Formats event summaries at the UI boundary, keeping journal models pure Dart.
 String formatLogSummary(LogEntry entry, AppLocalizations l10n) {

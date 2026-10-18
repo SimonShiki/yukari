@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:yukari/models/node.dart';
+import 'package:yukari_core/models/node.dart';
 
 void main() {
   test('a peer host is stored and shown without an authority slash', () {

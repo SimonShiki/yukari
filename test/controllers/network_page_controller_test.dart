@@ -6,11 +6,11 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:yukari/controllers/network_instance_controller.dart';
 import 'package:yukari/controllers/network_page_controller.dart';
 import 'package:yukari/l10n/l10n.dart';
-import 'package:yukari/models/models.dart';
+import 'package:yukari_core/models/models.dart';
 import 'package:yukari/signals/instance_logs.dart';
 import 'package:yukari/signals/instances.dart';
 import 'package:yukari/signals/networks.dart' as saved;
-import 'package:yukari/utils/easytier_config_serializer.dart';
+import 'package:yukari_core/utils/easytier_config_serializer.dart';
 
 import '../fake_backend.dart';
 import '../networks_fixture.dart';

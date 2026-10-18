@@ -1,0 +1,361 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  # Cancelling a trunk run could interrupt a release upload mid-flight.
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  analyze-and-test:
+    name: Analyze and test (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - ubuntu-latest
+          - windows-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - uses: ./.github/actions/setup-flutter
+
+      - name: Install Linux native build dependencies
+        if: runner.os == 'Linux'
+        # The cnativeapi native-asset build, which `flutter test` runs, links
+        # GTK 3 and X11 through pkg-config.
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libgtk-3-dev libxi-dev libx11-dev
+
+      - name: Get dependencies
+        run: flutter pub get
+
+      - name: Generate localizations
+        run: flutter gen-l10n
+
+      - name: Analyze
+        run: flutter analyze
+
+      - name: Test
+        run: flutter test
+
+  changes:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      # How dorny/paths-filter lists the files of a pull request.
+      pull-requests: read
+    outputs:
+      natives: ${{ github.event_name == 'workflow_dispatch' || steps.filter.outputs.natives == 'true' }}
+      module: ${{ github.event_name == 'workflow_dispatch' || steps.filter.outputs.module == 'true' }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Find the changed inputs
+        # A manual run builds everything, so there is nothing to detect.
+        if: github.event_name != 'workflow_dispatch'
+        id: filter
+        uses: dorny/paths-filter@v4
+        with:
+          filters: |
+            natives:
+              - 'packages/yukari_core/xmake.lua'
+              - 'packages/yukari_core/third_party/**'
+              - 'packages/yukari_core/hook/**'
+              - 'packages/yukari_core/tool/native_version.dart'
+              - '.github/workflows/ci.yml'
+            module:
+              - 'packages/yukari_core/**'
+              - 'pubspec.yaml'
+              - 'pubspec.lock'
+              - 'tool/service_module/**'
+              - 'tool/pack_service_module.sh'
+              - '.github/workflows/ci.yml'
+
+  build-native-libraries:
+    needs: changes
+    if: needs.changes.outputs.natives == 'true'
+    strategy:
+      matrix:
+        include:
+          - platform: windows
+            arch: x64
+            runner: windows-latest
+            library: easytier_ffi.dll
+            rust_targets: x86_64-pc-windows-msvc
+
+          - platform: linux
+            arch: x86_64
+            runner: ubuntu-latest
+            library: libeasytier_ffi.so
+            rust_targets: x86_64-unknown-linux-gnu
+
+          - platform: linux
+            arch: arm64
+            runner: ubuntu-26.04-arm
+            library: libeasytier_ffi.so
+            rust_targets: aarch64-unknown-linux-gnu
+
+          - platform: android
+            arch: arm64-v8a
+            runner: ubuntu-latest
+            library: libeasytier_ffi.so
+            rust_targets: aarch64-linux-android
+            ndk_version: r28c
+
+          - platform: android
+            arch: x86_64
+            runner: ubuntu-latest
+            library: libeasytier_ffi.so
+            rust_targets: x86_64-linux-android
+            ndk_version: r28c
+
+    runs-on: ${{ matrix.runner }}
+    defaults:
+      run:
+        working-directory: packages/yukari_core
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Setup xmake
+        uses: xmake-io/github-action-setup-xmake@v1
+        with:
+          xmake-version: latest
+
+      - name: Setup Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: "1.95.0"
+          targets: ${{ matrix.rust_targets }}
+
+      - name: Install LLVM and Clang
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y llvm-18 clang-18 libclang-18-dev
+          sudo ln -sf /usr/bin/clang-18 /usr/bin/clang
+          sudo ln -sf /usr/bin/clang++-18 /usr/bin/clang++
+
+      - name: Setup Android NDK
+        if: matrix.ndk_version
+        uses: nttld/setup-ndk@v1
+        with:
+          ndk-version: ${{ matrix.ndk_version }}
+        id: setup-ndk
+
+      - name: Configure xmake (Windows)
+        if: runner.os == 'Windows'
+        run: xmake f -p ${{ matrix.platform }} -a ${{ matrix.arch }} -m release -y
+        shell: cmd
+
+      - name: Configure xmake (Linux/Android)
+        if: runner.os != 'Windows'
+        run: |
+          args="-p ${{ matrix.platform }} -a ${{ matrix.arch }} -m release -y"
+          if [ -n "${{ matrix.ndk_version }}" ]; then
+            args="$args --ndk=${{ steps.setup-ndk.outputs.ndk-path }}"
+          fi
+          xmake f $args
+        shell: bash
+        env:
+          LLVM_ROOT: /usr/lib/llvm-18
+
+      - name: Build with xmake
+        run: xmake -r
+        env:
+          LIBCLANG_PATH: ${{ runner.os == 'Linux' && '/usr/lib/llvm-18/lib' || '' }}
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.platform }}-${{ matrix.arch }}-${{ matrix.library }}
+          path: packages/yukari_core/build/${{ matrix.platform }}/${{ matrix.arch }}/release/*
+          if-no-files-found: error
+
+  publish-native-libraries:
+    needs: build-native-libraries
+    if: github.ref == 'refs/heads/trunk'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - uses: ./.github/actions/setup-flutter
+
+      - name: Get dependencies
+        run: flutter pub get
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Generate manifest
+        # native_version.dart reads xmake.lua from the working directory, which
+        # is the package that owns it.
+        working-directory: packages/yukari_core
+        run: |
+          dart compile exe tool/native_version.dart -o "$RUNNER_TEMP/native-version"
+          "$RUNNER_TEMP/native-version" manifest "$RUNNER_TEMP/natives.json" \
+            windows/x64=../../artifacts/windows-x64-easytier_ffi.dll/easytier_ffi.dll \
+            linux/x86_64=../../artifacts/linux-x86_64-libeasytier_ffi.so/libeasytier_ffi.so \
+            linux/arm64=../../artifacts/linux-arm64-libeasytier_ffi.so/libeasytier_ffi.so \
+            android/arm64-v8a=../../artifacts/android-arm64-v8a-libeasytier_ffi.so/libeasytier_ffi.so \
+            android/x86_64=../../artifacts/android-x86_64-libeasytier_ffi.so/libeasytier_ffi.so
+
+      - name: Upload Windows x64 library
+        uses: ./.github/actions/upload-native-asset
+        with:
+          file: artifacts/windows-x64-easytier_ffi.dll/easytier_ffi.dll
+          asset_name: windows-x64-easytier_ffi.dll
+
+      - name: Upload Linux x86_64 library
+        uses: ./.github/actions/upload-native-asset
+        with:
+          file: artifacts/linux-x86_64-libeasytier_ffi.so/libeasytier_ffi.so
+          asset_name: linux-x86_64-libeasytier_ffi.so
+
+      - name: Upload Linux arm64 library
+        uses: ./.github/actions/upload-native-asset
+        with:
+          file: artifacts/linux-arm64-libeasytier_ffi.so/libeasytier_ffi.so
+          asset_name: linux-arm64-libeasytier_ffi.so
+
+      - name: Upload Android arm64-v8a library
+        uses: ./.github/actions/upload-native-asset
+        with:
+          file: artifacts/android-arm64-v8a-libeasytier_ffi.so/libeasytier_ffi.so
+          asset_name: android-arm64-v8a-libeasytier_ffi.so
+
+      - name: Upload Android x86_64 library
+        uses: ./.github/actions/upload-native-asset
+        with:
+          file: artifacts/android-x86_64-libeasytier_ffi.so/libeasytier_ffi.so
+          asset_name: android-x86_64-libeasytier_ffi.so
+
+      - name: Upload Windows Packet.dll
+        uses: ./.github/actions/upload-native-asset
+        with:
+          file: artifacts/windows-x64-easytier_ffi.dll/Packet.dll
+          asset_name: Packet.dll
+
+      - name: Upload Windows wintun.dll
+        uses: ./.github/actions/upload-native-asset
+        with:
+          file: artifacts/windows-x64-easytier_ffi.dll/wintun.dll
+          asset_name: wintun.dll
+
+      - name: Upload Windows WinDivert64.sys
+        uses: ./.github/actions/upload-native-asset
+        with:
+          file: artifacts/windows-x64-easytier_ffi.dll/WinDivert64.sys
+          asset_name: WinDivert64.sys
+
+      - name: Upload the native version manifest
+        uses: ./.github/actions/upload-native-asset
+        with:
+          file: ${{ runner.temp }}/natives.json
+          asset_name: natives.json
+
+  build-service-module:
+    needs: [changes, build-native-libraries, publish-native-libraries]
+    # A skipped natives job means nothing was rebuilt, which is not a failure;
+    # a failed one must not have its libraries bundled.
+    if: ${{ !cancelled() && !failure() && needs.changes.outputs.module == 'true' }}
+    # The bundled glibc must be at least as new as the one the EasyTier
+    # libraries were built against; see the natives matrix above.
+    runs-on: ubuntu-26.04
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install the arm64 glibc
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libc6-arm64-cross libgcc-s1-arm64-cross zip
+
+      - uses: ./.github/actions/setup-flutter
+
+      - name: Get dependencies
+        run: flutter pub get
+
+      # The libraries built above sit in this run's artifacts until the trunk
+      # publishes them, so a pull request bundles them too.
+      - name: Download the Linux x86_64 library
+        if: needs.changes.outputs.natives == 'true'
+        uses: actions/download-artifact@v4
+        with:
+          name: linux-x86_64-libeasytier_ffi.so
+          path: packages/yukari_core/build/linux/x86_64/release
+
+      - name: Download the Linux arm64 library
+        if: needs.changes.outputs.natives == 'true'
+        uses: actions/download-artifact@v4
+        with:
+          name: linux-arm64-libeasytier_ffi.so
+          path: packages/yukari_core/build/linux/arm64/release
+
+      - name: Stamp the downloaded libraries
+        if: needs.changes.outputs.natives == 'true'
+        working-directory: packages/yukari_core
+        run: |
+          dart compile exe tool/native_version.dart -o "$RUNNER_TEMP/native-version"
+          "$RUNNER_TEMP/native-version" stamp linux x86_64 build/linux/x86_64/release/libeasytier_ffi.so
+          "$RUNNER_TEMP/native-version" stamp linux arm64 build/linux/arm64/release/libeasytier_ffi.so
+
+      - name: Pack the service module
+        run: tool/pack_service_module.sh
+
+      - name: Upload the service module
+        uses: actions/upload-artifact@v4
+        with:
+          name: yukari-service-module
+          path: build/service_module/yukari-service-module.zip
+          if-no-files-found: error
+
+  publish-service-module:
+    needs: build-service-module
+    if: github.ref == 'refs/heads/trunk'
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write
+
+    steps:
+      - name: Download the service module
+        uses: actions/download-artifact@v4
+        with:
+          name: yukari-service-module
+          path: build/service_module
+
+      - name: Publish the service module
+        uses: svenstaro/upload-release-action@v2
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: build/service_module/yukari-service-module.zip
+          asset_name: yukari-service-module.zip
+          tag: ksu-service-module
+          release_name: Service Module
+          overwrite: true
+          prerelease: true
+          make_latest: false

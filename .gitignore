@@ -38,10 +38,12 @@ skills-lock.json
 .pub/
 /build/
 /.xmake/
+/packages/yukari_core/build/
+/packages/yukari_core/.xmake/
 /coverage/
 
 # Native library versions
-/natives.json
+/packages/yukari_core/natives.json
 
 # Symbolication related
 app.*.symbols

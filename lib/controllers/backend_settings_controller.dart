@@ -3,13 +3,13 @@ import 'dart:async';
 import 'package:flutter/widgets.dart';
 import 'package:signals/signals.dart';
 
-import '../backend/backend.dart';
+import 'package:yukari_core/backend/backend.dart';
 import '../backend/ipc/ipc_client.dart';
-import '../backend/ipc/ipc_endpoint.dart';
+import 'package:yukari_core/backend/ipc/ipc_endpoint.dart';
 import '../backend/service_backend.dart';
-import '../backend/service_version.dart';
+import 'package:yukari_core/backend/service_version.dart';
 import '../backend/system/service_control.dart';
-import '../models/models.dart';
+import 'package:yukari_core/models/models.dart';
 import '../signals/backend.dart' as backend_signals;
 import '../signals/locale.dart';
 import '../signals/networks.dart';

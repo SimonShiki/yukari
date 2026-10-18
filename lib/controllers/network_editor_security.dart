@@ -1,6 +1,6 @@
 import 'dart:async';
 
-import '../models/models.dart';
+import 'package:yukari_core/models/models.dart';
 import '../utils/crypto_utils.dart';
 import 'network_editor_controller.dart';
 

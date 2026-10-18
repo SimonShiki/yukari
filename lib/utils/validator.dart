@@ -1,8 +1,8 @@
 import 'dart:convert';
 import 'dart:io';
 
-import '../models/network.dart';
-import '../models/node.dart';
+import 'package:yukari_core/models/network.dart';
+import 'package:yukari_core/models/node.dart';
 import '../signals/locale.dart';
 import 'line_formats.dart';
 

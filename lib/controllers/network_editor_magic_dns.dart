@@ -2,11 +2,11 @@ import 'dart:async';
 
 import 'package:signals/signals.dart';
 
-import '../models/models.dart';
+import 'package:yukari_core/models/models.dart';
 import '../signals/instances.dart' as running;
 import '../signals/magic_dns.dart';
 import '../signals/networks.dart' as saved;
-import '../system/magic_dns.dart';
+import 'package:yukari_core/system/magic_dns.dart';
 
 part 'network_editor_magic_dns_actions.dart';
 

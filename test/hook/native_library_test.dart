@@ -2,8 +2,8 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 
-import '../../hook/native_library.dart';
-import '../../hook/native_version.dart';
+import '../../packages/yukari_core/hook/native_library.dart';
+import '../../packages/yukari_core/hook/native_version.dart';
 
 const String fingerprint = 'fingerprint';
 const String revision = '1649ec00135e12103e05bf543e0ed313d7e190f8';

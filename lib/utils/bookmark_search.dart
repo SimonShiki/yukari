@@ -1,4 +1,4 @@
-import '../models/bookmark.dart';
+import 'package:yukari_core/models/bookmark.dart';
 
 /// Whether [bookmark] matches [query], compared case-insensitively against
 /// its name, address, category, description and tags.

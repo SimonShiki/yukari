@@ -2,7 +2,7 @@ import 'package:material_ui/material_ui.dart';
 
 import '../../../controllers/bookmarks_actions.dart';
 import '../../../l10n/l10n.dart';
-import '../../../models/bookmark.dart';
+import 'package:yukari_core/models/bookmark.dart';
 import '../../../widgets/dialog/confirm_dialog.dart';
 import '../../../widgets/node_form/node_form_fields.dart';
 

@@ -3,7 +3,7 @@ import 'dart:io';
 import 'dart:math';
 import 'dart:typed_data';
 
-import '../models/peer.dart';
+import 'package:yukari_core/models/peer.dart';
 
 /// What STUN servers saw of this device: its public IPv4 address, and how
 /// its NAT maps and filters UDP.

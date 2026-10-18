@@ -2,7 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:m3e_core/m3e_core.dart' show M3EColorVariant;
-import 'package:yukari/models/models.dart';
+import 'package:yukari_core/models/models.dart';
 import 'package:yukari/utils/theme_provider.dart';
 
 /// The font set the Windows theme must pin, in order.

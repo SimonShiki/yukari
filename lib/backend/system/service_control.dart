@@ -2,9 +2,9 @@ import 'dart:io';
 
 import 'package:path/path.dart' as p;
 
-import '../../models/backend.dart';
-import '../privilege.dart';
-import 'system_service.dart';
+import 'package:yukari_core/models/backend.dart';
+import 'package:yukari_core/backend/privilege.dart';
+import 'package:yukari_core/backend/system/system_service.dart';
 
 /// Installs and controls the background service from the unprivileged app.
 abstract interface class ServiceControl {
@@ -33,7 +33,7 @@ abstract interface class ServiceControl {
 /// Controls the service registered with the desktop OS service manager.
 ///
 /// Changes run the bundled service executable elevated, which registers
-/// itself with the OS; see `bin/yukari_service.dart`.
+/// itself with the OS; see `packages/yukari_core/bin/yukari_service.dart`.
 final class SystemServiceControl implements ServiceControl {
   SystemServiceControl({
     required this.dataDir,

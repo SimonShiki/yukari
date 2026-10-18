@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:yukari/models/network.dart';
-import 'package:yukari/storage/network_store.dart';
+import 'package:yukari_core/models/network.dart';
+import 'package:yukari_core/storage/network_store.dart';
 
 import '../networks_fixture.dart';
 

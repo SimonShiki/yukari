@@ -3,7 +3,7 @@ import 'dart:io';
 import 'package:path/path.dart' as p;
 
 import '../utils/bookmark_codec.dart';
-import 'json_file.dart';
+import 'package:yukari_core/storage/json_file.dart';
 
 /// The user's bookmarks in `bookmarks.json` in the app data directory.
 ///

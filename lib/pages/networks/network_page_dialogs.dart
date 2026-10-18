@@ -3,9 +3,9 @@ import 'dart:io';
 import 'package:go_router/go_router.dart';
 import 'package:material_ui/material_ui.dart';
 
-import '../../backend/backend.dart';
+import 'package:yukari_core/backend/backend.dart';
 import '../../l10n/l10n.dart';
-import '../../models/models.dart';
+import 'package:yukari_core/models/models.dart';
 import '../../widgets/dialog/confirm_dialog.dart';
 
 /// Confirms deleting [network]; a dismissed dialog means no.

@@ -2,7 +2,7 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:yukari/models/peer.dart';
+import 'package:yukari_core/models/peer.dart';
 import 'package:yukari/utils/stun_probe.dart';
 
 /// A STUN server on loopback that reports the client's address, with its

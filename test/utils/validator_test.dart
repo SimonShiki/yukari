@@ -1,7 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:yukari/models/network.dart';
+import 'package:yukari_core/models/network.dart';
 import 'package:yukari/utils/validator.dart';
 
 void main() {

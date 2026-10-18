@@ -1,6 +1,6 @@
 import 'package:toml/toml.dart';
 
-import '../models/models.dart';
+import 'package:yukari_core/models/models.dart';
 
 Network parseEasyTierConfig(String tomlContent) {
   final doc = TomlDocument.parse(tomlContent);

@@ -4,8 +4,8 @@ import 'dart:io';
 import 'package:json_rpc_2/error_code.dart' as error_code;
 import 'package:json_rpc_2/json_rpc_2.dart';
 
-import 'ipc_channel.dart';
-import 'ipc_endpoint.dart';
+import 'package:yukari_core/backend/ipc/ipc_channel.dart';
+import 'package:yukari_core/backend/ipc/ipc_endpoint.dart';
 
 /// Connects to the service at [endpoint] and says hello, which fails with
 /// an [RpcException] when the service rejects the token.

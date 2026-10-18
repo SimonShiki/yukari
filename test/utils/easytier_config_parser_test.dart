@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:yukari/models/models.dart';
+import 'package:yukari_core/models/models.dart';
 import 'package:yukari/utils/easytier_config_parser.dart';
-import 'package:yukari/utils/easytier_config_serializer.dart';
+import 'package:yukari_core/utils/easytier_config_serializer.dart';
 
 void main() {
   test('parses a config and groups peers by address', () {

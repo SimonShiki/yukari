@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:yukari/backend/privilege_windows.dart';
-import 'package:yukari/backend/system/systemd_service.dart';
+import 'package:yukari_core/backend/privilege_windows.dart';
+import 'package:yukari_core/backend/system/systemd_service.dart';
 
 void main() {
   test('systemd unit quotes and escapes the command line', () {

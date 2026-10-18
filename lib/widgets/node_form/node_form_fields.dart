@@ -1,7 +1,7 @@
 import 'package:material_ui/material_ui.dart';
 
 import '../../l10n/l10n.dart';
-import '../../models/node.dart';
+import 'package:yukari_core/models/node.dart';
 import '../../utils/validator.dart';
 
 /// The fields describing one initial peer, shared by the network editor's

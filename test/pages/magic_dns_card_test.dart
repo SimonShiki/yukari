@@ -1,16 +1,16 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
-import 'package:yukari/backend/privilege.dart';
+import 'package:yukari_core/backend/privilege.dart';
 import 'package:yukari/controllers/network_editor_controller.dart';
 import 'package:yukari/controllers/network_editor_magic_dns.dart';
 import 'package:yukari/controllers/network_instance_controller.dart';
-import 'package:yukari/models/models.dart';
+import 'package:yukari_core/models/models.dart';
 import 'package:yukari/pages/networks/network_editor_page.dart';
 import 'package:yukari/pages/networks/widgets/instance_tabs.dart';
 import 'package:yukari/pages/networks/widgets/magic_dns_card.dart';
 import 'package:yukari/signals/instances.dart' as instances;
 import 'package:yukari/signals/magic_dns.dart';
-import 'package:yukari/system/magic_dns.dart';
+import 'package:yukari_core/system/magic_dns.dart';
 import 'package:yukari/widgets/peer_card/peer_card.dart';
 
 import '../fake_backend.dart';

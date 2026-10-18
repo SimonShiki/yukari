@@ -4,7 +4,7 @@ import 'package:signals_flutter/signals_flutter.dart';
 import '../../controllers/bookmarks_actions.dart';
 import '../../controllers/bookmarks_controller.dart';
 import '../../l10n/l10n.dart';
-import '../../models/bookmark.dart';
+import 'package:yukari_core/models/bookmark.dart';
 import '../../widgets/empty_state/empty_state.dart';
 import '../../widgets/snackbar/app_snackbar.dart';
 import 'widgets/bookmark_delete_dialog.dart';

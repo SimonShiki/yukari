@@ -1,7 +1,7 @@
 import 'package:signals/signals.dart';
 
-import '../models/network.dart';
-import '../storage/network_store.dart';
+import 'package:yukari_core/models/network.dart';
+import 'package:yukari_core/storage/network_store.dart';
 
 /// Private backing signal for the global network collection.
 /// Use [networks] for readonly access.

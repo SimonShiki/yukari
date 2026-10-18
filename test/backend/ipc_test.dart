@@ -4,10 +4,10 @@ import 'dart:typed_data';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:json_rpc_2/error_code.dart' as error_code;
 import 'package:json_rpc_2/json_rpc_2.dart';
-import 'package:yukari/backend/ipc/ipc_channel.dart';
+import 'package:yukari_core/backend/ipc/ipc_channel.dart';
 import 'package:yukari/backend/ipc/ipc_client.dart';
-import 'package:yukari/backend/ipc/ipc_endpoint.dart';
-import 'package:yukari/backend/ipc/ipc_server.dart';
+import 'package:yukari_core/backend/ipc/ipc_endpoint.dart';
+import 'package:yukari_core/backend/ipc/ipc_server.dart';
 
 void main() {
   group('FrameReader', () {

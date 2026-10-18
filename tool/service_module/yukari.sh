@@ -1,8 +1,8 @@
 # Starts, stops or reports the Yukari service, which runs the networks the
 # Yukari app saved. Run as root: sh yukari.sh start|stop|status
 #
-# The service is the Linux build of bin/yukari_service.dart, as Dart cannot
-# build for Android, so it runs on the glibc bundled in lib/.
+# The service is the Linux build of packages/yukari_core/bin/yukari_service.dart,
+# as Dart cannot build for Android, so it runs on the glibc bundled in lib/.
 MODDIR=${0%/*}
 APP_DATA=/data/user/0/top.simonshiki.yukari
 # The restart loop of the running service.

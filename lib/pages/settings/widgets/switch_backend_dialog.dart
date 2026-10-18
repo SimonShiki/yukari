@@ -1,7 +1,7 @@
 import 'package:material_ui/material_ui.dart';
 
 import '../../../l10n/l10n.dart';
-import '../../../models/backend.dart';
+import 'package:yukari_core/models/backend.dart';
 import '../../../widgets/dialog/confirm_dialog.dart';
 
 /// Asks whether switching to [kind] may stop the [count] running networks.

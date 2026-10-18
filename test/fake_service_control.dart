@@ -1,7 +1,7 @@
 import 'dart:async';
 
 import 'package:yukari/backend/system/service_control.dart';
-import 'package:yukari/models/backend.dart';
+import 'package:yukari_core/models/backend.dart';
 
 /// A [ServiceControl] for tests: a supported service that answers as running,
 /// or an unsupported platform that answers as unsupported.

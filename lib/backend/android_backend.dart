@@ -1,8 +1,8 @@
-import '../bindings/easytier_ffi_native.dart' as native;
-import '../models/models.dart';
-import '../system/magic_dns.dart';
+import 'package:yukari_core/bindings/easytier_ffi_native.dart' as native;
+import 'package:yukari_core/models/models.dart';
+import 'package:yukari_core/system/magic_dns.dart';
 import 'android_vpn.dart';
-import 'ffi_backend.dart';
+import 'package:yukari_core/backend/ffi_backend.dart';
 
 /// The VPN the app asks Android for on [network]'s behalf: the addresses
 /// routed into the tunnel, and the Magic DNS server when the network asks for

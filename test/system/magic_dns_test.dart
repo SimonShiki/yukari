@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:yukari/backend/privilege.dart';
-import 'package:yukari/system/magic_dns.dart';
+import 'package:yukari_core/backend/privilege.dart';
+import 'package:yukari_core/system/magic_dns.dart';
 
 import '../fake_system_command.dart';
 

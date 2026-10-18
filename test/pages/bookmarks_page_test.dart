@@ -6,7 +6,7 @@ import 'package:yukari/constants/builtin_bookmarks.dart';
 import 'package:yukari/controllers/bookmarks_actions.dart';
 import 'package:yukari/controllers/bookmarks_controller.dart';
 import 'package:yukari/l10n/l10n.dart';
-import 'package:yukari/models/bookmark.dart';
+import 'package:yukari_core/models/bookmark.dart';
 import 'package:yukari/pages/bookmarks/bookmarks_page.dart';
 import 'package:yukari/signals/bookmarks.dart' as saved;
 import 'package:yukari/signals/networks.dart' as networks;

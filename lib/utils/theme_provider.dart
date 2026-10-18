@@ -3,7 +3,7 @@ import 'package:flutter/foundation.dart'
 import 'package:material_ui/material_ui.dart';
 import 'package:m3e_core/m3e_core.dart';
 
-import '../models/theme.dart';
+import 'package:yukari_core/models/theme.dart';
 
 /// The colour [palette] seeds the app's colour scheme with.
 extension ThemePaletteSeed on ThemePalette {

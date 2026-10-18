@@ -3,8 +3,8 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 
-import '../../hook/native_version.dart';
-import '../../hook/prebuilt_assets.dart';
+import '../../packages/yukari_core/hook/native_version.dart';
+import '../../packages/yukari_core/hook/prebuilt_assets.dart';
 
 const String assetName = 'linux-x86_64-libeasytier_ffi.so';
 const String fingerprint = 'fingerprint';

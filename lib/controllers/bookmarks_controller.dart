@@ -2,7 +2,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:signals/signals.dart';
 
 import '../constants/builtin_bookmarks.dart';
-import '../models/bookmark.dart';
+import 'package:yukari_core/models/bookmark.dart';
 import '../signals/bookmarks.dart' as saved;
 import '../signals/locale.dart';
 import '../utils/bookmark_search.dart';

@@ -5,7 +5,7 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:path/path.dart' as p;
-import 'package:yukari/backend/system/windows_service.dart';
+import 'package:yukari_core/backend/system/windows_service.dart';
 
 void main() {
   late Directory directory;

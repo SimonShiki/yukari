@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:yukari/models/bookmark.dart';
-import 'package:yukari/models/node.dart';
+import 'package:yukari_core/models/bookmark.dart';
+import 'package:yukari_core/models/node.dart';
 
 void main() {
   test('survives a JSON round trip', () {

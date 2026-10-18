@@ -1,4 +1,4 @@
-import 'package:yukari/models/models.dart';
+import 'package:yukari_core/models/models.dart';
 
 import '../fake_backend.dart';
 

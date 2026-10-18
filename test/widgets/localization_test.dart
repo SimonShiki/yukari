@@ -3,7 +3,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:signals_flutter/signals_flutter.dart';
 import 'package:yukari/l10n/l10n.dart';
-import 'package:yukari/models/instance.dart';
+import 'package:yukari_core/models/instance.dart';
 import 'package:yukari/signals/locale.dart';
 import 'package:yukari/signals/settings.dart';
 import 'package:yukari/utils/validator.dart';

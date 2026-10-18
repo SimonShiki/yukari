@@ -1,10 +1,11 @@
 #!/usr/bin/env bash
 # Packs the background service into a KernelSU/Magisk module, which runs it as
 # root on Android. The app downloads it from the ksu-service-module release,
-# which .github/workflows/service-module.yml publishes.
+# which .github/workflows/ci.yml publishes.
 #
 # Dart cannot build Android executables, so the module carries the Linux
-# build of bin/yukari_service.dart for arm64 and x64, with the glibc it needs.
+# build of packages/yukari_core/bin/yukari_service.dart for arm64 and x64,
+# with the glibc it needs.
 # The executable is split into the Dart runtime and its snapshot, as the
 # runtime only finds a snapshot appended to itself when the kernel, not the
 # bundled loader, starts it.
@@ -80,17 +81,17 @@ rm -rf "$work"
 mkdir -p "$work/module"
 cp tool/service_module/* "$work/module/"
 
-# The version the app compares to its own; see lib/backend/service_version.dart.
+# The version the app compares to its own; see the core's service_version.dart.
 version=$(sed -n 's/^const serviceVersion = \([0-9]*\);$/\1/p' \
-  lib/backend/service_version.dart)
+  packages/yukari_core/lib/backend/service_version.dart)
 [[ -n $version ]] || die "serviceVersion was not found"
 sed -i -e "s/@VERSION@/v$version/" -e "s/@VERSION_CODE@/$version/" \
   "$work/module/module.prop"
 
 for arch in arm64 x64; do
   echo "Building the service for linux-$arch"
-  dart build cli --target bin/yukari_service.dart \
-    --target-os linux --target-arch "$arch" --output "$work/$arch"
+  (cd packages/yukari_core && dart build cli --target bin/yukari_service.dart \
+    --target-os linux --target-arch "$arch" --output "$work/$arch")
   bundle="$work/$arch/bundle"
   dest="$work/module/$arch"
   mkdir -p "$dest/bin" "$dest/lib"

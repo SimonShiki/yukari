@@ -1,8 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:yukari/models/models.dart';
-import 'package:yukari/system/magic_dns.dart';
-import 'package:yukari/system/magic_dns_auto.dart';
-import 'package:yukari/system/system_command.dart';
+import 'package:yukari_core/models/models.dart';
+import 'package:yukari_core/system/magic_dns.dart';
+import 'package:yukari_core/system/magic_dns_auto.dart';
+import 'package:yukari_core/system/system_command.dart';
 
 import '../fake_system_command.dart';
 

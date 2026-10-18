@@ -1,7 +1,7 @@
 import 'dart:convert';
 
-import '../models/bookmark.dart';
-import '../models/node.dart';
+import 'package:yukari_core/models/bookmark.dart';
+import 'package:yukari_core/models/node.dart';
 
 /// The format version [encodeBookmarks] writes; a document from a newer
 /// version is refused rather than guessed at.

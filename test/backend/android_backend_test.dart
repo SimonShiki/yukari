@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:yukari/backend/android_backend.dart';
-import 'package:yukari/models/models.dart';
-import 'package:yukari/system/magic_dns.dart';
+import 'package:yukari_core/models/models.dart';
+import 'package:yukari_core/system/magic_dns.dart';
 
 Network _network({
   bool acceptDns = true,

@@ -6,7 +6,7 @@ import 'package:signals_flutter/signals_flutter.dart';
 
 import '../../../controllers/theming_controller.dart';
 import '../../../l10n/l10n.dart';
-import '../../../models/models.dart';
+import 'package:yukari_core/models/models.dart';
 
 /// The appearance options, in [ThemePreference] order.
 const _modes = ThemePreference.values;

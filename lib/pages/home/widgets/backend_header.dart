@@ -5,7 +5,7 @@ import 'package:signals_flutter/signals_flutter.dart';
 
 import '../../../controllers/home_controller.dart';
 import '../../../l10n/l10n.dart';
-import '../../../models/backend.dart';
+import 'package:yukari_core/models/backend.dart';
 
 /// The backend banner: where networks run, whether it is reachable, its
 /// versions, and — only while it is unreachable — the way to Settings.

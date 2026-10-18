@@ -3,7 +3,7 @@ import 'package:m3e_core/m3e_core.dart';
 import 'package:material_ui/material_ui.dart';
 
 import '../../l10n/l10n.dart';
-import '../../models/log_entry.dart';
+import 'package:yukari_core/models/log_entry.dart';
 import 'log_entry_tile.dart';
 
 /// Log entries, newest first, that keep the entries in view still while

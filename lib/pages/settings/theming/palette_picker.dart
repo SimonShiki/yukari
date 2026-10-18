@@ -5,7 +5,7 @@ import 'package:signals_flutter/signals_flutter.dart';
 
 import '../../../controllers/theming_controller.dart';
 import '../../../l10n/l10n.dart';
-import '../../../models/models.dart';
+import 'package:yukari_core/models/models.dart';
 
 // KernelSU geometry, in logical pixels: 72 slot, 20 tile radius, 48 ball,
 // 20/24 dot, 56 ring with 2 stroke, 16 bold check with 2.6 stroke.

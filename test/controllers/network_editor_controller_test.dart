@@ -7,7 +7,7 @@ import 'package:yukari/controllers/network_editor_controller.dart';
 import 'package:yukari/controllers/network_editor_security.dart';
 import 'package:yukari/constants/builtin_bookmarks.dart';
 import 'package:yukari/l10n/l10n.dart';
-import 'package:yukari/models/models.dart';
+import 'package:yukari_core/models/models.dart';
 import 'package:yukari/signals/bookmarks.dart' as saved_bookmarks;
 import 'package:yukari/signals/networks.dart' as saved;
 

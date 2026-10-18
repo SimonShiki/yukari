@@ -3,7 +3,7 @@ import 'package:signals_flutter/signals_flutter.dart';
 
 import '../../../controllers/backend_settings_controller.dart';
 import '../../../l10n/l10n.dart';
-import '../../../models/backend.dart';
+import 'package:yukari_core/models/backend.dart';
 import '../../../widgets/form_section/form_section.dart';
 import 'backend_mode_row.dart';
 

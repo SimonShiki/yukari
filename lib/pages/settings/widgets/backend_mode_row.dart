@@ -1,7 +1,7 @@
 import 'package:m3e_core/m3e_core.dart';
 import 'package:material_ui/material_ui.dart';
 
-import '../../../models/backend.dart';
+import 'package:yukari_core/models/backend.dart';
 
 /// How many lines a mode's description may wrap onto: [M3EListItem] clips its
 /// supporting text to one line, and this is what raises that cap.

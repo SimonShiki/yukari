@@ -7,7 +7,7 @@ import 'package:signals_flutter/signals_flutter.dart';
 
 import '../../../controllers/network_editor_magic_dns.dart';
 import '../../../l10n/l10n.dart';
-import '../../../system/magic_dns.dart';
+import 'package:yukari_core/system/magic_dns.dart';
 import '../../../widgets/snackbar/app_snackbar.dart';
 
 part 'magic_dns_card_content.dart';

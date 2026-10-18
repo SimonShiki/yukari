@@ -4,7 +4,7 @@ import 'package:signals_flutter/signals_flutter.dart';
 
 import '../../../controllers/home_controller.dart';
 import '../../../l10n/l10n.dart';
-import '../../../models/peer.dart';
+import 'package:yukari_core/models/peer.dart';
 import 'dashboard_card.dart';
 import 'dashboard_skeleton.dart';
 import 'dashboard_value.dart';

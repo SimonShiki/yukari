@@ -4,7 +4,7 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:yukari/l10n/l10n.dart';
-import 'package:yukari/models/log_entry.dart';
+import 'package:yukari_core/models/log_entry.dart';
 import 'package:yukari/widgets/log_entry/log_summary.dart';
 import 'package:yukari/widgets/peer_card/peer_card.dart';
 import 'package:material_ui/material_ui.dart';

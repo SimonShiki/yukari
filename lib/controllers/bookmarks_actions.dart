@@ -4,8 +4,8 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/services.dart';
 import 'package:uuid/uuid.dart';
 
-import '../models/bookmark.dart';
-import '../models/node.dart';
+import 'package:yukari_core/models/bookmark.dart';
+import 'package:yukari_core/models/node.dart';
 import '../signals/bookmarks.dart' as saved;
 import '../signals/locale.dart';
 import '../signals/networks.dart' as networks;

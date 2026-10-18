@@ -4,6 +4,11 @@ description: "A cross-platform decentralized networking tool."
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 
+# The core package holds the headless closure of the service, so that the
+# service never builds the app's desktop dependencies; see tool/pack_service_module.sh.
+workspace:
+  - packages/yukari_core
+
 # The following defines the version and build number for your application.
 # A version number is three numbers separated by dots, like 1.2.43
 # followed by an optional build number separated by a +.
@@ -28,9 +33,6 @@ environment:
 # the latest version available on pub.dev. To see which dependencies have newer
 # versions available, run `flutter pub outdated`.
 dependencies:
-  args: ^2.7.0
-  code_assets: ^2.1.0
-  crypto: ^3.0.6
   cryptography: ^2.9.0
   dbus: ^0.8.0
   dynamic_color: ^2.1.0
@@ -41,9 +43,7 @@ dependencies:
   flutter_localizations:
     sdk: flutter
   go_router: ^18.0.1
-  hooks: ^2.2.0
   intl: ^0.20.2
-  json_annotation: ^4.12.0
   json_rpc_2: ^4.1.0
   local_notifier: ^0.1.6
   material_ui: ^1.4.0
@@ -51,20 +51,20 @@ dependencies:
   nativeapi_flutter: ^0.5.2
   path: ^1.9.1
   path_provider: ^2.1.6
-  shared_preferences: ^2.5.5
+  shared_preferences: 2.5.5
+  shared_preferences_android: 2.4.28
   signals: ^7.1.0
   signals_flutter: ^7.1.0
-  stream_channel: ^2.1.4
   toml: ^0.18.0
   tray_manager: ^0.8.0
   uuid: ^4.6.0
   win32: ^6.4.0
   url_launcher: ^6.3.3
   package_info_plus: ^10.2.2
+  yukari_core:
+    path: packages/yukari_core
 
 dev_dependencies:
-  build_runner: ^2.16.1
-  ffigen: ^23.0.0
   flutter_test:
     sdk: flutter
 
@@ -74,7 +74,6 @@ dev_dependencies:
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
   flutter_lints: ^6.0.0
-  json_serializable: ^6.14.1
   launcher_icons: ^0.16.0
 flutter:
   generate: true

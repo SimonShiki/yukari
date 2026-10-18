@@ -3,8 +3,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:yukari/constants/builtin_bookmarks.dart';
 import 'package:yukari/controllers/bookmarks_actions.dart';
 import 'package:yukari/controllers/bookmarks_controller.dart';
-import 'package:yukari/models/bookmark.dart';
-import 'package:yukari/models/node.dart';
+import 'package:yukari_core/models/bookmark.dart';
+import 'package:yukari_core/models/node.dart';
 import 'package:yukari/signals/bookmarks.dart' as saved;
 import 'package:yukari/utils/bookmark_codec.dart';
 

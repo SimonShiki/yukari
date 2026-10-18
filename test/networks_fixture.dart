@@ -4,10 +4,10 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'dart:io';
 
-import 'package:yukari/models/network.dart';
+import 'package:yukari_core/models/network.dart';
 import 'package:yukari/signals/instances.dart' as running;
 import 'package:yukari/signals/networks.dart' as saved;
-import 'package:yukari/storage/network_store.dart';
+import 'package:yukari_core/storage/network_store.dart';
 
 late NetworkStore _store;
 

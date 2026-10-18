@@ -3,9 +3,9 @@ import 'dart:collection';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:yukari/controllers/home_controller.dart';
-import 'package:yukari/models/instance.dart';
-import 'package:yukari/models/network.dart';
-import 'package:yukari/models/peer.dart';
+import 'package:yukari_core/models/instance.dart';
+import 'package:yukari_core/models/network.dart';
+import 'package:yukari_core/models/peer.dart';
 import 'package:yukari/signals/networks.dart' as saved;
 import 'package:yukari/utils/stun_probe.dart';
 

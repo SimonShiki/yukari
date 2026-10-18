@@ -1,9 +1,9 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:signals/signals.dart';
-import 'package:yukari/models/models.dart';
+import 'package:yukari_core/models/models.dart';
 import 'package:yukari/signals/instances.dart' as running;
 import 'package:yukari/signals/magic_dns.dart';
-import 'package:yukari/system/magic_dns_auto.dart';
+import 'package:yukari_core/system/magic_dns_auto.dart';
 
 import '../fake_backend.dart';
 import '../networks_fixture.dart';

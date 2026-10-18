@@ -34,7 +34,7 @@ packages:
     source: hosted
     version: "4.5.2"
   args:
-    dependency: "direct main"
+    dependency: transitive
     description:
       name: args
       sha256: d0481093c50b1da8910eb0bb301626d4d8eb7284aa739614d2b394ee09e3ea04
@@ -82,7 +82,7 @@ packages:
     source: hosted
     version: "4.1.7"
   build_runner:
-    dependency: "direct dev"
+    dependency: transitive
     description:
       name: build_runner
       sha256: "6feadd32d90a68253c1f7b4fcff76adb4b41ad32a53f8bad835dc65f01ac9dc5"
@@ -146,7 +146,7 @@ packages:
     source: hosted
     version: "0.5.2"
   code_assets:
-    dependency: "direct main"
+    dependency: transitive
     description:
       name: code_assets
       sha256: "828110d598123b5ea96c00c9f3c72105bf79f8ee36c20a39b26209ade421ec57"
@@ -178,7 +178,7 @@ packages:
     source: hosted
     version: "0.3.5+5"
   crypto:
-    dependency: "direct main"
+    dependency: transitive
     description:
       name: crypto
       sha256: c8ea0233063ba03258fbcf2ca4d6dadfefe14f02fab57702265467a19f27fadf
@@ -258,7 +258,7 @@ packages:
     source: hosted
     version: "0.1.2"
   ffigen:
-    dependency: "direct dev"
+    dependency: transitive
     description:
       name: ffigen
       sha256: "6f55d99ac1857fc063b58c3b31753df2bba417028ba98d30c6d625a385855064"
@@ -382,7 +382,7 @@ packages:
     source: hosted
     version: "2.3.2"
   hooks:
-    dependency: "direct main"
+    dependency: transitive
     description:
       name: hooks
       sha256: eaac480a35ec0814146c2c48d96aaa829e0e44a7662c88ae84c9edf4bc35651f
@@ -462,7 +462,7 @@ packages:
     source: hosted
     version: "1.0.0"
   json_annotation:
-    dependency: "direct main"
+    dependency: transitive
     description:
       name: json_annotation
       sha256: "2a743920d81b7910627f68ee2c9ac1fc0bfee32b9fc3403587d7c6791ca12f80"
@@ -478,7 +478,7 @@ packages:
     source: hosted
     version: "4.1.0"
   json_serializable:
-    dependency: "direct dev"
+    dependency: transitive
     description:
       name: json_serializable
       sha256: e45aefa0324f08c683caafbb94b72837aa6193c61822799c916e45f4a263113d
@@ -833,18 +833,18 @@ packages:
     dependency: "direct main"
     description:
       name: shared_preferences
-      sha256: "1e85e0dccf5b4a016077fea7dfbb4a7cb39c759ac1596fcf60c06deadb7da91f"
+      sha256: c3025c5534b01739267eb7d76959bbc25a6d10f6988e1c2a3036940133dd10bf
       url: "https://pub.dev"
     source: hosted
-    version: "2.5.6"
+    version: "2.5.5"
   shared_preferences_android:
-    dependency: transitive
+    dependency: "direct main"
     description:
       name: shared_preferences_android
-      sha256: b90caa27669d5f3ef9918d55343b44000f088ee9d4685ed822310848004c793e
+      sha256: "1e12aafe408aa50da80edfd679a2a6bf63ba7ab37c7fa98286da459a757b3399"
       url: "https://pub.dev"
     source: hosted
-    version: "2.5.0"
+    version: "2.4.28"
   shared_preferences_foundation:
     dependency: transitive
     description:
@@ -971,7 +971,7 @@ packages:
     source: hosted
     version: "1.12.2"
   stream_channel:
-    dependency: "direct main"
+    dependency: transitive
     description:
       name: stream_channel
       sha256: "969e04c80b8bcdf826f8f16579c7b14d780458bd97f56d107d3950fdbeef059d"

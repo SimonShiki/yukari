@@ -4,7 +4,7 @@ import 'package:material_ui/material_ui.dart';
 import '../../../constants/builtin_bookmarks.dart';
 import '../../../controllers/bookmarks_controller.dart';
 import '../../../l10n/l10n.dart';
-import '../../../models/bookmark.dart';
+import 'package:yukari_core/models/bookmark.dart';
 import '../../../widgets/context_menu/m3e_context_menu.dart';
 import '../../../widgets/metadata_chip/metadata_chip.dart';
 import '../../../widgets/overflow_text/overflow_text.dart';

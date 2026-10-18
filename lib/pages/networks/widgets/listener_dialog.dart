@@ -1,7 +1,7 @@
 import 'package:material_ui/material_ui.dart';
 
 import '../../../l10n/l10n.dart';
-import '../../../models/models.dart';
+import 'package:yukari_core/models/models.dart';
 import '../../../utils/validator.dart';
 import '../../../widgets/dialog/confirm_dialog.dart';
 import '../../../widgets/select_item/select_item.dart';

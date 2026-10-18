@@ -4,7 +4,7 @@ import 'package:m3e_core/m3e_core.dart';
 import 'package:material_ui/material_ui.dart';
 
 import '../../l10n/l10n.dart';
-import '../../models/bookmark.dart';
+import 'package:yukari_core/models/bookmark.dart';
 import '../../utils/bookmark_search.dart';
 
 /// Asks the user which of [bookmarks] to add, and returns the chosen ones.

@@ -2,9 +2,9 @@ import 'dart:async';
 
 import 'package:signals/signals.dart';
 
-import '../backend/backend.dart';
-import '../models/log_entry.dart';
-import '../models/models.dart';
+import 'package:yukari_core/backend/backend.dart';
+import 'package:yukari_core/models/log_entry.dart';
+import 'package:yukari_core/models/models.dart';
 import '../signals/backend.dart' as backends;
 import '../signals/instance_logs.dart';
 import '../signals/instances.dart' as running;

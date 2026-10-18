@@ -1,4 +1,4 @@
-import '../models/network_components.dart';
+import 'package:yukari_core/models/network_components.dart';
 
 // One-line text forms of list entries, as EasyTier's command line takes them.
 

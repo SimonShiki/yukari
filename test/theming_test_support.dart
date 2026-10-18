@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:m3e_core/m3e_core.dart' show M3EColorVariant;
 import 'package:material_ui/material_ui.dart';
-import 'package:yukari/models/models.dart';
+import 'package:yukari_core/models/models.dart';
 import 'package:yukari/pages/settings/theming/palette_picker.dart';
 import 'package:yukari/pages/settings/theming_page.dart';
 import 'package:yukari/utils/theme_provider.dart';

@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:signals/signals.dart';
 import 'package:yukari/controllers/network_instance_controller.dart';
-import 'package:yukari/models/log_entry.dart';
+import 'package:yukari_core/models/log_entry.dart';
 import 'package:yukari/signals/instance_logs.dart';
 import 'package:yukari/signals/instances.dart' as running;
 

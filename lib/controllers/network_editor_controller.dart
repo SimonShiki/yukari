@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:signals/signals.dart';
 
 import '../constants/builtin_bookmarks.dart';
-import '../models/models.dart';
+import 'package:yukari_core/models/models.dart';
 import '../signals/backend.dart' as backends;
 import '../signals/bookmarks.dart' as saved;
 import '../signals/locale.dart';

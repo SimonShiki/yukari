@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:yukari/models/models.dart';
+import 'package:yukari_core/models/models.dart';
 
 void main() {
   // Captured from collect_network_infos of an instance connected to one peer.

@@ -1,7 +1,7 @@
 import 'dart:io';
 
-import 'package:yukari/system/magic_dns.dart';
-import 'package:yukari/system/system_command.dart';
+import 'package:yukari_core/system/magic_dns.dart';
+import 'package:yukari_core/system/system_command.dart';
 
 /// Stands in for the OS: answers commands from [runHandler], and records what
 /// ran, elevated or not.

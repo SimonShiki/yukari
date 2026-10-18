@@ -3,7 +3,7 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 
-import '../../hook/native_version.dart';
+import '../../packages/yukari_core/hook/native_version.dart';
 
 const String sources = 'set_allowedarchs("linux|x86_64")\n'
     'add_versions(easytier_version, "1649ec00135e12103e05bf543e0ed313d7e190f8")\n';

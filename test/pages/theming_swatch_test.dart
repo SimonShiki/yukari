@@ -6,7 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:m3e_core/m3e_core.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:yukari/models/models.dart';
+import 'package:yukari_core/models/models.dart';
 import 'package:yukari/pages/settings/theming/palette_picker.dart';
 import 'package:yukari/signals/settings.dart';
 import 'package:yukari/system/autostart.dart';

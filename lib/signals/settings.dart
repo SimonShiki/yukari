@@ -6,7 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:signals/signals.dart';
 
 import '../l10n/l10n.dart';
-import '../models/models.dart';
+import 'package:yukari_core/models/models.dart';
 import '../system/autostart.dart';
 import '../system/tray_support.dart';
 

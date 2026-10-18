@@ -2,8 +2,8 @@ import 'dart:async';
 
 import 'package:signals/signals.dart';
 
-import '../models/models.dart';
-import '../system/magic_dns_auto.dart';
+import 'package:yukari_core/models/models.dart';
+import 'package:yukari_core/system/magic_dns_auto.dart';
 import 'backend.dart' as backends;
 import 'instances.dart' as running;
 

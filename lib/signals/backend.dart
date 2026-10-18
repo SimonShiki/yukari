@@ -3,13 +3,13 @@ import 'dart:io';
 import 'package:signals/signals.dart';
 
 import '../backend/android_backend.dart';
-import '../backend/backend.dart';
-import '../backend/ffi_backend.dart';
-import '../backend/ipc/ipc_endpoint.dart';
+import 'package:yukari_core/backend/backend.dart';
+import 'package:yukari_core/backend/ffi_backend.dart';
+import 'package:yukari_core/backend/ipc/ipc_endpoint.dart';
 import '../backend/service_backend.dart';
 import '../backend/system/module_service_control.dart';
 import '../backend/system/service_control.dart';
-import '../models/models.dart';
+import 'package:yukari_core/models/models.dart';
 import '../system/android_system_ui.dart';
 import 'settings.dart';
 

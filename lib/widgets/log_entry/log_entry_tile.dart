@@ -5,7 +5,7 @@ import 'package:material_ui/material_ui.dart';
 import '../overflow_text/overflow_text.dart';
 
 import '../../l10n/l10n.dart';
-import '../../models/log_entry.dart';
+import 'package:yukari_core/models/log_entry.dart';
 import 'log_summary.dart';
 
 /// A log entry in a segmented list that expands to show its details.

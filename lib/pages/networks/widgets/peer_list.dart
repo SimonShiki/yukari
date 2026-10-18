@@ -4,7 +4,7 @@ import 'package:signals_flutter/signals_flutter.dart';
 
 import '../../../controllers/network_editor_controller.dart';
 import '../../../l10n/l10n.dart';
-import '../../../models/models.dart';
+import 'package:yukari_core/models/models.dart';
 import '../../../widgets/bookmark_picker/bookmark_picker_dialog.dart';
 import '../../../widgets/list_editor/list_editor_segments.dart';
 import '../../../widgets/metadata_chip/metadata_chip.dart';

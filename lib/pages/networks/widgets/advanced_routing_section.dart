@@ -2,7 +2,7 @@ import 'package:material_ui/material_ui.dart';
 
 import '../../../controllers/network_editor_controller.dart';
 import '../../../l10n/l10n.dart';
-import '../../../models/models.dart';
+import 'package:yukari_core/models/models.dart';
 import '../../../utils/line_formats.dart';
 import '../../../utils/validator.dart';
 import '../../../widgets/form_section/form_section.dart';

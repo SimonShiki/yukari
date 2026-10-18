@@ -1,7 +1,7 @@
 import 'package:signals/signals.dart';
 
-import '../models/bookmark.dart';
-import '../models/node.dart';
+import 'package:yukari_core/models/bookmark.dart';
+import 'package:yukari_core/models/node.dart';
 import '../storage/bookmark_store.dart';
 import '../utils/bookmark_codec.dart';
 

@@ -4,8 +4,8 @@ import 'dart:io';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 
-import '../../models/backend.dart';
-import '../privilege.dart';
+import 'package:yukari_core/models/backend.dart';
+import 'package:yukari_core/backend/privilege.dart';
 import 'service_control.dart';
 
 /// Controls the service on Android, where a KernelSU or Magisk module runs it
@@ -16,7 +16,7 @@ final class ModuleServiceControl implements ServiceControl {
   /// The module id, which names its directory under /data/adb/modules.
   static const id = 'yukari_service';
 
-  /// The latest module, which `.github/workflows/service-module.yml` builds.
+  /// The latest module, which `.github/workflows/ci.yml` builds.
   static final release = Uri.parse(
     'https://github.com/SimonShiki/yukari/releases/download/'
     'ksu-service-module/yukari-service-module.zip',

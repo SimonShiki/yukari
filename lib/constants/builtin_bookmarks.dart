@@ -1,5 +1,5 @@
-import '../models/bookmark.dart';
-import '../models/node.dart';
+import 'package:yukari_core/models/bookmark.dart';
+import 'package:yukari_core/models/node.dart';
 
 /// Ids of the built-in shared nodes start with this, so the rest of the app
 /// can tell them from the user's own bookmarks: they are read-only and are

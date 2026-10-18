@@ -23,7 +23,7 @@ Future<void> main() async {
         path: packageRoot.resolve('lib/bindings/generated/easytier.g.dart'),
       ),
       style: const NativeExternalBindings(
-        assetId: 'package:yukari/bindings/generated/easytier.g.dart',
+        assetId: 'package:yukari_core/bindings/generated/easytier.g.dart',
       ),
       commentType: const CommentType(CommentStyle.any, CommentLength.full),
     ),

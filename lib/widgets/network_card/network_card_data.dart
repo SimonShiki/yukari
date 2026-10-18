@@ -1,6 +1,6 @@
 import 'package:material_ui/material_ui.dart';
 
-import '../../models/instance.dart';
+import 'package:yukari_core/models/instance.dart';
 
 class NetworkCardData {
   const NetworkCardData({

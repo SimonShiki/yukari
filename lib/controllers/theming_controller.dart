@@ -2,7 +2,7 @@ import 'package:m3e_core/m3e_core.dart' show M3EColorVariant;
 import 'package:material_ui/material_ui.dart';
 import 'package:signals/signals.dart';
 
-import '../models/models.dart';
+import 'package:yukari_core/models/models.dart';
 import '../signals/settings.dart';
 import '../signals/system_color.dart';
 import '../utils/theme_provider.dart';

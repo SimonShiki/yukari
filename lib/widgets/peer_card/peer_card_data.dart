@@ -1,8 +1,8 @@
 import 'package:material_ui/material_ui.dart';
 
 import '../../l10n/l10n.dart';
-import '../../models/node.dart';
-import '../../models/peer.dart';
+import 'package:yukari_core/models/node.dart';
+import 'package:yukari_core/models/peer.dart';
 
 enum PeerTagTone { neutral, positive, caution }
 

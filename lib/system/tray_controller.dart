@@ -4,9 +4,9 @@ import 'package:flutter/widgets.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:signals/signals.dart';
 
-import '../backend/backend.dart';
+import 'package:yukari_core/backend/backend.dart';
 import '../controllers/home_controller.dart' show measureTraffic, TrafficSample;
-import '../models/models.dart';
+import 'package:yukari_core/models/models.dart';
 import '../signals/backend.dart' as active;
 import '../signals/instances.dart' as running;
 import '../signals/locale.dart';

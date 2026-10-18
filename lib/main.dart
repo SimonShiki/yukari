@@ -16,7 +16,7 @@ import 'signals/bookmarks.dart' as bookmarks;
 import 'signals/magic_dns.dart';
 import 'signals/networks.dart' as networks;
 import 'storage/bookmark_store.dart';
-import 'storage/network_store.dart';
+import 'package:yukari_core/storage/network_store.dart';
 import 'utils/theme_provider.dart';
 
 Future<void> main() async {

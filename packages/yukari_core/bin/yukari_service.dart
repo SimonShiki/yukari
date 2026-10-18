@@ -1,6 +1,6 @@
 import 'dart:io';
 
-import 'package:yukari/daemon/service_cli.dart';
+import 'package:yukari_core/daemon/service_cli.dart';
 
 /// The background service that runs networks with full privileges.
 ///

@@ -1,7 +1,7 @@
 import 'package:signals/signals.dart';
 
-import '../backend/backend.dart';
-import '../models/instance.dart';
+import 'package:yukari_core/backend/backend.dart';
+import 'package:yukari_core/models/instance.dart';
 import 'instance_logs.dart';
 import 'networks.dart' as saved;
 

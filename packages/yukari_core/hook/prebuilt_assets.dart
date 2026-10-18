@@ -4,7 +4,7 @@ import 'dart:io';
 import 'native_version.dart';
 
 /// The version manifest of the prebuilt EasyTier libraries, which sits next to
-/// them in the `natives` release. See `.github/workflows/build-native-libraries.yml`.
+/// them in the `natives` release. See `.github/workflows/ci.yml`.
 final Uri nativeVersionManifestUrl = Uri.parse(
   'https://github.com/SimonShiki/yukari/releases/download/natives/natives.json',
 );

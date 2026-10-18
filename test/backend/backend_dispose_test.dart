@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:yukari/backend/ffi_backend.dart';
+import 'package:yukari_core/backend/ffi_backend.dart';
 
 void main() {
   test('disposing an in-process backend disposes its status signal', () async {

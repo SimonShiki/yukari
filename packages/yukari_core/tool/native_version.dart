@@ -7,16 +7,15 @@ import '../hook/native_version.dart';
 
 /// Writes the version information of the prebuilt EasyTier libraries.
 ///
-/// `manifest` writes the `natives.json` that
-/// `.github/workflows/build-native-libraries.yml` publishes next to the
-/// libraries, which is how `hook/build.dart` tells whether a published library
-/// was built from the sources of a checkout.
+/// `manifest` writes the `natives.json` that `.github/workflows/ci.yml`
+/// publishes next to the libraries, which is how `hook/build.dart` tells
+/// whether a published library was built from the sources of a checkout.
 ///
 /// `stamp` records the version of a library built by hand, so that the hook
 /// keeps using it instead of downloading or rebuilding one.
 ///
 /// Both read `xmake.lua` and the given library paths from the current directory,
-/// so run them from the root of the checkout:
+/// so run them from the root of this package:
 ///
 /// ```shell
 /// dart run tool/native_version.dart manifest natives.json linux/x86_64=<library>...

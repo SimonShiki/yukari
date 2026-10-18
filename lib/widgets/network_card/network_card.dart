@@ -1,7 +1,7 @@
 import 'package:material_ui/material_ui.dart';
 
 import '../../l10n/l10n.dart';
-import '../../models/instance.dart';
+import 'package:yukari_core/models/instance.dart';
 
 class NetworkCard extends StatelessWidget {
   const NetworkCard({

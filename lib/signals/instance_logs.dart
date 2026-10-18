@@ -1,6 +1,6 @@
 import 'package:signals/signals.dart';
 
-import '../models/log_entry.dart';
+import 'package:yukari_core/models/log_entry.dart';
 
 /// Upper bound of entries kept per network, newest first.
 const maxLogEntries = 2000;
