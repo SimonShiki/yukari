@@ -3,6 +3,7 @@ import 'package:material_ui/material_ui.dart';
 
 import 'network_card.dart';
 import 'network_card_data.dart';
+import 'network_card_geometry.dart';
 import 'network_card_menu.dart';
 
 class NetworkCardList extends StatelessWidget {
@@ -41,20 +42,22 @@ class NetworkCardList extends StatelessWidget {
       selectedColor: colors.secondaryContainer,
       itemBuilder: (context, index) {
         final network = networks[index];
-        return NetworkCardMenu(
-          name: network.name,
-          running: network.running,
-          busy: network.busy,
-          onEdit: network.onEdit,
-          onExport: network.onExport,
-          onLog: network.onLog,
-          onDelete: network.onDelete,
-          builder: (context, menuButton) => NetworkCard(
+        return NetworkCardGeometry(
+          child: NetworkCardMenu(
             name: network.name,
             running: network.running,
-            status: network.status,
-            onToggle: network.onToggle,
-            menuButton: menuButton,
+            busy: network.busy,
+            onEdit: network.onEdit,
+            onExport: network.onExport,
+            onLog: network.onLog,
+            onDelete: network.onDelete,
+            builder: (context, menuButton) => NetworkCard(
+              name: network.name,
+              running: network.running,
+              status: network.status,
+              onToggle: network.onToggle,
+              menuButton: menuButton,
+            ),
           ),
         );
       },

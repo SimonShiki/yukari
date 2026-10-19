@@ -5,6 +5,7 @@ import 'package:signals_flutter/signals_flutter.dart';
 import '../../controllers/network_page_controller.dart';
 import '../../l10n/l10n.dart';
 import '../../widgets/network_card/network_card_data.dart';
+import '../../widgets/network_card/network_card_geometry.dart';
 import '../../widgets/snackbar/app_snackbar.dart';
 import 'editor_exit_guard.dart';
 import 'foreground_active.dart';
@@ -74,7 +75,11 @@ class _NetworksPageState extends State<NetworksPage>
     if (id == null || route.startsWith('/')) {
       context.go(route);
     } else {
-      context.goNamed(route, pathParameters: {'id': id});
+      context.goNamed(
+        route,
+        pathParameters: {'id': id},
+        extra: takeNetworkCardOrigin(),
+      );
     }
   }
 

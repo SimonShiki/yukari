@@ -23,10 +23,12 @@ class EditorAdvancedTab extends StatelessWidget {
     super.key,
     required this.controller,
     required this.formKey,
+    this.onChanged,
   });
 
   final NetworkEditorController controller;
   final GlobalKey<FormState> formKey;
+  final VoidCallback? onChanged;
 
   @override
   Widget build(BuildContext context) {
@@ -34,6 +36,7 @@ class EditorAdvancedTab extends StatelessWidget {
     return Form(
       key: formKey,
       autovalidateMode: AutovalidateMode.onUserInteraction,
+      onChanged: onChanged,
       child: SectionList(
         children: [
           AdvancedServicesSection(controller: controller),

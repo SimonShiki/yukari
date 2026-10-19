@@ -14,15 +14,21 @@ class EditorBasicTab extends StatelessWidget {
     super.key,
     required this.controller,
     required this.formKey,
+    this.onChanged,
   });
 
   final NetworkEditorController controller;
   final GlobalKey<FormState> formKey;
 
+  /// Called when a field of this tab's form changes, so the page can keep its
+  /// knowledge of whether this tab holds invalid input current.
+  final VoidCallback? onChanged;
+
   @override
   Widget build(BuildContext context) => Form(
     key: formKey,
     autovalidateMode: AutovalidateMode.onUserInteraction,
+    onChanged: onChanged,
     child: SectionList(
       children: [
         EditorIdentitySection(controller: controller),

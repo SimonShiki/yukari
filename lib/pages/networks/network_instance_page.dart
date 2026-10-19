@@ -15,7 +15,7 @@ class NetworkInstancePage extends StatefulWidget {
   const NetworkInstancePage({
     super.key,
     required this.id,
-    this.initialTab = InstanceTab.peers,
+    this.initialTab,
     this.tab,
     this.controller,
   });
@@ -23,8 +23,8 @@ class NetworkInstancePage extends StatefulWidget {
   /// Key of the network in the saved network collection.
   final String id;
 
-  /// The tab the route asks for.
-  final InstanceTab initialTab;
+  /// The tab the route asks for, or null for the peers tab.
+  final InstanceTab? initialTab;
 
   /// A signal the list page keeps its detail pane's tab in, kept in sync both
   /// ways by the controller this page creates.
@@ -45,7 +45,7 @@ class _NetworkInstancePageState extends State<NetworkInstancePage>
       widget.controller ??
       NetworkInstanceController(
         id: widget.id,
-        initialTab: widget.initialTab,
+        initialTab: widget.initialTab ?? InstanceTab.peers,
         tab: widget.tab,
       );
   late final TabController _tabs = TabController(

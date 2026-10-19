@@ -6,13 +6,13 @@ import 'pages/bookmarks/bookmarks_page.dart';
 import 'pages/home/home_page.dart';
 import 'pages/networks/editor_exit_guard.dart';
 import 'pages/networks/network_creator_page.dart';
-import 'pages/networks/network_editor_page.dart';
 import 'pages/networks/network_instance_page.dart';
 import 'pages/networks/networks_page.dart';
 import 'pages/settings/settings_page.dart';
 import 'pages/settings/theming_page.dart';
 import 'signals/settings.dart';
 import 'widgets/navigation/app_shell.dart';
+import 'widgets/network_card/network_detail_page_route.dart';
 
 /// The navigator above the shell, for routes that cover it full-screen.
 final GlobalKey<NavigatorState> rootNavigatorKey = GlobalKey<NavigatorState>(
@@ -66,24 +66,22 @@ final GoRouter appRouter = GoRouter(
                 GoRoute(
                   name: 'network-instance',
                   path: 'instance/:id',
-                  builder: (context, state) =>
-                      NetworkInstancePage(id: state.pathParameters['id']!),
+                  pageBuilder: (context, state) =>
+                      networkInstanceRoute(state: state),
                 ),
                 GoRoute(
                   name: 'network-logs',
                   path: 'instance/:id/logs',
-                  builder: (context, state) => NetworkInstancePage(
-                    id: state.pathParameters['id']!,
+                  pageBuilder: (context, state) => networkInstanceRoute(
+                    state: state,
                     initialTab: InstanceTab.logs,
                   ),
                 ),
                 GoRoute(
                   name: 'network-edit',
                   path: 'edit/:id',
-                  builder: (context, state) =>
-                      NetworkEditorPage(id: state.pathParameters['id']!),
-                  onExit: (context, state) =>
-                      confirmLeavingPage(context, state.pageKey),
+                  pageBuilder: (context, state) =>
+                      networkEditorRoute(state: state),
                 ),
                 GoRoute(
                   name: 'network-create',
