@@ -98,13 +98,19 @@ void main() {
       // `Exec=yukari` fails with "cannot find program" (the app is at
       // <prefix>/yukari, off $PATH) and `%U` is rejected by the launcher, so the
       // template must be substituted by CMake and carry neither.
-      final template = File('linux/share/applications/yukari.desktop.in').readAsStringSync();
+      final cmake = File('linux/CMakeLists.txt').readAsStringSync();
+      final applicationId =
+          RegExp(r'set\(APPLICATION_ID "([^"]+)"\)').firstMatch(cmake)!.group(1)!;
+      // A compositor resolves a Wayland window's icon through the file name of
+      // the entry carrying that app id.
+      final entry = 'linux/share/applications/$applicationId.desktop';
+      final template = File('$entry.in').readAsStringSync();
       expect(template, contains('Exec=@YUKARI_DESKTOP_EXEC@'));
       expect(template, isNot(matches(RegExp(r'Exec=.*%[fFuU]'))));
       expect(template, contains('Categories=Network;'));
 
-      final cmake = File('linux/CMakeLists.txt').readAsStringSync();
       expect(cmake, contains('configure_file('));
+      expect(cmake, contains(r'"${CMAKE_CURRENT_BINARY_DIR}/${APPLICATION_ID}.desktop"'));
       expect(
         cmake,
         isNot(contains(r'install(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/share/applications"')),

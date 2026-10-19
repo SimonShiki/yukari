@@ -15,7 +15,6 @@ android {
     }
 
     defaultConfig {
-        // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
         applicationId = "top.simonshiki.yukari"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
@@ -33,11 +32,23 @@ android {
         versionName = flutter.versionName
     }
 
+    signingConfigs {
+        // The release workflow writes the keystore of the ANDROID_KEYSTORE_*
+        // secrets here; without them the build is signed with the debug keys.
+        System.getenv("ANDROID_KEYSTORE_PATH")?.let { keystore ->
+            create("release") {
+                storeFile = file(keystore)
+                storePassword = System.getenv("ANDROID_KEYSTORE_PASSWORD")
+                keyAlias = System.getenv("ANDROID_KEY_ALIAS")
+                keyPassword = System.getenv("ANDROID_KEY_PASSWORD")
+            }
+        }
+    }
+
     buildTypes {
         release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
-            signingConfig = signingConfigs.getByName("debug")
+            signingConfig = signingConfigs.findByName("release")
+                ?: signingConfigs.getByName("debug")
         }
     }
 }

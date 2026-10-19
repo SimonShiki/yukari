@@ -131,11 +131,19 @@ if(NOT CMAKE_BUILD_TYPE MATCHES "Debug")
     COMPONENT Runtime)
 endif()
 
-# Installed by launcher_icons: freedesktop icons + desktop entry from linux/share/.
+# Installed by launcher_icons: freedesktop icons from linux/share/. The desktop
+# entry it also writes there is not installed; the substituted template below is.
 install(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/share/icons" DESTINATION "share" COMPONENT Runtime)
 
 set(YUKARI_DESKTOP_EXEC "${CMAKE_INSTALL_PREFIX}/${BINARY_NAME}")
-set(YUKARI_DESKTOP_TEMPLATE "${CMAKE_CURRENT_SOURCE_DIR}/share/applications/yukari.desktop.in")
-configure_file("${YUKARI_DESKTOP_TEMPLATE}" "${CMAKE_CURRENT_BINARY_DIR}/yukari.desktop" @ONLY)
-install(FILES "${CMAKE_CURRENT_BINARY_DIR}/yukari.desktop"
+# Named after the application id: a Wayland compositor matches a window to its
+# .desktop file by name, and the runner makes that id the window's app_id.
+set(YUKARI_DESKTOP_TEMPLATE "${CMAKE_CURRENT_SOURCE_DIR}/share/applications/${APPLICATION_ID}.desktop.in")
+configure_file("${YUKARI_DESKTOP_TEMPLATE}" "${CMAKE_CURRENT_BINARY_DIR}/${APPLICATION_ID}.desktop" @ONLY)
+install(FILES "${CMAKE_CURRENT_BINARY_DIR}/${APPLICATION_ID}.desktop"
   DESTINATION "share/applications" COMPONENT Runtime)
+# The name this entry was installed under before, which would otherwise stay in
+# an existing bundle.
+install(CODE "
+  file(REMOVE \"${CMAKE_INSTALL_PREFIX}/share/applications/yukari.desktop\")
+  " COMPONENT Runtime)

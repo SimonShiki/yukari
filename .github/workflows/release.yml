@@ -1,0 +1,192 @@
+name: Release
+
+on:
+  workflow_dispatch:
+  release:
+    types: [published]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.release.tag_name || 'canary' }}
+  # A second canary run would race the first for the same release.
+  cancel-in-progress: ${{ github.event_name == 'workflow_dispatch' }}
+
+jobs:
+  version:
+    name: Read the app version
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.read.outputs.version }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Read the version
+        id: read
+        run: |
+          echo "version=$(sed -n 's/^version: \([^+]*\).*/\1/p' pubspec.yaml)" >> "$GITHUB_OUTPUT"
+
+  windows:
+    needs: version
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - uses: ./.github/actions/setup-flutter
+
+      - name: Get dependencies
+        run: flutter pub get
+
+      - name: Generate localizations
+        run: flutter gen-l10n
+
+      - name: Build
+        run: flutter build windows --release
+
+      - name: Bundle the C++ runtime
+        # The runner and the native libraries link the DLL runtime, which a
+        # clean Windows does not ship.
+        shell: pwsh
+        run: |
+          $crt = Get-ChildItem "$env:ProgramFiles\Microsoft Visual Studio\2022\*\VC\Redist\MSVC\*\x64\Microsoft.VC*.CRT" -Directory |
+            Sort-Object { [version]$_.Parent.Parent.Name } -Descending | Select-Object -First 1
+          Copy-Item "$($crt.FullName)\*.dll" build\windows\x64\runner\Release\
+
+      - name: Build the installer
+        shell: pwsh
+        run: |
+          $iscc = "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe"
+          if (-not (Test-Path $iscc)) { $iscc = (Get-Command iscc.exe).Source }
+          & $iscc "/DAppVersion=${{ needs.version.outputs.version }}" `
+            "/DSourcePath=$env:GITHUB_WORKSPACE\build\windows\x64\runner\Release" `
+            "/DOutputPath=$env:GITHUB_WORKSPACE\build\installer" windows\installer.iss
+
+      - name: Upload the installer
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows
+          path: build/installer/*.exe
+          if-no-files-found: error
+
+  linux:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - uses: ./.github/actions/setup-flutter
+
+      - name: Install packaging dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libgtk-3-dev libxi-dev libx11-dev libarchive-tools rpm
+
+      - name: Get dependencies
+        run: flutter pub get
+
+      - name: Generate localizations
+        run: flutter gen-l10n
+
+      - name: Build
+        run: flutter build linux --release
+
+      - name: Package
+        run: tool/package_linux.sh
+
+      - name: Upload the packages
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux
+          path: build/packages/*
+          if-no-files-found: error
+
+  android:
+    needs: version
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - uses: ./.github/actions/setup-flutter
+
+      - name: Get dependencies
+        run: flutter pub get
+
+      - name: Generate localizations
+        run: flutter gen-l10n
+
+      - name: Build the APKs
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          if [ -n "$ANDROID_KEYSTORE_BASE64" ]; then
+            echo "$ANDROID_KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/yukari-release.jks"
+            export ANDROID_KEYSTORE_PATH="$RUNNER_TEMP/yukari-release.jks"
+          elif [ "$GITHUB_EVENT_NAME" = workflow_dispatch ]; then
+            echo "::warning::ANDROID_KEYSTORE_BASE64 is unset; the canary APKs are signed with the debug keystore"
+          else
+            echo "::error::ANDROID_KEYSTORE_BASE64 is unset; a published release cannot ship debug-signed APKs"
+            exit 1
+          fi
+          # The tool demands a split APK per --target-platform, and the app keeps
+          # only the two ABIs android/app/build.gradle.kts declares.
+          flutter build apk --release --split-per-abi --target-platform android-arm64,android-x64
+
+      - name: Name the APKs
+        env:
+          VERSION: ${{ needs.version.outputs.version }}
+        run: |
+          mkdir -p build/release-apk
+          cp build/app/outputs/flutter-apk/app-arm64-v8a-release.apk "build/release-apk/yukari-$VERSION-android-arm64-v8a.apk"
+          cp build/app/outputs/flutter-apk/app-x86_64-release.apk "build/release-apk/yukari-$VERSION-android-x86_64.apk"
+
+      - name: Upload the APKs
+        uses: actions/upload-artifact@v4
+        with:
+          name: android
+          path: build/release-apk/*.apk
+          if-no-files-found: error
+
+  publish:
+    name: Publish ${{ github.event.release.tag_name || 'canary' }}
+    needs: [windows, linux, android]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Download the artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+
+      - name: Remove the previous canary release
+        # Assets of a build that named another version would otherwise stay, and
+        # the tag would keep pointing at the commit of the first canary run.
+        if: github.event_name == 'workflow_dispatch'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh release delete canary --yes --cleanup-tag || true
+
+      - name: Publish
+        uses: svenstaro/upload-release-action@v2
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: dist/*
+          file_glob: true
+          overwrite: true
+          tag: ${{ github.event.release.tag_name || 'canary' }}
+          release_name: ${{ github.event_name == 'workflow_dispatch' && 'Yukari Canary' || '' }}
+          prerelease: ${{ github.event_name == 'workflow_dispatch' }}
+          make_latest: ${{ github.event_name != 'workflow_dispatch' }}
