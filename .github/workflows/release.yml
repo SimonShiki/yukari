@@ -50,11 +50,18 @@ jobs:
 
       - name: Bundle the C++ runtime
         # The runner and the native libraries link the DLL runtime, which a
-        # clean Windows does not ship.
+        # clean Windows does not ship. The runner image does not install Visual
+        # Studio under a fixed Program Files path, so ask vswhere for it.
         shell: pwsh
         run: |
-          $crt = Get-ChildItem "$env:ProgramFiles\Microsoft Visual Studio\2022\*\VC\Redist\MSVC\*\x64\Microsoft.VC*.CRT" -Directory |
+          $vswhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
+          $vs = & $vswhere -latest -products * `
+            -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 `
+            -property installationPath
+          if (-not $vs) { throw "No Visual Studio with the C++ toolset was found" }
+          $crt = Get-ChildItem "$vs\VC\Redist\MSVC\*\x64\Microsoft.VC*.CRT" -Directory |
             Sort-Object { [version]$_.Parent.Parent.Name } -Descending | Select-Object -First 1
+          if (-not $crt) { throw "No x64 Visual C++ redistributable under $vs" }
           Copy-Item "$($crt.FullName)\*.dll" build\windows\x64\runner\Release\
 
       - name: Build the installer
@@ -83,9 +90,10 @@ jobs:
       - uses: ./.github/actions/setup-flutter
 
       - name: Install packaging dependencies
+        # libnotify-dev is what the local_notifier plugin pkg-configs for.
         run: |
           sudo apt-get update
-          sudo apt-get install -y libgtk-3-dev libxi-dev libx11-dev libarchive-tools rpm
+          sudo apt-get install -y libgtk-3-dev libxi-dev libx11-dev libnotify-dev libarchive-tools rpm
 
       - name: Get dependencies
         run: flutter pub get
@@ -138,8 +146,9 @@ jobs:
             echo "::error::ANDROID_KEYSTORE_BASE64 is unset; a published release cannot ship debug-signed APKs"
             exit 1
           fi
-          # The tool demands a split APK per --target-platform, and the app keeps
-          # only the two ABIs android/app/build.gradle.kts declares.
+          # EasyTier ships only arm64-v8a and x86_64, so the APKs keep those
+          # two ABIs. Declaring them here rather than as ndk.abiFilters in
+          # build.gradle.kts is what AGP's split-per-abi configuration allows.
           flutter build apk --release --split-per-abi --target-platform android-arm64,android-x64
 
       - name: Name the APKs
