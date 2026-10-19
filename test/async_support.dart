@@ -1,11 +1,22 @@
+import 'dart:async';
+
 import 'package:flutter_test/flutter_test.dart';
 
-/// Yields to the event loop until [condition] holds, up to a bounded number of
-/// turns.
-Future<void> waitFor(bool Function() condition) async {
-  for (var turn = 0; turn < 1000; turn++) {
-    if (condition()) return;
+/// Polls [condition] until it holds, or fails the test once [timeout] passes.
+///
+/// [condition] may be asynchronous, so a condition whose answer takes real
+/// work, such as reading an instance that reports running once it is up, gets
+/// the time it needs instead of one instant's answer.
+Future<void> waitFor(
+  FutureOr<bool> Function() condition, {
+  Duration timeout = const Duration(seconds: 10),
+}) async {
+  final elapsed = Stopwatch()..start();
+  while (!await condition()) {
+    if (elapsed.elapsed >= timeout) {
+      expect(await condition(), isTrue, reason: 'the condition did not settle');
+      return;
+    }
     await Future<void>.delayed(Duration.zero);
   }
-  expect(condition(), isTrue, reason: 'the condition did not settle');
 }

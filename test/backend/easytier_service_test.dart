@@ -9,6 +9,7 @@ import 'package:yukari_core/daemon/service_daemon.dart';
 import 'package:yukari_core/models/models.dart';
 import 'package:yukari_core/storage/network_store.dart';
 
+import '../async_support.dart';
 import '../networks_fixture.dart';
 
 /// Runs real EasyTier instances through the service, without TUN devices so
@@ -52,6 +53,14 @@ void main() {
     expect((await client.collect(saved)).keys, ['boot']);
 
     await client.start('manual', saved['manual']!);
+    // EasyTier starts the instance in the background: the start request
+    // returns before the instance reports running, so the status is read
+    // until it settles.
+    await waitFor(
+      () async =>
+          (await client.collect(saved))['manual']?.status ==
+          InstanceStatus.running,
+    );
     final instances = await client.collect(saved);
     expect(instances.keys, unorderedEquals(['boot', 'manual']));
     expect(instances['manual']!.status, InstanceStatus.running);
