@@ -113,6 +113,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.4.1"
+  charcode:
+    dependency: transitive
+    description:
+      name: charcode
+      sha256: fb0f1107cac15a5ea6ef0a6ef71a807b9e4267c713bb93e00e92d737cc8dbd8a
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.4.0"
   checked_yaml:
     dependency: transitive
     description:
@@ -414,7 +422,7 @@ packages:
     source: hosted
     version: "4.1.2"
   image:
-    dependency: transitive
+    dependency: "direct main"
     description:
       name: image
       sha256: "89ed75b2f8231fe676808c5564f9590d728024ded7ac782a7ed8474f1c95b72a"
@@ -589,6 +597,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.1.0"
+  mobile_scanner:
+    dependency: "direct main"
+    description:
+      name: mobile_scanner
+      sha256: "5a51ea79f0cf8293f616a5d08baae185b59b5e6bb24df01f2a63037ade0bade0"
+      url: "https://pub.dev"
+    source: hosted
+    version: "7.4.2"
   motor:
     dependency: transitive
     description:
@@ -813,6 +829,15 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "0.1.7"
+  qrs_dart:
+    dependency: "direct main"
+    description:
+      path: "."
+      ref: a2390b87d5b1562a808e988c3a46de7f7cc4eeeb
+      resolved-ref: a2390b87d5b1562a808e988c3a46de7f7cc4eeeb
+      url: "https://github.com/SimonShiki/qrs-dart.git"
+    source: git
+    version: "0.2.1"
   quiver:
     dependency: transitive
     description:
@@ -1202,6 +1227,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.2.4"
+  zxing2:
+    dependency: "direct main"
+    description:
+      name: zxing2
+      sha256: "2677c49a3b9ca9457cb1d294fd4bd5041cac6aab8cdb07b216ba4e98945c684f"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.2.4"
 sdks:
   dart: ">=3.13.3 <4.0.0"
   flutter: ">=3.47.0"

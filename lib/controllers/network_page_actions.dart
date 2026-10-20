@@ -6,12 +6,17 @@ import 'package:uuid/uuid.dart';
 
 import 'package:yukari_core/bindings/easytier_ffi_native.dart' show parseConfig;
 import 'package:yukari_core/models/models.dart';
+
+import '../share/share_document.dart';
+import '../share/share_routes.dart';
 import '../signals/instance_logs.dart';
 import '../signals/instances.dart';
 import '../signals/locale.dart';
 import '../signals/networks.dart' as saved;
 import '../utils/easytier_config_parser.dart';
+
 import 'package:yukari_core/utils/easytier_config_serializer.dart';
+
 import '../utils/file_save.dart';
 import '../utils/validator.dart';
 import 'network_instance_controller.dart';
@@ -28,6 +33,22 @@ part 'network_page_import.dart';
 extension NetworkPageActions on NetworkPageController {
   /// Opens the create-network page.
   void createManually() => navigate('/networks/create', null);
+
+  /// Opens the page that streams the saved network [id] as QR frames.
+  void shareByQr(String id) => _push(shareSendPath(ShareKind.network, id));
+
+  /// Opens the page that scans a share in from another device.
+  void receiveByQr() => _push(shareReceivePath);
+
+  /// Pushes the absolute [route] above the shell, so back returns here.
+  void _push(String route) {
+    final push = pushRoute;
+    if (push != null) {
+      push(route);
+    } else {
+      navigate(route, null);
+    }
+  }
 
   /// Opens the instance page while [id] runs, else its editor: what the wide
   /// layout's detail pane shows, reached by route on narrow windows.
@@ -76,7 +97,9 @@ extension NetworkPageActions on NetworkPageController {
   Future<bool> select(String? id) async {
     if (id == null && _paneIsOpen) return true;
     if (id == selectedId.value) return true;
-    if ((invalidInput?.call() ?? false) && !await confirmDiscard()) return false;
+    if ((invalidInput?.call() ?? false) && !await confirmDiscard()) {
+      return false;
+    }
     // The dialog can outlive the page, so the answer is only applied while
     // there is still a selection signal to hold it.
     if (isDisposed) return false;
@@ -150,7 +173,9 @@ extension NetworkPageActions on NetworkPageController {
       final network = parseImportedConfig(picked.content, validateConfig);
       await saved.addNetwork(const Uuid().v4(), network);
     } on _InvalidConfig catch (error) {
-      showMessage(l10n.value.controllerImportInvalid(picked.name, error.message));
+      showMessage(
+        l10n.value.controllerImportInvalid(picked.name, error.message),
+      );
     } catch (error) {
       showMessage(l10n.value.controllerImportFailed('$error'));
     }

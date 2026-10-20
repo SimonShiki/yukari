@@ -1,5 +1,8 @@
+import 'package:flutter/foundation.dart'
+    show TargetPlatform, debugDefaultTargetPlatformOverride;
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 import 'package:m3e_core/m3e_core.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:yukari/constants/builtin_bookmarks.dart';
@@ -8,6 +11,10 @@ import 'package:yukari/controllers/bookmarks_controller.dart';
 import 'package:yukari/l10n/l10n.dart';
 import 'package:yukari_core/models/bookmark.dart';
 import 'package:yukari/pages/bookmarks/bookmarks_page.dart';
+import 'package:yukari/pages/share/qr_share_receive_page.dart';
+import 'package:yukari/pages/share/qr_share_send_page.dart';
+import 'package:yukari/share/share_document.dart';
+import 'package:yukari/share/share_routes.dart';
 import 'package:yukari/signals/bookmarks.dart' as saved;
 import 'package:yukari/signals/networks.dart' as networks;
 import 'package:yukari/utils/bookmark_codec.dart';
@@ -20,6 +27,33 @@ void main() {
   late List<String> messages;
 
   setUp(() => messages = []);
+
+  /// The share routes the app serves, so the page's `context.push` lands on
+  /// the real pages.
+  GoRouter shareRouter(BookmarksController controller) => GoRouter(
+    initialLocation: '/',
+    routes: [
+      GoRoute(
+        path: '/',
+        builder: (context, state) => BookmarksPage(controller: controller),
+      ),
+      GoRoute(
+        path: shareSendRoutePattern,
+        pageBuilder: (context, state) => MaterialPage(
+          key: state.pageKey,
+          child: QrShareSendPage(
+            kind: ShareKind.values.asNameMap()[state.pathParameters['kind']]!,
+            id: state.pathParameters['id']!,
+          ),
+        ),
+      ),
+      GoRoute(
+        path: shareReceivePath,
+        pageBuilder: (context, state) =>
+            MaterialPage(key: state.pageKey, child: const QrShareReceivePage()),
+      ),
+    ],
+  );
 
   /// Pumps the page with an injected controller.
   ///
@@ -44,9 +78,10 @@ void main() {
     );
     addTearDown(controller.dispose);
     await tester.pumpWidget(
-      MaterialApp(
+      MaterialApp.router(
         localizationsDelegates: const [AppLocalizations.delegate],
-        home: BookmarksPage(controller: controller),
+        supportedLocales: AppLocalizations.supportedLocales,
+        routerConfig: shareRouter(controller),
       ),
     );
     await tester.pumpAndSettle();
@@ -601,7 +636,7 @@ void main() {
     });
   });
 
-  testWidgets('offers every share channel and reports the stubs', (
+  testWidgets('offers every share channel and opens the sender for QR', (
     tester,
   ) async {
     await tester.runAsync(() async {
@@ -654,10 +689,19 @@ void main() {
         'Sending over a network arrives with the data plane',
       );
 
+      // The QR row pushes the sender over the list, carrying this bookmark.
       await openShare(tester, 'Alpha');
       await tester.tap(find.text('Show QR code'));
       await tester.pumpAndSettle();
-      expect(messages.last, 'QR sharing is not available yet');
+      expect(find.byType(QrShareSendPage), findsOneWidget);
+      expect(find.text('peer.example.com:11010'), findsOneWidget);
+      expect(find.byType(BookmarksPage), findsNothing);
+
+      // Back returns to the page that opened it.
+      await tester.tap(find.byType(BackButton));
+      await tester.pumpAndSettle();
+      expect(find.byType(QrShareSendPage), findsNothing);
+      expect(find.byType(BookmarksPage), findsOneWidget);
 
       await openShare(tester, 'Alpha');
       await tester.tap(find.text('Copy address'));
@@ -674,6 +718,9 @@ void main() {
       await settleStores();
       expect(exports.single, 'yukari-bookmarks.json');
       expect(messages.last, 'Bookmarks exported');
+
+      // Unmounting disposes the sender page and its paused controller.
+      await tester.pumpWidget(const SizedBox.shrink());
     });
   });
 
@@ -705,14 +752,6 @@ void main() {
       await tester.pumpAndSettle();
 
       await openFabMenu(tester);
-      await tester.tap(find.text('Scan QR Code'));
-      await tester.pumpAndSettle();
-      expect(
-        messages.last,
-        'Scanning a bookmark from a QR code is coming soon.',
-      );
-
-      await openFabMenu(tester);
       await tester.tap(find.text('Import from file'));
       await tester.pumpAndSettle();
       await settleStores();
@@ -722,7 +761,45 @@ void main() {
         persistedBookmarks().map((bookmark) => bookmark.id),
         contains('i1'),
       );
+
+      await tester.pumpWidget(const SizedBox.shrink());
     });
+  });
+
+  testWidgets('the action menu scans a share in from another device', (
+    tester,
+  ) async {
+    // The receiver builds the camera widget on the target platform the test
+    // binding reports (android); this platform scans the picked image instead.
+    // The override is reset before the test returns, as the binding checks that
+    // no foundation debug variable was left changed.
+    debugDefaultTargetPlatformOverride = TargetPlatform.linux;
+    try {
+      await tester.runAsync(() async {
+        await seedBookmarks();
+        await pumpPage(tester);
+
+        await openFabMenu(tester);
+        await tester.tap(find.text('Scan QR Code'));
+        // The receiver's indeterminate progress animates until the first
+        // frame, so bound the frames instead of waiting for stillness.
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 400));
+        expect(find.byType(QrShareReceivePage), findsOneWidget);
+        expect(find.byType(BookmarksPage), findsNothing);
+
+        // Back returns to the page that opened it.
+        await tester.tap(find.byType(BackButton));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 400));
+        expect(find.byType(QrShareReceivePage), findsNothing);
+        expect(find.byType(BookmarksPage), findsOneWidget);
+
+        await tester.pumpWidget(const SizedBox.shrink());
+      });
+    } finally {
+      debugDefaultTargetPlatformOverride = null;
+    }
   });
 
   testWidgets('disables the export action until a bookmark is saved', (

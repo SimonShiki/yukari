@@ -514,7 +514,6 @@
   "controllerSelectConfig": "选择 EasyTier 配置文件",
   "controllerSaveConfig": "保存 EasyTier 配置文件",
   "controllerFileUnavailable": "无法访问所选文件。",
-  "controllerQrComing": "二维码扫描功能即将推出。",
   "controllerReorderFailed": "无法调整网络顺序，请重试。",
   "controllerOneNetwork": "一次只能运行一个网络。",
   "logCopyJson": "复制为 JSON",
@@ -1055,7 +1054,6 @@
   },
   "bookmarksFileUnavailable": "无法读取该文件",
   "bookmarksShareUnavailable": "通过网络分享将随数据面功能一同提供",
-  "bookmarksQrUnavailable": "二维码分享暂不可用",
   "bookmarksCopied": "已复制 {address}",
   "@bookmarksCopied": {
     "placeholders": {
@@ -1126,8 +1124,174 @@
   "bookmarksFilters": "筛选",
   "bookmarksFiltersDescription": "按分类或标签缩小书签范围。",
   "bookmarksNoFilters": "还没有分类或标签。编辑书签即可添加。",
+  "shareKindNetwork": "网络",
+  "shareKindNode": "节点",
+  "shareSendTitle": "通过二维码分享",
+  "shareSendPeerCount": "{count, plural, other{{count} 个初始节点}}",
+  "@shareSendPeerCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "shareSendSecretIncluded": "包含网络密钥",
+  "shareSendNetworkMissing": "该网络已不存在。",
+  "shareSendNodeMissing": "该书签已不存在。",
+  "shareSendNoPeers": "请先为该网络添加一个节点，另一台设备才能连接。",
+  "shareSendUnsupported": "此分享无法发送。",
+  "shareQrHint": "保持屏幕明亮，将摄像头置于 20–30 厘米处，直到另一台设备接收完成。",
+  "shareQrFrameStats": "第 {frame} 帧 · {blocks, plural, other{{blocks} 块}} · {bytes}",
+  "@shareQrFrameStats": {
+    "placeholders": {
+      "frame": {
+        "type": "int"
+      },
+      "blocks": {
+        "type": "int"
+      },
+      "bytes": {
+        "type": "String"
+      }
+    }
+  },
+  "shareQrPlay": "播放",
+  "shareQrPause": "暂停",
+  "shareQrFrameRate": "帧率",
+  "shareQrFps": "{fps} 帧/秒",
+  "@shareQrFps": {
+    "placeholders": {
+      "fps": {
+        "type": "int"
+      }
+    }
+  },
+  "shareQrFrameRateHint": "多数摄像头需要两次曝光才能稳定识别一帧：15 帧/秒最稳妥，24 帧/秒需要稳定握持。",
+  "shareQrDensity": "二维码密度",
+  "shareQrDensityEasy": "易扫",
+  "shareQrDensityBalanced": "均衡",
+  "shareQrDensityFast": "快速",
+  "shareQrDensityHint": "易扫模式可从更远处扫描；快速模式帧数更少但二维码更密。",
+  "shareQrDensityRestart": "更改密度会重新开始传输。",
+  "shareQrSecretWarning": "任何扫描此二维码的人都能加入该网络。",
+  "shareQrFrameSemanticLabel": "分享二维码第 {frame} 帧",
+  "@shareQrFrameSemanticLabel": {
+    "placeholders": {
+      "frame": {
+        "type": "int"
+      }
+    }
+  },
+  "shareQrExportGif": "导出为 GIF",
+  "shareQrGifExporting": "正在编码第 {done}/{total} 帧",
+  "@shareQrGifExporting": {
+    "placeholders": {
+      "done": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "shareQrGifSaved": "GIF 已保存",
+  "shareQrGifFailed": "导出 GIF 失败：{error}",
+  "@shareQrGifFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "shareReceiveTitle": "接收分享",
+  "shareReceiveCameraHint": "将摄像头对准另一台设备的二维码。",
+  "shareReceiveTorch": "闪光灯",
+  "shareReceiveSwitchCamera": "切换摄像头",
+  "shareReceiveNoCamera": "此平台没有摄像头扫描器，请扫描截图或 GIF。",
+  "shareReceiveScanImage": "扫描图片",
+  "shareReceiveImageScanning": "正在扫描第 {done}/{total} 帧",
+  "@shareReceiveImageScanning": {
+    "placeholders": {
+      "done": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "shareReceiveImageEmpty": "图片中没有二维码。",
+  "shareReceiveImageFailed": "无法读取该图片：{error}",
+  "@shareReceiveImageFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "shareReceiveWaiting": "等待第一帧",
+  "shareReceiveProgress": "已解码 {decoded}/{total} 块",
+  "@shareReceiveProgress": {
+    "placeholders": {
+      "decoded": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "shareReceiveFrames": "{count, plural, other{{count} 帧已接收}}",
+  "@shareReceiveFrames": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "shareReceiveSpeed": "接收速度",
+  "shareReceiveScanRate": "扫描速率",
+  "shareReceiveRateRelaxed": "省电",
+  "shareReceiveRateBalanced": "均衡",
+  "shareReceiveRateTurbo": "极速",
+  "shareReceiveRateHint": "省电模式更省电；极速模式以摄像头允许的最快速度读取。",
+  "shareReceiveDifferentShare": "检测到新的分享，已重置之前的进度。",
+  "shareReceiveInvalid": "这不是 Yukari 分享。",
+  "shareReceiveComplete": "传输完成",
+  "shareReceiveAddNetwork": "添加网络",
+  "shareReceiveSaveNode": "保存节点",
+  "shareReceiveScanAnother": "继续扫描",
+  "shareReceiveNetworkAdded": "已添加 {name}",
+  "@shareReceiveNetworkAdded": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "shareReceiveNodeSaved": "已将 {address} 保存到书签",
+  "@shareReceiveNodeSaved": {
+    "placeholders": {
+      "address": {
+        "type": "String"
+      }
+    }
+  },
+  "shareReceiveNodeExists": "该节点已在书签中",
+  "shareReceiveAddFailed": "添加分享失败：{error}",
+  "@shareReceiveAddFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "sharePreviewSecret": "网络密钥",
+  "sharePreviewSecretIncluded": "已包含",
+  "sharePreviewPeers": "初始节点",
+  "sharePreviewProtocols": "协议",
+  "cardShareQr": "通过二维码分享",
   "bookmarksScanQr": "扫描二维码",
-  "bookmarksScanUnavailable": "通过二维码扫描书签的功能即将推出。",
   "advancedCopyPublicKey": "复制公钥",
   "advancedPublicKeyCopied": "公钥已复制",
   "aboutTitle": "关于",

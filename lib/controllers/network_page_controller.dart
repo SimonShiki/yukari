@@ -50,6 +50,7 @@ class NetworkPageController {
     required this.showTunPermissionWarning,
     this.backend,
     this.refreshInterval = const Duration(seconds: 10),
+    this.pushRoute,
     this.isWide,
     this.invalidInput,
     this.confirmDiscardDialog,
@@ -62,6 +63,10 @@ class NetworkPageController {
   final void Function(String message) showMessage;
   final Future<bool> Function(Network network) confirmDelete;
   final Future<void> Function(Network network) showTunPermissionWarning;
+
+  /// Opens an absolute route above the shell, so its back button returns to
+  /// this page. Defaults to [navigate]; the page points it at `context.push`.
+  final void Function(String route)? pushRoute;
 
   /// Whether the list is showing beside a detail pane, so its rows act on the
   /// pane instead of navigating. The page injects this from its layout.

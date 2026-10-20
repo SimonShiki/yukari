@@ -1,10 +1,15 @@
+import 'package:go_router/go_router.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:signals_flutter/signals_flutter.dart';
 
 import '../../controllers/bookmarks_actions.dart';
 import '../../controllers/bookmarks_controller.dart';
 import '../../l10n/l10n.dart';
+import '../../share/share_document.dart';
+import '../../share/share_routes.dart';
+
 import 'package:yukari_core/models/bookmark.dart';
+
 import '../../widgets/empty_state/empty_state.dart';
 import '../../widgets/snackbar/app_snackbar.dart';
 import 'widgets/bookmark_delete_dialog.dart';
@@ -65,7 +70,8 @@ class _BookmarksPageState extends State<BookmarksPage> {
     context,
     bookmark: bookmark,
     onShareOverNetwork: _controller.shareOverNetwork,
-    onShowQr: _controller.showQrCode,
+    // The saved page resolves built-in and user bookmark ids alike.
+    onShowQr: () => context.push(shareSendPath(ShareKind.node, bookmark.id)),
     onCopyAddress: () => _controller.copyAddress(bookmark),
     onExportJson: _controller.exportToFile,
   );
@@ -116,7 +122,7 @@ class _BookmarksPageState extends State<BookmarksPage> {
       floatingActionButton: BookmarksFabMenu(
         onAdd: _edit,
         onImport: _controller.importFromFile,
-        onScan: _controller.scanQrCode,
+        onScan: () => context.push(shareReceivePath),
       ),
       body: SafeArea(child: _body()),
     );

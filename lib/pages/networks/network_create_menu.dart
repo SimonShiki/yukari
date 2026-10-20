@@ -7,7 +7,7 @@ import '../../controllers/network_page_controller.dart';
 import '../../l10n/l10n.dart';
 
 /// The networks page's create menu: create a network by hand, import one from
-/// a TOML config, or scan a QR code (which only reports that it is coming).
+/// a TOML config, or scan a QR code to receive one.
 class NetworkCreateMenu extends StatelessWidget {
   const NetworkCreateMenu({super.key, required this.controller});
 
@@ -37,7 +37,7 @@ class NetworkCreateMenu extends StatelessWidget {
       M3EFabMenuItem(
         icon: const Icon(Icons.qr_code_scanner_rounded),
         label: context.l10n.networkScanQr,
-        onPressed: () => controller.showMessage(context.l10n.controllerQrComing),
+        onPressed: controller.receiveByQr,
       ),
     ],
   );

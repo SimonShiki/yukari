@@ -48,6 +48,7 @@ class NetworkCardList extends StatelessWidget {
             running: network.running,
             busy: network.busy,
             onEdit: network.onEdit,
+            onShare: network.onShare,
             onExport: network.onExport,
             onLog: network.onLog,
             onDelete: network.onDelete,

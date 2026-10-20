@@ -13,10 +13,26 @@ Future<bool> saveTextFile(
   String content, {
   required String mimeType,
   String? dialogTitle,
+}) => saveBytesFile(
+  name,
+  Uint8List.fromList(utf8.encode(content)),
+  mimeType: mimeType,
+  dialogTitle: dialogTitle,
+);
+
+/// Writes the binary [bytes] under [name] where the user chose to save it.
+///
+/// The binary counterpart of [saveTextFile], for files such as an exported GIF
+/// that are already encoded.
+Future<bool> saveBytesFile(
+  String name,
+  Uint8List bytes, {
+  required String mimeType,
+  String? dialogTitle,
 }) async {
   final location = await FilePicker.saveFile(
     fileName: name,
-    bytes: Uint8List.fromList(utf8.encode(content)),
+    bytes: bytes,
     mimeType: mimeType,
     dialogTitle: dialogTitle,
   );

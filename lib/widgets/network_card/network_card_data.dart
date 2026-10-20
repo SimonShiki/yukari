@@ -10,6 +10,7 @@ class NetworkCardData {
     required this.running,
     required this.onOpen,
     required this.onEdit,
+    required this.onShare,
     required this.onExport,
     required this.onLog,
     required this.onDelete,
@@ -25,6 +26,7 @@ class NetworkCardData {
   final bool busy;
   final VoidCallback onOpen;
   final VoidCallback onEdit;
+  final VoidCallback onShare;
   final VoidCallback onExport;
   final VoidCallback onLog;
   final Future<void> Function() onDelete;

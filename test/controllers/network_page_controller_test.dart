@@ -6,6 +6,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:yukari/controllers/network_instance_controller.dart';
 import 'package:yukari/controllers/network_page_controller.dart';
 import 'package:yukari/l10n/l10n.dart';
+import 'package:yukari/share/share_document.dart';
+import 'package:yukari/share/share_routes.dart';
 import 'package:yukari_core/models/models.dart';
 import 'package:yukari/signals/instance_logs.dart';
 import 'package:yukari/signals/instances.dart';
@@ -22,6 +24,7 @@ void main() {
     required FakeBackend backend,
     required List<String> messages,
     List<String>? navigated,
+    List<String>? pushed,
     Future<bool> Function(Network)? confirmDelete,
     List<Network>? warnings,
     bool Function()? invalidInput,
@@ -33,6 +36,7 @@ void main() {
     bool Function()? isWide,
   }) => NetworkPageController(
     navigate: (route, id) => navigated?.add(id == null ? route : '$route:$id'),
+    pushRoute: pushed?.add,
     showMessage: messages.add,
     confirmDelete: confirmDelete ?? (_) async => true,
     showTunPermissionWarning: (network) async => warnings?.add(network),
@@ -52,20 +56,20 @@ void main() {
     controller.start();
     addTearDown(controller.dispose);
 
-    expect(
-      controller.cards.value.map((card) => card.status),
-      [InstanceStatus.unknown, InstanceStatus.unknown],
-    );
+    expect(controller.cards.value.map((card) => card.status), [
+      InstanceStatus.unknown,
+      InstanceStatus.unknown,
+    ]);
 
     await controller.refresh();
 
     expect(controller.loaded.value, isTrue);
     expect(controller.refreshError.value, isNull);
     expect(controller.cards.value.map((card) => card.running), [false, false]);
-    expect(
-      controller.cards.value.map((card) => card.status),
-      [InstanceStatus.stopped, InstanceStatus.stopped],
-    );
+    expect(controller.cards.value.map((card) => card.status), [
+      InstanceStatus.stopped,
+      InstanceStatus.stopped,
+    ]);
     expect(controller.cards.value.map((card) => card.name), ['alpha', 'beta']);
   });
 
@@ -93,13 +97,55 @@ void main() {
     expect(controller.instances.value, isEmpty);
   });
 
+  test('a card shares its network over QR above the shell', () async {
+    await seedNetworks();
+    final pushed = <String>[];
+    final controller = build(
+      backend: FakeBackend(),
+      messages: <String>[],
+      pushed: pushed,
+    );
+    controller.start();
+    addTearDown(controller.dispose);
+
+    controller.cards.value.first.onShare();
+    controller.receiveByQr();
+
+    expect(pushed, [shareSendPath(ShareKind.network, 'n1'), shareReceivePath]);
+  });
+
+  test(
+    'the share actions fall back to navigating without a push route',
+    () async {
+      await seedNetworks();
+      final navigated = <String>[];
+      final controller = build(
+        backend: FakeBackend(),
+        messages: <String>[],
+        navigated: navigated,
+      );
+      controller.start();
+      addTearDown(controller.dispose);
+
+      controller.cards.value.first.onShare();
+      controller.receiveByQr();
+
+      expect(navigated, [
+        shareSendPath(ShareKind.network, 'n1'),
+        shareReceivePath,
+      ]);
+    },
+  );
+
   test('records the instance events while refreshing', () async {
     await seedNetworks();
     final backend = FakeBackend(
       collected: () => {
         'alpha': {
           'running': true,
-          'events': ['{"time":"2024-01-01T00:00:00Z","event":"TunDeviceReady"}'],
+          'events': [
+            '{"time":"2024-01-01T00:00:00Z","event":"TunDeviceReady"}',
+          ],
         },
       },
     );
@@ -267,7 +313,11 @@ void main() {
 
   test('delete confirms first, then stops and clears the network', () async {
     await seedNetworks();
-    final backend = FakeBackend(collected: () => {'alpha': {'running': true}});
+    final backend = FakeBackend(
+      collected: () => {
+        'alpha': {'running': true},
+      },
+    );
     final messages = <String>[];
     final refusing = build(
       backend: backend,
@@ -299,58 +349,70 @@ void main() {
     expect(messages, isEmpty);
   });
 
-  test('a delete the store refuses keeps the network and is reported', () async {
-    final messages = <String>[];
-    await _seedWithFailingWrites();
-    final controller = build(backend: FakeBackend(), messages: messages);
-    addTearDown(controller.dispose);
+  test(
+    'a delete the store refuses keeps the network and is reported',
+    () async {
+      final messages = <String>[];
+      await _seedWithFailingWrites();
+      final controller = build(backend: FakeBackend(), messages: messages);
+      addTearDown(controller.dispose);
 
-    await controller.refresh();
-    await controller.delete('n1');
+      await controller.refresh();
+      await controller.delete('n1');
 
-    expect(saved.networks.value.keys, contains('n1'));
-    expect(messages, [strings.controllerDeleteFailed('alpha')]);
-  });
+      expect(saved.networks.value.keys, contains('n1'));
+      expect(messages, [strings.controllerDeleteFailed('alpha')]);
+    },
+  );
 
-  test('reorder reports a store failure, and moves a network otherwise', () async {
-    final messages = <String>[];
-    await _seedWithFailingWrites();
-    final failing = build(backend: FakeBackend(), messages: messages);
-    addTearDown(failing.dispose);
+  test(
+    'reorder reports a store failure, and moves a network otherwise',
+    () async {
+      final messages = <String>[];
+      await _seedWithFailingWrites();
+      final failing = build(backend: FakeBackend(), messages: messages);
+      addTearDown(failing.dispose);
 
-    await failing.reorder(0, 2);
+      await failing.reorder(0, 2);
 
-    expect(messages, [strings.controllerReorderFailed]);
-    expect(saved.networks.value.keys.toList(), ['n1', 'n2']);
+      expect(messages, [strings.controllerReorderFailed]);
+      expect(saved.networks.value.keys.toList(), ['n1', 'n2']);
 
-    await seedNetworks();
-    final workingController = build(backend: FakeBackend(), messages: messages);
-    addTearDown(workingController.dispose);
-    await workingController.reorder(1, 0);
+      await seedNetworks();
+      final workingController = build(
+        backend: FakeBackend(),
+        messages: messages,
+      );
+      addTearDown(workingController.dispose);
+      await workingController.reorder(1, 0);
 
-    expect(saved.networks.value.keys.toList(), ['n2', 'n1']);
-  });
+      expect(saved.networks.value.keys.toList(), ['n2', 'n1']);
+    },
+  );
 
-  test('selection asks exactly once before invalid input is discarded', () async {
-    await seedNetworks();
-    var asked = 0;
-    final controller = build(
-      backend: FakeBackend(),
-      messages: <String>[],
-      invalidInput: () => true,
-      confirmDiscardDialog: () async {
-        asked++;
-        return false;
-      },
-    );
-    controller.start();
-    addTearDown(controller.dispose);
-    expect(controller.selectedId.value, 'n1');
+  test(
+    'selection asks exactly once before invalid input is discarded',
+    () async {
+      await seedNetworks();
+      var asked = 0;
+      final controller = build(
+        backend: FakeBackend(),
+        messages: <String>[],
+        invalidInput: () => true,
+        confirmDiscardDialog: () async {
+          asked++;
+          return false;
+        },
+      );
+      controller.start();
+      addTearDown(controller.dispose);
+      expect(controller.selectedId.value, 'n1');
 
-    expect(await controller.select('n2'), isFalse);
-    expect(asked, 1);
-    expect(controller.selectedId.value, 'n1');
-  });
+      expect(await controller.select('n2'), isFalse);
+      expect(asked, 1);
+      expect(controller.selectedId.value, 'n1');
+    },
+  );
 
   test('a clean selection changes without asking', () async {
     await seedNetworks();
@@ -414,7 +476,11 @@ void main() {
     await seedNetworks();
     final navigated = <String>[];
     final controller = build(
-      backend: FakeBackend(collected: () => {'alpha': {'running': true}}),
+      backend: FakeBackend(
+        collected: () => {
+          'alpha': {'running': true},
+        },
+      ),
       messages: <String>[],
       navigated: navigated,
       isWide: () => true,
@@ -439,7 +505,11 @@ void main() {
     await seedNetworks();
     final navigated = <String>[];
     final controller = build(
-      backend: FakeBackend(collected: () => {'alpha': {'running': true}}),
+      backend: FakeBackend(
+        collected: () => {
+          'alpha': {'running': true},
+        },
+      ),
       messages: <String>[],
       navigated: navigated,
       isWide: () => false,
@@ -518,7 +588,8 @@ void main() {
     final rejected = build(
       backend: FakeBackend(),
       messages: messages,
-      pickConfig: () async => const PickedConfig(name: 'taken.toml', content: content),
+      pickConfig: () async =>
+          const PickedConfig(name: 'taken.toml', content: content),
       validateConfig: (_) {},
     );
     addTearDown(rejected.dispose);
@@ -526,14 +597,18 @@ void main() {
     await rejected.importFromFile();
 
     expect(messages, [
-      strings.controllerImportInvalid('taken.toml', strings.validationNetworkExists),
+      strings.controllerImportInvalid(
+        'taken.toml',
+        strings.validationNetworkExists,
+      ),
     ]);
 
     messages.clear();
     final invalid = build(
       backend: FakeBackend(),
       messages: messages,
-      pickConfig: () async => const PickedConfig(name: 'broken.toml', content: content),
+      pickConfig: () async =>
+          const PickedConfig(name: 'broken.toml', content: content),
       validateConfig: (_) => throw const FormatException('bad toml'),
     );
     addTearDown(invalid.dispose);
@@ -544,28 +619,31 @@ void main() {
     expect(messages.single, contains('FormatException: bad toml'));
   });
 
-  test('an unreadable file, and a dismissed picker, say what happened', () async {
-    await seedNetworks();
-    final messages = <String>[];
-    final unreadable = build(
-      backend: FakeBackend(),
-      messages: messages,
-      pickConfig: () async => throw const FileSystemException('gone'),
-    );
-    addTearDown(unreadable.dispose);
-    await unreadable.importFromFile();
-    expect(messages, [strings.controllerFileUnavailable]);
+  test(
+    'an unreadable file, and a dismissed picker, say what happened',
+    () async {
+      await seedNetworks();
+      final messages = <String>[];
+      final unreadable = build(
+        backend: FakeBackend(),
+        messages: messages,
+        pickConfig: () async => throw const FileSystemException('gone'),
+      );
+      addTearDown(unreadable.dispose);
+      await unreadable.importFromFile();
+      expect(messages, [strings.controllerFileUnavailable]);
 
-    messages.clear();
-    final dismissed = build(
-      backend: FakeBackend(),
-      messages: messages,
-      pickConfig: () async => null,
-    );
-    addTearDown(dismissed.dispose);
-    await dismissed.importFromFile();
-    expect(messages, isEmpty);
-  });
+      messages.clear();
+      final dismissed = build(
+        backend: FakeBackend(),
+        messages: messages,
+        pickConfig: () async => null,
+      );
+      addTearDown(dismissed.dispose);
+      await dismissed.importFromFile();
+      expect(messages, isEmpty);
+    },
+  );
 
   test('exports a network as its raw EasyTier TOML', () async {
     await seedNetworks();
@@ -725,65 +803,74 @@ void main() {
     );
   });
 
-  test('disposing while the discard dialog is open writes no selection', () async {
-    await seedNetworks();
-    final gate = Completer<void>();
-    final controller = build(
-      backend: FakeBackend(),
-      messages: <String>[],
-      invalidInput: () => true,
-      confirmDiscardDialog: () async {
-        await gate.future;
-        return true;
-      },
-    );
-    controller.start();
-    expect(controller.selectedId.value, 'n1');
+  test(
+    'disposing while the discard dialog is open writes no selection',
+    () async {
+      await seedNetworks();
+      final gate = Completer<void>();
+      final controller = build(
+        backend: FakeBackend(),
+        messages: <String>[],
+        invalidInput: () => true,
+        confirmDiscardDialog: () async {
+          await gate.future;
+          return true;
+        },
+      );
+      controller.start();
+      expect(controller.selectedId.value, 'n1');
 
-    // The selection is parked in the page's modal dialog when the page goes.
-    final selecting = controller.select('n2');
-    controller.dispose();
-    gate.complete();
+      // The selection is parked in the page's modal dialog when the page goes.
+      final selecting = controller.select('n2');
+      controller.dispose();
+      gate.complete();
 
-    await expectLater(selecting, completes);
-    expect(
-      controller.selectedId.peek(),
-      'n1',
-      reason: 'the late selection is dropped',
-    );
-  });
+      await expectLater(selecting, completes);
+      expect(
+        controller.selectedId.peek(),
+        'n1',
+        reason: 'the late selection is dropped',
+      );
+    },
+  );
 
-  test('disposing while the discard dialog is open leaves the tab alone', () async {
-    await seedNetworks();
-    final gate = Completer<void>();
-    final controller = build(
-      backend: FakeBackend(
-        collected: () => {'alpha': {'running': true}, 'beta': {'running': true}},
-      ),
-      messages: <String>[],
-      isWide: () => true,
-      invalidInput: () => true,
-      confirmDiscardDialog: () async {
-        await gate.future;
-        return true;
-      },
-    );
-    controller.start();
-    await controller.refresh();
-    expect(controller.selectedId.value, 'n1');
+  test(
+    'disposing while the discard dialog is open leaves the tab alone',
+    () async {
+      await seedNetworks();
+      final gate = Completer<void>();
+      final controller = build(
+        backend: FakeBackend(
+          collected: () => {
+            'alpha': {'running': true},
+            'beta': {'running': true},
+          },
+        ),
+        messages: <String>[],
+        isWide: () => true,
+        invalidInput: () => true,
+        confirmDiscardDialog: () async {
+          await gate.future;
+          return true;
+        },
+      );
+      controller.start();
+      await controller.refresh();
+      expect(controller.selectedId.value, 'n1');
 
-    final logging = controller.log('n2');
-    controller.dispose();
-    gate.complete();
+      final logging = controller.log('n2');
+      controller.dispose();
+      gate.complete();
 
-    await expectLater(logging, completes);
-    expect(controller.selectedId.peek(), 'n1');
-    expect(
-      controller.instanceTab.peek(),
-      InstanceTab.peers,
-      reason: 'the late tab switch is dropped',
-    );
-  });
+      await expectLater(logging, completes);
+      expect(controller.selectedId.peek(), 'n1');
+      expect(
+        controller.instanceTab.peek(),
+        InstanceTab.peers,
+        reason: 'the late tab switch is dropped',
+      );
+    },
+  );
 
   test('disposing while the save dialog is open writes no message', () async {
     await seedNetworks();
@@ -835,7 +922,12 @@ class _GatedStartBackend extends FakeBackend {
 /// A backend that reports one running instance and whose stop waits, then
 /// fails.
 class _GatedStopBackend extends FakeBackend {
-  _GatedStopBackend() : super(collected: () => {'alpha': {'running': true}});
+  _GatedStopBackend()
+    : super(
+        collected: () => {
+          'alpha': {'running': true},
+        },
+      );
 
   final gate = Completer<void>();
   final entered = Completer<void>();

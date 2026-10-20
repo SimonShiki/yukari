@@ -9,10 +9,12 @@ import 'package:yukari/widgets/network_card/network_card_list.dart';
 void main() {
   var deleted = 0;
   var exported = 0;
+  var shared = 0;
 
   Future<void> pumpList(WidgetTester tester, {bool running = false}) async {
     deleted = 0;
     exported = 0;
+    shared = 0;
     await tester.pumpWidget(
       MaterialApp(
         localizationsDelegates: const [AppLocalizations.delegate],
@@ -28,6 +30,7 @@ void main() {
                 running: running,
                 onOpen: () {},
                 onEdit: () {},
+                onShare: () => shared++,
                 onExport: () => exported++,
                 onLog: () {},
                 onDelete: () async => deleted++,
@@ -89,5 +92,24 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(exported, 1);
+  });
+
+  testWidgets('the menu shares over QR, above Export', (tester) async {
+    await pumpList(tester);
+    await tester.tap(find.byTooltip('More options for Home'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Share via QR'), findsOneWidget);
+    expect(
+      tester.getTopLeft(find.text('Share via QR')).dy,
+      lessThan(tester.getTopLeft(find.text('Export')).dy),
+      reason: 'sharing sits directly before Export',
+    );
+
+    await tester.tap(find.text('Share via QR'));
+    await tester.pumpAndSettle();
+
+    expect(shared, 1);
+    expect(find.text('Share via QR'), findsNothing);
   });
 }

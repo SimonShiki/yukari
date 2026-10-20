@@ -9,6 +9,8 @@ import 'package:yukari/pages/networks/network_instance_page.dart';
 import 'package:yukari/pages/networks/editor_exit_guard.dart';
 import 'package:yukari/pages/networks/network_page_dialogs.dart';
 import 'package:yukari/pages/networks/networks_page.dart';
+import 'package:yukari/share/share_document.dart';
+import 'package:yukari/share/share_routes.dart';
 import 'package:yukari/widgets/network_card/network_card_list.dart';
 
 import '../fake_backend.dart';
@@ -83,7 +85,9 @@ void main() {
     expect(find.byType(NetworkEditorPage), findsNothing);
     // No pane, so no row is highlighted and one tap opens the detail.
     expect(
-      tester.widget<NetworkCardList>(find.byType(NetworkCardList)).selectedIndex,
+      tester
+          .widget<NetworkCardList>(find.byType(NetworkCardList))
+          .selectedIndex,
       isNull,
     );
 
@@ -102,7 +106,11 @@ void main() {
       tester,
       size: const Size(1000, 800),
       backend: FakeBackend(
-        collected: () => running ? {'alpha': {'running': true}} : {},
+        collected: () => running
+            ? {
+                'alpha': {'running': true},
+              }
+            : {},
       ),
       // The editor pane keeps the tree animating, so settle by hand.
       settle: false,
@@ -182,7 +190,11 @@ void main() {
     final controller = await pumpList(
       tester,
       size: const Size(1000, 800),
-      backend: FakeBackend(collected: () => {'alpha': {'running': true}}),
+      backend: FakeBackend(
+        collected: () => {
+          'alpha': {'running': true},
+        },
+      ),
       settle: false,
     );
     await tester.runAsync(controller.refresh);
@@ -216,7 +228,11 @@ void main() {
       confirmDelete: (_) async => true,
       showTunPermissionWarning: (_) async {},
       backend: FakeBackend(
-        collected: () => running ? {'alpha': {'running': true}} : {},
+        collected: () => running
+            ? {
+                'alpha': {'running': true},
+              }
+            : {},
       ),
       isWide: () => true,
     );
@@ -256,14 +272,13 @@ void main() {
     expect(controller.instanceTab.value, InstanceTab.logs);
     expect(find.byType(NetworkInstancePage), findsOneWidget);
     expect(find.text(strings.networkNoEvents), findsOneWidget);
-    expect(
-      tester.widget<TabBar>(find.byType(TabBar)).controller!.index,
-      1,
-    );
+    expect(tester.widget<TabBar>(find.byType(TabBar)).controller!.index, 1);
     expect(navigated, isEmpty);
   });
 
-  testWidgets('a failed refresh shows the banner and can retry', (tester) async {
+  testWidgets('a failed refresh shows the banner and can retry', (
+    tester,
+  ) async {
     await tester.runAsync(seedNetworks);
     final backend = CountingBackend(failCollect: true);
     final controller = await pumpList(
@@ -329,7 +344,24 @@ void main() {
     await tester.tap(find.text(strings.networkScanQr));
     await tester.pumpAndSettle();
 
-    expect(messages, [strings.controllerQrComing]);
+    expect(navigated, ['/networks/create', shareReceivePath]);
+    expect(
+      messages,
+      isEmpty,
+      reason: 'the scan opens the receiver, it reports',
+    );
+  });
+
+  testWidgets('the row menu shares a network as a QR code', (tester) async {
+    await tester.runAsync(seedNetworks);
+    await pumpList(tester, size: const Size(400, 780));
+
+    await tester.tap(find.byTooltip(strings.cardMoreOptions('alpha')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text(strings.cardShareQr));
+    await tester.pumpAndSettle();
+
+    expect(navigated, [shareSendPath(ShareKind.network, 'n1')]);
   });
 
   testWidgets('the delete dialog asks, and a cancel keeps the network', (
@@ -347,11 +379,17 @@ void main() {
       ),
     );
 
-    final dialog = confirmDeleteNetwork(context, Network()..networkName = 'alpha');
+    final dialog = confirmDeleteNetwork(
+      context,
+      Network()..networkName = 'alpha',
+    );
     await tester.pumpAndSettle();
 
     expect(find.text(strings.networkDeleteTitle), findsOneWidget);
-    expect(find.text(strings.networkDeleteDescription('alpha')), findsOneWidget);
+    expect(
+      find.text(strings.networkDeleteDescription('alpha')),
+      findsOneWidget,
+    );
 
     // Deleting is destructive, so the confirm wears the theme's error pair.
     final confirm = find.widgetWithText(FilledButton, strings.commonDelete);

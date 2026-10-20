@@ -31,6 +31,7 @@ class _NetworksPageState extends State<NetworksPage>
       widget.controller ??
       NetworkPageController(
         navigate: _navigate,
+        pushRoute: (route) => context.push(route),
         showMessage: (message) => showAppSnackBar(context, message),
         confirmDelete: (network) => confirmDeleteNetwork(context, network),
         showTunPermissionWarning: (network) => showTunPermissionWarningDialog(

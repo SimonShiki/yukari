@@ -10,6 +10,10 @@ import 'pages/networks/network_instance_page.dart';
 import 'pages/networks/networks_page.dart';
 import 'pages/settings/settings_page.dart';
 import 'pages/settings/theming_page.dart';
+import 'pages/share/qr_share_receive_page.dart';
+import 'pages/share/qr_share_send_page.dart';
+import 'share/share_document.dart';
+import 'share/share_routes.dart';
 import 'signals/settings.dart';
 import 'widgets/navigation/app_shell.dart';
 import 'widgets/network_card/network_detail_page_route.dart';
@@ -119,6 +123,26 @@ final GoRouter appRouter = GoRouter(
           ],
         ),
       ],
+    ),
+    GoRoute(
+      path: shareSendRoutePattern,
+      pageBuilder: (context, state) {
+        final kind = ShareKind.values.asNameMap()[state.pathParameters['kind']];
+        return MaterialPage(
+          key: ValueKey<String>(state.uri.path),
+          child: QrShareSendPage(
+            kind: kind ?? ShareKind.node,
+            id: kind == null ? '' : state.pathParameters['id'] ?? '',
+          ),
+        );
+      },
+    ),
+    GoRoute(
+      path: shareReceivePath,
+      pageBuilder: (context, state) => MaterialPage(
+        key: ValueKey<String>(state.uri.path),
+        child: const QrShareReceivePage(),
+      ),
     ),
   ],
 );

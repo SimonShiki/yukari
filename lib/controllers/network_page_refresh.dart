@@ -115,6 +115,7 @@ extension NetworkPageRefresh on NetworkPageController {
       busy: busy,
       onOpen: () => openDetail(id),
       onEdit: () => unawaited(edit(id)),
+      onShare: () => shareByQr(id),
       onExport: () => unawaited(exportConfig(id)),
       onLog: () => unawaited(log(id)),
       onDelete: () => delete(id),

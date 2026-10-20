@@ -109,10 +109,8 @@ extension BookmarksActions on BookmarksController {
     }
   }
 
-  // The three share channels that are described but not implemented yet.
+  // The one share channel that is described but not implemented yet.
   void shareOverNetwork() => showMessage(l10n.value.bookmarksShareUnavailable);
-  void showQrCode() => showMessage(l10n.value.bookmarksQrUnavailable);
-  void scanQrCode() => showMessage(l10n.value.bookmarksScanUnavailable);
 
   /// Imports the bookmarks of a picked JSON file.
   ///

@@ -1,20 +1,33 @@
+import 'package:flutter/foundation.dart'
+    show TargetPlatform, debugDefaultTargetPlatformOverride;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
+import 'package:yukari/l10n/l10n.dart';
 import 'package:yukari/pages/about/about_page.dart';
 import 'package:yukari/pages/bookmarks/bookmarks_page.dart';
 import 'package:yukari/pages/networks/network_instance_page.dart';
 import 'package:yukari/pages/networks/networks_page.dart';
 import 'package:yukari/pages/settings/settings_page.dart';
 import 'package:yukari/pages/settings/theming_page.dart';
+import 'package:yukari/pages/share/qr_share_receive_page.dart';
+import 'package:yukari/pages/share/qr_share_send_page.dart';
+import 'package:yukari/pages/share/widgets/qr_matrix_view.dart';
 import 'package:yukari/router.dart';
+import 'package:yukari/share/share_document.dart';
+import 'package:yukari/share/share_routes.dart';
 import 'package:yukari/signals/backend.dart' as backend_signals;
 import 'package:yukari/signals/settings.dart';
+import 'package:yukari_core/models/models.dart';
 
+import 'bookmarks_fixture.dart';
+import 'networks_fixture.dart';
 import 'router_support.dart';
 import 'theming_test_support.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
+
+  final strings = lookupAppLocalizations(const Locale('en'));
 
   tearDown(() {
     appRouter.go('/');
@@ -313,6 +326,179 @@ void main() {
       expect(find.byType(ThemingPage), findsNothing);
       expect(find.text('Use system color'), findsNothing);
       expect(find.text('Theme settings'), findsOneWidget);
+    });
+  });
+
+  group('share routes', () {
+    // `defaultTargetPlatform` is android under `flutter test`, so the receiver
+    // would build the camera widget; this platform scans a picked image. The
+    // override is reset before the test returns: the binding checks that no
+    // foundation debug variable was left changed.
+    Future<void> withoutCamera(Future<void> Function() body) async {
+      debugDefaultTargetPlatformOverride = TargetPlatform.linux;
+      try {
+        await body();
+      } finally {
+        debugDefaultTargetPlatformOverride = null;
+      }
+    }
+
+    final node = Node(
+      id: 'peer1',
+      url: Uri.parse('relay.example.com'),
+      port: 11010,
+      protocols: const [NodeProtocol.tcp],
+    );
+
+    testWidgets('a network share link streams the saved network', (
+      tester,
+    ) async {
+      await tester.runAsync(
+        () => seedWith({
+          'n1': Network()
+            ..networkName = 'alpha'
+            ..nodes = [node],
+        }),
+      );
+      appRouter.go(shareSendPath(ShareKind.network, 'n1'));
+      await pumpApp(tester, size: const Size(400, 800));
+
+      expect(find.byType(QrShareSendPage), findsOneWidget);
+      expect(find.text('alpha'), findsOneWidget);
+      expect(find.byType(NavigationBar), findsNothing);
+
+      // The page owns a playing sender; unmounting disposes it and stops its
+      // timer.
+      await tester.pumpWidget(const SizedBox.shrink());
+    });
+
+    testWidgets('a bookmark share link streams the saved bookmark', (
+      tester,
+    ) async {
+      await tester.runAsync(
+        () => seedBookmarks([
+          testBookmark('u1', name: 'Relay', host: 'relay.example.com'),
+        ]),
+      );
+      appRouter.go(shareSendPath(ShareKind.node, 'u1'));
+      await pumpApp(tester, size: const Size(400, 800));
+
+      expect(find.byType(QrShareSendPage), findsOneWidget);
+      expect(find.text('relay.example.com:11010'), findsOneWidget);
+      expect(find.byType(NavigationBar), findsNothing);
+
+      await tester.pumpWidget(const SizedBox.shrink());
+    });
+
+    testWidgets('an unknown id or kind shows the missing state, no crash', (
+      tester,
+    ) async {
+      await tester.runAsync(() => seedWith({}));
+      await tester.runAsync(
+        () => seedBookmarks([
+          testBookmark('u1', name: 'Relay', host: 'relay.example.com'),
+        ]),
+      );
+      appRouter.go(shareSendPath(ShareKind.network, 'gone'));
+      await pumpApp(tester, size: const Size(400, 800));
+
+      expect(tester.takeException(), isNull);
+      expect(find.byType(QrShareSendPage), findsOneWidget);
+      expect(find.text(strings.shareSendNetworkMissing), findsOneWidget);
+
+      appRouter.go(shareSendPath(ShareKind.node, 'gone'));
+      await tester.pumpAndSettle();
+      expect(find.text(strings.shareSendNodeMissing), findsOneWidget);
+
+      // An unknown :kind reaches the same missing state instead of throwing in
+      // the router.
+      appRouter.go('/share/send/bogus/gone');
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
+      expect(find.byType(QrShareSendPage), findsOneWidget);
+      expect(find.text(strings.shareSendNodeMissing), findsOneWidget);
+
+      // A bogus kind with a real bookmark id is an invalid link too: it must
+      // not stream the bookmark the id names.
+      appRouter.go('/share/send/bogus/u1');
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
+      expect(find.byType(QrShareSendPage), findsOneWidget);
+      expect(find.text(strings.shareSendNodeMissing), findsOneWidget);
+      expect(
+        find.byType(QrMatrixView),
+        findsNothing,
+        reason: 'nothing streams',
+      );
+
+      await tester.pumpWidget(const SizedBox.shrink());
+    });
+
+    testWidgets('the receive route covers the shell and back returns', (
+      tester,
+    ) async {
+      await withoutCamera(() async {
+        appRouter.go('/bookmarks');
+        await pumpApp(tester, size: const Size(400, 800));
+        expect(find.byType(BookmarksPage), findsOneWidget);
+
+        appRouter.push<void>(shareReceivePath);
+        // The receiver's indeterminate progress animates until the first
+        // frame, so bounded frames settle the route without waiting for
+        // stillness.
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 400));
+
+        expect(find.byType(QrShareReceivePage), findsOneWidget);
+        expect(find.text(strings.shareReceiveTitle), findsOneWidget);
+        expect(find.byType(NavigationBar), findsNothing);
+
+        await tester.tap(find.byType(BackButton));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 400));
+
+        expect(find.byType(QrShareReceivePage), findsNothing);
+        expect(find.byType(BookmarksPage), findsOneWidget);
+        expect(find.byType(NavigationBar), findsOneWidget);
+
+        await tester.pumpWidget(const SizedBox.shrink());
+      });
+    });
+
+    testWidgets('the share sheet pushes the sender and back returns', (
+      tester,
+    ) async {
+      await tester.runAsync(
+        () => seedBookmarks([
+          testBookmark('u1', name: 'Alpha', host: 'relay.example.com'),
+        ]),
+      );
+      appRouter.go('/bookmarks');
+      await pumpApp(tester, size: const Size(400, 800));
+
+      // The built-in shared nodes sit above the saved bookmark; searching
+      // narrows the list to it.
+      await tester.enterText(find.byType(SearchBar), 'Alpha');
+      await tester.pumpAndSettle();
+      await tester.tap(find.byTooltip('More options for Alpha'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Share'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Show QR code'));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(QrShareSendPage), findsOneWidget);
+      expect(find.byType(BookmarksPage), findsNothing);
+      expect(find.byType(NavigationBar), findsNothing);
+
+      await tester.tap(find.byType(BackButton));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(QrShareSendPage), findsNothing);
+      expect(find.byType(BookmarksPage), findsOneWidget);
+      expect(find.byType(NavigationBar), findsOneWidget);
+
+      await tester.pumpWidget(const SizedBox.shrink());
     });
   });
 }

@@ -535,18 +535,12 @@ void main() {
       expect(messages.single, 'Copied peer.example.com:11010');
     });
 
-    test('reports the three channels that are not implemented', () {
+    test('reports the share channel that is not implemented', () {
       final controller = controllerFor(builtins: []);
 
       controller.shareOverNetwork();
-      controller.showQrCode();
-      controller.scanQrCode();
 
-      expect(messages, [
-        'Sending over a network arrives with the data plane',
-        'QR sharing is not available yet',
-        'Scanning a bookmark from a QR code is coming soon.',
-      ]);
+      expect(messages, ['Sending over a network arrives with the data plane']);
     });
   });
 

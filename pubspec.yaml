@@ -43,14 +43,20 @@ dependencies:
   flutter_localizations:
     sdk: flutter
   go_router: ^18.0.1
+  image: ^4.12.0
   intl: ^0.20.2
   json_rpc_2: ^4.1.0
   local_notifier: ^0.1.6
   material_ui: ^1.4.0
   m3e_core: ^1.1.4
+  mobile_scanner: ^7.4.2
   nativeapi_flutter: ^0.5.2
   path: ^1.9.1
   path_provider: ^2.1.6
+  qrs_dart:
+    git:
+      url: https://github.com/SimonShiki/qrs-dart.git
+      ref: a2390b87d5b1562a808e988c3a46de7f7cc4eeeb
   shared_preferences: 2.5.5
   shared_preferences_android: 2.4.28
   signals: ^7.1.0
@@ -63,6 +69,7 @@ dependencies:
   package_info_plus: ^10.2.2
   yukari_core:
     path: packages/yukari_core
+  zxing2: ^0.2.4
 
 dev_dependencies:
   flutter_test:
