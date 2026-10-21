@@ -48,8 +48,9 @@ const _windowsFontFallback = <String>[
 
 /// Builds the colour scheme the app draws [brightness] with.
 ///
-/// [systemScheme] supplies the OS dynamic colours, and is used only when
-/// [useSystemColor] is true. [ThemePreference.oled] darkens the dark scheme's
+/// With [useSystemColor] on and a [systemScheme] for [brightness], the whole
+/// scheme is the platform's, text colours included. Otherwise [palette] and
+/// [variant] generate it. [ThemePreference.oled] darkens the dark scheme's
 /// surfaces to black.
 ColorScheme buildColorScheme({
   required Brightness brightness,
@@ -59,12 +60,13 @@ ColorScheme buildColorScheme({
   required bool useSystemColor,
   ColorScheme? systemScheme,
 }) {
-  final scheme = M3EColorScheme.generate(
-    seedColor: palette.seedColor,
-    brightness: brightness,
-    variant: variant,
-    systemColorScheme: useSystemColor ? systemScheme : null,
-  );
+  final scheme = useSystemColor && systemScheme != null
+      ? systemScheme
+      : M3EColorScheme.generate(
+          seedColor: palette.seedColor,
+          brightness: brightness,
+          variant: variant,
+        );
   return mode == ThemePreference.oled && brightness == Brightness.dark
       ? _oledSurfaces(scheme)
       : scheme;
@@ -72,7 +74,7 @@ ColorScheme buildColorScheme({
 
 /// Builds the app's theme for [brightness] from a set of theme settings.
 ///
-/// Pass the OS dynamic schemes from `DynamicColorBuilder` as [systemScheme].
+/// Pass the platform's dynamic scheme for [brightness] as [systemScheme].
 ThemeData buildTheme({
   required Brightness brightness,
   required ThemePreference mode,

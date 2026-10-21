@@ -19,6 +19,10 @@ Future<void> pumpPreview(WidgetTester tester) => pumpApp(
   theme: appTheme(),
 );
 
+/// The color the preview draws its title text with.
+Color? titleColor(WidgetTester tester) =>
+    tester.widget<Text>(find.text('Yukari')).style?.color;
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -42,55 +46,68 @@ void main() {
       updateSystemColorSchemes(light: lightSystem, dark: darkSystem);
       await pumpPreview(tester);
 
-      final lightExpected = scheme(
-        useSystemColor: true,
-        systemScheme: lightSystem,
-      );
-      expect(colorOf(tester, ThemingPreview.surfaceKey), lightExpected.surface);
-      expect(
-        colorOf(tester, ThemingPreview.accentKey),
-        lightExpected.primaryContainer,
-      );
+      expect(colorOf(tester, ThemingPreview.surfaceKey), lightSystem.surface);
       expect(
         colorOf(tester, ThemingPreview.accentKey),
         lightSystem.primaryContainer,
       );
       expect(
         colorOf(tester, ThemingPreview.cardKey),
-        lightExpected.surfaceContainerHigh,
+        lightSystem.surfaceContainerHigh,
       );
+      expect(titleColor(tester), lightSystem.onSurface);
 
       settings.theme.setMode(ThemePreference.dark);
       await tester.pump();
       await tester.pump();
-      final darkExpected = scheme(
-        brightness: Brightness.dark,
-        mode: ThemePreference.dark,
-        useSystemColor: true,
-        systemScheme: darkSystem,
-      );
-      expect(
-        colorOf(tester, ThemingPreview.accentKey),
-        darkExpected.primaryContainer,
-      );
       expect(
         colorOf(tester, ThemingPreview.accentKey),
         darkSystem.primaryContainer,
       );
+      expect(
+        colorOf(tester, ThemingPreview.cardKey),
+        darkSystem.surfaceContainerHigh,
+      );
+      expect(titleColor(tester), darkSystem.onSurface);
 
       // A platform without dynamic colors falls back to the palette scheme.
       updateSystemColorSchemes();
       await tester.pump();
+      final fallback = scheme(
+        brightness: Brightness.dark,
+        mode: ThemePreference.dark,
+        useSystemColor: true,
+      );
       expect(
         colorOf(tester, ThemingPreview.accentKey),
-        scheme(
-          brightness: Brightness.dark,
-          mode: ThemePreference.dark,
-          useSystemColor: true,
-        ).primaryContainer,
+        fallback.primaryContainer,
       );
+      expect(colorOf(tester, ThemingPreview.surfaceKey), fallback.surface);
     },
   );
+
+  testWidgets('OLED darkens the platform scheme the preview draws', (
+    tester,
+  ) async {
+    settings.theme.setUseSystemColor(true);
+    settings.theme.setMode(ThemePreference.oled);
+    final darkSystem = ColorScheme.fromSeed(
+      seedColor: Colors.orange,
+      brightness: Brightness.dark,
+    );
+    updateSystemColorSchemes(
+      light: ColorScheme.fromSeed(seedColor: Colors.orange),
+      dark: darkSystem,
+    );
+    await pumpPreview(tester);
+
+    expect(colorOf(tester, ThemingPreview.surfaceKey), Colors.black);
+    expect(
+      colorOf(tester, ThemingPreview.accentKey),
+      darkSystem.primaryContainer,
+    );
+    expect(titleColor(tester), darkSystem.onSurface);
+  });
 
   testWidgets('system mode follows the platform brightness', (tester) async {
     settings.theme.setUseSystemColor(false);

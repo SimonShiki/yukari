@@ -112,7 +112,7 @@ void main() {
       expect(blue.primary, isNot(monochrome.primary));
     });
 
-    test('uses the system scheme only when asked', () {
+    test('returns the whole platform scheme when asked', () {
       final system = ColorScheme.fromSeed(
         seedColor: Colors.orange,
         brightness: Brightness.light,
@@ -122,17 +122,35 @@ void main() {
         useSystemColor: true,
         systemScheme: system,
       ).colorScheme;
+
+      expect(dynamic, system, reason: 'no role is mixed in from the palette');
+      // Text and container roles must stay on the platform's colors too.
+      expect(dynamic.surface, system.surface);
+      expect(dynamic.onSurface, system.onSurface);
+      expect(dynamic.onSurfaceVariant, system.onSurfaceVariant);
+      expect(dynamic.outline, system.outline);
+      expect(dynamic.primary, system.primary);
+      expect(dynamic.onPrimaryContainer, system.onPrimaryContainer);
+      expect(dynamic.onSecondaryContainer, system.onSecondaryContainer);
+      expect(dynamic.onTertiaryContainer, system.onTertiaryContainer);
+      expect(dynamic.onErrorContainer, system.onErrorContainer);
+    });
+
+    test('falls back to the generated scheme when not asked', () {
+      final system = ColorScheme.fromSeed(
+        seedColor: Colors.orange,
+        brightness: Brightness.light,
+      );
       final generated = _theme(
         useSystemColor: false,
         systemScheme: system,
       ).colorScheme;
 
-      expect(dynamic.primary, system.primary);
       expect(generated.primary, isNot(system.primary));
       expect(
-        _theme(useSystemColor: true).colorScheme.primary,
-        generated.primary,
-        reason: 'no system scheme means the palette still applies',
+        _theme(useSystemColor: true).colorScheme,
+        generated,
+        reason: 'no platform scheme means the palette still applies',
       );
     });
 
@@ -157,6 +175,28 @@ void main() {
         isNot(Colors.black),
         reason: 'OLED only darkens the dark scheme',
       );
+    });
+
+    test('OLED darkens the platform scheme, keeping its other roles', () {
+      final system = ColorScheme.fromSeed(
+        seedColor: Colors.orange,
+        brightness: Brightness.dark,
+      );
+
+      final oled = _theme(
+        brightness: Brightness.dark,
+        mode: ThemePreference.oled,
+        useSystemColor: true,
+        systemScheme: system,
+      ).colorScheme;
+
+      expect(oled.surface, Colors.black);
+      expect(oled.surfaceDim, Colors.black);
+      expect(oled.surfaceContainerHighest, const Color(0xFF222222));
+      expect(oled.primary, system.primary);
+      expect(oled.onSurface, system.onSurface);
+      expect(oled.onPrimaryContainer, system.onPrimaryContainer);
+      expect(oled.outline, system.outline);
     });
 
     test('maps each preference to its theme mode', () {
