@@ -7,6 +7,7 @@ import '../../l10n/l10n.dart';
 import '../../widgets/network_card/network_card_data.dart';
 import '../../widgets/network_card/network_card_geometry.dart';
 import '../../widgets/selection/selection_chrome.dart';
+import '../../widgets/selection/selection_fab_menu.dart';
 import '../../widgets/snackbar/app_snackbar.dart';
 import 'editor_exit_guard.dart';
 import 'foreground_active.dart';
@@ -34,7 +35,7 @@ class _NetworksPageState extends State<NetworksPage>
         navigate: _navigate,
         pushRoute: (route) => context.push(route),
         showMessage: (message) => showAppSnackBar(context, message),
-        confirmDelete: (network) => confirmDeleteNetwork(context, network),
+        confirmDelete: (networks) => confirmDeleteNetworks(context, networks),
         showTunPermissionWarning: (network) => showTunPermissionWarningDialog(
           context,
           network,
@@ -120,15 +121,15 @@ class _NetworksPageState extends State<NetworksPage>
         appBar: selecting
             ? SelectionAppBar(selection: selection)
             : _appBar(context),
-        bottomNavigationBar: selecting
-            ? SelectionToolbar(
+        // Selecting replaces the create menu with the selection's own menu,
+        // even on wide windows, where the create menu has no FAB to replace.
+        floatingActionButton: selecting
+            ? SelectionFabMenu(
                 selection: selection,
                 onShare: _controller.openSelectionShare,
+                onDelete: _controller.deleteSelection,
               )
-            : null,
-        floatingActionButton: wide || selecting
-            ? null
-            : NetworkCreateMenu(controller: _controller),
+            : (wide ? null : NetworkCreateMenu(controller: _controller)),
         body: SafeArea(
           child: Row(
             children: [

@@ -31,8 +31,8 @@ class QrShareReceivePage extends StatefulWidget {
   final QrShareReceiveController? controller;
 
   /// Replaces the camera pane and receives the current scan pace, so a test can
-  /// assert the pace a re-keyed card would get. The default card is never built
-  /// by widget tests, which keeps the plugin out of them.
+  /// assert the pace the card is asked to scan with. The default card is never
+  /// built by widget tests, which keeps the plugin out of them.
   final Widget Function(BuildContext context, ScanPace pace)? cameraBuilder;
 
   /// Picks the image to scan; the page opens the platform picker otherwise.
@@ -146,18 +146,15 @@ class _QrShareReceivePageState extends State<QrShareReceivePage> {
     if (!_controller.cameraAvailable) return const NoCameraCard();
     final builder = widget.cameraBuilder;
 
-    // mobile_scanner fixes the detection speed when its controller is built, so
-    // the pace keys the card: a new pace mounts a new card and controller. An
-    // injected builder gets the same pace, which is how tests see the re-key.
+    // The card rebuilds its own scanner for a new pace: mobile_scanner fixes
+    // the detection speed when its controller is built, and it holds one
+    // process-wide camera texture a new controller cannot take over. An
+    // injected builder gets the same pace, which is how tests see it.
     return SignalBuilder(
       builder: (context) {
         final pace = _controller.pace.value;
         if (builder != null) return builder(context, pace);
-        return CameraScannerCard(
-          key: ValueKey<ScanPace>(pace),
-          controller: _controller,
-          pace: pace,
-        );
+        return CameraScannerCard(controller: _controller, pace: pace);
       },
     );
   }

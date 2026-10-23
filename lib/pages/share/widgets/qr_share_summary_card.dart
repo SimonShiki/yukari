@@ -8,7 +8,7 @@ import 'share_identity.dart';
 import 'share_item_row.dart';
 
 /// What is being shared, in the words the sharing sheet uses: the kind, the
-/// network name or peer address, and the peers and secret that travel with it.
+/// share's name or peer address, and the peers and secret that travel with it.
 class QrShareSummaryCard extends StatelessWidget {
   const QrShareSummaryCard({super.key, required this.documents});
 
@@ -50,12 +50,21 @@ class QrShareSummaryCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           spacing: 4,
           children: [
+            if (shareDisplaySubtitle(document) case final address?)
+              ShareAddressText(address),
             if (network)
               Text(
                 l10n.shareSendPeerCount(document.peers.length) +
                     (document.hasSecret
                         ? ' · ${l10n.shareSendSecretIncluded}'
                         : ''),
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: colors.onSurfaceVariant,
+                ),
+              ),
+            if (network && document.configs != null)
+              Text(
+                l10n.shareIncludesConfigs,
                 style: theme.textTheme.bodyMedium?.copyWith(
                   color: colors.onSurfaceVariant,
                 ),
@@ -110,6 +119,13 @@ class QrShareSummaryCard extends StatelessWidget {
                 detail: document.kind == ShareKind.network
                     ? l10n.shareSendPeerCount(document.peers.length)
                     : null,
+              ),
+            if (documents.any((document) => document.configs != null))
+              Text(
+                l10n.shareIncludesConfigs,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: colors.onSurfaceVariant,
+                ),
               ),
             if (documents.any((document) => document.hasSecret))
               Text(

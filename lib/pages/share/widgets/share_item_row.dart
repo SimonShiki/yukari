@@ -10,7 +10,8 @@ class ShareItemRow extends StatelessWidget {
   /// The share this row describes.
   final ShareDocument document;
 
-  /// A supporting line under the title, such as the share's peer count.
+  /// A supporting line under the title, such as the share's peer count; a named
+  /// node's address takes its place when no detail is given.
   final String? detail;
 
   @override
@@ -18,6 +19,7 @@ class ShareItemRow extends StatelessWidget {
     final theme = Theme.of(context);
     final colors = theme.colorScheme;
     final detail = this.detail;
+    final address = detail == null ? shareDisplaySubtitle(document) : null;
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -49,6 +51,8 @@ class ShareItemRow extends StatelessWidget {
                     color: colors.onSurfaceVariant,
                   ),
                 ),
+              if (address != null)
+                ShareAddressText(address, style: theme.textTheme.bodySmall),
             ],
           ),
         ),

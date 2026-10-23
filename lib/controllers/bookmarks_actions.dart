@@ -122,6 +122,25 @@ extension BookmarksActions on BookmarksController {
     showMessage: showMessage,
   );
 
+  /// Deletes every selected bookmark behind one confirmation the page asked
+  /// for, reporting a store failure once and leaving selection either way.
+  ///
+  /// The built-in shared nodes are never deleted here: they are not the
+  /// store's, so a selection holding only those deletes nothing.
+  Future<void> deleteSelection() async {
+    final targets = selectedBookmarks.value;
+    if (targets.isEmpty) return;
+    try {
+      for (final bookmark in targets) {
+        await saved.deleteBookmark(bookmark.id);
+      }
+    } catch (error) {
+      showMessage(l10n.value.bookmarksDeleteSelectedFailed('$error'));
+    }
+    // The page may be gone by now, and its selection with it.
+    if (!isDisposed) selection.exit();
+  }
+
   /// Imports the bookmarks of a picked JSON file.
   ///
   /// A dismissed picker does nothing; every other outcome reports itself.

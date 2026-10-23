@@ -24,6 +24,7 @@ import 'network_instance_controller.dart';
 import 'network_page_controller.dart';
 
 part 'network_creator_controller.dart';
+part 'network_page_delete.dart';
 part 'network_page_export.dart';
 part 'network_page_import.dart';
 
@@ -152,32 +153,6 @@ extension NetworkPageActions on NetworkPageController {
       return;
     }
     start ? await _start(id, network) : await _stop(id, network);
-  }
-
-  /// Confirms, then deletes [id] and stops the instance it may have started.
-  Future<void> delete(String id) async {
-    final network = saved.networks.peek()[id];
-    if (network == null || isDisposed) return;
-    deleting.value = {...deleting.value, id};
-    try {
-      if (!await confirmDelete(network)) return;
-      // An instance may have started since the last refresh.
-      if ((await activeBackend.collect({id: network}))[id] != null) {
-        await activeBackend.stop([network.networkName]);
-      }
-      await saved.deleteNetwork(id);
-      // The store outlives this controller, so the deleted network is
-      // forgotten even if the page is gone.
-      clearInstanceLogs(id);
-      forgetInstances([id]);
-      if (!isDisposed) transitions.value = {...transitions.value}..remove(id);
-    } catch (_) {
-      if (!isDisposed) {
-        showMessage(l10n.value.controllerDeleteFailed(network.networkName));
-      }
-    } finally {
-      if (!isDisposed) deleting.value = {...deleting.value}..remove(id);
-    }
   }
 
   /// Imports a TOML config the user picked as a new network.

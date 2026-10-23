@@ -8,16 +8,28 @@ import '../../l10n/l10n.dart';
 import 'package:yukari_core/models/models.dart';
 import '../../widgets/dialog/confirm_dialog.dart';
 
-/// Confirms deleting [network]; a dismissed dialog means no.
-Future<bool> confirmDeleteNetwork(BuildContext context, Network network) =>
-    showConfirmDialog(
-      context,
-      icon: Icons.delete_outline,
-      title: context.l10n.networkDeleteTitle,
-      message: context.l10n.networkDeleteDescription(network.networkName),
-      confirmLabel: context.l10n.commonDelete,
-      destructive: true,
-    );
+/// Confirms deleting every network in [networks]; a dismissed dialog means no.
+///
+/// One network keeps the wording that names it, so a single delete reads as it
+/// always did; a wider selection is asked about in one question.
+Future<bool> confirmDeleteNetworks(
+  BuildContext context,
+  List<Network> networks,
+) {
+  final one = networks.length == 1;
+  return showConfirmDialog(
+    context,
+    icon: Icons.delete_outline,
+    title: one
+        ? context.l10n.networkDeleteTitle
+        : context.l10n.networkDeleteSelectedTitle(networks.length),
+    message: one
+        ? context.l10n.networkDeleteDescription(networks.single.networkName)
+        : context.l10n.networkDeleteSelectedDescription,
+    confirmLabel: context.l10n.commonDelete,
+    destructive: true,
+  );
+}
 
 /// Explains why [network] cannot create its TUN device, and the two ways out:
 /// the settings page, and restarting with the privileges it needs.

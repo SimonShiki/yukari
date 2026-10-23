@@ -26,7 +26,7 @@ void main() {
     required List<String> messages,
     List<String>? navigated,
     List<String>? pushed,
-    Future<bool> Function(Network)? confirmDelete,
+    Future<bool> Function(List<Network>)? confirmDelete,
     List<Network>? warnings,
     bool Function()? invalidInput,
     Future<bool> Function()? confirmDiscardDialog,
@@ -513,6 +513,118 @@ void main() {
   );
 
   test(
+    'deleting the selection asks once, then stops and clears every network',
+    () async {
+      await seedNetworks();
+      final backend = FakeBackend(
+        collected: () => {
+          'alpha': {'running': true},
+        },
+      );
+      final messages = <String>[];
+      final asked = <List<Network>>[];
+      final controller = build(
+        backend: backend,
+        messages: messages,
+        confirmDelete: (networks) async {
+          asked.add(networks);
+          return true;
+        },
+      );
+      addTearDown(controller.dispose);
+      await controller.refresh();
+      controller.selection
+        ..enter()
+        ..select(['n1', 'n2']);
+
+      await controller.deleteSelection();
+
+      expect(
+        asked.single.map((network) => network.networkName),
+        ['alpha', 'beta'],
+      );
+      // Only the selected network that runs is stopped.
+      expect(backend.stopped, ['alpha']);
+      expect(saved.networks.value, isEmpty);
+      expect(controller.deleting.value, isEmpty);
+      expect(controller.selection.selecting.value, isFalse);
+      expect(messages, isEmpty);
+    },
+  );
+
+  test('a selection of nothing asks nothing', () async {
+    await seedNetworks();
+    final messages = <String>[];
+    final asked = <List<Network>>[];
+    final controller = build(
+      backend: FakeBackend(),
+      messages: messages,
+      confirmDelete: (networks) async {
+        asked.add(networks);
+        return true;
+      },
+    );
+    addTearDown(controller.dispose);
+    await controller.refresh();
+    controller.selection.enter();
+
+    await controller.deleteSelection();
+
+    expect(asked, isEmpty);
+    expect(saved.networks.value.keys, ['n1', 'n2']);
+    expect(controller.deleting.value, isEmpty);
+    expect(messages, isEmpty);
+  });
+
+  test(
+    'a refused selection delete keeps the networks and the selection',
+    () async {
+      await seedNetworks();
+      final backend = FakeBackend();
+      final messages = <String>[];
+      final controller = build(
+        backend: backend,
+        messages: messages,
+        confirmDelete: (_) async => false,
+      );
+      addTearDown(controller.dispose);
+      await controller.refresh();
+      controller.selection
+        ..enter()
+        ..select(['n1', 'n2']);
+
+      await controller.deleteSelection();
+
+      expect(saved.networks.value.keys, ['n1', 'n2']);
+      expect(backend.stopped, isEmpty);
+      expect(controller.deleting.value, isEmpty);
+      expect(controller.selection.selecting.value, isTrue);
+      expect(controller.selection.ids.value, {'n1', 'n2'});
+      expect(messages, isEmpty);
+    },
+  );
+
+  test(
+    'a selection delete the store refuses is reported once',
+    () async {
+      final messages = <String>[];
+      await _seedWithFailingWrites();
+      final controller = build(backend: FakeBackend(), messages: messages);
+      addTearDown(controller.dispose);
+      await controller.refresh();
+      controller.selection
+        ..enter()
+        ..select(['n1', 'n2']);
+
+      await controller.deleteSelection();
+
+      expect(saved.networks.value.keys, ['n1', 'n2']);
+      expect(messages, [strings.controllerDeleteSelectedFailed]);
+      expect(controller.deleting.value, isEmpty);
+    },
+  );
+
+  test(
     'reorder reports a store failure, and moves a network otherwise',
     () async {
       final messages = <String>[];
@@ -907,6 +1019,29 @@ void main() {
     expect(saved.networks.value.keys, ['n2'], reason: 'the delete still lands');
     expect(controller.deleting.peek(), {'n1'}, reason: 'the finally');
     expect(controller.transitions.peek(), isEmpty);
+  });
+
+  test('disposing during a batch delete writes no disposed signal', () async {
+    await seedNetworks();
+    final messages = <String>[];
+    final controller = build(backend: FakeBackend(), messages: messages);
+    await controller.refresh();
+    controller.selection
+      ..enter()
+      ..select(['n1', 'n2']);
+
+    final deleting = controller.deleteSelection();
+    controller.dispose();
+
+    // The batch still lands, and the disposed selection is never written.
+    await expectLater(deleting, completes);
+    expect(saved.networks.value, isEmpty);
+    expect(messages, isEmpty);
+    expect(
+      controller.selection.selecting.peek(),
+      isTrue,
+      reason: 'nothing exits a selection the page no longer owns',
+    );
   });
 
   test('disposing during a start writes no disposed signal', () async {

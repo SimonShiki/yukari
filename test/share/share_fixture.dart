@@ -21,10 +21,12 @@ ShareDocument sharedNetworkDocument() => const ShareDocument(
   ],
 );
 
-/// A shared node for `relay.example.com:11010`, with its public key.
-ShareDocument sharedNodeDocument() => const ShareDocument(
+/// A shared node for `relay.example.com:11010`, with its public key and, when
+/// [name] is given, the bookmark name that travels with it.
+ShareDocument sharedNodeDocument({String? name}) => ShareDocument(
   kind: ShareKind.node,
-  peers: [
+  name: name,
+  peers: const [
     SharedPeer(
       host: 'relay.example.com',
       port: 11010,

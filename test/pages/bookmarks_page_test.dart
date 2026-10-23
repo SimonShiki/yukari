@@ -10,7 +10,9 @@ import 'package:yukari/controllers/bookmarks_actions.dart';
 import 'package:yukari/controllers/bookmarks_controller.dart';
 import 'package:yukari/l10n/l10n.dart';
 import 'package:yukari_core/models/bookmark.dart';
+import 'package:yukari_core/models/node.dart';
 import 'package:yukari/pages/bookmarks/bookmarks_page.dart';
+import 'package:yukari/pages/bookmarks/widgets/bookmarks_fab_menu.dart';
 import 'package:yukari/pages/share/qr_share_receive_page.dart';
 import 'package:yukari/pages/share/qr_share_send_page.dart';
 import 'package:yukari/share/share_document.dart';
@@ -19,6 +21,7 @@ import 'package:yukari/signals/bookmarks.dart' as saved;
 import 'package:yukari/signals/networks.dart' as networks;
 import 'package:yukari/utils/bookmark_codec.dart';
 import 'package:yukari/widgets/selection/selection_chrome.dart';
+import 'package:yukari/widgets/selection/selection_fab_menu.dart';
 import 'package:yukari/widgets/metadata_chip/metadata_chip.dart';
 
 import '../bookmarks_fixture.dart';
@@ -117,6 +120,62 @@ void main() {
     await tester.tap(find.byIcon(Icons.add_rounded));
     await tester.pump();
     await Future<void>.delayed(const Duration(milliseconds: 200));
+    await tester.pumpAndSettle();
+  }
+
+  /// The labels the selection's floating menu offers, read without opening it.
+  List<String> selectionLabels(WidgetTester tester) => [
+    for (final item in tester.widget<M3EFabMenu>(find.byType(M3EFabMenu)).items)
+      item.label,
+  ];
+
+  /// Opens the selection's floating menu, whose items stagger in.
+  Future<void> openSelectionMenu(WidgetTester tester) async {
+    await tester.tap(find.byTooltip(strings.selectionActions));
+    await tester.pump();
+    await Future<void>.delayed(const Duration(milliseconds: 200));
+    await tester.pump();
+  }
+
+  /// Opens the selection's menu and taps the item labelled [label].
+  Future<void> tapSelectionItem(WidgetTester tester, String label) async {
+    await openSelectionMenu(tester);
+    await tester.tap(find.text(label));
+    await tester.pumpAndSettle();
+  }
+
+  /// Confirms the delete dialog.
+  ///
+  /// The page's menus are read through their item labels, which carry Delete
+  /// as well, so the dialog's own confirm is looked up inside the dialog.
+  Future<void> confirmDelete(WidgetTester tester) async {
+    await tester.tap(
+      find.descendant(
+        of: find.byType(AlertDialog),
+        matching: find.widgetWithText(FilledButton, strings.commonDelete),
+      ),
+    );
+    await tester.pumpAndSettle();
+  }
+
+  /// Waits for the batch delete the page started to land.
+  ///
+  /// The page fires the action and forgets it, so the selection it leaves once
+  /// the batch is done is what says both store writes have finished.
+  Future<void> settleDelete(
+    WidgetTester tester,
+    BookmarksController controller,
+  ) async {
+    for (
+      var turn = 0;
+      turn < 100 && controller.selection.selecting.value;
+      turn++
+    ) {
+      await tester.pump();
+      await Future<void>.delayed(const Duration(milliseconds: 2));
+    }
+    await settleStores();
+    // The menu gives its place back once selection mode ends.
     await tester.pumpAndSettle();
   }
 
@@ -809,13 +868,120 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text(strings.selectionSelected(2)), findsOneWidget);
 
-      await tester.tap(find.text(strings.selectionShare));
-      await tester.pumpAndSettle();
+      await tapSelectionItem(tester, strings.selectionShare);
 
       expect(find.byType(QrShareSendPage), findsOneWidget);
       expect(find.text(strings.shareItems(2)), findsOneWidget);
       // The sender is what the user asked for, so the list stops selecting.
       expect(controller.selection.selecting.value, isFalse);
+    });
+  });
+
+  testWidgets('the selection deletes its bookmarks behind one question', (
+    tester,
+  ) async {
+    await tester.runAsync(() async {
+      await seedBookmarks([
+        testBookmark('u1', name: 'One'),
+        testBookmark('u2', name: 'Two', host: 'other.example.com'),
+      ]);
+      final controller = await pumpPage(tester);
+      await tester.tap(find.byTooltip(strings.selectionEnter));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('One'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Two'));
+      await tester.pumpAndSettle();
+
+      await tapSelectionItem(tester, strings.selectionDelete);
+
+      // One question covers the whole selection, in plural wording.
+      expect(find.text(strings.bookmarksDeleteSelected(2)), findsOneWidget);
+      await confirmDelete(tester);
+      await settleDelete(tester, controller);
+
+      expect(persistedBookmarks(), isEmpty);
+      expect(controller.selection.selecting.value, isFalse);
+      expect(find.text(strings.selectionDelete), findsNothing);
+      expect(find.text('One'), findsNothing);
+      expect(find.text('Two'), findsNothing);
+      expect(messages, isEmpty, reason: 'the batch reports nothing on success');
+    });
+  });
+
+  testWidgets('a cancelled delete keeps the bookmarks and the selection', (
+    tester,
+  ) async {
+    await tester.runAsync(() async {
+      await seedBookmarks([
+        testBookmark('u1', name: 'One'),
+        testBookmark('u2', name: 'Two', host: 'other.example.com'),
+      ]);
+      final controller = await pumpPage(tester);
+      await tester.tap(find.byTooltip(strings.selectionEnter));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('One'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Two'));
+      await tester.pumpAndSettle();
+
+      await tapSelectionItem(tester, strings.selectionDelete);
+      await tester.tap(find.widgetWithText(TextButton, strings.commonCancel));
+      await tester.pumpAndSettle();
+      await settleStores();
+
+      expect(persistedBookmarks(), hasLength(2));
+      expect(controller.selection.selecting.value, isTrue);
+      expect(find.text(strings.selectionSelected(2)), findsOneWidget);
+      expect(messages, isEmpty);
+    });
+  });
+
+  /// One built-in shared node, which the page lists but never deletes.
+  Bookmark sharedBuiltinNode() => sharedNode(
+    id: 'shared.example.com',
+    name: 'Shared One',
+    host: 'shared.example.com',
+    port: 11010,
+    protocols: const [NodeProtocol.tcp],
+  );
+
+  testWidgets('a selection of built-in nodes keeps delete off', (tester) async {
+    await tester.runAsync(() async {
+      await seedBookmarks();
+      await pumpPage(tester, builtins: [sharedBuiltinNode()]);
+      await tester.tap(find.byTooltip(strings.selectionEnter));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Shared One'));
+      await tester.pumpAndSettle();
+
+      // Built-in nodes are shareable, not the user's to delete: the menu
+      // lists no delete item even though the selection is not empty.
+      expect(find.text(strings.selectionSelected(1)), findsOneWidget);
+      expect(selectionLabels(tester), [strings.selectionShare]);
+    });
+  });
+
+  testWidgets('a batch delete leaves the built-in nodes alone', (tester) async {
+    await tester.runAsync(() async {
+      await seedBookmarks([testBookmark('u1', name: 'One')]);
+      final controller = await pumpPage(tester, builtins: [sharedBuiltinNode()]);
+      await tester.tap(find.byTooltip(strings.selectionEnter));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('One'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Shared One'));
+      await tester.pumpAndSettle();
+
+      await tapSelectionItem(tester, strings.selectionDelete);
+      await confirmDelete(tester);
+      await settleDelete(tester, controller);
+
+      // Only the saved bookmark went; the shared node is not the store's.
+      expect(persistedBookmarks(), isEmpty);
+      expect(find.text('One'), findsNothing);
+      expect(find.text('Shared One'), findsOneWidget);
+      expect(messages, isEmpty);
     });
   });
 
@@ -831,13 +997,34 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.byType(SearchBar), findsNothing);
+      // The selection's menu takes the action menu's place. Nothing is in the
+      // selection yet, so it offers sharing alone.
+      expect(find.byType(SelectionFabMenu), findsOneWidget);
+      expect(find.byType(BookmarksFabMenu), findsNothing);
       expect(find.byIcon(Icons.add_rounded), findsNothing);
+      expect(selectionLabels(tester), [strings.selectionShare]);
+
+      // Selecting a saved bookmark gives the menu the delete action too.
+      await tester.tap(find.text('One'));
+      await tester.pumpAndSettle();
+      expect(selectionLabels(tester), [
+        strings.selectionShare,
+        strings.selectionDelete,
+      ]);
 
       await tester.tap(find.byTooltip(strings.selectionExit));
       await tester.pumpAndSettle();
 
       expect(find.byType(SearchBar), findsOneWidget);
+      expect(find.byType(SelectionFabMenu), findsNothing);
+      expect(find.byType(BookmarksFabMenu), findsOneWidget);
       expect(find.byIcon(Icons.add_rounded), findsOneWidget);
+      // What is back is the create menu, item for item.
+      expect(selectionLabels(tester), [
+        strings.bookmarksAdd,
+        strings.bookmarksImportFile,
+        strings.bookmarksScanQr,
+      ]);
     });
   });
 

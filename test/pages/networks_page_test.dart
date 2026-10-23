@@ -1,7 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:m3e_core/m3e_core.dart' show M3EDockedToolbar;
+import 'package:m3e_core/m3e_core.dart' show M3EDockedToolbar, M3EFabMenu;
 import 'package:material_ui/material_ui.dart';
 import 'package:yukari/controllers/network_page_controller.dart';
 import 'package:yukari_core/models/models.dart';
@@ -12,7 +12,9 @@ import 'package:yukari/pages/networks/network_page_dialogs.dart';
 import 'package:yukari/pages/networks/networks_page.dart';
 import 'package:yukari/share/share_document.dart';
 import 'package:yukari/share/share_routes.dart';
+import 'package:yukari/signals/networks.dart' as saved;
 import 'package:yukari/widgets/network_card/network_card_list.dart';
+import 'package:yukari/widgets/selection/selection_fab_menu.dart';
 
 import '../fake_backend.dart';
 import '../networks_fixture.dart';
@@ -32,15 +34,22 @@ void main() {
   late List<String> navigated;
   late List<String> messages;
   late List<Network> warnings;
+  late List<List<Network>> confirmed;
 
+  /// The list's controller, with the delete confirmation recorded in
+  /// [confirmed] and answered by [confirmDelete], which defaults to approving.
   NetworkPageController build({
     required FakeBackend backend,
     bool Function()? invalidInput,
     Future<bool> Function()? confirmDiscardDialog,
+    Future<bool> Function(List<Network>)? confirmDelete,
   }) => NetworkPageController(
     navigate: (route, id) => navigated.add(id == null ? route : '$route:$id'),
     showMessage: messages.add,
-    confirmDelete: (_) async => true,
+    confirmDelete: (networks) {
+      confirmed.add(networks);
+      return (confirmDelete ?? (_) async => true)(networks);
+    },
     showTunPermissionWarning: (network) async => warnings.add(network),
     backend: backend,
     invalidInput: invalidInput,
@@ -53,6 +62,7 @@ void main() {
     FakeBackend? backend,
     bool Function()? invalidInput,
     Future<bool> Function()? confirmDiscardDialog,
+    Future<bool> Function(List<Network>)? confirmDelete,
     bool settle = true,
   }) async {
     tester.view.physicalSize = size;
@@ -62,6 +72,7 @@ void main() {
       backend: backend ?? FakeBackend(),
       invalidInput: invalidInput,
       confirmDiscardDialog: confirmDiscardDialog,
+      confirmDelete: confirmDelete,
     );
     addTearDown(controller.dispose);
     controller.start();
@@ -73,7 +84,41 @@ void main() {
     navigated = [];
     messages = [];
     warnings = [];
+    confirmed = [];
   });
+
+  /// The labels the selection's floating menu offers, read without opening it.
+  List<String> selectionLabels(WidgetTester tester) => [
+    for (final item in tester.widget<M3EFabMenu>(find.byType(M3EFabMenu)).items)
+      item.label,
+  ];
+
+  /// Opens the selection's menu and taps the item labelled [label].
+  ///
+  /// Its items stagger in on real timers, and the confirmation and store
+  /// writes are real futures, so both run outside the fake clock; the ids the
+  /// action marked say when it is done.
+  Future<void> tapSelectionItem(
+    WidgetTester tester,
+    NetworkPageController controller,
+    String label,
+  ) async {
+    await tester.runAsync(() async {
+      await tester.tap(find.byTooltip(strings.selectionActions));
+      await tester.pump();
+      await Future<void>.delayed(const Duration(milliseconds: 200));
+      await tester.pump();
+      await tester.tap(find.text(label));
+      for (
+        var turn = 0;
+        turn < 100 && controller.deleting.value.isNotEmpty;
+        turn++
+      ) {
+        await Future<void>.delayed(const Duration(milliseconds: 2));
+      }
+    });
+    await tester.pumpAndSettle();
+  }
 
   testWidgets('narrow windows open the route instead of a detail pane', (
     tester,
@@ -400,10 +445,15 @@ void main() {
 
     expect(controller.selection.selecting.value, isTrue);
     expect(find.text(strings.selectionSelected(0)), findsOneWidget);
-    // The action surface docks at the bottom, and the create action makes way.
-    expect(find.byType(M3EDockedToolbar), findsOneWidget);
-    expect(find.text(strings.selectionShare), findsOneWidget);
+    // The selection's menu takes the create menu's place, offering both
+    // actions; the menu it replaced is gone with its tooltip.
+    expect(find.byType(SelectionFabMenu), findsOneWidget);
+    expect(selectionLabels(tester), [
+      strings.selectionShare,
+      strings.selectionDelete,
+    ]);
     expect(find.byTooltip(strings.networkAdd), findsNothing);
+    expect(find.byType(M3EDockedToolbar), findsNothing);
   });
 
   testWidgets('tapping a card selects it', (
@@ -460,14 +510,116 @@ void main() {
     await tester.tap(find.text('beta'));
     await tester.pumpAndSettle();
 
-    await tester.tap(find.text(strings.selectionShare));
-    await tester.pumpAndSettle();
+    await tapSelectionItem(tester, controller, strings.selectionShare);
 
     expect(navigated, [
       shareSendPaths(ShareKind.network, ['n1', 'n2']),
     ]);
     // The sender is what the user asked for, so the list stops selecting.
     expect(controller.selection.selecting.value, isFalse);
+  });
+
+  /// A saved network store whose writes all fail, as a full disk would.
+  Future<void> seedWithFailingWrites() async {
+    final store = await seedWith({
+      'n1': Network()..networkName = 'alpha',
+      'n2': Network()..networkName = 'beta',
+    });
+    // A directory where the store writes makes every save fail.
+    store.file.deleteSync();
+    Directory(store.file.path).createSync(recursive: true);
+  }
+
+  /// Pumps the list over two seeded networks and selects both.
+  Future<NetworkPageController> pumpSelecting(
+    WidgetTester tester, {
+    FakeBackend? backend,
+    Future<bool> Function(List<Network>)? confirmDelete,
+  }) async {
+    await tester.runAsync(seedNetworks);
+    final controller = await pumpList(
+      tester,
+      size: const Size(400, 780),
+      backend: backend,
+      confirmDelete: confirmDelete,
+    );
+    await tester.runAsync(controller.refresh);
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip(strings.selectionEnter));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('alpha'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('beta'));
+    await tester.pumpAndSettle();
+    return controller;
+  }
+
+  testWidgets('the selection deletes every network behind one question', (
+    tester,
+  ) async {
+    final backend = FakeBackend(
+      collected: () => {
+        'alpha': {'running': true},
+      },
+    );
+    final controller = await pumpSelecting(tester, backend: backend);
+
+    await tapSelectionItem(tester, controller, strings.selectionDelete);
+
+    expect(
+      confirmed.single.map((network) => network.networkName),
+      ['alpha', 'beta'],
+    );
+    // The network that runs is stopped before the store forgets it.
+    expect(backend.stopped, ['alpha']);
+    expect(saved.networks.value, isEmpty);
+    expect(controller.deleting.value, isEmpty);
+    expect(controller.selection.selecting.value, isFalse);
+    expect(find.byType(SelectionFabMenu), findsNothing);
+    expect(messages, isEmpty);
+  });
+
+  testWidgets('a refused deletion keeps the networks and the selection', (
+    tester,
+  ) async {
+    final backend = FakeBackend();
+    final controller = await pumpSelecting(
+      tester,
+      backend: backend,
+      confirmDelete: (_) async => false,
+    );
+
+    await tapSelectionItem(tester, controller, strings.selectionDelete);
+
+    expect(confirmed.single, hasLength(2));
+    expect(saved.networks.value.keys, ['n1', 'n2']);
+    expect(backend.stopped, isEmpty);
+    expect(controller.deleting.value, isEmpty);
+    expect(controller.selection.selecting.value, isTrue);
+    expect(find.byType(SelectionFabMenu), findsOneWidget);
+    expect(messages, isEmpty);
+  });
+
+  testWidgets('a batch delete the store refuses is reported once', (
+    tester,
+  ) async {
+    await tester.runAsync(seedWithFailingWrites);
+    final controller = await pumpList(tester, size: const Size(400, 780));
+    await tester.runAsync(controller.refresh);
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip(strings.selectionEnter));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('alpha'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('beta'));
+    await tester.pumpAndSettle();
+
+    await tapSelectionItem(tester, controller, strings.selectionDelete);
+
+    expect(saved.networks.value.keys, ['n1', 'n2']);
+    expect(messages, [strings.controllerDeleteSelectedFailed]);
+    expect(controller.deleting.value, isEmpty);
+    expect(controller.selection.selecting.value, isTrue);
   });
 
   testWidgets('close and the back gesture both leave selection', (
@@ -478,12 +630,18 @@ void main() {
 
     await tester.tap(find.byTooltip(strings.selectionEnter));
     await tester.pumpAndSettle();
+    // The selection's menu takes the create menu's place while selecting, and
+    // gives it back on leaving.
+    expect(find.byType(SelectionFabMenu), findsOneWidget);
+    expect(find.byTooltip(strings.networkAdd), findsNothing);
+
     await tester.tap(find.byTooltip(strings.selectionExit));
     await tester.pumpAndSettle();
 
     expect(controller.selection.selecting.value, isFalse);
     expect(find.byTooltip(strings.selectionEnter), findsOneWidget);
-    expect(find.byType(M3EDockedToolbar), findsNothing);
+    expect(find.byType(SelectionFabMenu), findsNothing);
+    expect(find.byTooltip(strings.networkAdd), findsOneWidget);
 
     await tester.tap(find.byTooltip(strings.selectionEnter));
     await tester.pumpAndSettle();
@@ -492,6 +650,7 @@ void main() {
 
     expect(controller.selection.selecting.value, isFalse);
     expect(find.byTooltip(strings.selectionEnter), findsOneWidget);
+    expect(find.byTooltip(strings.networkAdd), findsOneWidget);
   });
 
   testWidgets('the wide pane stays on its network while selecting', (
@@ -517,6 +676,13 @@ void main() {
     expect(controller.selectedId.value, 'n1');
     expect(controller.selection.ids.value, {'n2'});
     expect(find.text(strings.networkDiscardTitle), findsNothing);
+    // The create menu has no FAB on a wide window, yet selecting still offers
+    // the selection's actions there.
+    expect(find.byType(SelectionFabMenu), findsOneWidget);
+    expect(selectionLabels(tester), [
+      strings.selectionShare,
+      strings.selectionDelete,
+    ]);
   });
 
   testWidgets('the delete dialog asks, and a cancel keeps the network', (
@@ -534,10 +700,9 @@ void main() {
       ),
     );
 
-    final dialog = confirmDeleteNetwork(
-      context,
+    final dialog = confirmDeleteNetworks(context, [
       Network()..networkName = 'alpha',
-    );
+    ]);
     await tester.pumpAndSettle();
 
     expect(find.text(strings.networkDeleteTitle), findsOneWidget);
@@ -547,6 +712,46 @@ void main() {
     );
 
     // Deleting is destructive, so the confirm wears the theme's error pair.
+    final confirm = find.widgetWithText(FilledButton, strings.commonDelete);
+    final button = tester.widget<FilledButton>(confirm);
+    final scheme = Theme.of(tester.element(confirm)).colorScheme;
+    expect(button.style?.backgroundColor?.resolve({}), scheme.error);
+    expect(button.style?.foregroundColor?.resolve({}), scheme.onError);
+
+    await tester.tap(find.text(strings.commonCancel));
+    await tester.pumpAndSettle();
+
+    expect(await dialog, isFalse);
+  });
+
+  testWidgets('the delete dialog asks once for a whole selection', (
+    tester,
+  ) async {
+    late BuildContext context;
+    await pumpApp(
+      tester,
+      Builder(
+        builder: (context_) {
+          context = context_;
+          return const SizedBox.shrink();
+        },
+      ),
+    );
+
+    final dialog = confirmDeleteNetworks(context, [
+      Network()..networkName = 'alpha',
+      Network()..networkName = 'beta',
+    ]);
+    await tester.pumpAndSettle();
+
+    // A wider selection is one question, in plural wording.
+    expect(find.text(strings.networkDeleteSelectedTitle(2)), findsOneWidget);
+    expect(
+      find.text(strings.networkDeleteSelectedDescription),
+      findsOneWidget,
+    );
+
+    // It stays destructive, like the question that names one network.
     final confirm = find.widgetWithText(FilledButton, strings.commonDelete);
     final button = tester.widget<FilledButton>(confirm);
     final scheme = Theme.of(tester.element(confirm)).colorScheme;

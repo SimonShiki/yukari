@@ -13,6 +13,7 @@ import 'package:yukari_core/models/bookmark.dart';
 
 import '../../widgets/empty_state/empty_state.dart';
 import '../../widgets/selection/selection_chrome.dart';
+import '../../widgets/selection/selection_fab_menu.dart';
 import '../../widgets/snackbar/app_snackbar.dart';
 import 'widgets/bookmark_delete_dialog.dart';
 import 'widgets/bookmark_editor_dialog.dart';
@@ -59,6 +60,15 @@ class _BookmarksPageState extends State<BookmarksPage> {
     await _controller.delete(bookmark);
   }
 
+  /// Asks once for the whole selection, then deletes every saved bookmark in
+  /// it; a selection holding only the built-in shared nodes deletes nothing.
+  Future<void> _deleteSelection() async {
+    final targets = _controller.selectedBookmarks.value;
+    if (targets.isEmpty) return;
+    if (!await showBookmarksDeleteDialog(context, targets) || !mounted) return;
+    await _controller.deleteSelection();
+  }
+
   Future<void> _addToNetwork(Bookmark bookmark) async {
     final networkId = await showBookmarkNetworkPicker(
       context,
@@ -92,15 +102,20 @@ class _BookmarksPageState extends State<BookmarksPage> {
             appBar: selecting
                 ? SelectionAppBar(selection: selection)
                 : _appBar(context, selection),
-            bottomNavigationBar: selecting
-                ? SelectionToolbar(
-                    selection: selection,
-                    onShare: _shareSelection,
-                  )
-                : null,
             endDrawer: BookmarksFilterDrawer(controller: _controller),
+            // Selecting replaces the action menu with the selection's own.
             floatingActionButton: selecting
-                ? null
+                ? SignalBuilder(
+                    // Only what the page can delete decides the delete item,
+                    // so a selection of built-in shared nodes leaves it out.
+                    builder: (context) => SelectionFabMenu(
+                      selection: selection,
+                      onShare: _shareSelection,
+                      onDelete: _controller.selectedBookmarks.value.isEmpty
+                          ? null
+                          : _deleteSelection,
+                    ),
+                  )
                 : BookmarksFabMenu(
                     onAdd: _edit,
                     onImport: _controller.importFromFile,

@@ -319,6 +319,16 @@
       }
     }
   },
+  "networkDeleteSelectedTitle": "{count, plural, other{Delete {count} networks?}}",
+  "@networkDeleteSelectedTitle": {
+    "description": "Asks before deleting a whole selection of networks",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "networkDeleteSelectedDescription": "Their running instances will be stopped. This cannot be undone.",
   "networkEditPeerNamed": "Edit peer {id}",
   "@networkEditPeerNamed": {
     "placeholders": {
@@ -741,6 +751,7 @@
       }
     }
   },
+  "controllerDeleteSelectedFailed": "Could not delete the selected networks. Try again.",
   "controllerServiceInstall": "Could not install the service: {error}",
   "@controllerServiceInstall": {
     "placeholders": {
@@ -1070,6 +1081,16 @@
     }
   },
   "bookmarksDeleteConfirmDescription": "It leaves this list only; networks that already use the node keep their peer.",
+  "bookmarksDeleteSelected": "{count, plural, other{Delete {count} bookmarks?}}",
+  "@bookmarksDeleteSelected": {
+    "description": "Asks before deleting a whole selection of bookmarks",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "bookmarksDeleteSelectedDescription": "They leave this list only; networks that already use the nodes keep their peers.",
   "bookmarksName": "Name (Optional)",
   "bookmarksNameHelper": "Shown in this list; defaults to the address",
   "bookmarksDescription": "Description (Optional)",
@@ -1163,6 +1184,14 @@
       }
     }
   },
+  "bookmarksDeleteSelectedFailed": "Could not delete the selected bookmarks: {error}",
+  "@bookmarksDeleteSelectedFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
   "bookmarksAlreadyInNetwork": "Already in {name}",
   "@bookmarksAlreadyInNetwork": {
     "placeholders": {
@@ -1233,6 +1262,11 @@
   "shareSendNodeMissing": "That bookmark no longer exists.",
   "shareSendNoPeers": "Add a peer to this network first, so the other device can connect.",
   "shareSendUnsupported": "This share cannot be sent as it is.",
+  "shareSendIncludeSelf": "Add this device as a peer",
+  "shareSendIncludeSelfHint": "The other device connects to you first, so it can start without another peer.",
+  "shareSendIncludeConfigs": "Include network configs",
+  "shareSendIncludeConfigsHint": "The other device joins the way this network runs.",
+  "shareIncludesConfigs": "Includes network config",
   "shareQrHint": "Keep this screen bright and hold the camera 20–30 cm away until the other device finishes.",
   "shareQrFrameStats": "Frame {frame} · {blocks, plural, =1{1 block} other{{blocks} blocks}} · {bytes}",
   "@shareQrFrameStats": {
@@ -1426,6 +1460,8 @@
   "selectionSelectAll": "Select all",
   "selectionDeselectAll": "Deselect all",
   "selectionShare": "Share",
+  "selectionDelete": "Delete",
+  "selectionActions": "Selection actions",
   "selectionUnavailable": "{count, plural, =1{1 selected item cannot be shared} other{{count} selected items cannot be shared}}",
   "@selectionUnavailable": {
     "placeholders": {

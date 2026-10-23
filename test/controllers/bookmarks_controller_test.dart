@@ -235,6 +235,81 @@ void main() {
       expect(messages.last, startsWith('Could not delete the bookmark:'));
     });
 
+    test('deletes the whole selection, then leaves it', () async {
+      await seedBookmarks([
+        testBookmark('u1', name: 'One'),
+        testBookmark('u2', name: 'Two'),
+        testBookmark('u3', name: 'Three'),
+      ]);
+      final controller = controllerFor(builtins: []);
+      controller.selection
+        ..enter()
+        ..select(['u1', 'u3']);
+
+      expect(ids(controller.selectedBookmarks.value), ['u1', 'u3']);
+
+      await controller.deleteSelection();
+
+      expect(ids(persistedBookmarks()), ['u2']);
+      expect(controller.selection.selecting.value, isFalse);
+      expect(messages, isEmpty, reason: 'a batch delete says nothing');
+    });
+
+    test('a selection of built-in nodes deletes nothing', () async {
+      await seedBookmarks([testBookmark('u1')]);
+      final builtin = builtinBookmarks.first;
+      final controller = controllerFor(builtins: [builtin]);
+      controller.selection
+        ..enter()
+        ..select([builtin.id]);
+
+      // The shared nodes are shareable but not the store's to delete.
+      expect(controller.selectedBookmarks.value, isEmpty);
+
+      await controller.deleteSelection();
+
+      expect(ids(persistedBookmarks()), ['u1']);
+      expect(controller.selection.selecting.value, isTrue);
+      expect(messages, isEmpty);
+    });
+
+    test('reports a selection delete the store refuses once', () async {
+      await seedBookmarks([testBookmark('u1'), testBookmark('u2')]);
+      final controller = controllerFor(builtins: []);
+      controller.selection
+        ..enter()
+        ..select(['u1', 'u2']);
+      await saved.dispose();
+
+      await controller.deleteSelection();
+
+      // A batch reports through its own wording, once, not per bookmark.
+      expect(
+        messages.single,
+        startsWith('Could not delete the selected bookmarks:'),
+      );
+      expect(controller.selection.selecting.value, isFalse);
+    });
+
+    test('disposing during a batch delete writes no disposed signal', () async {
+      await seedBookmarks([testBookmark('u1'), testBookmark('u2')]);
+      // Built here, not with [controllerFor]: this test disposes it by hand.
+      final controller = BookmarksController(
+        showMessage: messages.add,
+        builtins: const [],
+      );
+      controller.selection
+        ..enter()
+        ..select(['u1', 'u2']);
+
+      final pending = controller.deleteSelection();
+      controller.dispose();
+
+      // Without the guard the batch ends by writing a disposed selection.
+      await expectLater(pending, completes);
+      expect(ids(persistedBookmarks()), isEmpty, reason: 'the batch landed');
+    });
+
     test('composes a new bookmark with a v4 id and blank fields as null', () {
       final controller = controllerFor(builtins: []);
       final node = Node(

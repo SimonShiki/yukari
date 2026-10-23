@@ -62,7 +62,10 @@ class NetworkPageController {
 
   final NetworkNavigator navigate;
   final void Function(String message) showMessage;
-  final Future<bool> Function(Network network) confirmDelete;
+
+  /// Asks before [networks] are deleted: one question for the whole batch, so
+  /// a single delete and a selection are confirmed the same way.
+  final Future<bool> Function(List<Network> networks) confirmDelete;
   final Future<void> Function(Network network) showTunPermissionWarning;
 
   /// Opens an absolute route above the shell, so its back button returns to

@@ -62,9 +62,14 @@ String? validateHost(String value) {
   return null;
 }
 
+/// Whether [value] is a DNS zone such as `et.net.`: dotted labels that each
+/// start and end with a letter or digit, and an optional trailing dot.
+bool isValidDnsZoneText(String value) =>
+    _hostnamePattern.hasMatch(value.trim());
+
 /// A DNS domain such as `et.net.`.
 String? validateDnsZone(String value) =>
-    _hostnamePattern.hasMatch(value.trim()) ? null : l10n.value.validationDns;
+    isValidDnsZoneText(value) ? null : l10n.value.validationDns;
 
 /// A peer address without port, e.g. `example.com` or `wss://example.com/path`.
 String? validateNodeUrl(String value) {

@@ -9,27 +9,51 @@ import 'package:signals/signals.dart';
 
 import '../share/share_bundle.dart';
 import '../share/share_document.dart';
+import '../share/share_options.dart';
+import '../share/share_targets.dart';
 
 part 'qr_share_send_gif.dart';
+part 'qr_share_send_options.dart';
 part 'qr_share_send_settings.dart';
 
 /// Drives the sender half of "Share via QR": the fountain-coded stream of masked
 /// [ShareDocument]s, its playback and settings, and the GIF export.
 class QrShareSendController {
   QrShareSendController({
-    required this.documents,
+    required List<ShareDocument> documents,
     required double refreshRate,
     this.random,
-  }) : fps = signal(defaultShareFps(refreshRate)) {
+    this.resolve,
+    ShareExtras extras = noShareExtras,
+  }) : documents = signal(documents),
+       selfPeerAvailable = extras.selfPeer,
+       configsAvailable = extras.configs,
+       fps = signal(defaultShareFps(refreshRate)) {
     _rebuild();
   }
 
   /// The masked documents being streamed, never empty: the page reports a
   /// target it cannot resolve instead of opening a sender.
-  final List<ShareDocument> documents;
+  ///
+  /// A share option replaces them, so the summary reads this signal.
+  final Signal<List<ShareDocument>> documents;
 
   /// The fountain's randomness source; null draws a fresh one.
   final Random? random;
+
+  /// Whether the share carries this device as a peer, and whether it carries
+  /// the network's non-essential config.
+  final Signal<bool> includeSelf = signal(false);
+  final Signal<bool> includeConfigs = signal(false);
+
+  /// Whether the resolved target can offer each option at all; a sender
+  /// without a [ShareResolver] can offer neither.
+  final bool selfPeerAvailable;
+  final bool configsAvailable;
+
+  /// Re-resolves the documents for the options the sender picked; null keeps
+  /// the documents this controller was built with.
+  final ShareResolver? resolve;
 
   /// The frame on screen; the constructor publishes the first one.
   final Signal<SendFrame?> frame = signal(null);
@@ -57,17 +81,11 @@ class QrShareSendController {
   final Signal<bool> exporting = signal(false);
   final Signal<int> exported = signal(0);
 
-  late final Uint8List _payload = Uint8List.fromList(
-    utf8.encode(encodeShareItems(documents)),
-  );
-
-  /// The deflated transfer size the density presets split.
-  late final int _compressedBytes = _compressedTransferBytes(_payload);
-
-  /// Whether the whole share fits one code at the borderline preset.
-  ///
-  /// The preset is fixed, so this never changes and is a plain field.
-  late final bool staticShare = fitsOneShareCode(_compressedBytes);
+  /// The encoded documents, their deflated transfer size and whether that size
+  /// fits one code; all three follow [documents].
+  late Uint8List _payload;
+  late int _compressedBytes;
+  late bool staticShare;
 
   /// The block size the session slices with: a static share sends its whole
   /// payload as one block.
@@ -93,6 +111,11 @@ class QrShareSendController {
   /// Publishes the first frame, or the new session's preview after a rebuild.
   void _rebuild() {
     _cancelPreRender();
+    _payload = Uint8List.fromList(
+      utf8.encode(encodeShareItems(documents.value)),
+    );
+    _compressedBytes = _compressedTransferBytes(_payload);
+    staticShare = fitsOneShareCode(_compressedBytes);
     _session = SendSession.forFile(
       _payload,
       filename: _shareFileName,
@@ -185,7 +208,18 @@ class QrShareSendController {
   void updateDensity(QrShareDensity value) {
     if (_disposed || staticShare || value == density.value) return;
     density.value = value;
+    _restart();
+  }
+
+  /// Rebuilds the session around the documents now being shared and carries the
+  /// playback across, unless the new payload fits one code: then there is no
+  /// stream left to play.
+  void _restart() {
     _rebuild();
+    if (staticShare) {
+      pause();
+      return;
+    }
     if (playing.value) _armTimer(_frameInterval);
   }
 
@@ -211,6 +245,7 @@ class QrShareSendController {
     _timer = null;
     _cancelPreRender();
     for (final signal in <ReadonlySignal<Object?>>[
+      documents,
       frame,
       playing,
       fps,
@@ -220,6 +255,8 @@ class QrShareSendController {
       payloadBytes,
       exporting,
       exported,
+      includeSelf,
+      includeConfigs,
     ]) {
       signal.dispose();
     }

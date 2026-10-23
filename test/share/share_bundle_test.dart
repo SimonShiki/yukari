@@ -16,7 +16,11 @@ void main() {
   });
 
   test('one item encodes exactly as the document does', () {
-    for (final document in [sharedNetworkDocument(), sharedNodeDocument()]) {
+    for (final document in [
+      sharedNetworkDocument(),
+      sharedNodeDocument(),
+      sharedNodeDocument(name: 'Relay One'),
+    ]) {
       expect(encodeShareItems([document]), document.encode());
       expect(
         decodeShareItems(document.encode()).single.encode(),
@@ -43,6 +47,21 @@ void main() {
       'alpha',
       'beta',
       'gamma',
+    ]);
+    expect(decoded.first.peers.single.address, 'relay.example.com:11010');
+  });
+
+  test('a bundle of named nodes keeps every name in order', () {
+    final documents = [
+      sharedNodeDocument(name: 'Relay One'),
+      sharedNodeDocument(name: 'Relay Two'),
+    ];
+
+    final decoded = decodeShareItems(encodeShareItems(documents));
+
+    expect(decoded.map((document) => document.name), [
+      'Relay One',
+      'Relay Two',
     ]);
     expect(decoded.first.peers.single.address, 'relay.example.com:11010');
   });

@@ -1,4 +1,5 @@
 import 'package:material_ui/material_ui.dart';
+import 'package:signals_flutter/signals_flutter.dart';
 
 import '../../controllers/qr_share_send_controller.dart';
 import '../../l10n/l10n.dart';
@@ -8,6 +9,7 @@ import '../../utils/file_save.dart';
 import '../../widgets/empty_state/empty_state.dart';
 import '../../widgets/snackbar/app_snackbar.dart';
 import 'widgets/qr_share_summary_card.dart';
+import 'widgets/share_extra_options.dart';
 import 'widgets/share_page_body.dart';
 import 'widgets/qr_stream_card.dart';
 import 'widgets/qr_stream_settings.dart';
@@ -60,6 +62,9 @@ class _QrShareSendPageState extends State<QrShareSendPage>
     final controller = QrShareSendController(
       documents: target.documents,
       refreshRate: View.of(context).display.refreshRate,
+      extras: target.extras,
+      resolve: (options) =>
+          resolveShareItems(widget.kind, widget.ids, options: options),
     );
     // The page owns this controller, so it starts the stream: opening the share
     // is the user asking to send, not asking to press play first.
@@ -126,14 +131,20 @@ class _QrShareSendPageState extends State<QrShareSendPage>
   }
 
   Widget _content(QrShareSendController controller) => SharePageBody(
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      spacing: 16,
-      children: [
-        QrShareSummaryCard(documents: controller.documents),
-        QrStreamCard(controller: controller),
-        QrStreamSettings(controller: controller, onExportGif: _exportGif),
-      ],
+    // One builder for everything a share option rewrites: the summary says what
+    // the documents carry, so it moves with them. The stream itself keeps its
+    // own builders, so a frame never rebuilds this column.
+    child: SignalBuilder(
+      builder: (context) => Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        spacing: 16,
+        children: [
+          QrShareSummaryCard(documents: controller.documents.value),
+          ShareExtraOptions(controller: controller),
+          QrStreamCard(controller: controller),
+          QrStreamSettings(controller: controller, onExportGif: _exportGif),
+        ],
+      ),
     ),
   );
 

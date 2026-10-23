@@ -119,6 +119,18 @@ class BookmarksController {
     () => [for (final bookmark in visibleBookmarks.value) bookmark.id],
   );
 
+  /// The saved bookmarks the selection holds, in store order.
+  ///
+  /// The built-in shared nodes are selectable like any other row, so they are
+  /// shareable but never deletable: they only arrive from [_builtins], which
+  /// this reads nothing of.
+  late final ReadonlySignal<List<Bookmark>> selectedBookmarks = computed(
+    () => [
+      for (final bookmark in saved.bookmarks.value)
+        if (selection.ids.value.contains(bookmark.id)) bookmark,
+    ],
+  );
+
   /// The gallery-style selection the list runs, entered from the app bar.
   late final selection = MultiSelection(selectable: selectableIds);
 
@@ -152,8 +164,15 @@ class BookmarksController {
     }
   }
 
+  bool _disposed = false;
+
+  /// Whether this controller has been disposed, so an action that outlives the
+  /// page writes none of its signals.
+  bool get isDisposed => _disposed;
+
   /// Frees the search field and every signal this controller created.
   void dispose() {
+    _disposed = true;
     searchController.dispose();
     selection.dispose();
     for (final created in <ReadonlySignal<Object?>>[
@@ -171,6 +190,7 @@ class BookmarksController {
       activeFilterCount,
       canExport,
       selectableIds,
+      selectedBookmarks,
     ]) {
       created.dispose();
     }

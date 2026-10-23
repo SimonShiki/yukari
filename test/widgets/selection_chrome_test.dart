@@ -6,6 +6,7 @@ import 'package:signals/signals.dart';
 import 'package:yukari/controllers/multi_selection.dart';
 import 'package:yukari/l10n/l10n.dart';
 import 'package:yukari/widgets/selection/selection_chrome.dart';
+import 'package:yukari/widgets/selection/selection_fab_menu.dart';
 
 void main() {
   final strings = lookupAppLocalizations(const Locale('en'));
@@ -14,12 +15,14 @@ void main() {
   late Signal<List<String>> selectable;
   late MultiSelection selection;
   late int shares;
+  late int deletes;
 
   setUp(() {
     targets = ['a', 'b', 'c'];
     selectable = signal(targets);
     selection = MultiSelection(selectable: selectable);
     shares = 0;
+    deletes = 0;
     addTearDown(() {
       selection.dispose();
       selectable.dispose();
@@ -27,7 +30,13 @@ void main() {
   });
 
   /// Pumps the three pieces of chrome on one scaffold, as a page wears them.
-  Future<void> pumpChrome(WidgetTester tester) async {
+  ///
+  /// [deletable] false stands for a page with nothing it may delete, which
+  /// passes no delete action at all.
+  Future<void> pumpChrome(
+    WidgetTester tester, {
+    bool deletable = true,
+  }) async {
     await tester.pumpWidget(
       MaterialApp(
         localizationsDelegates: const [AppLocalizations.delegate],
@@ -37,9 +46,10 @@ void main() {
           child: Scaffold(
             appBar: SelectionAppBar(selection: selection),
             body: const SizedBox.shrink(),
-            bottomNavigationBar: SelectionToolbar(
+            floatingActionButton: SelectionFabMenu(
               selection: selection,
               onShare: () => shares++,
+              onDelete: deletable ? () => deletes++ : null,
             ),
           ),
         ),
@@ -54,13 +64,20 @@ void main() {
         find.byWidgetPredicate((widget) => widget is PopScope<Object?>),
       );
 
-  /// The share action in the docked toolbar.
-  M3EButton shareButton(WidgetTester tester) => tester.widget<M3EButton>(
-    find.ancestor(
-      of: find.text(strings.selectionShare),
-      matching: find.byType(M3EButton),
-    ),
-  );
+  /// The items the menu offers, read without opening it.
+  List<M3EFabMenuItem> menuItems(WidgetTester tester) =>
+      tester.widget<M3EFabMenu>(find.byType(M3EFabMenu)).items;
+
+  /// The labels the menu offers, in order.
+  List<String> menuLabels(WidgetTester tester) => [
+    for (final item in menuItems(tester)) item.label,
+  ];
+
+  /// Opens the menu, whose items stagger in.
+  Future<void> openMenu(WidgetTester tester) async {
+    await tester.tap(find.byTooltip(strings.selectionActions));
+    await tester.pumpAndSettle();
+  }
 
   testWidgets('the check shows both states in one 24 dp box', (tester) async {
     await tester.pumpWidget(
@@ -139,35 +156,81 @@ void main() {
     expect(find.byTooltip(strings.selectionSelectAll), findsOneWidget);
   });
 
-  testWidgets('the docked share action is disabled until something is in', (
-    tester,
-  ) async {
+  testWidgets('both actions wait for a selection', (tester) async {
     await pumpChrome(tester);
-    expect(shareButton(tester).onPressed, isNull);
+    expect(menuLabels(tester), [
+      strings.selectionShare,
+      strings.selectionDelete,
+    ]);
+    expect(menuItems(tester).map((item) => item.onPressed), [isNull, isNull]);
 
     selection
       ..enter()
       ..toggle('b');
     await tester.pumpAndSettle();
 
-    expect(shareButton(tester).onPressed, isNotNull);
+    expect(menuItems(tester).map((item) => item.onPressed), [
+      isNotNull,
+      isNotNull,
+    ]);
+
+    await openMenu(tester);
+    await tester.tap(find.text(strings.selectionShare));
+    await tester.pumpAndSettle();
+    expect(shares, 1);
+
+    await openMenu(tester);
+    await tester.tap(find.text(strings.selectionDelete));
+    await tester.pumpAndSettle();
+
+    expect(deletes, 1, reason: 'the action reports the selection once');
+  });
+
+  testWidgets('an empty selection leaves both items inert', (tester) async {
+    await pumpChrome(tester);
+    await openMenu(tester);
+    await tester.tap(find.text(strings.selectionShare));
+    await tester.pumpAndSettle();
+
+    await openMenu(tester);
+    await tester.tap(find.text(strings.selectionDelete));
+    await tester.pumpAndSettle();
+
+    // Nothing is selected, so the items are there but do nothing.
+    expect(shares, 0);
+    expect(deletes, 0);
+  });
+
+  testWidgets('a page with nothing to delete offers sharing alone', (
+    tester,
+  ) async {
+    await pumpChrome(tester, deletable: false);
+    selection
+      ..enter()
+      ..toggle('a');
+    await tester.pumpAndSettle();
+
+    // The menu needs one item, so the delete one is left out rather than
+    // listed inert; sharing is unaffected.
+    expect(menuLabels(tester), [strings.selectionShare]);
+    expect(menuItems(tester).single.onPressed, isNotNull);
+
+    await openMenu(tester);
     await tester.tap(find.text(strings.selectionShare));
     await tester.pumpAndSettle();
 
     expect(shares, 1);
   });
 
-  testWidgets('the toolbar is the docked surface', (
-    tester,
-  ) async {
+  testWidgets('the menu replaces the docked bar', (tester) async {
     await pumpChrome(tester);
 
-    expect(find.byType(M3EDockedToolbar), findsOneWidget);
-    expect(find.byType(M3EHorizontalFloatingToolbar), findsNothing);
-    // 64 dp tall and edge to edge: the Gallery/Files bar.
-    final size = tester.getSize(find.byType(M3EDockedToolbar));
-    expect(size.height, 64);
-    expect(size.width, tester.getSize(find.byType(Scaffold)).width);
+    expect(find.byType(SelectionFabMenu), findsOneWidget);
+    expect(find.byType(M3EFabMenu), findsOneWidget);
+    // The trigger named for a screen reader, as the create menu's is.
+    expect(find.byTooltip(strings.selectionActions), findsOneWidget);
+    // The bar it replaced is gone from the page altogether.
+    expect(find.byType(M3EDockedToolbar), findsNothing);
   });
 
   testWidgets('Escape and back leave selection instead of the page', (

@@ -12,8 +12,11 @@ import 'package:yukari/l10n/l10n.dart';
 import 'package:yukari/pages/share/qr_share_send_page.dart';
 import 'package:yukari/pages/share/widgets/qr_matrix_view.dart';
 import 'package:yukari/pages/share/widgets/qr_stream_settings.dart';
+import 'package:yukari/pages/share/widgets/share_item_row.dart';
+import 'package:yukari/share/share_configs.dart';
 import 'package:yukari/share/share_document.dart';
 import 'package:yukari_core/models/network.dart';
+import 'package:yukari_core/models/network_flags.dart';
 import 'package:yukari_core/models/node.dart';
 
 import '../networks_fixture.dart';
@@ -461,7 +464,9 @@ void main() {
     );
   });
 
-  testWidgets('a node share shows its address and protocols', (tester) async {
+  testWidgets('an unnamed node share shows its address and protocols', (
+    tester,
+  ) async {
     final controller = controllerFor(sharedNodeDocument());
     await pumpPage(
       tester,
@@ -480,7 +485,125 @@ void main() {
     expect(find.byType(QrMatrixView), findsOneWidget);
   });
 
-  testWidgets('a bundle of ids shares every item with one code', (tester) async {
+  testWidgets('a named node share shows its name and its address', (
+    tester,
+  ) async {
+    final controller = controllerFor(sharedNodeDocument(name: 'Relay One'));
+    await pumpPage(
+      tester,
+      QrShareSendPage(
+        kind: ShareKind.node,
+        ids: const ['relay'],
+        controller: controller,
+      ),
+    );
+
+    expect(find.text('Relay One'), findsOneWidget);
+    expect(find.text('relay.example.com:11010'), findsOneWidget);
+    expect(find.text(strings.shareKindNode), findsOneWidget);
+    expect(find.byType(QrMatrixView), findsOneWidget);
+  });
+
+  testWidgets('a bundle of named nodes keeps each name and its address', (
+    tester,
+  ) async {
+    final controller = QrShareSendController(
+      documents: [
+        sharedNodeDocument(name: 'Relay One'),
+        sharedNodeDocument(name: 'Relay Two'),
+      ],
+      refreshRate: 60,
+    );
+    addTearDown(controller.dispose);
+    await pumpPage(
+      tester,
+      QrShareSendPage(
+        kind: ShareKind.node,
+        ids: const ['relay-one', 'relay-two'],
+        controller: controller,
+      ),
+    );
+
+    expect(find.text(strings.shareItems(2)), findsOneWidget);
+    expect(find.byType(ShareItemRow), findsNWidgets(2));
+    expect(find.text('Relay One'), findsOneWidget);
+    expect(find.text('Relay Two'), findsOneWidget);
+    // Each row keeps the address under the name it was saved with.
+    expect(find.text('relay.example.com:11010'), findsNWidgets(2));
+  });
+
+  testWidgets('the options card is absent when nothing can be added', (
+    tester,
+  ) async {
+    await tester.runAsync(() => seedWith({'n1': networkWithPeer()}));
+    await pumpPage(
+      tester,
+      const QrShareSendPage(kind: ShareKind.network, ids: ['n1']),
+    );
+
+    expect(find.text(strings.shareSendIncludeSelf), findsNothing);
+    expect(find.text(strings.shareSendIncludeConfigs), findsNothing);
+  });
+
+  testWidgets(
+    'adding this device changes the summary and restarts the stream',
+    (tester) async {
+      await tester.runAsync(
+        () => seedWith({
+          'n1': noiseNetwork(peers: 12)
+            ..listeners = [Uri.parse('tcp://198.51.100.7:11010')],
+        }),
+      );
+      await pumpPage(
+        tester,
+        const QrShareSendPage(kind: ShareKind.network, ids: ['n1']),
+        settle: false,
+      );
+      String peerCount(int peers) =>
+          '${strings.shareSendPeerCount(peers)} · '
+          '${strings.shareSendSecretIncluded}';
+      expect(find.text(peerCount(12)), findsOneWidget);
+      expect(find.byTooltip(strings.shareQrPause), findsOneWidget);
+
+      await tester.tap(find.text(strings.shareSendIncludeSelf));
+      await tester.pump();
+
+      expect(find.text(peerCount(13)), findsOneWidget);
+      expect(
+        frameStats(tester),
+        startsWith('Frame 1 · '),
+        reason: 'the new share restarts from its first frame',
+      );
+
+      await tester.pump(const Duration(milliseconds: 100));
+      expect(find.byTooltip(strings.shareQrPause), findsOneWidget);
+    },
+  );
+
+  testWidgets('the configs switch makes the summary say what travels', (
+    tester,
+  ) async {
+    await tester.runAsync(
+      () => seedWith({
+        'n1': noiseNetwork(peers: 12)..flags = (NetworkFlags()..noTun = true),
+      }),
+    );
+    await pumpPage(
+      tester,
+      const QrShareSendPage(kind: ShareKind.network, ids: ['n1']),
+      settle: false,
+    );
+    expect(find.text(strings.shareIncludesConfigs), findsNothing);
+
+    await tester.tap(find.text(strings.shareSendIncludeConfigs));
+    await tester.pump();
+
+    expect(find.text(strings.shareIncludesConfigs), findsOneWidget);
+  });
+
+  testWidgets('a bundle of ids shares every item with one code', (
+    tester,
+  ) async {
     await tester.runAsync(
       () => seedWith({
         'n1': networkWithPeer(),
@@ -495,8 +618,40 @@ void main() {
     expect(find.text(strings.shareItems(2)), findsOneWidget);
     expect(find.text('alpha'), findsOneWidget);
     expect(find.text('beta'), findsOneWidget);
+    // A network row keeps its own detail and invents no address line.
+    expect(find.text(strings.shareSendPeerCount(1)), findsNWidgets(2));
+    expect(find.text('relay.example.com:11010'), findsNothing);
+    // Neither document carries configs, so the bundle says nothing about them.
+    expect(find.text(strings.shareIncludesConfigs), findsNothing);
     expect(find.text(strings.shareQrSecretWarning), findsOneWidget);
     expect(find.byType(QrMatrixView), findsOneWidget);
+  });
+
+  testWidgets('a bundle summary says when configs travel', (tester) async {
+    final controller = QrShareSendController(
+      documents: [
+        ShareDocument(
+          kind: ShareKind.network,
+          name: 'alpha',
+          configs: const SharedConfigs(noTun: true),
+          peers: sharedNetworkDocument().peers,
+        ),
+        networkShare('beta'),
+      ],
+      refreshRate: 60,
+    );
+    addTearDown(controller.dispose);
+    await pumpPage(
+      tester,
+      QrShareSendPage(
+        kind: ShareKind.network,
+        ids: const ['n1', 'n2'],
+        controller: controller,
+      ),
+    );
+
+    expect(find.text(strings.shareItems(2)), findsOneWidget);
+    expect(find.text(strings.shareIncludesConfigs), findsOneWidget);
   });
 
   testWidgets('a bundle with one missing id shares nothing', (tester) async {

@@ -5,25 +5,16 @@ import 'package:mobile_scanner/mobile_scanner.dart';
 
 import '../../../controllers/qr_share_receive_controller.dart';
 import '../../../l10n/l10n.dart';
-
-/// The scanner throttle [pace] asks for.
-///
-/// [DetectionSpeed.normal] uses mobile_scanner's 250 ms detection timeout, so
-/// the camera analyzes about four frames a second; [DetectionSpeed.noDuplicates]
-/// analyzes every frame and reports each code once; [DetectionSpeed.unrestricted]
-/// removes the throttle entirely. The trade-off is battery and heat against how
-/// many frames per second the receiver gets to see.
-DetectionSpeed detectionSpeedFor(ScanPace pace) => switch (pace) {
-  ScanPace.relaxed => DetectionSpeed.normal,
-  ScanPace.balanced => DetectionSpeed.noDuplicates,
-  ScanPace.turbo => DetectionSpeed.unrestricted,
-};
+import 'camera_scanner_error.dart';
+import 'camera_scanner_session.dart';
 
 /// The camera preview and QR detection of the receive page.
 ///
-/// The card must be re-keyed when [pace] changes: mobile_scanner fixes the
-/// detection speed when its controller is constructed, so a new pace needs a new
-/// card and a new controller. The page keys it by the pace.
+/// mobile_scanner fixes the detection speed when its controller is constructed,
+/// so a new [pace] needs a new controller — but the plugin also holds one camera
+/// texture for the whole process, which a new controller cannot take from the
+/// old one. The card therefore swaps its own scanner through
+/// [CameraScannerSession] instead of being re-keyed around it.
 class CameraScannerCard extends StatefulWidget {
   /// Creates the camera card for [controller].
   const CameraScannerCard({
@@ -44,28 +35,15 @@ class CameraScannerCard extends StatefulWidget {
 
 class _CameraScannerCardState extends State<CameraScannerCard>
     with WidgetsBindingObserver {
-  late final MobileScannerController _scanner = MobileScannerController(
-    // ML Kit wants 1280x720 or 1920x1080 input and at least two pixels per QR
-    // module; 720p keeps the per-frame decode cost low enough to follow a
-    // 15 fps stream on a phone.
-    cameraResolution: const Size(1280, 720),
-    detectionSpeed: detectionSpeedFor(widget.pace),
-    formats: const [BarcodeFormat.qrCode],
-  );
+  late final CameraScannerSession _session;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-  }
-
-  @override
-  void didUpdateWidget(CameraScannerCard oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    assert(
-      oldWidget.pace == widget.pace,
-      'Re-key CameraScannerCard when the pace changes',
-    );
+    _session = CameraScannerSession(_createScanner, pace: widget.pace)
+      ..onChanged = _onScannerChanged;
+    unawaited(_session.start());
   }
 
   /// mobile_scanner only follows the app lifecycle for a controller it owns, so
@@ -77,35 +55,43 @@ class _CameraScannerCardState extends State<CameraScannerCard>
       case AppLifecycleState.paused ||
           AppLifecycleState.hidden ||
           AppLifecycleState.detached:
-        if (_scanner.value.isRunning) unawaited(_stopCamera());
+        unawaited(_session.stop());
       case AppLifecycleState.resumed:
-        if (!_scanner.value.isRunning) unawaited(_startCamera());
+        unawaited(_session.start());
       case AppLifecycleState.inactive:
         break;
     }
   }
 
   @override
+  void didUpdateWidget(CameraScannerCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.pace != widget.pace) _session.request(widget.pace);
+  }
+
+  @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
-    _scanner.dispose();
+    unawaited(_session.dispose());
     super.dispose();
   }
 
-  Future<void> _stopCamera() async {
-    try {
-      await _scanner.stop();
-    } on Object {
-      // The platform may have released the camera first.
-    }
+  void _onScannerChanged() {
+    if (mounted) setState(() {});
   }
 
-  Future<void> _startCamera() async {
-    try {
-      await _scanner.start();
-    } on Object {
-      // A denied permission keeps the preview in its error state.
-    }
+  MobileScannerController _createScanner(ScanPace pace) {
+    return MobileScannerController(
+      // ML Kit wants 1280x720 or 1920x1080 input and at least two pixels per QR
+      // module; 720p keeps the per-frame decode cost low enough to follow a
+      // 15 fps stream on a phone.
+      cameraResolution: const Size(1280, 720),
+      detectionSpeed: detectionSpeedFor(pace),
+      formats: const [BarcodeFormat.qrCode],
+      // The session decides when the camera may start, once the previous
+      // scanner released it.
+      autoStart: false,
+    );
   }
 
   @override
@@ -113,6 +99,7 @@ class _CameraScannerCardState extends State<CameraScannerCard>
     final theme = Theme.of(context);
     final colors = theme.colorScheme;
     final l10n = context.l10n;
+    final scanner = _session.scanner;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -121,40 +108,22 @@ class _CameraScannerCardState extends State<CameraScannerCard>
           borderRadius: BorderRadius.circular(24),
           child: AspectRatio(
             aspectRatio: 1,
-            child: MobileScanner(
-              controller: _scanner,
-              fit: BoxFit.cover,
-              onDetect: (capture) {
-                for (final barcode in capture.barcodes) {
-                  widget.controller.addPayload(barcode.rawValue);
-                }
-              },
-              errorBuilder: (context, error) => ColoredBox(
-                color: colors.surfaceContainerHighest,
-                child: Center(
-                  child: Padding(
-                    padding: const EdgeInsets.all(24),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          Icons.no_photography_outlined,
-                          color: colors.onSurfaceVariant,
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          _describe(error),
-                          textAlign: TextAlign.center,
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: colors.onSurfaceVariant,
-                          ),
-                        ),
-                      ],
-                    ),
+            child: scanner == null
+                // The first scanner waits for the widget to attach, and a new
+                // pace waits for the previous scanner to release the camera.
+                ? ColoredBox(color: colors.surfaceContainerHighest)
+                : MobileScanner(
+                    key: ObjectKey(scanner),
+                    controller: scanner,
+                    fit: BoxFit.cover,
+                    onDetect: (capture) {
+                      for (final barcode in capture.barcodes) {
+                        widget.controller.addPayload(barcode.rawValue);
+                      }
+                    },
+                    errorBuilder: (context, error) =>
+                        CameraScannerErrorPane(error: error),
                   ),
-                ),
-              ),
-            ),
           ),
         ),
         const SizedBox(height: 8),
@@ -168,55 +137,50 @@ class _CameraScannerCardState extends State<CameraScannerCard>
                 ),
               ),
             ),
-            ValueListenableBuilder<MobileScannerState>(
-              valueListenable: _scanner,
-              builder: (context, state, _) => Row(
-                children: [
-                  IconButton(
-                    tooltip: l10n.shareReceiveTorch,
-                    onPressed: state.torchState == TorchState.unavailable
-                        ? null
-                        : _toggleTorch,
-                    icon: Icon(
-                      state.torchState == TorchState.on
-                          ? Icons.flashlight_on_rounded
-                          : Icons.flashlight_off_rounded,
+            // The buttons follow whichever scanner the session currently owns,
+            // so a pace change must not leave them on the old one.
+            if (scanner != null)
+              ValueListenableBuilder<MobileScannerState>(
+                valueListenable: scanner,
+                builder: (context, state, _) => Row(
+                  children: [
+                    IconButton(
+                      tooltip: l10n.shareReceiveTorch,
+                      onPressed: state.torchState == TorchState.unavailable
+                          ? null
+                          : () => unawaited(_session.withScanner(_toggleTorch)),
+                      icon: Icon(
+                        state.torchState == TorchState.on
+                            ? Icons.flashlight_on_rounded
+                            : Icons.flashlight_off_rounded,
+                      ),
                     ),
-                  ),
-                  IconButton(
-                    tooltip: l10n.shareReceiveSwitchCamera,
-                    onPressed: _switchCamera,
-                    icon: const Icon(Icons.cameraswitch_rounded),
-                  ),
-                ],
+                    IconButton(
+                      tooltip: l10n.shareReceiveSwitchCamera,
+                      onPressed: () =>
+                          unawaited(_session.withScanner(_switchCamera)),
+                      icon: const Icon(Icons.cameraswitch_rounded),
+                    ),
+                  ],
+                ),
               ),
-            ),
           ],
         ),
       ],
     );
   }
 
-  /// A camera failure in words: the code, and the plugin's detail when it has
-  /// one. Without this the preview would just stay black.
-  String _describe(MobileScannerException error) {
-    final details = error.errorDetails?.message;
-    return details == null || details.isEmpty
-        ? error.errorCode.name
-        : '${error.errorCode.name}\n$details';
-  }
-
-  Future<void> _toggleTorch() async {
+  Future<void> _toggleTorch(MobileScannerController scanner) async {
     try {
-      await _scanner.toggleTorch();
+      await scanner.toggleTorch();
     } on Object {
       // The platform can refuse the torch; the next state read tells the user.
     }
   }
 
-  Future<void> _switchCamera() async {
+  Future<void> _switchCamera(MobileScannerController scanner) async {
     try {
-      await _scanner.switchCamera();
+      await scanner.switchCamera();
     } on Object {
       // A single-camera device has nothing to switch to.
     }

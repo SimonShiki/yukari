@@ -1,5 +1,4 @@
 import 'package:flutter/services.dart';
-import 'package:m3e_core/m3e_core.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:signals_flutter/signals_flutter.dart';
 
@@ -87,35 +86,6 @@ class SelectionEntry extends StatelessWidget {
     tooltip: context.l10n.selectionEnter,
     onPressed: selection.enter,
     icon: const Icon(Icons.checklist_rounded),
-  );
-}
-
-/// The action surface a list page docks at the bottom while it selects: the
-/// Gallery/Files bar, full width, 64 dp tall, at the window's edge.
-class SelectionToolbar extends StatelessWidget {
-  const SelectionToolbar({
-    super.key,
-    required this.selection,
-    required this.onShare,
-  });
-
-  final MultiSelection selection;
-
-  /// Shares what is selected; nothing to share leaves the action disabled.
-  final VoidCallback onShare;
-
-  @override
-  Widget build(BuildContext context) => M3EDockedToolbar(
-    content: SignalBuilder(
-      builder: (context) => Align(
-        alignment: Alignment.center,
-        child: M3EButton.icon(
-          onPressed: selection.count.value == 0 ? null : onShare,
-          icon: const Icon(Icons.qr_code_2),
-          label: Text(context.l10n.selectionShare),
-        ),
-      ),
-    ),
   );
 }
 

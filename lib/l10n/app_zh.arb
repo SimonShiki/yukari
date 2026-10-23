@@ -313,6 +313,16 @@
       }
     }
   },
+  "networkDeleteSelectedTitle": "{count, plural, other{删除 {count} 个网络？}}",
+  "@networkDeleteSelectedTitle": {
+    "description": "Asks before deleting a whole selection of networks",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "networkDeleteSelectedDescription": "其正在运行的实例将被停止。此操作无法撤销。",
   "networkEditPeerNamed": "编辑节点 {id}",
   "@networkEditPeerNamed": {
     "placeholders": {
@@ -655,6 +665,7 @@
       }
     }
   },
+  "controllerDeleteSelectedFailed": "无法删除所选网络，请重试。",
   "controllerServiceInstall": "无法安装服务：{error}",
   "@controllerServiceInstall": {
     "placeholders": {
@@ -984,6 +995,16 @@
     }
   },
   "bookmarksDeleteConfirmDescription": "只会从书签列表中移除；已使用该节点的网络仍保留该节点。",
+  "bookmarksDeleteSelected": "{count, plural, other{删除 {count} 个书签？}}",
+  "@bookmarksDeleteSelected": {
+    "description": "Asks before deleting a whole selection of bookmarks",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "bookmarksDeleteSelectedDescription": "只会从书签列表中移除；已使用这些节点的网络仍保留这些节点。",
   "bookmarksName": "名称（可选）",
   "bookmarksNameHelper": "显示在列表中；留空则使用地址",
   "bookmarksDescription": "描述（可选）",
@@ -1077,6 +1098,14 @@
       }
     }
   },
+  "bookmarksDeleteSelectedFailed": "无法删除所选书签：{error}",
+  "@bookmarksDeleteSelectedFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
   "bookmarksAlreadyInNetwork": "已在 {name} 中",
   "@bookmarksAlreadyInNetwork": {
     "placeholders": {
@@ -1147,6 +1176,11 @@
   "shareSendNodeMissing": "该书签已不存在。",
   "shareSendNoPeers": "请先为该网络添加一个节点，另一台设备才能连接。",
   "shareSendUnsupported": "此分享无法发送。",
+  "shareSendIncludeSelf": "将本设备作为初始节点",
+  "shareSendIncludeSelfHint": "另一台设备会先连接本设备，因此没有其他节点也能开始。",
+  "shareSendIncludeConfigs": "包含网络配置",
+  "shareSendIncludeConfigsHint": "另一台设备按本网络的方式运行。",
+  "shareIncludesConfigs": "已包含网络配置",
   "shareQrHint": "保持屏幕明亮，将摄像头置于 20–30 厘米处，直到另一台设备接收完成。",
   "shareQrFrameStats": "第 {frame} 帧 · {blocks, plural, other{{blocks} 块}} · {bytes}",
   "@shareQrFrameStats": {
@@ -1340,6 +1374,8 @@
   "selectionSelectAll": "全选",
   "selectionDeselectAll": "取消全选",
   "selectionShare": "共享",
+  "selectionDelete": "删除",
+  "selectionActions": "选择操作",
   "selectionUnavailable": "{count, plural, other{所选项中有 {count} 项无法分享}}",
   "@selectionUnavailable": {
     "placeholders": {

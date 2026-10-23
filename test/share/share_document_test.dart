@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:yukari_core/models/node.dart';
+import 'package:yukari/share/share_configs.dart';
 import 'package:yukari/share/share_document.dart';
 
 import 'share_fixture.dart';
@@ -23,7 +24,7 @@ void main() {
     expect(decoded.peers.last.publicKey, isNull);
   });
 
-  test('round-trips a node document', () {
+  test('round-trips an unnamed node document', () {
     final decoded = ShareDocument.decode(sharedNodeDocument().encode());
 
     expect(decoded.kind, ShareKind.node);
@@ -34,6 +35,59 @@ void main() {
     expect(decoded.peers.single.protocols, [NodeProtocol.quic]);
     expect(decoded.peers.single.publicKey, 'public-key');
     expect(decoded.peers.single.path, isNull);
+  });
+
+  test('round-trips a node document under its name', () {
+    final decoded = ShareDocument.decode(
+      sharedNodeDocument(name: ' Relay One ').encode(),
+    );
+
+    expect(decoded.kind, ShareKind.node);
+    expect(decoded.name, 'Relay One');
+    expect(decoded.peers.single.address, 'relay.example.com:11010');
+    expect(decoded.peers.single.protocols, [NodeProtocol.quic]);
+  });
+
+  test('carries the name only when the node has one', () {
+    expect(sharedNodeDocument(name: 'Relay One').toJson()['name'], 'Relay One');
+    expect(sharedNodeDocument().toJson().containsKey('name'), isFalse);
+  });
+
+  test('drops a blank node name', () {
+    final decoded = ShareDocument.decodeRoot({
+      ...sharedNodeDocument().toJson(),
+      'name': '   ',
+    });
+
+    expect(decoded.name, isNull);
+  });
+
+  test('round-trips the configs a network carries', () {
+    final document = ShareDocument(
+      kind: ShareKind.network,
+      name: 'alpha',
+      configs: const SharedConfigs(
+        noTun: true,
+        acceptDns: false,
+        dnsZone: 'home.example.com.',
+      ),
+      peers: sharedNetworkDocument().peers,
+    );
+
+    final decoded = ShareDocument.decode(document.encode());
+
+    expect(decoded.configs?.noTun, isTrue);
+    expect(decoded.configs?.acceptDns, isFalse);
+    expect(decoded.configs?.dnsZone, 'home.example.com.');
+  });
+
+  test('decodes an old share without configs as config-less', () {
+    expect(sharedNetworkDocument().configs, isNull);
+    expect(
+      ShareDocument.decode(sharedNetworkDocument().encode()).configs,
+      isNull,
+    );
+    expect(sharedNetworkDocument().toJson().containsKey('configs'), isFalse);
   });
 
   test('round-trips an authority-relative peer path', () {
@@ -160,8 +214,41 @@ void main() {
       'network without a name': jsonEncode(noName),
       'network with a blank name': network({'name': '   '}),
       'name longer than 128 characters': network({'name': 'a' * 129}),
-      'node share with a name': jsonEncode({...node, 'name': 'alpha'}),
+      'node share with a name longer than 128 characters': jsonEncode({
+        ...node,
+        'name': 'a' * 129,
+      }),
+      'node share with a non-text name': jsonEncode({...node, 'name': 42}),
       'node share with a secret': jsonEncode({...node, 'secret': 'secret'}),
+      'node share with configs': jsonEncode({
+        ...node,
+        'configs': {'noTun': true},
+      }),
+      'configs that are not an object': network({'configs': 'noTun'}),
+      'configs with a non-boolean flag': network({
+        'configs': {'noTun': 'yes'},
+      }),
+      'configs without a TUN and with DNS': network({
+        'configs': {'noTun': true, 'acceptDns': true},
+      }),
+      'configs with an untrimmed zone': network({
+        'configs': {'dnsZone': ' et.net.'},
+      }),
+      'configs with an empty zone': network({
+        'configs': {'dnsZone': ''},
+      }),
+      'configs with a relative zone': network({
+        'configs': {'dnsZone': 'home..example.com'},
+      }),
+      'configs with an over-long zone': network({
+        'configs': {'dnsZone': 'a' * 254},
+      }),
+      'configs with a non-text zone': network({
+        'configs': {'dnsZone': 42},
+      }),
+      'configs with an underscore zone': network({
+        'configs': {'dnsZone': '_foo.example.com'},
+      }),
       'node share with two peers': jsonEncode({
         ...node,
         'peers': [

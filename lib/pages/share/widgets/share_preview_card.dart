@@ -52,9 +52,22 @@ class SharePreviewCard extends StatelessWidget {
               shareDisplayTitle(share),
               style: theme.textTheme.headlineSmall,
             ),
+            if (shareDisplaySubtitle(share) case final address?) ...[
+              const SizedBox(height: 4),
+              ShareAddressText(address),
+            ],
             const SizedBox(height: 12),
             for (final (label, value) in _details(share, l10n))
               _DetailRow(label: label, value: value),
+            if (share.configs != null) ...[
+              const SizedBox(height: 8),
+              Text(
+                l10n.shareIncludesConfigs,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ],
             const SizedBox(height: 20),
             _actions(
               context,
@@ -96,6 +109,15 @@ class SharePreviewCard extends StatelessWidget {
                 label: l10n.sharePreviewSecret,
                 value: l10n.sharePreviewSecretIncluded,
               ),
+            if (shares.any((share) => share.configs != null)) ...[
+              const SizedBox(height: 8),
+              Text(
+                l10n.shareIncludesConfigs,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ],
             const SizedBox(height: 8),
             _actions(context, l10n.shareReceiveAddAll(shares.length)),
           ],

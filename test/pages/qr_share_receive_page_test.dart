@@ -14,9 +14,11 @@ import 'package:yukari/l10n/l10n.dart';
 import 'package:yukari/pages/share/qr_share_receive_page.dart';
 import 'package:yukari/pages/share/widgets/block_grid.dart';
 import 'package:yukari/pages/share/widgets/camera_scanner_card.dart';
+import 'package:yukari/pages/share/widgets/camera_scanner_session.dart';
 import 'package:yukari/pages/share/widgets/receive_progress_card.dart';
 import 'package:yukari/pages/share/widgets/share_item_row.dart';
 import 'package:yukari/share/image_qr_scan.dart';
+import 'package:yukari/share/share_configs.dart';
 import 'package:yukari/share/share_document.dart';
 import 'package:yukari/share/share_import.dart';
 import 'package:yukari/signals/networks.dart' as networks;
@@ -187,7 +189,7 @@ void main() {
     expect(gridPainter(tester).shouldRepaint(before), isTrue);
   });
 
-  testWidgets('the scan rate re-keys the camera card', (tester) async {
+  testWidgets('the scan rate reaches the camera pane', (tester) async {
     final paces = <ScanPace>[];
     final controller = await pumpPage(
       tester,
@@ -203,7 +205,8 @@ void main() {
     await tester.pump();
 
     expect(controller.pace.value, ScanPace.turbo);
-    // Only a builder call with the new pace proves the card would re-key.
+    // The card swaps its own scanner for a new pace; the injected builder
+    // stands in for it and only has to receive that pace.
     expect(paces.last, ScanPace.turbo);
   });
 
@@ -364,6 +367,8 @@ void main() {
     expect(find.text(strings.sharePreviewProtocols), findsOneWidget);
     expect(find.text(strings.sharePreviewSecret), findsOneWidget);
     expect(find.text(strings.sharePreviewSecretIncluded), findsOneWidget);
+    // Nothing differs from the import defaults, so no config line is invented.
+    expect(find.text(strings.shareIncludesConfigs), findsNothing);
     // The network secret itself is never shown.
     expect(find.text('s3cret'), findsNothing);
     // The preview replaces the transfer.
@@ -391,6 +396,55 @@ void main() {
     expect(button.onPressed, isNull);
   });
 
+  testWidgets('a received network says when it carries configs', (
+    tester,
+  ) async {
+    final controller = await pumpPage(
+      tester,
+      importer: ShareImporter(
+        addNetwork: (document) async => document.name!,
+        addNode: (document) async => fail('no node is in this share'),
+      ),
+    );
+
+    controller.shares.value = [
+      ShareDocument(
+        kind: ShareKind.network,
+        name: 'alpha',
+        configs: const SharedConfigs(noTun: true, dnsZone: 'home.example.com.'),
+        peers: sharedNetworkDocument().peers,
+      ),
+    ];
+    await tester.pump();
+
+    expect(find.text(strings.shareIncludesConfigs), findsOneWidget);
+  });
+
+  testWidgets('a received bundle says when a document carries configs', (
+    tester,
+  ) async {
+    final controller = await pumpPage(
+      tester,
+      importer: ShareImporter(
+        addNetwork: (document) async => document.name!,
+        addNode: (document) async => fail('no node is in this bundle'),
+      ),
+    );
+
+    controller.shares.value = [
+      ShareDocument(
+        kind: ShareKind.network,
+        name: 'alpha',
+        configs: const SharedConfigs(noTun: true),
+        peers: sharedNetworkDocument().peers,
+      ),
+      networkShare('beta'),
+    ];
+    await tester.pump();
+
+    expect(find.text(strings.shareIncludesConfigs), findsOneWidget);
+  });
+
   testWidgets('a received bundle lists its documents and adds them all', (
     tester,
   ) async {
@@ -414,6 +468,10 @@ void main() {
     expect(find.byType(ShareItemRow), findsNWidgets(2));
     expect(find.text('alpha'), findsOneWidget);
     expect(find.text('beta'), findsOneWidget);
+    // A network row keeps its own detail and invents no address line.
+    expect(find.text('relay.example.com:11010'), findsNothing);
+    // No document carries configs, so the bundle says nothing about them.
+    expect(find.text(strings.shareIncludesConfigs), findsNothing);
     // One action for the whole bundle, and no per-block progress.
     expect(find.text(strings.shareReceiveAddAll(2)), findsOneWidget);
     expect(find.text(strings.sharePreviewProtocols), findsNothing);
@@ -438,6 +496,31 @@ void main() {
           .onPressed,
       isNull,
     );
+  });
+
+  testWidgets('a received bundle of named nodes keeps each name and address', (
+    tester,
+  ) async {
+    final controller = await pumpPage(
+      tester,
+      importer: ShareImporter(
+        addNetwork: (document) async => fail('a node is not a network'),
+        addNode: (document) async => 'relay.example.com:11010',
+      ),
+    );
+
+    controller.shares.value = [
+      sharedNodeDocument(name: 'Relay One'),
+      sharedNodeDocument(name: 'Relay Two'),
+    ];
+    await tester.pump();
+
+    expect(find.text(strings.shareItems(2)), findsOneWidget);
+    expect(find.byType(ShareItemRow), findsNWidgets(2));
+    expect(find.text('Relay One'), findsOneWidget);
+    expect(find.text('Relay Two'), findsOneWidget);
+    // Each row keeps the address under the name it arrived with.
+    expect(find.text('relay.example.com:11010'), findsNWidgets(2));
   });
 
   testWidgets('the completed node can be saved', (tester) async {
@@ -469,6 +552,34 @@ void main() {
     expect(messages, <String>[
       strings.shareReceiveNodeSaved('relay.example.com:11010'),
     ]);
+    expect(controller.saved.value, isTrue);
+  });
+
+  testWidgets('a named node keeps its name when it is saved', (tester) async {
+    final saved = <ShareDocument>[];
+    final controller = await pumpPage(
+      tester,
+      importer: ShareImporter(
+        addNetwork: (document) async => fail('a node is not a network'),
+        addNode: (document) async {
+          saved.add(document);
+          return 'relay.example.com:11010';
+        },
+      ),
+    );
+
+    controller.shares.value = [sharedNodeDocument(name: 'Relay One')];
+    await tester.pump();
+
+    expect(find.text(strings.shareKindNode), findsOneWidget);
+    expect(find.text('Relay One'), findsOneWidget);
+    expect(find.text('relay.example.com:11010'), findsOneWidget);
+
+    await tester.tap(find.text(strings.shareReceiveSaveNode));
+    await tester.pump();
+    await tester.pumpAndSettle();
+
+    expect(saved.single.name, 'Relay One');
     expect(controller.saved.value, isTrue);
   });
 

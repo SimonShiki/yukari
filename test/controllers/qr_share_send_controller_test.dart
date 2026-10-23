@@ -6,6 +6,8 @@ import 'package:qrs_dart/qrs_dart.dart';
 import 'package:yukari/controllers/qr_share_send_controller.dart';
 import 'package:yukari/share/share_bundle.dart';
 import 'package:yukari/share/share_document.dart';
+import 'package:yukari/share/share_options.dart';
+import 'package:yukari/share/share_targets.dart';
 
 import '../share/share_fixture.dart';
 
@@ -17,6 +19,27 @@ QrShareSendController controllerFor(
     documents: documents,
     refreshRate: refreshRate,
     random: Random(7),
+  );
+  addTearDown(controller.dispose);
+  return controller;
+}
+
+/// A sender that re-resolves [documentFor] for the options it is asked, with
+/// both extras on offer.
+QrShareSendController optionsController(
+  ShareDocument Function(ShareOptions options) documentFor, {
+  ShareExtras extras = (selfPeer: true, configs: true),
+  List<ShareOptions>? asked,
+}) {
+  final controller = QrShareSendController(
+    documents: [documentFor(noShareOptions)],
+    refreshRate: 60,
+    random: Random(7),
+    extras: extras,
+    resolve: (options) {
+      asked?.add(options);
+      return (documents: [documentFor(options)], reason: null, extras: extras);
+    },
   );
   addTearDown(controller.dispose);
   return controller;
@@ -132,7 +155,7 @@ void main() {
     final second = noiseNetworkShare(peers: 12);
     final controller = controllerFor([first, second]);
 
-    expect(controller.documents, [first, second]);
+    expect(controller.documents.value, [first, second]);
     expect(
       controller.staticShare,
       isFalse,
@@ -163,11 +186,11 @@ void main() {
   test('the presets split a streaming share into fewer, denser codes', () {
     expect(blocksPerDensity(noiseNetworkShare(peers: 12)), [3, 2, 1]);
     expect(blocksPerDensity(noiseNetworkShare(peers: 20)), [4, 2, 1]);
-    expect(
-      blocksPerDensity(noiseNetworkShare(peers: 40)),
-      [6, 3, 2],
-      reason: 'the slice caps keep the QR versions sane',
-    );
+    expect(blocksPerDensity(noiseNetworkShare(peers: 40)), [
+      6,
+      3,
+      2,
+    ], reason: 'the slice caps keep the QR versions sane');
   });
 
   test('a static share ignores the stream controls', () {
@@ -293,5 +316,145 @@ void main() {
 
     expect(await export, isNull);
     expect(controller.exporting.peek(), isFalse);
+  });
+
+  test('a sender without a resolver offers no option and ignores toggles', () {
+    final controller = controllerFor([streamingDocument()]);
+    final payload = controller.payloadBytes.value;
+
+    expect(controller.selfPeerAvailable, isFalse);
+    expect(controller.configsAvailable, isFalse);
+
+    controller.setIncludeSelf(true);
+    controller.setIncludeConfigs(true);
+
+    expect(controller.includeSelf.value, isFalse);
+    expect(controller.includeConfigs.value, isFalse);
+    expect(
+      controller.documents.value.single.encode(),
+      streamingDocument().encode(),
+    );
+    expect(controller.payloadBytes.value, payload);
+  });
+
+  testWidgets('a toggle rebuilds the share and keeps the stream playing', (
+    tester,
+  ) async {
+    final asked = <ShareOptions>[];
+    final controller = optionsController(
+      (options) => noiseNetworkShare(peers: options.includeSelf ? 20 : 12),
+      asked: asked,
+    );
+    controller.play();
+    await tester.pump(const Duration(milliseconds: 100));
+    expect(controller.framesSent.value, greaterThan(1));
+    final payload = controller.payloadBytes.value;
+    final blocks = controller.blockCount.value;
+
+    controller.setIncludeSelf(true);
+    await tester.pump();
+
+    expect(asked.single, (includeSelf: true, includeConfigs: false));
+    expect(controller.includeSelf.value, isTrue);
+    expect(controller.documents.value.single.peers, hasLength(20));
+    expect(controller.payloadBytes.value, isNot(payload));
+    expect(controller.blockCount.value, isNot(blocks));
+    expect(
+      controller.framesSent.value,
+      1,
+      reason: 'the restart publishes the new preview frame first',
+    );
+    expect(controller.playing.value, isTrue);
+
+    await tester.pump(const Duration(milliseconds: 100));
+    expect(controller.framesSent.value, greaterThan(1));
+    controller.pause();
+  });
+
+  testWidgets('a toggle that makes the share one code stops playback', (
+    tester,
+  ) async {
+    final controller = optionsController(
+      (options) => options.includeConfigs
+          ? sharedNetworkDocument()
+          : noiseNetworkShare(peers: 12),
+    );
+    controller.play();
+    await tester.pump(const Duration(milliseconds: 100));
+    expect(controller.playing.value, isTrue);
+
+    controller.setIncludeConfigs(true);
+    await tester.pump();
+
+    expect(controller.staticShare, isTrue);
+    expect(controller.blockCount.value, 1);
+    expect(
+      controller.playing.value,
+      isFalse,
+      reason: 'a one-code share has no stream left to play',
+    );
+    await tester.pump(const Duration(seconds: 1));
+    expect(controller.framesSent.value, 1);
+  });
+
+  test('a toggle during a GIF export is ignored', () {
+    final controller = optionsController((options) => sharedNetworkDocument());
+    controller.exporting.value = true;
+
+    controller.setIncludeSelf(true);
+
+    expect(controller.includeSelf.value, isFalse);
+    expect(
+      controller.documents.value.single.encode(),
+      sharedNetworkDocument().encode(),
+    );
+
+    controller.exporting.value = false;
+    controller.setIncludeSelf(true);
+    expect(controller.includeSelf.value, isTrue);
+  });
+
+  test('an unavailable option never asks the resolver', () {
+    final asked = <ShareOptions>[];
+    final controller = optionsController(
+      (options) => sharedNetworkDocument(),
+      extras: noShareExtras,
+      asked: asked,
+    );
+
+    controller.setIncludeSelf(true);
+    controller.setIncludeConfigs(true);
+
+    expect(asked, isEmpty);
+    expect(controller.includeSelf.value, isFalse);
+    expect(controller.includeConfigs.value, isFalse);
+  });
+
+  test('a resolution with nothing left keeps the share on screen', () {
+    final asked = <ShareOptions>[];
+    final controller = QrShareSendController(
+      documents: [streamingDocument()],
+      refreshRate: 60,
+      random: Random(7),
+      extras: (selfPeer: true, configs: false),
+      resolve: (options) {
+        asked.add(options);
+        return (
+          documents: const <ShareDocument>[],
+          reason: ShareUnavailableReason.networkMissing,
+          extras: (selfPeer: false, configs: false),
+        );
+      },
+    );
+    addTearDown(controller.dispose);
+
+    controller.setIncludeSelf(true);
+
+    expect(asked, hasLength(1));
+    expect(controller.includeSelf.value, isFalse);
+    expect(
+      controller.documents.value.single.encode(),
+      streamingDocument().encode(),
+    );
   });
 }
