@@ -14,9 +14,9 @@ import 'widgets/share_page_body.dart';
 import 'widgets/share_preview_card.dart';
 
 /// The receiving half of "Share via QR": scans the other device's fountain
-/// frames — from the camera on Android, iOS, macOS and the web, or from a
-/// picked screenshot or GIF everywhere — shows the transfer live, and adds the
-/// network or saves the node at the end.
+/// frames — from the camera on Android, or from a picked screenshot or GIF on
+/// every platform — shows the transfer live, and adds the network or saves the
+/// node at the end.
 class QrShareReceivePage extends StatefulWidget {
   /// Creates the receive page.
   const QrShareReceivePage({
@@ -96,7 +96,7 @@ class _QrShareReceivePageState extends State<QrShareReceivePage> {
           SignalBuilder(
             builder: (context) {
               final started =
-                  _controller.share.value != null ||
+                  _controller.shares.value.isNotEmpty ||
                   _controller.frames.value > 0;
               if (!started) return const SizedBox.shrink();
               return IconButton(
@@ -122,11 +122,11 @@ class _QrShareReceivePageState extends State<QrShareReceivePage> {
   /// Only the page's layout states are read here, so neither the camera card
   /// nor the progress card rebuilds because the other one changed.
   Widget _content(BuildContext context) {
-    final share = _controller.share.value;
+    final shares = _controller.shares.value;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        if (share == null) ...[
+        if (shares.isEmpty) ...[
           _cameraPane(context),
           const SizedBox(height: 16),
           ReceiveErrorBanner(controller: _controller),
@@ -136,7 +136,7 @@ class _QrShareReceivePageState extends State<QrShareReceivePage> {
             onScanImage: _scanPickedImage,
           ),
         ] else
-          SharePreviewCard(share: share, controller: _controller),
+          SharePreviewCard(shares: shares, controller: _controller),
       ],
     );
   }

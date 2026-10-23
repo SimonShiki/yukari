@@ -7,24 +7,26 @@ import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:qrs_dart/qrs_dart.dart';
 import 'package:signals/signals.dart';
 
+import '../share/share_bundle.dart';
 import '../share/share_document.dart';
 
 part 'qr_share_send_gif.dart';
 part 'qr_share_send_settings.dart';
 
-/// Drives the sender half of "Share via QR": the fountain-coded stream of a
-/// masked [ShareDocument], its playback and settings, and the GIF export.
+/// Drives the sender half of "Share via QR": the fountain-coded stream of masked
+/// [ShareDocument]s, its playback and settings, and the GIF export.
 class QrShareSendController {
   QrShareSendController({
-    required this.document,
+    required this.documents,
     required double refreshRate,
     this.random,
   }) : fps = signal(defaultShareFps(refreshRate)) {
     _rebuild();
   }
 
-  /// The masked document being streamed.
-  final ShareDocument document;
+  /// The masked documents being streamed, never empty: the page reports a
+  /// target it cannot resolve instead of opening a sender.
+  final List<ShareDocument> documents;
 
   /// The fountain's randomness source; null draws a fresh one.
   final Random? random;
@@ -56,11 +58,22 @@ class QrShareSendController {
   final Signal<int> exported = signal(0);
 
   late final Uint8List _payload = Uint8List.fromList(
-    utf8.encode(document.encode()),
+    utf8.encode(encodeShareItems(documents)),
   );
 
   /// The deflated transfer size the density presets split.
   late final int _compressedBytes = _compressedTransferBytes(_payload);
+
+  /// Whether the whole share fits one code at the borderline preset.
+  ///
+  /// The preset is fixed, so this never changes and is a plain field.
+  late final bool staticShare = fitsOneShareCode(_compressedBytes);
+
+  /// The block size the session slices with: a static share sends its whole
+  /// payload as one block.
+  int get _sliceSize => staticShare
+      ? _compressedBytes
+      : density.value.sliceSizeFor(_compressedBytes);
 
   late SendSession _session;
   Timer? _timer;
@@ -84,7 +97,7 @@ class QrShareSendController {
       _payload,
       filename: _shareFileName,
       contentType: shareContentType,
-      sliceSize: density.value.sliceSizeFor(_compressedBytes),
+      sliceSize: _sliceSize,
       // Always on: the document is JSON text, which zlib roughly halves, and a
       // switch would only ever be turned off by mistake.
       compress: true,
@@ -124,8 +137,12 @@ class QrShareSendController {
     _preRendered = null;
   }
 
+  /// Starts the frame loop, unless there is nothing to animate.
+  ///
+  /// A static share's first frame already carries the whole payload, so playing
+  /// it would only repaint an identical code.
   void play() {
-    if (_disposed || playing.value) return;
+    if (_disposed || staticShare || playing.value) return;
     playing.value = true;
     if (_preRendered == null) _preRender();
     _armTimer(_frameInterval);
@@ -150,8 +167,11 @@ class QrShareSendController {
 
   /// Applies [value] clamped to [minShareFps]..[maxShareFps]; the armed timer
   /// is re-armed at once so the new rate applies to the next frame.
+  ///
+  /// A static share keeps its rate: it has no stream to pace, so the control is
+  /// not offered and the value stays the one it opened with.
   void updateFps(int value) {
-    if (_disposed) return;
+    if (_disposed || staticShare) return;
     final clamped = value.clamp(minShareFps, maxShareFps).toInt();
     if (clamped == fps.value) return;
     fps.value = clamped;
@@ -159,8 +179,11 @@ class QrShareSendController {
   }
 
   /// Restarts the stream with [value]'s block size, keeping the playback state.
+  ///
+  /// A static share keeps [density] and its one block: no preset can split a
+  /// payload that fits a single code.
   void updateDensity(QrShareDensity value) {
-    if (_disposed || value == density.value) return;
+    if (_disposed || staticShare || value == density.value) return;
     density.value = value;
     _rebuild();
     if (playing.value) _armTimer(_frameInterval);

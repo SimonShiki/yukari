@@ -72,6 +72,59 @@ void main() {
     expect(persistedBookmarks().length, 1);
   });
 
+  test('adds a mixed batch and counts what it did', () async {
+    final saved = <ShareDocument>[];
+    final importer = ShareImporter(
+      addNetwork: (document) async {
+        saved.add(document);
+        return document.name!;
+      },
+      addNode: (document) async => null,
+    );
+    final documents = [
+      networkShare('alpha'),
+      networkShare('beta'),
+      sharedNodeDocument(),
+    ];
+
+    final summary = await addSharedDocuments(documents, importer: importer);
+
+    expect(summary, (added: 2, duplicates: 1, failed: 0));
+    expect(saved.map((document) => document.name), ['alpha', 'beta']);
+  });
+
+  test('counts a failed item and still saves the rest', () async {
+    final saved = <String>[];
+    final importer = ShareImporter(
+      addNetwork: (document) async {
+        if (document.name == 'beta') throw StateError('disk');
+        saved.add(document.name!);
+        return document.name!;
+      },
+      addNode: (document) async => fail('no node is in this batch'),
+    );
+
+    final summary = await addSharedDocuments(
+      [networkShare('alpha'), networkShare('beta'), networkShare('gamma')],
+      importer: importer,
+    );
+
+    expect(summary, (added: 2, duplicates: 0, failed: 1));
+    expect(saved, ['alpha', 'gamma']);
+  });
+
+  test('adds nothing from an empty batch', () async {
+    final importer = ShareImporter(
+      addNetwork: (document) async => fail('nothing to add'),
+      addNode: (document) async => fail('nothing to add'),
+    );
+
+    expect(
+      await addSharedDocuments(const [], importer: importer),
+      (added: 0, duplicates: 0, failed: 0),
+    );
+  });
+
   test('resolves the share target of a saved network', () async {
     await seedWith({
       'n1': Network()
@@ -89,10 +142,10 @@ void main() {
     final target = resolveShareTarget(ShareKind.network, 'n1');
 
     expect(target.reason, isNull);
-    expect(target.document, isNotNull);
-    expect(target.document!.kind, ShareKind.network);
-    expect(target.document!.name, 'alpha');
-    expect(target.document!.peers.single.address, 'relay.example.com:11010');
+    expect(target.documents, hasLength(1));
+    expect(target.documents.single.kind, ShareKind.network);
+    expect(target.documents.single.name, 'alpha');
+    expect(target.documents.single.peers.single.address, 'relay.example.com:11010');
   });
 
   test('reports a missing or peerless network', () async {
@@ -123,7 +176,7 @@ void main() {
 
     await seedWith({'many': networkWith(shareMaxPeers + 1)});
     final tooManyPeers = resolveShareTarget(ShareKind.network, 'many');
-    expect(tooManyPeers.document, isNull);
+    expect(tooManyPeers.documents, isEmpty);
     expect(tooManyPeers.reason, ShareUnavailableReason.unsupported);
 
     await seedWith({
@@ -133,7 +186,7 @@ void main() {
         ..nodes = [networkWith(1).nodes.single],
     });
     final tooLongSecret = resolveShareTarget(ShareKind.network, 'longSecret');
-    expect(tooLongSecret.document, isNull);
+    expect(tooLongSecret.documents, isEmpty);
     expect(tooLongSecret.reason, ShareUnavailableReason.unsupported);
   });
 
@@ -144,7 +197,7 @@ void main() {
 
     final bookmark = resolveShareTarget(ShareKind.node, 'b1');
 
-    expect(bookmark.document, isNull);
+    expect(bookmark.documents, isEmpty);
     expect(bookmark.reason, ShareUnavailableReason.unsupported);
 
     await seedWith({
@@ -162,7 +215,7 @@ void main() {
 
     final network = resolveShareTarget(ShareKind.network, 'n1');
 
-    expect(network.document, isNull);
+    expect(network.documents, isEmpty);
     expect(network.reason, ShareUnavailableReason.unsupported);
   });
 
@@ -174,16 +227,16 @@ void main() {
     final user = resolveShareTarget(ShareKind.node, 'b1');
 
     expect(user.reason, isNull);
-    expect(user.document, isNotNull);
-    expect(user.document!.kind, ShareKind.node);
-    expect(user.document!.peers.single.address, 'relay.example.com:11010');
+    expect(user.documents, hasLength(1));
+    expect(user.documents.single.kind, ShareKind.node);
+    expect(user.documents.single.peers.single.address, 'relay.example.com:11010');
 
     final builtin = resolveShareTarget(
       ShareKind.node,
       builtinBookmarks.first.id,
     );
 
-    expect(builtin.document!.peers.single.address, '225284.xyz:11010');
+    expect(builtin.documents.single.peers.single.address, '225284.xyz:11010');
     expect(
       resolveShareTarget(ShareKind.node, 'missing').reason,
       ShareUnavailableReason.bookmarkMissing,

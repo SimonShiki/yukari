@@ -6,6 +6,7 @@ import '../../controllers/network_page_controller.dart';
 import '../../l10n/l10n.dart';
 import '../../widgets/network_card/network_card_data.dart';
 import '../../widgets/network_card/network_card_geometry.dart';
+import '../../widgets/selection/selection_chrome.dart';
 import '../../widgets/snackbar/app_snackbar.dart';
 import 'editor_exit_guard.dart';
 import 'foreground_active.dart';
@@ -103,22 +104,29 @@ class _NetworksPageState extends State<NetworksPage>
     builder: (context, constraints) {
       final wide = constraints.maxWidth >= _wideBreakpoint;
       _wide = wide;
-      return Scaffold(
-        appBar: AppBar(
-          title: Text(context.l10n.navNetworks),
-          actions: [
-            SignalBuilder(
-              builder: (context) => IconButton(
-                tooltip: context.l10n.networkRefresh,
-                onPressed: _controller.refreshing.value
-                    ? null
-                    : _controller.refresh,
-                icon: const Icon(Icons.refresh_rounded),
-              ),
-            ),
-          ],
-        ),
-        floatingActionButton: wide
+      // The bars around the list follow selection mode.
+      return SignalBuilder(
+        builder: (context) => _scaffold(context, wide: wide),
+      );
+    },
+  );
+
+  Widget _scaffold(BuildContext context, {required bool wide}) {
+    final selection = _controller.selection;
+    final selecting = selection.selecting.value;
+    return SelectionScope(
+      selection: selection,
+      child: Scaffold(
+        appBar: selecting
+            ? SelectionAppBar(selection: selection)
+            : _appBar(context),
+        bottomNavigationBar: selecting
+            ? SelectionToolbar(
+                selection: selection,
+                onShare: _controller.openSelectionShare,
+              )
+            : null,
+        floatingActionButton: wide || selecting
             ? null
             : NetworkCreateMenu(controller: _controller),
         body: SafeArea(
@@ -128,6 +136,7 @@ class _NetworksPageState extends State<NetworksPage>
                 child: NetworksListPane(
                   controller: _controller,
                   wide: wide,
+                  selecting: selecting,
                   onSelect: (cards, index) =>
                       _select(cards, index, wide: wide),
                 ),
@@ -146,8 +155,21 @@ class _NetworksPageState extends State<NetworksPage>
             ],
           ),
         ),
-      );
-    },
+      ),
+    );
+  }
+
+  /// The page's own app bar: the title, and the way into selection while there
+  /// is a network to select.
+  AppBar _appBar(BuildContext context) => AppBar(
+    title: Text(context.l10n.navNetworks),
+    actions: [
+      SignalBuilder(
+        builder: (context) => _controller.canSelect
+            ? SelectionEntry(selection: _controller.selection)
+            : const SizedBox.shrink(),
+      ),
+    ],
   );
 
   Widget _detailPane(String id, {required bool running}) => Expanded(

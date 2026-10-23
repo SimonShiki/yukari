@@ -1,28 +1,35 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io' show Platform;
 import 'dart:typed_data';
 
-import 'package:flutter/foundation.dart'
-    show TargetPlatform, debugDefaultTargetPlatformOverride;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:qrs_dart/qrs_dart.dart';
 import 'package:yukari/controllers/qr_share_receive_controller.dart';
 import 'package:yukari/share/image_qr_scan.dart';
+import 'package:yukari/share/share_bundle.dart';
 import 'package:yukari/share/share_document.dart';
 import 'package:yukari/share/share_import.dart';
 import 'package:yukari/signals/locale.dart' as app;
 
 import '../share/share_fixture.dart';
 
+/// A sender for [content], built the way the share page builds one.
+SendSession senderForContent(
+  String content, {
+  int sliceSize = 200,
+  bool compress = false,
+}) => SendSession.forFile(
+  Uint8List.fromList(utf8.encode(content)),
+  filename: 'share.json',
+  contentType: shareContentType,
+  sliceSize: sliceSize,
+  compress: compress,
+);
+
 /// A sender for [document], built the way the share page builds one.
 SendSession senderFor(ShareDocument document, {int sliceSize = 200}) =>
-    SendSession.forFile(
-      Uint8List.fromList(utf8.encode(document.encode())),
-      filename: 'share.json',
-      contentType: shareContentType,
-      sliceSize: sliceSize,
-      compress: false,
-    );
+    senderForContent(document.encode(), sliceSize: sliceSize);
 
 /// A sender of a file that is not a Yukari share.
 SendSession foreignSender({String contentType = 'text/plain'}) =>
@@ -86,26 +93,15 @@ void main() {
     SendSession sender,
   ) {
     var guard = sender.blockCount * 60;
-    while (controller.share.value == null && controller.error.value == null) {
+    while (controller.shares.value.isEmpty && controller.error.value == null) {
       expect(guard--, greaterThan(0), reason: 'the transfer never settled');
       controller.addPayload(sender.next().payload);
       now += 100000;
     }
   }
 
-  test('camera support follows the platform table', () {
-    addTearDown(() => debugDefaultTargetPlatformOverride = null);
-    const expected = {
-      TargetPlatform.android: true,
-      TargetPlatform.iOS: true,
-      TargetPlatform.macOS: true,
-      TargetPlatform.linux: false,
-      TargetPlatform.windows: false,
-    };
-    for (final MapEntry(key: platform, value: supported) in expected.entries) {
-      debugDefaultTargetPlatformOverride = platform;
-      expect(platformHasCamera(), supported, reason: '$platform');
-    }
+  test('only Android has a camera scanner', () {
+    expect(platformHasCamera(), Platform.isAndroid);
   });
 
   test('feeds frames into the session and completes a share', () {
@@ -126,11 +122,44 @@ void main() {
     feedUntilSettled(controller, sender);
 
     expect(controller.error.value, isNull);
-    expect(controller.share.value?.encode(), document.encode());
+    expect(controller.shares.value.single.encode(), document.encode());
     expect(controller.decoded.value, k);
     expect(controller.frames.value, greaterThanOrEqualTo(k));
     // The transfer froze its average once it finished.
     expect(controller.speed.value, greaterThan(0));
+  });
+
+  test('a bundle payload decodes to every document it carries', () {
+    final controller = create();
+    final sender = senderForContent(
+      encodeShareItems([networkShare('alpha'), networkShare('beta')]),
+      sliceSize: 1000,
+    );
+    expect(sender.blockCount, 1);
+
+    feedUntilSettled(controller, sender);
+
+    expect(controller.error.value, isNull);
+    expect(controller.shares.value.map((document) => document.name), [
+      'alpha',
+      'beta',
+    ]);
+  });
+
+  test('an oversize payload is refused before it is decoded', () {
+    final controller = create();
+    // Valid apart from its size, and compressed on the wire so the transfer
+    // itself stays one frame: the guard is about what the receiver decodes.
+    final padded = jsonEncode({
+      ...sharedNodeDocument().toJson(),
+      'padding': 'x' * shareMaxBytes,
+    });
+    final sender = senderForContent(padded, sliceSize: 1000, compress: true);
+
+    feedUntilSettled(controller, sender);
+
+    expect(controller.shares.value, isEmpty);
+    expect(controller.error.value, app.l10n.value.shareReceiveInvalid);
   });
 
   test('duplicate frames do not advance the transfer', () {
@@ -163,7 +192,7 @@ void main() {
 
     feedUntilSettled(controller, foreignSender());
 
-    expect(controller.share.value, isNull);
+    expect(controller.shares.value, isEmpty);
     expect(controller.error.value, app.l10n.value.shareReceiveInvalid);
   });
 
@@ -173,7 +202,7 @@ void main() {
 
     feedUntilSettled(controller, sender);
 
-    expect(controller.share.value, isNull);
+    expect(controller.shares.value, isEmpty);
     expect(controller.error.value, app.l10n.value.shareReceiveInvalid);
   });
 
@@ -183,7 +212,7 @@ void main() {
     expect(first.blockCount, 2, reason: 'one frame must stay incomplete');
     controller.addPayload(first.next().payload);
     expect(controller.frames.value, 1);
-    expect(controller.share.value, isNull);
+    expect(controller.shares.value, isEmpty);
 
     final other = senderFor(sharedNodeDocument(), sliceSize: 50);
     expect(other.blockCount, greaterThan(1));
@@ -192,10 +221,10 @@ void main() {
     expect(messages, <String>[app.l10n.value.shareReceiveDifferentShare]);
     expect(controller.frames.value, 1);
     expect(controller.k.value, other.blockCount);
-    expect(controller.share.value, isNull);
+    expect(controller.shares.value, isEmpty);
 
     feedUntilSettled(controller, other);
-    expect(controller.share.value?.kind, ShareKind.node);
+    expect(controller.shares.value.single.kind, ShareKind.node);
     // The message is said once, not for every frame of the new transfer.
     expect(messages, hasLength(1));
   });
@@ -227,7 +256,7 @@ void main() {
     await controller.scanImage(Uint8List.fromList(<int>[1, 2, 3]));
 
     expect(seen, <({int done, int total})>[(done: 1, total: 3)]);
-    expect(controller.share.value?.encode(), document.encode());
+    expect(controller.shares.value.single.encode(), document.encode());
     expect(controller.imageProgress.value, isNull);
     expect(controller.error.value, isNull);
   });
@@ -292,7 +321,7 @@ void main() {
         addNode: (document) async => fail('a network is not saved as a node'),
       ),
     );
-    controller.share.value = sharedNetworkDocument();
+    controller.shares.value = [sharedNetworkDocument()];
 
     expect(await controller.save(), isTrue);
     expect(added, hasLength(1));
@@ -316,7 +345,7 @@ void main() {
         addNode: (document) async => 'relay.example.com:11010',
       ),
     );
-    controller.share.value = sharedNodeDocument();
+    controller.shares.value = [sharedNodeDocument()];
 
     expect(await controller.save(), isTrue);
     expect(messages, <String>[
@@ -333,11 +362,47 @@ void main() {
         addNode: (document) async => null,
       ),
     );
-    controller.share.value = sharedNodeDocument();
+    controller.shares.value = [sharedNodeDocument()];
 
     expect(await controller.save(), isTrue);
     expect(messages, <String>[app.l10n.value.shareReceiveNodeExists]);
     expect(controller.saved.value, isTrue);
+  });
+
+  test('adding a bundle says how many arrived', () async {
+    final controller = create(
+      importer: ShareImporter(
+        addNetwork: (document) async => document.name!,
+        addNode: (document) async => fail('no node is in this bundle'),
+      ),
+    );
+    controller.shares.value = [networkShare('alpha'), networkShare('beta')];
+
+    expect(await controller.save(), isTrue);
+    expect(messages, <String>[app.l10n.value.shareReceiveAddedAll(2)]);
+    expect(controller.saved.value, isTrue);
+
+    // A saved bundle is spent: a second tap must not add it again.
+    expect(await controller.save(), isFalse);
+    expect(messages, hasLength(1));
+  });
+
+  test('adding a bundle reports the duplicates and failures it hit', () async {
+    final controller = create(
+      importer: ShareImporter(
+        addNetwork: (document) async {
+          if (document.name == 'beta') throw StateError('disk');
+          return document.name!;
+        },
+        addNode: (document) async => fail('no node is in this bundle'),
+      ),
+    );
+    controller.shares.value = [networkShare('alpha'), networkShare('beta')];
+
+    expect(await controller.save(), isTrue);
+    expect(messages, <String>[
+      app.l10n.value.shareReceiveAddSummary(1, 0, 1),
+    ]);
   });
 
   test('a failed save is reported and can be retried', () async {
@@ -351,7 +416,7 @@ void main() {
         addNode: (document) async => null,
       ),
     );
-    controller.share.value = sharedNetworkDocument();
+    controller.shares.value = [sharedNetworkDocument()];
 
     expect(await controller.save(), isFalse);
     expect(messages, <String>[
@@ -376,7 +441,7 @@ void main() {
     final sender = senderFor(sharedNetworkDocument());
     controller.addPayload(sender.next().payload);
     controller.addPayload(sender.next().payload);
-    controller.share.value = sharedNodeDocument();
+    controller.shares.value = [sharedNodeDocument()];
     controller.saved.value = true;
     controller.error.value = 'stale';
 
@@ -386,7 +451,7 @@ void main() {
     expect(controller.decoded.value, 0);
     expect(controller.frames.value, 0);
     expect(controller.status.value, isEmpty);
-    expect(controller.share.value, isNull);
+    expect(controller.shares.value, isEmpty);
     expect(controller.error.value, isNull);
     expect(controller.speed.value, 0);
     expect(controller.saved.value, isFalse);

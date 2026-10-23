@@ -30,6 +30,41 @@ Future<String?> addSharedNode(ShareDocument document) async {
   return bookmark.address;
 }
 
+/// What a batch import did: added, already saved, and failed, per document.
+typedef ShareImportSummary = ({int added, int duplicates, int failed});
+
+/// Saves every document in [documents], in order, and reports what happened.
+///
+/// A failure is per item: the rest still save, and the caller reports the whole
+/// batch instead of the first error. A network always adds, under a numbered
+/// name when one is taken; a node whose address is already bookmarked counts as
+/// a duplicate instead.
+Future<ShareImportSummary> addSharedDocuments(
+  List<ShareDocument> documents, {
+  ShareImporter importer = ShareImporter.defaults,
+}) async {
+  var added = 0;
+  var duplicates = 0;
+  var failed = 0;
+  for (final document in documents) {
+    try {
+      final saved = switch (document.kind) {
+        ShareKind.network => await importer.addNetwork(document),
+        ShareKind.node => await importer.addNode(document),
+      };
+      // Only a node reports a duplicate, by returning no address.
+      if (saved == null) {
+        duplicates++;
+      } else {
+        added++;
+      }
+    } on Object {
+      failed++;
+    }
+  }
+  return (added: added, duplicates: duplicates, failed: failed);
+}
+
 /// Saves a decoded share; injected where the app's stores must stay untouched,
 /// as in tests.
 final class ShareImporter {

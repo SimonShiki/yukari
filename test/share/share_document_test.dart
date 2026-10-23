@@ -98,6 +98,20 @@ void main() {
     ]);
   });
 
+  test('decodes a parsed root, so a bundle can reuse the field checks', () {
+    final root =
+        jsonDecode(sharedNodeDocument().encode()) as Map<String, Object?>;
+
+    final decoded = ShareDocument.decodeRoot(root);
+
+    expect(decoded.kind, ShareKind.node);
+    expect(decoded.peers.single.address, 'relay.example.com:11010');
+    expect(
+      () => ShareDocument.decodeRoot({...root, 'kind': 'bundle'}),
+      throwsFormatException,
+    );
+  });
+
   test('trims a name, drops a blank secret and deduplicates protocols', () {
     final decoded = ShareDocument.decode(
       jsonEncode({

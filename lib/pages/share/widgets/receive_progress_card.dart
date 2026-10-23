@@ -5,7 +5,9 @@ import 'package:signals_flutter/signals_flutter.dart';
 import '../../../controllers/qr_share_receive_controller.dart';
 import '../../../l10n/l10n.dart';
 import '../../../utils/byte_units.dart';
+import '../../../widgets/card_surface/card_surface.dart';
 import 'block_grid.dart';
+import 'share_choice_group.dart';
 
 /// The live transfer: how many blocks are decoded, how fast they arrive, the
 /// per-block status picture, and the ways to feed the receiver more frames.
@@ -34,8 +36,7 @@ class ReceiveProgressCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final l10n = context.l10n;
-    return Card(
-      margin: EdgeInsets.zero,
+    return CardSurface(
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -130,7 +131,13 @@ class ReceiveProgressCard extends StatelessWidget {
             if (cameraAvailable) ...[
               const SizedBox(height: 24),
               SignalBuilder(
-                builder: (context) => _ScanRateSelector(controller: controller),
+                // The pace is read here, not in the selector's own build: a
+                // read below this builder is not subscribed, so tapping a
+                // choice would leave the group showing the old one.
+                builder: (context) => _ScanRateSelector(
+                  controller: controller,
+                  pace: controller.pace.value,
+                ),
               ),
             ],
           ],
@@ -176,9 +183,12 @@ class _SpeedRow extends StatelessWidget {
 
 /// How hard the camera is allowed to scan, when this platform has one.
 class _ScanRateSelector extends StatelessWidget {
-  const _ScanRateSelector({required this.controller});
+  const _ScanRateSelector({required this.controller, required this.pace});
 
   final QrShareReceiveController controller;
+
+  /// The pace to show as chosen; the caller owns keeping it current.
+  final ScanPace pace;
 
   @override
   Widget build(BuildContext context) {
@@ -189,26 +199,15 @@ class _ScanRateSelector extends StatelessWidget {
       children: [
         Text(l10n.shareReceiveScanRate, style: theme.textTheme.titleSmall),
         const SizedBox(height: 8),
-        SegmentedButton<ScanPace>(
-          showSelectedIcon: false,
-          expandedInsets: EdgeInsets.zero,
-          segments: [
-            ButtonSegment(
-              value: ScanPace.relaxed,
-              label: Text(l10n.shareReceiveRateRelaxed),
-            ),
-            ButtonSegment(
-              value: ScanPace.balanced,
-              label: Text(l10n.shareReceiveRateBalanced),
-            ),
-            ButtonSegment(
-              value: ScanPace.turbo,
-              label: Text(l10n.shareReceiveRateTurbo),
-            ),
+        ShareChoiceGroup(
+          semanticLabel: l10n.shareReceiveScanRate,
+          labels: [
+            l10n.shareReceiveRateRelaxed,
+            l10n.shareReceiveRateBalanced,
+            l10n.shareReceiveRateTurbo,
           ],
-          selected: {controller.pace.value},
-          onSelectionChanged: (selection) =>
-              controller.pace.value = selection.single,
+          selectedIndex: ScanPace.values.indexOf(pace),
+          onSelected: (index) => controller.pace.value = ScanPace.values[index],
         ),
         const SizedBox(height: 8),
         Text(

@@ -1,10 +1,17 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:m3e_core/m3e_core.dart' show M3ESlider;
+import 'package:m3e_core/m3e_core.dart'
+    show
+        M3EButtonGroupType,
+        M3EButtonSize,
+        M3ESlider,
+        M3EToggleButton,
+        M3EToggleButtonGroup;
 import 'package:material_ui/material_ui.dart';
 import 'package:yukari/controllers/qr_share_send_controller.dart';
 import 'package:yukari/l10n/l10n.dart';
 import 'package:yukari/pages/share/qr_share_send_page.dart';
 import 'package:yukari/pages/share/widgets/qr_matrix_view.dart';
+import 'package:yukari/pages/share/widgets/qr_stream_settings.dart';
 import 'package:yukari/share/share_document.dart';
 import 'package:yukari_core/models/network.dart';
 import 'package:yukari_core/models/node.dart';
@@ -16,7 +23,7 @@ import 'network_test_support.dart';
 void main() {
   QrShareSendController controllerFor(ShareDocument document) {
     final controller = QrShareSendController(
-      document: document,
+      documents: [document],
       refreshRate: 60,
     );
     addTearDown(controller.dispose);
@@ -68,6 +75,14 @@ void main() {
       .whereType<String>()
       .firstWhere((text) => RegExp(r'^Frame \d+ · ').hasMatch(text));
 
+  /// The block-density group in the stream settings.
+  M3EToggleButtonGroup densityGroup(WidgetTester tester) =>
+      tester.widget<M3EToggleButtonGroup>(find.byType(M3EToggleButtonGroup));
+
+  /// A share too big for one code, so the playback and tuning controls show.
+  QrShareSendController streamingController() =>
+      controllerFor(noiseNetworkShare(peers: 12));
+
   testWidgets('a network share shows what it carries and its code', (
     tester,
   ) async {
@@ -76,7 +91,7 @@ void main() {
       tester,
       QrShareSendPage(
         kind: ShareKind.network,
-        id: 'n1',
+        ids: const ['n1'],
         controller: controller,
       ),
     );
@@ -95,13 +110,88 @@ void main() {
     expect(codeLabel(tester), strings.shareQrFrameSemanticLabel(1));
   });
 
-  testWidgets('play and pause drive the stream', (tester) async {
+  testWidgets('a share that fits one code is a still image, not a stream', (
+    tester,
+  ) async {
     final controller = controllerFor(sharedNetworkDocument());
     await pumpPage(
       tester,
       QrShareSendPage(
         kind: ShareKind.network,
-        id: 'n1',
+        ids: const ['n1'],
+        controller: controller,
+      ),
+    );
+
+    expect(find.byTooltip(strings.shareQrPlay), findsNothing);
+    expect(find.byTooltip(strings.shareQrPause), findsNothing);
+    expect(find.byIcon(Icons.play_arrow_rounded), findsNothing);
+    expect(find.byIcon(Icons.pause_rounded), findsNothing);
+
+    final stats = frameStats(tester);
+    expect(stats, startsWith('Frame 1 · '));
+    expect(stats, contains('1 block'));
+    expect(
+      find.text(strings.shareQrFps(controller.fps.value)),
+      findsOneWidget,
+      reason: 'the rate stays information even without a stream',
+    );
+    expect(codeLabel(tester), strings.shareQrFrameSemanticLabel(1));
+
+    // No control can change a one-code share.
+    expect(find.text(strings.shareQrFrameRate), findsNothing);
+    expect(find.text(strings.shareQrDensity), findsNothing);
+    expect(find.byType(M3ESlider), findsNothing);
+    expect(find.byType(M3EToggleButtonGroup), findsNothing);
+    // A one-code share tunes nothing, so the card holds the export alone.
+    await tester.ensureVisible(find.text(strings.shareQrExportGif));
+    await tester.pumpAndSettle();
+    expect(
+      [
+        for (final text in tester.widgetList<Text>(
+          find.descendant(
+            of: find.byType(QrStreamSettings),
+            matching: find.byType(Text),
+          ),
+        ))
+          text.data,
+      ],
+      [strings.shareQrExportGif],
+      reason: 'the card labels its one action and nothing else',
+    );
+  });
+
+  testWidgets('a streaming share keeps its playback and tuning controls', (
+    tester,
+  ) async {
+    final controller = streamingController();
+    await pumpPage(
+      tester,
+      QrShareSendPage(
+        kind: ShareKind.network,
+        ids: const ['n1'],
+        controller: controller,
+      ),
+    );
+
+    expect(find.byTooltip(strings.shareQrPlay), findsOneWidget);
+    expect(find.byType(M3ESlider), findsOneWidget);
+    expect(find.byType(M3EToggleButtonGroup), findsOneWidget);
+    expect(find.text(strings.shareQrFrameRate), findsOneWidget);
+    expect(find.text(strings.shareQrDensity), findsOneWidget);
+    expect(
+      codeLabel(tester),
+      strings.shareQrFrameSemanticLabel(controller.framesSent.value),
+    );
+  });
+
+  testWidgets('play and pause drive the stream', (tester) async {
+    final controller = streamingController();
+    await pumpPage(
+      tester,
+      QrShareSendPage(
+        kind: ShareKind.network,
+        ids: const ['n1'],
         controller: controller,
       ),
     );
@@ -126,12 +216,12 @@ void main() {
   });
 
   testWidgets('the frame rate slider writes the controller', (tester) async {
-    final controller = controllerFor(sharedNetworkDocument());
+    final controller = streamingController();
     await pumpPage(
       tester,
       QrShareSendPage(
         kind: ShareKind.network,
-        id: 'n1',
+        ids: const ['n1'],
         controller: controller,
       ),
     );
@@ -158,7 +248,7 @@ void main() {
   testWidgets('choosing Fast restarts the stream with one block', (
     tester,
   ) async {
-    final controller = controllerFor(largeShareDocument());
+    final controller = streamingController();
     expect(
       controller.blockCount.value,
       3,
@@ -168,23 +258,91 @@ void main() {
       tester,
       QrShareSendPage(
         kind: ShareKind.network,
-        id: 'n1',
+        ids: const ['n1'],
         controller: controller,
       ),
     );
+    expect(densityGroup(tester).selectedIndex, 0);
 
-    await tapVisible(tester, find.text(strings.shareQrDensityFast));
+    await tapVisible(tester, find.text(strings.shareQrDensityFast).first);
 
     expect(controller.density.value, QrShareDensity.fast);
     expect(controller.blockCount.value, 1);
     expect(controller.framesSent.value, 1);
+    // The group follows the controller it reports to.
+    expect(densityGroup(tester).selectedIndex, 2);
+    final fast = tester.widget<M3EToggleButton>(
+      find.byType(M3EToggleButton).at(2),
+    );
+    expect(fast.checked, isTrue);
+  });
+
+  testWidgets('the density is one connected group of the three choices', (
+    tester,
+  ) async {
+    final controller = streamingController();
+    await pumpPage(
+      tester,
+      QrShareSendPage(
+        kind: ShareKind.network,
+        ids: const ['n1'],
+        controller: controller,
+      ),
+    );
+
+    final group = densityGroup(tester);
+    expect(group.type, M3EButtonGroupType.connected);
+    expect(group.size, M3EButtonSize.sm);
+    expect(group.selectedIndex, 0);
+    expect(group.semanticLabel, strings.shareQrDensity);
+    expect(
+      [for (final action in group.actions) (action.label! as Text).data],
+      [
+        strings.shareQrDensityEasy,
+        strings.shareQrDensityBalanced,
+        strings.shareQrDensityFast,
+      ],
+    );
+    // The group is the settings card's only density control.
+    expect(find.byType(SegmentedButton<QrShareDensity>), findsNothing);
+    // The settings card is the app's own surface.
+    expect(find.byType(Card), findsNothing);
+  });
+
+  testWidgets('the choices fill the card at a compact and a wide window', (
+    tester,
+  ) async {
+    final controller = streamingController();
+    Future<void> pumpAt(Size size) => pumpPage(
+      tester,
+      QrShareSendPage(
+        kind: ShareKind.network,
+        ids: const ['n1'],
+        controller: controller,
+      ),
+      size: size,
+    );
+
+    await pumpAt(const Size(400, 900));
+    // The share column pads 16 a side, and so does the card.
+    expect(
+      tester.getSize(find.byType(M3EToggleButtonGroup)).width,
+      closeTo(336, 0.5),
+    );
+
+    await pumpAt(const Size(1200, 900));
+    expect(tester.takeException(), isNull);
+    expect(
+      tester.getSize(find.byType(M3EToggleButtonGroup)).width,
+      closeTo(536, 0.5),
+    );
   });
 
   testWidgets('a missing network says so', (tester) async {
     await tester.runAsync(() => seedWith({}));
     await pumpPage(
       tester,
-      const QrShareSendPage(kind: ShareKind.network, id: 'gone'),
+      const QrShareSendPage(kind: ShareKind.network, ids: ['gone']),
     );
 
     expect(find.text(strings.shareSendNetworkMissing), findsOneWidget);
@@ -197,19 +355,19 @@ void main() {
     );
     await pumpPage(
       tester,
-      const QrShareSendPage(kind: ShareKind.network, id: 'n1'),
+      const QrShareSendPage(kind: ShareKind.network, ids: ['n1']),
     );
 
     expect(find.text(strings.shareSendNoPeers), findsOneWidget);
   });
 
   testWidgets('lays out on a small phone screen', (tester) async {
-    final controller = controllerFor(largeShareDocument());
+    final controller = streamingController();
     await pumpPage(
       tester,
       QrShareSendPage(
         kind: ShareKind.network,
-        id: 'n1',
+        ids: const ['n1'],
         controller: controller,
       ),
       size: const Size(360, 640),
@@ -231,7 +389,7 @@ void main() {
         supportedLocales: AppLocalizations.supportedLocales,
         home: QrShareSendPage(
           kind: ShareKind.network,
-          id: 'n1',
+          ids: const ['n1'],
           controller: controller,
         ),
       ),
@@ -258,7 +416,7 @@ void main() {
       tester,
       QrShareSendPage(
         kind: ShareKind.network,
-        id: 'n1',
+        ids: const ['n1'],
         controller: controller,
       ),
       size: const Size(1000, 900),
@@ -270,12 +428,12 @@ void main() {
   });
 
   testWidgets('a new frame repaints the code, not the summary', (tester) async {
-    final controller = controllerFor(sharedNetworkDocument());
+    final controller = streamingController();
     await pumpPage(
       tester,
       QrShareSendPage(
         kind: ShareKind.network,
-        id: 'n1',
+        ids: const ['n1'],
         controller: controller,
       ),
     );
@@ -291,7 +449,11 @@ void main() {
 
     final after = tester.widget<QrMatrixView>(find.byType(QrMatrixView));
     expect(identical(before, after.matrix), isFalse);
-    expect(codeLabel(tester), strings.shareQrFrameSemanticLabel(2));
+    expect(controller.framesSent.value, greaterThan(1));
+    expect(
+      codeLabel(tester),
+      strings.shareQrFrameSemanticLabel(controller.framesSent.value),
+    );
     expect(
       identical(summary, tester.widget<Text>(find.text('alpha'))),
       isTrue,
@@ -305,7 +467,7 @@ void main() {
       tester,
       QrShareSendPage(
         kind: ShareKind.node,
-        id: 'relay',
+        ids: const ['relay'],
         controller: controller,
       ),
     );
@@ -318,23 +480,53 @@ void main() {
     expect(find.byType(QrMatrixView), findsOneWidget);
   });
 
+  testWidgets('a bundle of ids shares every item with one code', (tester) async {
+    await tester.runAsync(
+      () => seedWith({
+        'n1': networkWithPeer(),
+        'n2': networkWithPeer()..networkName = 'beta',
+      }),
+    );
+    await pumpPage(
+      tester,
+      const QrShareSendPage(kind: ShareKind.network, ids: ['n1', 'n2']),
+    );
+
+    expect(find.text(strings.shareItems(2)), findsOneWidget);
+    expect(find.text('alpha'), findsOneWidget);
+    expect(find.text('beta'), findsOneWidget);
+    expect(find.text(strings.shareQrSecretWarning), findsOneWidget);
+    expect(find.byType(QrMatrixView), findsOneWidget);
+  });
+
+  testWidgets('a bundle with one missing id shares nothing', (tester) async {
+    await tester.runAsync(() => seedWith({'n1': networkWithPeer()}));
+    await pumpPage(
+      tester,
+      const QrShareSendPage(kind: ShareKind.network, ids: ['n1', 'gone']),
+    );
+
+    expect(find.text(strings.shareSendNetworkMissing), findsOneWidget);
+    expect(find.byType(QrMatrixView), findsNothing);
+  });
+
   testWidgets('a missing bookmark says so', (tester) async {
     await tester.runAsync(() => seedWith({}));
     await pumpPage(
       tester,
-      const QrShareSendPage(kind: ShareKind.node, id: 'gone'),
+      const QrShareSendPage(kind: ShareKind.node, ids: ['gone']),
     );
 
     expect(find.text(strings.shareSendNodeMissing), findsOneWidget);
   });
 
   testWidgets('backgrounding the app pauses the stream', (tester) async {
-    final controller = controllerFor(sharedNetworkDocument());
+    final controller = streamingController();
     await pumpPage(
       tester,
       QrShareSendPage(
         kind: ShareKind.network,
-        id: 'n1',
+        ids: const ['n1'],
         controller: controller,
       ),
     );
@@ -365,7 +557,7 @@ void main() {
       tester,
       QrShareSendPage(
         kind: ShareKind.network,
-        id: 'n1',
+        ids: const ['n1'],
         controller: controller,
       ),
     );
@@ -392,13 +584,28 @@ void main() {
     expect(find.text(strings.shareQrExportGif), findsOneWidget);
   });
 
-  testWidgets('a sender the page creates starts streaming by itself', (
+  testWidgets('a sender the page creates opens a fitting share still', (
     tester,
   ) async {
     await tester.runAsync(() => seedWith({'n1': networkWithPeer()}));
     await pumpPage(
       tester,
-      const QrShareSendPage(kind: ShareKind.network, id: 'n1'),
+      const QrShareSendPage(kind: ShareKind.network, ids: ['n1']),
+    );
+
+    expect(find.byTooltip(strings.shareQrPlay), findsNothing);
+    final before = frameStats(tester);
+    await tester.pump(const Duration(milliseconds: 200));
+    expect(frameStats(tester), before);
+  });
+
+  testWidgets('a sender the page creates streams a bigger share by itself', (
+    tester,
+  ) async {
+    await tester.runAsync(() => seedWith({'n1': noiseNetwork(peers: 12)}));
+    await pumpPage(
+      tester,
+      const QrShareSendPage(kind: ShareKind.network, ids: ['n1']),
       settle: false,
     );
 
@@ -414,7 +621,7 @@ void main() {
     );
     await pumpPage(
       tester,
-      const QrShareSendPage(kind: ShareKind.network, id: 'n1'),
+      const QrShareSendPage(kind: ShareKind.network, ids: ['n1']),
     );
 
     expect(find.text(strings.shareSendUnsupported), findsOneWidget);

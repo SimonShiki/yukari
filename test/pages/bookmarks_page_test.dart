@@ -18,12 +18,15 @@ import 'package:yukari/share/share_routes.dart';
 import 'package:yukari/signals/bookmarks.dart' as saved;
 import 'package:yukari/signals/networks.dart' as networks;
 import 'package:yukari/utils/bookmark_codec.dart';
+import 'package:yukari/widgets/selection/selection_chrome.dart';
 import 'package:yukari/widgets/metadata_chip/metadata_chip.dart';
 
 import '../bookmarks_fixture.dart';
 import '../networks_fixture.dart';
 
 void main() {
+  final strings = lookupAppLocalizations(const Locale('en'));
+
   late List<String> messages;
 
   setUp(() => messages = []);
@@ -43,7 +46,7 @@ void main() {
           key: state.pageKey,
           child: QrShareSendPage(
             kind: ShareKind.values.asNameMap()[state.pathParameters['kind']]!,
-            id: state.pathParameters['id']!,
+            ids: shareSendIds(state.pathParameters['id']),
           ),
         ),
       ),
@@ -636,6 +639,26 @@ void main() {
     });
   });
 
+  testWidgets('no selection entry while the filters match nothing', (
+    tester,
+  ) async {
+    await tester.runAsync(() async {
+      await seedBookmarks([
+        testBookmark('u1', name: 'One', category: 'Home'),
+      ]);
+      await pumpPage(tester);
+      expect(find.byTooltip(strings.selectionEnter), findsOneWidget);
+
+      await tester.enterText(find.byType(SearchBar), 'nothing matches this');
+      await tester.pumpAndSettle();
+
+      // Nothing is selectable, so the entry is gone, as on a filtered list of
+      // networks.
+      expect(find.text(strings.bookmarksNoResults), findsOneWidget);
+      expect(find.byTooltip(strings.selectionEnter), findsNothing);
+    });
+  });
+
   testWidgets('offers every share channel and opens the sender for QR', (
     tester,
   ) async {
@@ -721,6 +744,100 @@ void main() {
 
       // Unmounting disposes the sender page and its paused controller.
       await tester.pumpWidget(const SizedBox.shrink());
+    });
+  });
+
+  testWidgets('a tap on a row in selection toggles it', (
+    tester,
+  ) async {
+    await tester.runAsync(() async {
+      await seedBookmarks([
+        testBookmark('u1', name: 'One'),
+        testBookmark('u2', name: 'Two', host: 'other.example.com'),
+      ]);
+      final controller = await pumpPage(tester);
+
+      await tester.tap(find.byTooltip(strings.selectionEnter));
+      await tester.pumpAndSettle();
+      expect(controller.selection.selecting.value, isTrue);
+
+      // The actions make way for the check, which rides the trailing slot of
+      // each row like it does on a network card.
+      expect(find.byTooltip('More options for One'), findsNothing);
+      expect(find.byTooltip(strings.bookmarksAddToNetwork), findsNothing);
+      expect(find.byType(SelectionCheck), findsNWidgets(2));
+
+      await tester.tap(find.text('One'));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(AlertDialog), findsNothing, reason: 'the row toggles');
+      expect(controller.selection.ids.value, {'u1'});
+      final checks = tester
+          .widgetList<SelectionCheck>(find.byType(SelectionCheck))
+          .toList();
+      expect(checks.map((check) => check.selected), [true, false]);
+      expect(find.text(strings.selectionSelected(1)), findsOneWidget);
+
+      // The check sits on its row's centre line, the same place the network
+      // card puts it.
+      final item = tester.getCenter(
+        find.ancestor(
+          of: find.text('One'),
+          matching: find.byType(M3EListItem),
+        ),
+      );
+      expect(
+        tester.getCenter(find.byType(SelectionCheck).first).dy,
+        closeTo(item.dy, 0.5),
+      );
+    });
+  });
+
+  testWidgets('the selection shares its nodes as one bundle', (tester) async {
+    await tester.runAsync(() async {
+      await seedBookmarks([
+        testBookmark('u1', name: 'One'),
+        testBookmark('u2', name: 'Two', host: 'other.example.com'),
+      ]);
+      final controller = await pumpPage(tester);
+
+      await tester.tap(find.byTooltip(strings.selectionEnter));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('One'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Two'));
+      await tester.pumpAndSettle();
+      expect(find.text(strings.selectionSelected(2)), findsOneWidget);
+
+      await tester.tap(find.text(strings.selectionShare));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(QrShareSendPage), findsOneWidget);
+      expect(find.text(strings.shareItems(2)), findsOneWidget);
+      // The sender is what the user asked for, so the list stops selecting.
+      expect(controller.selection.selecting.value, isFalse);
+    });
+  });
+
+  testWidgets('leaving selection restores the search bar and the menu', (
+    tester,
+  ) async {
+    await tester.runAsync(() async {
+      await seedBookmarks([testBookmark('u1', name: 'One')]);
+      await pumpPage(tester);
+
+      expect(find.byType(SearchBar), findsOneWidget);
+      await tester.tap(find.byTooltip(strings.selectionEnter));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(SearchBar), findsNothing);
+      expect(find.byIcon(Icons.add_rounded), findsNothing);
+
+      await tester.tap(find.byTooltip(strings.selectionExit));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(SearchBar), findsOneWidget);
+      expect(find.byIcon(Icons.add_rounded), findsOneWidget);
     });
   });
 

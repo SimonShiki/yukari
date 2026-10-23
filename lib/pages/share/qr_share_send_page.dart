@@ -18,15 +18,15 @@ class QrShareSendPage extends StatefulWidget {
   const QrShareSendPage({
     super.key,
     required this.kind,
-    required this.id,
+    required this.ids,
     this.controller,
   });
 
-  /// Whether [id] names a saved network or a bookmark.
+  /// Whether [ids] name saved networks or bookmarks.
   final ShareKind kind;
 
-  /// The saved network's or bookmark's id.
-  final String id;
+  /// The saved networks' or bookmarks' ids, in the order they are shared.
+  final List<String> ids;
 
   /// A controller for tests; the page resolves and owns its own otherwise.
   final QrShareSendController? controller;
@@ -52,14 +52,13 @@ class _QrShareSendPageState extends State<QrShareSendPage>
   void didChangeDependencies() {
     super.didChangeDependencies();
     if (_controller != null) return;
-    final target = resolveShareTarget(widget.kind, widget.id);
-    final document = target.document;
-    if (document == null) {
-      _unavailable = target.reason;
+    final target = resolveShareItems(widget.kind, widget.ids);
+    if (target.documents.isEmpty) {
+      _unavailable = target.reason ?? ShareUnavailableReason.unsupported;
       return;
     }
     final controller = QrShareSendController(
-      document: document,
+      documents: target.documents,
       refreshRate: View.of(context).display.refreshRate,
     );
     // The page owns this controller, so it starts the stream: opening the share
@@ -131,7 +130,7 @@ class _QrShareSendPageState extends State<QrShareSendPage>
       crossAxisAlignment: CrossAxisAlignment.stretch,
       spacing: 16,
       children: [
-        QrShareSummaryCard(document: controller.document),
+        QrShareSummaryCard(documents: controller.documents),
         QrStreamCard(controller: controller),
         QrStreamSettings(controller: controller, onExportGif: _exportGif),
       ],

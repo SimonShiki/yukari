@@ -222,6 +222,36 @@ void main() {
     home.dispose();
   });
 
+  testWidgets('every dashboard card draws the app card surface', (
+    tester,
+  ) async {
+    final home = controller(backend: _HomeBackend(infos: {'alpha': _info()}));
+    await tester.runAsync(seedNetworks);
+    await pumpHome(tester, controller: home);
+    await settle(tester);
+
+    expect(find.byType(Card), findsNothing);
+    final colors = Theme.of(tester.element(find.byType(DashboardCard).first))
+        .colorScheme;
+    for (var index = 0; index < 4; index++) {
+      final material = tester.widget<Material>(
+        find
+            .descendant(of: cardAt(index), matching: find.byType(Material))
+            .first,
+      );
+      expect(material.color, colors.surfaceContainer);
+      expect(material.elevation, 0);
+      expect(
+        material.shape,
+        const RoundedRectangleBorder(
+          borderRadius: BorderRadius.all(Radius.circular(20)),
+        ),
+        reason: 'a dashboard card takes its fill and corner from CardSurface',
+      );
+    }
+    home.dispose();
+  });
+
   testWidgets('lists every virtual address with a +N more suffix', (
     tester,
   ) async {

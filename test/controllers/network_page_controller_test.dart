@@ -6,6 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:yukari/controllers/network_instance_controller.dart';
 import 'package:yukari/controllers/network_page_controller.dart';
 import 'package:yukari/l10n/l10n.dart';
+import 'package:yukari/share/share_bundle.dart';
 import 'package:yukari/share/share_document.dart';
 import 'package:yukari/share/share_routes.dart';
 import 'package:yukari_core/models/models.dart';
@@ -136,6 +137,152 @@ void main() {
       ]);
     },
   );
+
+  /// A saved network with one peer, so the sender can share it.
+  Network shareable(String name) => Network()
+    ..networkName = name
+    ..nodes = [
+      Node(
+        id: 'peer',
+        url: Uri.parse('relay.example.com'),
+        port: 11010,
+        protocols: const [NodeProtocol.tcp],
+      ),
+    ];
+
+  test('nothing can be selected while no network exists', () async {
+    await seedWith({});
+    final controller = build(backend: FakeBackend(), messages: <String>[]);
+    controller.start();
+    addTearDown(controller.dispose);
+
+    expect(controller.canSelect, isFalse);
+  });
+
+  test('the selection counts, toggles and selects everything', () async {
+    await seedNetworks();
+    final controller = build(backend: FakeBackend(), messages: <String>[]);
+    controller.start();
+    addTearDown(controller.dispose);
+    final selection = controller.selection;
+
+    expect(controller.canSelect, isTrue);
+    expect(selection.selecting.value, isFalse);
+
+    selection.enter();
+    expect(selection.selecting.value, isTrue);
+    // Selection always starts empty.
+    expect(selection.orderedSelection, isEmpty);
+
+    selection.toggle('n2');
+    selection.toggle('n1');
+    expect(selection.count.value, 2);
+    // Ordered as the list shows them, not as they were tapped.
+    expect(selection.orderedSelection, ['n1', 'n2']);
+    expect(selection.allSelected.value, isTrue);
+
+    selection.toggle('n1');
+    expect(selection.count.value, 1);
+    expect(selection.allSelected.value, isFalse);
+
+    selection.toggleAll();
+    expect(selection.count.value, 2);
+    selection.toggleAll();
+    expect(selection.ids.value, isEmpty);
+
+    selection.exit();
+    expect(selection.selecting.value, isFalse);
+  });
+
+  test('a selection shares as one bundle path and leaves selection', () async {
+    await seedWith({'n1': shareable('alpha'), 'n2': shareable('beta')});
+    final controller = build(backend: FakeBackend(), messages: <String>[]);
+    controller.start();
+    addTearDown(controller.dispose);
+
+    controller.selection
+      ..enter()
+      ..select(['n2', 'n1']);
+
+    expect(
+      controller.selectionShareRoute(),
+      shareSendPaths(ShareKind.network, ['n1', 'n2']),
+    );
+    expect(controller.selection.selecting.value, isFalse);
+    expect(controller.selection.ids.value, isEmpty);
+  });
+
+  test('the selection share opens the bundle above the shell', () async {
+    await seedWith({'n1': shareable('alpha'), 'n2': shareable('beta')});
+    final pushed = <String>[];
+    final controller = build(
+      backend: FakeBackend(),
+      messages: <String>[],
+      pushed: pushed,
+    );
+    controller.start();
+    addTearDown(controller.dispose);
+
+    controller.selection
+      ..enter()
+      ..select(['n1', 'n2']);
+    controller.openSelectionShare();
+
+    expect(pushed, [
+      shareSendPaths(ShareKind.network, ['n1', 'n2']),
+    ]);
+  });
+
+  test('a selection past one bundle names the limit', () async {
+    await seedWith({
+      for (var index = 0; index <= shareMaxBundleItems; index++)
+        'n$index': shareable('network-$index'),
+    });
+    final messages = <String>[];
+    final controller = build(backend: FakeBackend(), messages: messages);
+    controller.start();
+    addTearDown(controller.dispose);
+
+    controller.selection
+      ..enter()
+      ..toggleAll();
+    expect(controller.selection.count.value, shareMaxBundleItems + 1);
+
+    expect(controller.selectionShareRoute(), isNull);
+    expect(messages, [
+      strings.selectionTooMany(shareMaxBundleItems + 1, shareMaxBundleItems),
+    ]);
+    // The selection stays, so the user can take targets out and try again.
+    expect(controller.selection.selecting.value, isTrue);
+  });
+
+  test('a selection with a network that cannot be shared reports it', () async {
+    await seedWith({
+      'n1': shareable('alpha'),
+      'n2': Network()..networkName = 'beta',
+    });
+    final messages = <String>[];
+    final pushed = <String>[];
+    final controller = build(
+      backend: FakeBackend(),
+      messages: messages,
+      pushed: pushed,
+    );
+    controller.start();
+    addTearDown(controller.dispose);
+
+    controller.selection
+      ..enter()
+      ..select(['n1', 'n2']);
+
+    expect(controller.selectionShareRoute(), isNull);
+    expect(messages, [strings.selectionUnavailable(1)]);
+    // Nothing is pushed and the selection stays, so the user can drop the
+    // network that cannot be shared.
+    expect(pushed, isEmpty);
+    expect(controller.selection.selecting.value, isTrue);
+    expect(controller.selection.ids.value, {'n1', 'n2'});
+  });
 
   test('records the instance events while refreshing', () async {
     await seedNetworks();

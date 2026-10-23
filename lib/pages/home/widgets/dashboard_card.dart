@@ -1,6 +1,8 @@
 import 'package:m3e_core/m3e_core.dart';
 import 'package:material_ui/material_ui.dart';
 
+import '../../../widgets/card_surface/card_surface.dart';
+
 /// One dashboard tile: a shaped icon and title, an optional trailing action,
 /// and the card's value below them.
 class DashboardCard extends StatelessWidget {
@@ -31,48 +33,41 @@ class DashboardCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return Material(
-      color: theme.colorScheme.surfaceContainer,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.all(Radius.circular(20)),
-      ),
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            spacing: 12,
-            children: [
-              Row(
-                spacing: 10,
-                children: [
-                  M3EContainer(
-                    shape,
-                    width: 32,
-                    height: 32,
-                    color: theme.colorScheme.secondaryContainer,
-                    child: Icon(
-                      icon,
-                      size: 18,
-                      color: theme.colorScheme.onSecondaryContainer,
-                    ),
+    return CardSurface(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          spacing: 12,
+          children: [
+            Row(
+              spacing: 10,
+              children: [
+                M3EContainer(
+                  shape,
+                  width: 32,
+                  height: 32,
+                  color: theme.colorScheme.secondaryContainer,
+                  child: Icon(
+                    icon,
+                    size: 18,
+                    color: theme.colorScheme.onSecondaryContainer,
                   ),
-                  Expanded(
-                    child: Text(
-                      title,
-                      style: theme.emphasizedTextTheme.titleSmall,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
+                ),
+                Expanded(
+                  child: Text(
+                    title,
+                    style: theme.emphasizedTextTheme.titleSmall,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
-                  SizedBox(height: trailingSlot, child: trailing),
-                ],
-              ),
-              child,
-            ],
-          ),
+                ),
+                SizedBox(height: trailingSlot, child: trailing),
+              ],
+            ),
+            child,
+          ],
         ),
       ),
     );

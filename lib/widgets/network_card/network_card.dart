@@ -1,6 +1,7 @@
 import 'package:material_ui/material_ui.dart';
 
 import '../../l10n/l10n.dart';
+import '../selection/selection_chrome.dart';
 import 'package:yukari_core/models/instance.dart';
 
 class NetworkCard extends StatelessWidget {
@@ -11,6 +12,8 @@ class NetworkCard extends StatelessWidget {
     required this.status,
     required this.onToggle,
     required this.menuButton,
+    this.selecting = false,
+    this.selected = false,
   });
 
   final String name;
@@ -18,6 +21,13 @@ class NetworkCard extends StatelessWidget {
   final InstanceStatus status;
   final ValueChanged<bool>? onToggle;
   final Widget menuButton;
+
+  /// Whether its page is selecting, so the row is its name and the check only:
+  /// no status badge, no start/stop button, no menu.
+  final bool selecting;
+
+  /// Whether this row is part of that selection.
+  final bool selected;
 
   @override
   Widget build(BuildContext context) {
@@ -72,9 +82,13 @@ class NetworkCard extends StatelessWidget {
               children: [
                 Expanded(child: Text(name, style: theme.textTheme.titleSmall)),
                 const SizedBox(width: 12),
-                badge,
-                const SizedBox(width: 8),
-                controls,
+                if (selecting)
+                  SelectionCheck(selected: selected)
+                else ...[
+                  badge,
+                  const SizedBox(width: 8),
+                  controls,
+                ],
               ],
             ),
           ],

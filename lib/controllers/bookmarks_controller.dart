@@ -6,6 +6,7 @@ import 'package:yukari_core/models/bookmark.dart';
 import '../signals/bookmarks.dart' as saved;
 import '../signals/locale.dart';
 import '../utils/bookmark_search.dart';
+import 'multi_selection.dart';
 
 part 'bookmarks_filters.dart';
 
@@ -112,6 +113,15 @@ class BookmarksController {
   /// Whether there is a user bookmark to export; built-ins do not count.
   late final canExport = computed(() => saved.bookmarks.value.isNotEmpty);
 
+  /// The ids the list can select, in the order it shows them: the selection
+  /// follows the filters, and built-ins are shareable like any saved node.
+  late final selectableIds = computed(
+    () => [for (final bookmark in visibleBookmarks.value) bookmark.id],
+  );
+
+  /// The gallery-style selection the list runs, entered from the app bar.
+  late final selection = MultiSelection(selectable: selectableIds);
+
   /// Saves [bookmark], reporting a failure instead of throwing into the UI.
   Future<bool> add(Bookmark bookmark) =>
       _write(() => saved.addBookmark(bookmark), l10n.value.bookmarksSaveFailed);
@@ -145,6 +155,7 @@ class BookmarksController {
   /// Frees the search field and every signal this controller created.
   void dispose() {
     searchController.dispose();
+    selection.dispose();
     for (final created in <ReadonlySignal<Object?>>[
       query,
       category,
@@ -159,6 +170,7 @@ class BookmarksController {
       hasMatches,
       activeFilterCount,
       canExport,
+      selectableIds,
     ]) {
       created.dispose();
     }

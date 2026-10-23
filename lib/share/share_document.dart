@@ -98,11 +98,15 @@ final class ShareDocument {
   };
 
   /// Parses untrusted [content], rejecting anything malformed.
+  static ShareDocument decode(String content) =>
+      decodeRoot(parseRoot(content));
+
+  /// The JSON object [content] holds, checked for the share size cap and shape.
   ///
-  /// A document arrives from a QR code of unknown origin, so every field is
-  /// checked and a bad one throws a [FormatException] instead of being half
-  /// accepted.
-  static ShareDocument decode(String content) {
+  /// A payload arrives from a QR code of unknown origin, so the size cap and
+  /// the object shape are checked before any field is read; a bundle and a
+  /// single document share this step.
+  static Map<String, Object?> parseRoot(String content) {
     if (utf8.encode(content).length > shareMaxBytes) {
       _reject('Share document is larger than $shareMaxBytes bytes');
     }
@@ -116,7 +120,15 @@ final class ShareDocument {
     if (root is! Map<String, Object?>) {
       _reject('Expected a share document object');
     }
+    return root;
+  }
 
+  /// The document the decoded JSON [root] describes.
+  ///
+  /// A document arrives from a QR code of unknown origin, so every field is
+  /// checked and a bad one throws a [FormatException] instead of being half
+  /// accepted.
+  static ShareDocument decodeRoot(Map<String, Object?> root) {
     final version = root['v'];
     if (version != shareDocumentVersion) {
       _reject('Unsupported share format version: $version');

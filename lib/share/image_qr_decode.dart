@@ -29,8 +29,8 @@ class ImageScanReport {
 ///
 /// This runs on the **current** isolate and is CPU bound, so a UI caller should
 /// use [scanImageForQrPayloads] instead, which moves the work to a worker
-/// isolate where the platform has one. It is exported for the web fallback and
-/// for tests.
+/// isolate. A caller that decodes in place gets the same progress reports it
+/// would get from the worker.
 ///
 /// [onProgress] is called once per examined frame with `(done, total)`,
 /// [onPayload] as soon as a frame decodes, and [isCancelled] lets a long
@@ -57,8 +57,8 @@ Future<ImageScanReport> decodeImageForQrPayloads(
       onPayload?.call(payload);
     }
     onProgress?.call(index + 1, frames.length);
-    // Hand the event loop back between frames so a caller that has to run this
-    // in-process (the web has no isolates) can still paint progress.
+    // Hand the event loop back between frames so an in-place caller can paint
+    // the progress it was just given.
     await Future<void>.delayed(Duration.zero);
   }
 

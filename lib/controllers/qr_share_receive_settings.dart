@@ -7,16 +7,4 @@ part of 'qr_share_receive_controller.dart';
 enum ScanPace { relaxed, balanced, turbo }
 
 /// Whether `mobile_scanner` ships a camera backend for this platform.
-///
-/// A pure platform table, not a plugin probe: the page explains the fallback
-/// before the user taps anything, and Linux and Windows scan an image instead.
-bool platformHasCamera() =>
-    kIsWeb ||
-    switch (defaultTargetPlatform) {
-      TargetPlatform.android ||
-      TargetPlatform.iOS ||
-      TargetPlatform.macOS => true,
-      TargetPlatform.linux ||
-      TargetPlatform.windows ||
-      TargetPlatform.fuchsia => false,
-    };
+bool platformHasCamera() => Platform.isAndroid;

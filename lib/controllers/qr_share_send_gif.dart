@@ -52,7 +52,7 @@ extension QrShareSendGif on QrShareSendController {
     GifExportOptions(
       data: _session.data,
       frames: frames,
-      sliceSize: density.value.sliceSizeFor(_compressedBytes),
+      sliceSize: _sliceSize,
       size: 512,
       fps: 10,
       compress: true,

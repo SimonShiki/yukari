@@ -1,7 +1,9 @@
 import 'dart:math';
 
-import 'package:yukari_core/models/node.dart';
 import 'package:yukari/share/share_document.dart';
+import 'package:yukari/share/share_masking.dart';
+import 'package:yukari_core/models/network.dart';
+import 'package:yukari_core/models/node.dart';
 
 /// A shared network with a secret, two peers, their protocols and one key.
 ShareDocument sharedNetworkDocument() => const ShareDocument(
@@ -32,6 +34,20 @@ ShareDocument sharedNodeDocument() => const ShareDocument(
   ],
 );
 
+/// A shared network called [name] with one peer, so a bundle of them keeps a
+/// readable order.
+ShareDocument networkShare(String name) => ShareDocument(
+  kind: ShareKind.network,
+  name: name,
+  peers: const [
+    SharedPeer(
+      host: 'relay.example.com',
+      port: 11010,
+      protocols: [NodeProtocol.tcp],
+    ),
+  ],
+);
+
 String _noise(int seed, int length) {
   final random = Random(seed);
   const alphabet =
@@ -42,26 +58,27 @@ String _noise(int seed, int length) {
   ]);
 }
 
-/// A network share with [peers] pseudo-random peers, so the document does not
-/// compress below its size and the density presets have room to differ.
-ShareDocument noiseNetworkShare({required int peers}) => ShareDocument(
-  kind: ShareKind.network,
-  name: 'alpha',
-  secret: _noise(1, 120),
-  peers: [
+/// The saved network whose share is [noiseNetworkShare]: the same [peers]
+/// pseudo-random peers, so a page resolving it streams rather than fitting one
+/// code.
+Network noiseNetwork({required int peers}) => Network()
+  ..networkName = 'alpha'
+  ..networkSecret = _noise(1, 120)
+  ..nodes = [
     for (var index = 0; index < peers; index++)
-      SharedPeer(
-        host: 'relay-${_noise(10 + index, 10)}.example.net',
+      Node(
+        id: 'relay-${_noise(10 + index, 10)}.example.net:${10000 + index}',
+        url: Uri.parse('relay-${_noise(10 + index, 10)}.example.net'),
         port: 10000 + index,
         protocols: const [NodeProtocol.tcp, NodeProtocol.quic],
         publicKey: _noise(100 + index, 40),
       ),
-  ],
-);
+  ];
 
-/// 672 compressed bytes, so Easy, Balanced and Fast need 3, 2 and 1 blocks.
-ShareDocument largeShareDocument() => noiseNetworkShare(peers: 8);
-
-/// 2110 compressed bytes: more than one QR code can carry, so Fast still
-/// needs two frames.
-ShareDocument hugeShareDocument() => noiseNetworkShare(peers: 40);
+/// A network share with [peers] pseudo-random peers, so the document does not
+/// compress below its size and the density presets have room to differ.
+///
+/// Twelve peers compress to 855 bytes, more than the borderline preset's one
+/// code carries, so this is the smallest fixture that still streams.
+ShareDocument noiseNetworkShare({required int peers}) =>
+    shareNetwork(noiseNetwork(peers: peers));

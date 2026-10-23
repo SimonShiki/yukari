@@ -6,13 +6,11 @@ import 'package:signals_flutter/signals_flutter.dart';
 
 import '../../../controllers/theming_controller.dart';
 import '../../../l10n/l10n.dart';
+import '../../../widgets/connected_gap.dart';
 import 'package:yukari_core/models/models.dart';
 
 /// The appearance options, in [ThemePreference] order.
 const _modes = ThemePreference.values;
-
-/// m3e_core's connected button group gap; the package keeps the token private.
-const _connectedGap = 2.0;
 
 /// The window width at which the group stops filling the row and shows labels.
 const _wideLayout = 600.0;
@@ -47,7 +45,7 @@ class ModeSelector extends StatelessWidget {
             final width = wide
                 ? math.min(available, _maxGroupWidth)
                 : available;
-            final actionWidth = (width - 3 * _connectedGap) / 4;
+            final actionWidth = (width - 3 * connectedGap) / 4;
             final group = SizedBox(
               key: groupKey,
               width: width,

@@ -9,6 +9,7 @@ import 'package:yukari_core/models/models.dart';
 
 import '../share/share_document.dart';
 import '../share/share_routes.dart';
+import '../share/share_selection.dart';
 import '../signals/instance_logs.dart';
 import '../signals/instances.dart';
 import '../signals/locale.dart';
@@ -39,6 +40,20 @@ extension NetworkPageActions on NetworkPageController {
 
   /// Opens the page that scans a share in from another device.
   void receiveByQr() => _push(shareReceivePath);
+
+  /// The route that shares every selected network as one bundle, or null after
+  /// reporting what cannot be shared.
+  String? selectionShareRoute() => shareSelection(
+    kind: ShareKind.network,
+    selection: selection,
+    showMessage: showMessage,
+  );
+
+  /// Opens the sender on every selected network, above the shell.
+  void openSelectionShare() {
+    final route = selectionShareRoute();
+    if (route != null) _push(route);
+  }
 
   /// Pushes the absolute [route] above the shell, so back returns here.
   void _push(String route) {

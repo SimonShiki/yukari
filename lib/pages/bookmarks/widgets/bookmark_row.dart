@@ -8,6 +8,7 @@ import 'package:yukari_core/models/bookmark.dart';
 import '../../../widgets/context_menu/m3e_context_menu.dart';
 import '../../../widgets/metadata_chip/metadata_chip.dart';
 import '../../../widgets/overflow_text/overflow_text.dart';
+import '../../../widgets/selection/selection_chrome.dart';
 
 /// One bookmark as a list segment: identity, address, protocols and tags, an
 /// add-to-network button and the share/edit/delete menu.
@@ -22,6 +23,8 @@ class BookmarkRow extends StatelessWidget {
     required this.onShare,
     required this.onEdit,
     required this.onDelete,
+    this.selecting = false,
+    this.selected = false,
   });
 
   final Bookmark bookmark;
@@ -30,12 +33,66 @@ class BookmarkRow extends StatelessWidget {
   final VoidCallback onEdit;
   final VoidCallback onDelete;
 
+  /// Whether the page is selecting, which turns the row into a checkbox: no
+  /// actions, and the check itself.
+  final bool selecting;
+
+  /// Whether this row is part of that selection.
+  final bool selected;
+
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
     final colors = Theme.of(context).colorScheme;
     final builtin = isBuiltinBookmark(bookmark);
     final category = bookmarkCategoryLabel(bookmark);
+
+    final identity = M3EContainer(
+      builtin ? Shapes.c9SidedCookie : Shapes.c4SidedCookie,
+      width: 40,
+      height: 40,
+      color: builtin ? colors.tertiaryContainer : colors.primaryContainer,
+      child: Icon(
+        builtin ? Icons.public : Icons.bookmark,
+        size: 20,
+        color: builtin ? colors.onTertiaryContainer : colors.onPrimaryContainer,
+      ),
+    );
+
+    // A selecting row centres its trailing check: the two-line alignment
+    // centres that slot, and the three-line padding keeps the row close to its
+    // resting height.
+    M3EListItem item({required Widget leading, Widget? trailing}) =>
+        M3EListItem(
+          leading: leading,
+          overline: category == null ? null : Text(category),
+          headline: OverflowText(bookmark.displayName),
+          supportingText: Wrap(
+            spacing: 8,
+            runSpacing: 4,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: [
+              Text(bookmark.address),
+              for (final protocol in bookmark.node.protocols)
+                MetadataChip.protocol(protocol.name),
+              for (final tag in bookmark.tags) MetadataChip('#$tag'),
+            ],
+          ),
+          trailing: trailing,
+          isThreeLine: selecting ? false : null,
+          contentPadding: selecting
+              ? const EdgeInsets.symmetric(horizontal: 16, vertical: 12)
+              : null,
+        );
+
+    if (selecting) {
+      // A selecting row shows its identity and the check in the trailing slot
+      // a network card uses; its actions are not mounted.
+      return item(
+        leading: identity,
+        trailing: SelectionCheck(selected: selected),
+      );
+    }
 
     return M3EContextMenu(
       tooltip: l10n.cardMoreOptions(bookmark.displayName),
@@ -57,33 +114,8 @@ class BookmarkRow extends StatelessWidget {
           destructive: true,
         ),
       ],
-      builder: (context, menuButton) => M3EListItem(
-        leading: M3EContainer(
-          builtin ? Shapes.c9SidedCookie : Shapes.c4SidedCookie,
-          width: 40,
-          height: 40,
-          color: builtin ? colors.tertiaryContainer : colors.primaryContainer,
-          child: Icon(
-            builtin ? Icons.public : Icons.bookmark,
-            size: 20,
-            color: builtin
-                ? colors.onTertiaryContainer
-                : colors.onPrimaryContainer,
-          ),
-        ),
-        overline: category == null ? null : Text(category),
-        headline: OverflowText(bookmark.displayName),
-        supportingText: Wrap(
-          spacing: 8,
-          runSpacing: 4,
-          crossAxisAlignment: WrapCrossAlignment.center,
-          children: [
-            Text(bookmark.address),
-            for (final protocol in bookmark.node.protocols)
-              MetadataChip.protocol(protocol.name),
-            for (final tag in bookmark.tags) MetadataChip('#$tag'),
-          ],
-        ),
+      builder: (context, menuButton) => item(
+        leading: identity,
         trailing: Row(
           mainAxisSize: MainAxisSize.min,
           children: [

@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:m3e_core/m3e_core.dart' show M3EDockedToolbar;
 import 'package:material_ui/material_ui.dart';
 import 'package:yukari/controllers/network_page_controller.dart';
 import 'package:yukari_core/models/models.dart';
@@ -87,8 +88,8 @@ void main() {
     expect(
       tester
           .widget<NetworkCardList>(find.byType(NetworkCardList))
-          .selectedIndex,
-      isNull,
+          .selectedIndices,
+      isEmpty,
     );
 
     await tester.tap(find.text('beta'));
@@ -362,6 +363,160 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(navigated, [shareSendPath(ShareKind.network, 'n1')]);
+  });
+
+  /// A saved network with one peer, so the sender can share it.
+  Network shareableNetwork(String name) => Network()
+    ..networkName = name
+    ..nodes = [
+      Node(
+        id: 'peer',
+        url: Uri.parse('relay.example.com'),
+        port: 11010,
+        protocols: const [NodeProtocol.tcp],
+      ),
+    ];
+
+  testWidgets('the app bar offers selection while there are networks', (
+    tester,
+  ) async {
+    await tester.runAsync(seedNetworks);
+    await pumpList(tester, size: const Size(400, 780));
+
+    // The app bar carries no refresh action: the timer and the retry banner
+    // keep the status fresh.
+    expect(find.byIcon(Icons.refresh_rounded), findsNothing);
+    expect(find.byTooltip(strings.selectionEnter), findsOneWidget);
+  });
+
+  testWidgets('the select action turns the list into a selection', (
+    tester,
+  ) async {
+    await tester.runAsync(seedNetworks);
+    final controller = await pumpList(tester, size: const Size(400, 780));
+
+    await tester.tap(find.byTooltip(strings.selectionEnter));
+    await tester.pumpAndSettle();
+
+    expect(controller.selection.selecting.value, isTrue);
+    expect(find.text(strings.selectionSelected(0)), findsOneWidget);
+    // The action surface docks at the bottom, and the create action makes way.
+    expect(find.byType(M3EDockedToolbar), findsOneWidget);
+    expect(find.text(strings.selectionShare), findsOneWidget);
+    expect(find.byTooltip(strings.networkAdd), findsNothing);
+  });
+
+  testWidgets('tapping a card selects it', (
+    tester,
+  ) async {
+    await tester.runAsync(seedNetworks);
+    final controller = await pumpList(tester, size: const Size(400, 780));
+    await tester.tap(find.byTooltip(strings.selectionEnter));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('alpha'));
+    await tester.pumpAndSettle();
+    expect(find.text(strings.selectionSelected(1)), findsOneWidget);
+
+    await tester.tap(find.text('beta'));
+    await tester.pumpAndSettle();
+
+    expect(find.text(strings.selectionSelected(2)), findsOneWidget);
+    expect(controller.selection.ids.value, {'n1', 'n2'});
+    expect(navigated, isEmpty, reason: 'a selected row opens nothing');
+
+    // A second tap takes it back out.
+    await tester.tap(find.text('alpha'));
+    await tester.pumpAndSettle();
+    expect(find.text(strings.selectionSelected(1)), findsOneWidget);
+  });
+
+  testWidgets('a reorder is ignored while the list selects', (tester) async {
+    await tester.runAsync(seedNetworks);
+    final controller = await pumpList(tester, size: const Size(400, 780));
+    await tester.tap(find.byTooltip(strings.selectionEnter));
+    await tester.pumpAndSettle();
+
+    tester
+        .widget<NetworkCardList>(find.byType(NetworkCardList))
+        .onReorder(1, 0);
+    await tester.pump();
+
+    expect(controller.cards.value.map((card) => card.id), ['n1', 'n2']);
+  });
+
+  testWidgets('the selection shares as one bundle', (tester) async {
+    await tester.runAsync(
+      () => seedWith({
+        'n1': shareableNetwork('alpha'),
+        'n2': shareableNetwork('beta'),
+      }),
+    );
+    final controller = await pumpList(tester, size: const Size(400, 780));
+    await tester.tap(find.byTooltip(strings.selectionEnter));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('alpha'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('beta'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text(strings.selectionShare));
+    await tester.pumpAndSettle();
+
+    expect(navigated, [
+      shareSendPaths(ShareKind.network, ['n1', 'n2']),
+    ]);
+    // The sender is what the user asked for, so the list stops selecting.
+    expect(controller.selection.selecting.value, isFalse);
+  });
+
+  testWidgets('close and the back gesture both leave selection', (
+    tester,
+  ) async {
+    await tester.runAsync(seedNetworks);
+    final controller = await pumpList(tester, size: const Size(400, 780));
+
+    await tester.tap(find.byTooltip(strings.selectionEnter));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip(strings.selectionExit));
+    await tester.pumpAndSettle();
+
+    expect(controller.selection.selecting.value, isFalse);
+    expect(find.byTooltip(strings.selectionEnter), findsOneWidget);
+    expect(find.byType(M3EDockedToolbar), findsNothing);
+
+    await tester.tap(find.byTooltip(strings.selectionEnter));
+    await tester.pumpAndSettle();
+    await tester.binding.handlePopRoute();
+    await tester.pumpAndSettle();
+
+    expect(controller.selection.selecting.value, isFalse);
+    expect(find.byTooltip(strings.selectionEnter), findsOneWidget);
+  });
+
+  testWidgets('the wide pane stays on its network while selecting', (
+    tester,
+  ) async {
+    await tester.runAsync(seedNetworks);
+    final controller = await pumpList(
+      tester,
+      size: const Size(1000, 800),
+      settle: false,
+    );
+    await tester.runAsync(controller.refresh);
+    await tester.pump(const Duration(milliseconds: 100));
+    expect(find.byType(NetworkEditorPage), findsOneWidget);
+
+    await tester.tap(find.byTooltip(strings.selectionEnter));
+    await tester.pump(const Duration(milliseconds: 200));
+    await tester.tap(find.text('beta'));
+    await tester.pump(const Duration(milliseconds: 400));
+
+    // Selecting is not opening: the pane keeps the network it showed, so the
+    // editor's input is never dropped.
+    expect(controller.selectedId.value, 'n1');
+    expect(controller.selection.ids.value, {'n2'});
+    expect(find.text(strings.networkDiscardTitle), findsNothing);
   });
 
   testWidgets('the delete dialog asks, and a cancel keeps the network', (

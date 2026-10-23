@@ -1,14 +1,15 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io' show Platform;
 import 'dart:typed_data';
 
-import 'package:flutter/foundation.dart'
-    show TargetPlatform, defaultTargetPlatform, kIsWeb, listEquals;
+import 'package:flutter/foundation.dart' show listEquals;
 import 'package:flutter/services.dart' show HapticFeedback;
 import 'package:qrs_dart/qrs_dart.dart';
 import 'package:signals/signals.dart';
 
 import '../share/image_qr_scan.dart';
+import '../share/share_bundle.dart';
 import '../share/share_document.dart';
 import '../share/share_import.dart';
 import '../signals/locale.dart';
@@ -18,12 +19,13 @@ part 'qr_share_receive_actions.dart';
 part 'qr_share_receive_settings.dart';
 
 /// The receive page's state: feeds payloads into a [ReceiveSession], follows
-/// its progress and turns a completed transfer into a [ShareDocument].
+/// its progress and turns a completed transfer into the [ShareDocument]s it
+/// carries — one for a single share, several for a bundle.
 ///
 /// Every dependency is injected, so tests drive camera frames, a worker-free
 /// scanner, the importer and the clock without a plugin or an isolate.
 class QrShareReceiveController {
-  /// Creates a controller; [cameraAvailable] defaults to the platform table.
+  /// Creates a controller; [cameraAvailable] defaults to [platformHasCamera].
   QrShareReceiveController({
     bool? cameraAvailable,
     ShareImporter? importer,
@@ -45,13 +47,13 @@ class QrShareReceiveController {
   final ReceiveSession _session = ReceiveSession();
 
   // The transfer: blocks needed and decoded, accepted frames, the per-block
-  // status (`1` decoded, the pending degree, `0` unknown), and the share once
+  // status (`1` decoded, the pending degree, `0` unknown), and the shares once
   // the transfer completes.
   final k = signal<int>(0);
   final decoded = signal<int>(0);
   final frames = signal<int>(0);
   final status = signal<List<int>>(const <int>[]);
-  final share = signal<ShareDocument?>(null);
+  final shares = signal<List<ShareDocument>>(const <ShareDocument>[]);
 
   // The page's feedback and controls: a localized error, the measured speed,
   // the camera pace, the image scan's progress, the save flags.
@@ -84,7 +86,7 @@ class QrShareReceiveController {
     if (_disposed || raw == null || raw.isEmpty) return ScanOutcome.empty;
 
     final transferInProgress =
-        frames.value > 0 && share.value == null && !_session.isComplete;
+        frames.value > 0 && shares.value.isEmpty && !_session.isComplete;
     final ScanOutcome result;
     try {
       result = _session.addScan(raw);
@@ -98,7 +100,7 @@ class QrShareReceiveController {
     if (_session.checksum != _checksum) {
       _checksum = _session.checksum;
       _forgetRate();
-      share.value = null;
+      shares.value = const <ShareDocument>[];
       if (transferInProgress) {
         showMessage?.call(l10n.value.shareReceiveDifferentShare);
       }
@@ -115,35 +117,35 @@ class QrShareReceiveController {
     _checksum = 0;
     _imageScan++; // cancels an image scan still feeding the session
     _forgetRate();
-    share.value = null;
+    shares.value = const <ShareDocument>[];
     error.value = null;
     imageProgress.value = null;
     saved.value = false;
     _sync();
   }
 
-  /// Reads the share a completed transfer carries.
+  /// Reads the shares a completed transfer carries.
   void _complete() {
     final result = _session.result;
     if (result == null) return;
 
-    final document = _documentOf(result);
-    error.value = document == null ? l10n.value.shareReceiveInvalid : null;
-    share.value = document;
+    final documents = _documentsOf(result);
+    error.value = documents == null ? l10n.value.shareReceiveInvalid : null;
+    shares.value = documents ?? const <ShareDocument>[];
     unawaited(HapticFeedback.mediumImpact());
   }
 
-  /// The share [result] carries, or null when it is not a Yukari share.
-  ShareDocument? _documentOf(ReceiveResult result) {
+  /// The shares [result] carries, or null when it is not a Yukari share.
+  List<ShareDocument>? _documentsOf(ReceiveResult result) {
     // The metadata is written by the sender, so the content type is the only
     // thing that says "this transfer is a Yukari share" before the JSON is
-    // trusted; ShareDocument.decode then validates every field.
+    // trusted; decodeShareItems then validates every field.
     if (result.meta.contentType != shareContentType) return null;
-    // A share is already rejected for this by decode; checking before the
+    // A share is already rejected for this by the decode; checking before the
     // decode keeps a hostile multi-MB transfer from being decoded first.
     if (result.data.length > shareMaxBytes) return null;
     try {
-      return ShareDocument.decode(utf8.decode(result.data));
+      return decodeShareItems(utf8.decode(result.data));
     } on Object {
       return null;
     }
@@ -198,7 +200,7 @@ class QrShareReceiveController {
     decoded.dispose();
     frames.dispose();
     status.dispose();
-    share.dispose();
+    shares.dispose();
     error.dispose();
     speed.dispose();
     pace.dispose();

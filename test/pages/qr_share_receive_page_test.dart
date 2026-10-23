@@ -2,8 +2,6 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:typed_data';
 
-import 'package:flutter/foundation.dart'
-    show TargetPlatform, debugDefaultTargetPlatformOverride;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:image/image.dart' as img;
 import 'package:m3e_core/m3e_core.dart';
@@ -17,6 +15,7 @@ import 'package:yukari/pages/share/qr_share_receive_page.dart';
 import 'package:yukari/pages/share/widgets/block_grid.dart';
 import 'package:yukari/pages/share/widgets/camera_scanner_card.dart';
 import 'package:yukari/pages/share/widgets/receive_progress_card.dart';
+import 'package:yukari/pages/share/widgets/share_item_row.dart';
 import 'package:yukari/share/image_qr_scan.dart';
 import 'package:yukari/share/share_document.dart';
 import 'package:yukari/share/share_import.dart';
@@ -148,11 +147,13 @@ void main() {
     expect(find.text('camera stub'), findsOneWidget);
     expect(find.text(strings.shareReceiveNoCamera), findsNothing);
     expect(find.text(strings.shareReceiveScanRate), findsOneWidget);
-    expect(find.text(strings.shareReceiveRateRelaxed), findsOneWidget);
+    // Each label appears twice: the group stacks an invisible copy of every
+    // labelled button to measure it, and the visible one comes first.
+    expect(find.text(strings.shareReceiveRateRelaxed), findsNWidgets(2));
     expect(find.text(strings.shareReceiveRateHint), findsOneWidget);
     expect(find.byType(MobileScanner), findsNothing);
 
-    await tester.tap(find.text(strings.shareReceiveRateTurbo));
+    await tester.tap(find.text(strings.shareReceiveRateTurbo).first);
     await tester.pump();
 
     expect(controller.pace.value, ScanPace.turbo);
@@ -198,12 +199,103 @@ void main() {
     );
     expect(paces, <ScanPace>[ScanPace.balanced]);
 
-    await tester.tap(find.text(strings.shareReceiveRateTurbo));
+    await tester.tap(find.text(strings.shareReceiveRateTurbo).first);
     await tester.pump();
 
     expect(controller.pace.value, ScanPace.turbo);
     // Only a builder call with the new pace proves the card would re-key.
     expect(paces.last, ScanPace.turbo);
+  });
+
+  /// The scan-rate group, which the page only builds with a camera.
+  M3EToggleButtonGroup paceGroup(WidgetTester tester) =>
+      tester.widget<M3EToggleButtonGroup>(find.byType(M3EToggleButtonGroup));
+
+  testWidgets('the scan rate is one connected group of the three paces', (
+    tester,
+  ) async {
+    await pumpPage(
+      tester,
+      cameraAvailable: true,
+      cameraBuilder: (context, pace) => const SizedBox.shrink(),
+    );
+
+    final group = paceGroup(tester);
+    expect(group.type, M3EButtonGroupType.connected);
+    expect(group.size, M3EButtonSize.sm);
+    expect(group.selectedIndex, 1);
+    expect(group.semanticLabel, strings.shareReceiveScanRate);
+    expect(
+      [for (final action in group.actions) (action.label! as Text).data],
+      [
+        strings.shareReceiveRateRelaxed,
+        strings.shareReceiveRateBalanced,
+        strings.shareReceiveRateTurbo,
+      ],
+    );
+    // The group is the card's only choice control.
+    expect(find.byType(SegmentedButton<ScanPace>), findsNothing);
+    // The card is the app's own surface.
+    expect(find.byType(Card), findsNothing);
+    final card = find.byType(ReceiveProgressCard);
+    final material = tester.widget<Material>(
+      find.descendant(of: card, matching: find.byType(Material)).first,
+    );
+    expect(
+      material.color,
+      Theme.of(tester.element(card)).colorScheme.surfaceContainer,
+    );
+    expect(material.elevation, 0);
+  });
+
+  testWidgets('tapping Turbo moves the group and the pace', (tester) async {
+    final controller = await pumpPage(
+      tester,
+      cameraAvailable: true,
+      cameraBuilder: (context, pace) => const SizedBox.shrink(),
+    );
+
+    await tester.tap(find.text(strings.shareReceiveRateTurbo).first);
+    await tester.pump();
+
+    expect(controller.pace.value, ScanPace.turbo);
+    expect(paceGroup(tester).selectedIndex, 2);
+    final turbo = tester.widget<M3EToggleButton>(
+      find.byType(M3EToggleButton).at(2),
+    );
+    expect(turbo.checked, isTrue);
+  });
+
+  testWidgets('the scan rate fills the card at compact and wide widths', (
+    tester,
+  ) async {
+    await pumpPage(
+      tester,
+      cameraAvailable: true,
+      cameraBuilder: (context, pace) => const SizedBox.shrink(),
+    );
+    // An 800px window caps the share column at 600, which pads 16 a side, and
+    // the card pads another 16.
+    expect(
+      tester.getSize(find.byType(M3EToggleButtonGroup)).width,
+      closeTo(536, 0.5),
+    );
+
+    tester.view.physicalSize = const Size(400, 1600);
+    await tester.pump();
+    expect(tester.takeException(), isNull);
+    expect(
+      tester.getSize(find.byType(M3EToggleButtonGroup)).width,
+      closeTo(336, 0.5),
+    );
+
+    tester.view.physicalSize = const Size(1200, 1600);
+    await tester.pump();
+    expect(tester.takeException(), isNull);
+    expect(
+      tester.getSize(find.byType(M3EToggleButtonGroup)).width,
+      closeTo(536, 0.5),
+    );
   });
 
   testWidgets('the camera pane ignores progress updates', (tester) async {
@@ -262,7 +354,7 @@ void main() {
       ),
     );
 
-    controller.share.value = sharedNetworkDocument();
+    controller.shares.value = [sharedNetworkDocument()];
     await tester.pump();
 
     expect(find.text(strings.shareReceiveComplete), findsOneWidget);
@@ -299,6 +391,55 @@ void main() {
     expect(button.onPressed, isNull);
   });
 
+  testWidgets('a received bundle lists its documents and adds them all', (
+    tester,
+  ) async {
+    final added = <ShareDocument>[];
+    final controller = await pumpPage(
+      tester,
+      importer: ShareImporter(
+        addNetwork: (document) async {
+          added.add(document);
+          return document.name!;
+        },
+        addNode: (document) async => fail('no node is in this bundle'),
+      ),
+    );
+
+    controller.shares.value = [networkShare('alpha'), networkShare('beta')];
+    await tester.pump();
+
+    expect(find.text(strings.shareReceiveComplete), findsOneWidget);
+    expect(find.text(strings.shareItems(2)), findsOneWidget);
+    expect(find.byType(ShareItemRow), findsNWidgets(2));
+    expect(find.text('alpha'), findsOneWidget);
+    expect(find.text('beta'), findsOneWidget);
+    // One action for the whole bundle, and no per-block progress.
+    expect(find.text(strings.shareReceiveAddAll(2)), findsOneWidget);
+    expect(find.text(strings.sharePreviewProtocols), findsNothing);
+    expect(find.byType(ReceiveProgressCard), findsNothing);
+
+    await tester.tap(find.text(strings.shareReceiveAddAll(2)));
+    await tester.pump();
+    await tester.pumpAndSettle();
+
+    expect(added, hasLength(2));
+    expect(messages, <String>[strings.shareReceiveAddedAll(2)]);
+    expect(controller.saved.value, isTrue);
+    // The action is spent once the bundle is added, so a second tap is blocked.
+    expect(
+      tester
+          .widget<M3EButton>(
+            find.ancestor(
+              of: find.text(strings.shareReceiveAddAll(2)),
+              matching: find.byType(M3EButton),
+            ),
+          )
+          .onPressed,
+      isNull,
+    );
+  });
+
   testWidgets('the completed node can be saved', (tester) async {
     final saved = <ShareDocument>[];
     final controller = await pumpPage(
@@ -312,7 +453,7 @@ void main() {
       ),
     );
 
-    controller.share.value = sharedNodeDocument();
+    controller.shares.value = [sharedNodeDocument()];
     await tester.pump();
 
     expect(find.text(strings.shareKindNode), findsOneWidget);
@@ -360,7 +501,7 @@ void main() {
     await tester.pump();
     await tester.pump();
 
-    expect(controller.share.value?.encode(), document.encode());
+    expect(controller.shares.value.single.encode(), document.encode());
     expect(find.text(strings.shareReceiveComplete), findsOneWidget);
     expect(find.text(strings.shareReceiveSaveNode), findsOneWidget);
     await tester.pumpAndSettle();
@@ -471,54 +612,48 @@ void main() {
   }
 
   testWidgets('the production page reports the added network', (tester) async {
-    // The page-owned controller reads the platform table, so this is the
-    // camera-less production path: real controller, real importer, real store,
-    // and only the picker replaced with an image.
-    debugDefaultTargetPlatformOverride = TargetPlatform.linux;
-    try {
-      await tester.runAsync(() async {
-        await seedWith(<String, Network>{});
-        final png = sharePng(sharedNetworkDocument());
+    // This host has no camera scanner, so this is the camera-less production
+    // path: real controller, real importer, real store, and only the picker
+    // replaced with an image.
+    await tester.runAsync(() async {
+      await seedWith(<String, Network>{});
+      final png = sharePng(sharedNetworkDocument());
 
-        tester.view.physicalSize = const Size(800, 1600);
-        tester.view.devicePixelRatio = 1;
-        addTearDown(tester.view.reset);
-        await tester.pumpWidget(
-          MaterialApp(
-            localizationsDelegates: const [AppLocalizations.delegate],
-            supportedLocales: AppLocalizations.supportedLocales,
-            home: QrShareReceivePage(pickImage: () async => png),
-          ),
-        );
+      tester.view.physicalSize = const Size(800, 1600);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: const [AppLocalizations.delegate],
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: QrShareReceivePage(pickImage: () async => png),
+        ),
+      );
 
-        await tester.tap(find.text(strings.shareReceiveScanImage));
-        // The real worker isolate decodes the PNG; runAsync lets it finish.
-        for (var attempt = 0; attempt < 100; attempt++) {
-          await Future<void>.delayed(const Duration(milliseconds: 50));
-          await tester.pump();
-          if (find.text(strings.shareReceiveComplete).evaluate().isNotEmpty) {
-            break;
-          }
+      await tester.tap(find.text(strings.shareReceiveScanImage));
+      // The real worker isolate decodes the PNG; runAsync lets it finish.
+      for (var attempt = 0; attempt < 100; attempt++) {
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+        await tester.pump();
+        if (find.text(strings.shareReceiveComplete).evaluate().isNotEmpty) {
+          break;
         }
-        expect(find.text(strings.shareReceiveComplete), findsOneWidget);
+      }
+      expect(find.text(strings.shareReceiveComplete), findsOneWidget);
 
-        await tester.tap(find.text(strings.shareReceiveAddNetwork));
-        await tester.pump();
-        await Future<void>.delayed(Duration.zero);
-        await networks.settled();
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 300));
-        // The page-owned controller's message sink is what regressed: the
-        // production path must show the outcome, not drop it.
-        expect(
-          find.text(strings.shareReceiveNetworkAdded('alpha')),
-          findsOneWidget,
-        );
+      await tester.tap(find.text(strings.shareReceiveAddNetwork));
+      await tester.pump();
+      await Future<void>.delayed(Duration.zero);
+      await networks.settled();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+      // The production path must show the outcome, not drop it.
+      expect(
+        find.text(strings.shareReceiveNetworkAdded('alpha')),
+        findsOneWidget,
+      );
 
-        await tester.pumpWidget(const SizedBox.shrink());
-      });
-    } finally {
-      debugDefaultTargetPlatformOverride = null;
-    }
+      await tester.pumpWidget(const SizedBox.shrink());
+    });
   });
 }

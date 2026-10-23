@@ -141,6 +141,27 @@ void main() {
     expect(navigated.single, startsWith('/networks/edit/'));
   });
 
+  testWidgets('the form sits on the app card surface', (tester) async {
+    await tester.runAsync(seedNetworks);
+    await pumpCreator(tester);
+
+    expect(find.byType(Card), findsNothing);
+    final form = find.byType(Form);
+    final surface = tester.widget<Material>(
+      find.ancestor(of: form, matching: find.byType(Material)).first,
+    );
+    expect(
+      surface.color,
+      Theme.of(tester.element(form)).colorScheme.surfaceContainer,
+    );
+    expect(
+      surface.shape,
+      const RoundedRectangleBorder(
+        borderRadius: BorderRadius.all(Radius.circular(20)),
+      ),
+    );
+  });
+
   testWidgets('a failed create is reported', (tester) async {
     await tester.runAsync(seedNetworks);
     final controller = NetworkCreatorController(

@@ -8,6 +8,8 @@ import 'package:yukari_core/models/bookmark.dart';
 import 'package:yukari_core/models/node.dart';
 import '../signals/bookmarks.dart' as saved;
 import '../signals/locale.dart';
+import '../share/share_document.dart';
+import '../share/share_selection.dart';
 import '../signals/networks.dart' as networks;
 import '../utils/bookmark_codec.dart';
 import '../utils/file_save.dart';
@@ -111,6 +113,14 @@ extension BookmarksActions on BookmarksController {
 
   // The one share channel that is described but not implemented yet.
   void shareOverNetwork() => showMessage(l10n.value.bookmarksShareUnavailable);
+
+  /// The route that shares every selected node as one bundle, or null after
+  /// reporting what cannot be shared.
+  String? selectionShareRoute() => shareSelection(
+    kind: ShareKind.node,
+    selection: selection,
+    showMessage: showMessage,
+  );
 
   /// Imports the bookmarks of a picked JSON file.
   ///

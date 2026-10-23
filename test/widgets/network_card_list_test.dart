@@ -1,17 +1,28 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:m3e_core/m3e_core.dart'
+    show M3EReorderableSegmentedList, M3ESelectionMode;
 import 'package:material_ui/material_ui.dart';
 import 'package:yukari/l10n/l10n.dart';
 import 'package:yukari_core/models/instance.dart';
 import 'package:yukari/widgets/network_card/network_card_data.dart';
+import 'package:yukari/widgets/network_card/network_card.dart';
 import 'package:yukari/widgets/network_card/network_card_list.dart';
+import 'package:yukari/widgets/selection/selection_chrome.dart';
 
 void main() {
   var deleted = 0;
   var exported = 0;
   var shared = 0;
 
-  Future<void> pumpList(WidgetTester tester, {bool running = false}) async {
+  Future<void> pumpList(
+    WidgetTester tester, {
+    bool running = false,
+    bool selecting = false,
+    Set<int> selectedIndices = const {},
+    ValueChanged<Set<int>>? onSelectionChanged,
+    List<String> names = const ['Home'],
+  }) async {
     deleted = 0;
     exported = 0;
     shared = 0;
@@ -21,23 +32,28 @@ void main() {
         home: Scaffold(
           body: NetworkCardList(
             networks: [
-              NetworkCardData(
-                id: 'a',
-                name: 'Home',
-                status: running
-                    ? InstanceStatus.running
-                    : InstanceStatus.stopped,
-                running: running,
-                onOpen: () {},
-                onEdit: () {},
-                onShare: () => shared++,
-                onExport: () => exported++,
-                onLog: () {},
-                onDelete: () async => deleted++,
-              ),
+              for (final name in names)
+                NetworkCardData(
+                  id: name.toLowerCase(),
+                  name: name,
+                  status: running
+                      ? InstanceStatus.running
+                      : InstanceStatus.stopped,
+                  running: running,
+                  onOpen: () {},
+                  onEdit: () {},
+                  onShare: () => shared++,
+                  onExport: () => exported++,
+                  onLog: () {},
+                  onDelete: () async => deleted++,
+                  onToggle: (start) {},
+                ),
             ],
             onReorder: (_, _) {},
             keyBuilder: ValueKey.new,
+            selecting: selecting,
+            selectedIndices: selectedIndices,
+            onSelectionChanged: onSelectionChanged,
           ),
         ),
       ),
@@ -111,5 +127,69 @@ void main() {
 
     expect(shared, 1);
     expect(find.text('Share via QR'), findsNothing);
+  });
+
+  /// The list widget, as the page configured it.
+  M3EReorderableSegmentedList listOf(WidgetTester tester) => tester
+      .widget<M3EReorderableSegmentedList>(
+        find.byType(M3EReorderableSegmentedList),
+      );
+
+  testWidgets('a card that is not selecting stays a single selection', (
+    tester,
+  ) async {
+    await pumpList(tester);
+
+    final list = listOf(tester);
+    expect(list.selectionMode, M3ESelectionMode.single);
+    expect(list.showSelectionCheckmark, isFalse);
+    expect(list.selectedIndices, isEmpty);
+    // The card keeps the controls it acts with.
+    expect(find.byIcon(Icons.play_arrow_rounded), findsOneWidget);
+    expect(find.byType(SelectionCheck), findsNothing);
+    expect(find.byType(Badge), findsOneWidget);
+  });
+
+  testWidgets('selecting turns each row into its name and the check', (
+    tester,
+  ) async {
+    final changes = <Set<int>>[];
+    await pumpList(
+      tester,
+      selecting: true,
+      selectedIndices: const {0},
+      onSelectionChanged: changes.add,
+      names: ['Home', 'Office'],
+    );
+
+    final list = listOf(tester);
+    expect(list.selectionMode, M3ESelectionMode.multiple);
+    expect(list.selectedIndices, {0});
+    expect(list.showSelectionCheckmark, isFalse);
+
+    // The row is its name and the check: no status badge, no start/stop
+    // button, no menu.
+    expect(find.byType(Badge), findsNothing);
+    expect(find.byIcon(Icons.play_arrow_rounded), findsNothing);
+    expect(find.byIcon(Icons.stop_rounded), findsNothing);
+    expect(find.byTooltip('More options for Home'), findsNothing);
+    expect(find.byType(SelectionCheck), findsNWidgets(2));
+
+    final checks = tester
+        .widgetList<SelectionCheck>(find.byType(SelectionCheck))
+        .toList();
+    expect(checks[0].selected, isTrue);
+    expect(checks[1].selected, isFalse);
+    expect(
+      tester.getCenter(find.byType(SelectionCheck).first).dy,
+      closeTo(tester.getCenter(find.byType(NetworkCard).first).dy, 0.5),
+      reason: 'the check is centred on the row',
+    );
+
+    // A tap selects the row: no start/stop, no menu.
+    await tester.tap(find.text('Home'));
+    await tester.pumpAndSettle();
+
+    expect(changes, [<int>{}], reason: 'the selected row is taken back out');
   });
 }

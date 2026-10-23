@@ -33,6 +33,9 @@ int defaultShareFps(double refreshRate) {
 /// [sliceSizeFor] floors the block at 32 bytes so a tiny share still gets codes
 /// big enough to line up, and caps it per preset so the QR version a camera has
 /// to resolve stays sane: about V20 for Easy, V25 for Balanced and V35 for Fast.
+///
+/// A static share ([fitsOneShareCode]) bypasses [targetFrames] altogether: it
+/// sends the whole payload as one block, whatever preset is selected.
 enum QrShareDensity {
   easy(3, maxSlice: 400),
   balanced(2, maxSlice: 800),
@@ -51,6 +54,12 @@ enum QrShareDensity {
   int sliceSizeFor(int compressedBytes) =>
       (compressedBytes / targetFrames).ceil().clamp(32, maxSlice).toInt();
 }
+
+/// Whether a [compressedBytes]-byte transfer fits one code at the borderline
+/// preset, [QrShareDensity.balanced]: [QrShareDensity.maxSlice] is the biggest
+/// block that preset draws, so anything within it needs a single frame.
+bool fitsOneShareCode(int compressedBytes) =>
+    compressedBytes <= QrShareDensity.balanced.maxSlice;
 
 /// The compressed size [SendSession.forFile] slices: the payload with its file
 /// header, deflated exactly as the session does it, so a density preset's block

@@ -12,17 +12,24 @@ class NetworkCardList extends StatelessWidget {
     required this.networks,
     required this.onReorder,
     required this.keyBuilder,
-    this.showDragHandles = false,
-    this.selectedIndex,
+    this.selecting = false,
+    this.selectedIndices = const <int>{},
     this.onSelectionChanged,
   });
 
   final List<NetworkCardData> networks;
   final ReorderCallback onReorder;
   final Key Function(int index) keyBuilder;
-  final bool showDragHandles;
-  final int? selectedIndex;
-  final ValueChanged<int?>? onSelectionChanged;
+
+  /// Whether the rows select like a gallery, many at a time, instead of acting
+  /// as the page's current one.
+  final bool selecting;
+
+  /// The rows selected: the page's current row, or the gallery's selection.
+  final Set<int> selectedIndices;
+
+  /// Called with the rows selected after a tap.
+  final ValueChanged<Set<int>>? onSelectionChanged;
 
   @override
   Widget build(BuildContext context) {
@@ -31,17 +38,32 @@ class NetworkCardList extends StatelessWidget {
       itemCount: networks.length,
       keyBuilder: keyBuilder,
       onReorder: onReorder,
-      buildDefaultDragHandles: showDragHandles,
+      buildDefaultDragHandles: false,
       listPadding: const EdgeInsets.fromLTRB(16, 12, 16, 112),
-      selectionMode: M3ESelectionMode.single,
+      selectionMode: selecting
+          ? M3ESelectionMode.multiple
+          : M3ESelectionMode.single,
       selectionTrigger: M3ESelectionTrigger.tap,
-      selectedIndices: selectedIndex != null ? {selectedIndex!} : {},
-      onSelectionChanged: (indices) {
-        onSelectionChanged?.call(indices.isEmpty ? null : indices.first);
-      },
+      selectedIndices: selectedIndices,
+      onSelectionChanged: onSelectionChanged,
       selectedColor: colors.secondaryContainer,
+      showSelectionCheckmark: false,
       itemBuilder: (context, index) {
         final network = networks[index];
+        Widget card(Widget menuButton) => NetworkCard(
+          name: network.name,
+          running: network.running,
+          status: network.status,
+          onToggle: network.onToggle,
+          menuButton: menuButton,
+          selecting: selecting,
+          selected: selectedIndices.contains(index),
+        );
+        // A selecting row carries no menu: its gesture would compete with the
+        // tap that toggles the row.
+        if (selecting) {
+          return NetworkCardGeometry(child: card(const SizedBox.shrink()));
+        }
         return NetworkCardGeometry(
           child: NetworkCardMenu(
             name: network.name,
@@ -52,13 +74,7 @@ class NetworkCardList extends StatelessWidget {
             onExport: network.onExport,
             onLog: network.onLog,
             onDelete: network.onDelete,
-            builder: (context, menuButton) => NetworkCard(
-              name: network.name,
-              running: network.running,
-              status: network.status,
-              onToggle: network.onToggle,
-              menuButton: menuButton,
-            ),
+            builder: (context, menuButton) => card(menuButton),
           ),
         );
       },

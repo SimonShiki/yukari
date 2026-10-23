@@ -1,6 +1,9 @@
+import 'package:yukari_core/models/bookmark.dart';
+
 import '../constants/builtin_bookmarks.dart';
 import '../signals/bookmarks.dart' as saved;
 import '../signals/networks.dart' as networks;
+import 'share_bundle.dart';
 import 'share_document.dart';
 import 'share_masking.dart';
 
@@ -12,57 +15,100 @@ enum ShareUnavailableReason {
   unsupported,
 }
 
-/// The document to share, or why there is none.
+/// The documents to share, or why the sender has nothing to share.
 typedef ShareTarget = ({
-  ShareDocument? document,
+  List<ShareDocument> documents,
   ShareUnavailableReason? reason,
 });
 
+/// The documents stored under [ids], or why the sender has nothing to share.
+///
+/// All-or-nothing: one id that no longer resolves and the page says why instead
+/// of sharing the rest, so a bundle never silently loses an item.
+ShareTarget resolveShareItems(ShareKind kind, List<String> ids) {
+  if (ids.isEmpty) return _unavailable(_missingFor(kind));
+
+  final missing = _missingReason(kind, ids);
+  if (missing != null) return _unavailable(missing);
+  return _validated(() => [for (final id in ids) _documentFor(kind, id)]);
+}
+
 /// The share target stored under [id]: the document to share, or why the
 /// sender has nothing to share.
-///
-/// A document is only returned when it survives [ShareDocument.decode], so the
-/// sender never streams something the receiver's own validator refuses.
-ShareTarget resolveShareTarget(ShareKind kind, String id) => switch (kind) {
-  ShareKind.network => _networkTarget(id),
-  ShareKind.node => _bookmarkTarget(id),
+ShareTarget resolveShareTarget(ShareKind kind, String id) =>
+    resolveShareItems(kind, [id]);
+
+/// Why a link with no id at all says its target is missing.
+ShareUnavailableReason _missingFor(ShareKind kind) => switch (kind) {
+  ShareKind.network => ShareUnavailableReason.networkMissing,
+  ShareKind.node => ShareUnavailableReason.bookmarkMissing,
 };
 
-ShareTarget _networkTarget(String id) {
+ShareTarget _unavailable(ShareUnavailableReason reason) =>
+    (documents: const <ShareDocument>[], reason: reason);
+
+/// Why one of [ids] has nothing to share, or null when every id resolves.
+ShareUnavailableReason? _missingReason(ShareKind kind, List<String> ids) {
+  for (final id in ids) {
+    final reason = switch (kind) {
+      ShareKind.network => _networkReason(id),
+      ShareKind.node =>
+          _bookmarkNamed(id) == null
+              ? ShareUnavailableReason.bookmarkMissing
+              : null,
+    };
+    if (reason != null) return reason;
+  }
+  return null;
+}
+
+ShareUnavailableReason? _networkReason(String id) {
   final network = networks.networks.peek()[id];
-  if (network == null) {
-    return (document: null, reason: ShareUnavailableReason.networkMissing);
-  }
+  if (network == null) return ShareUnavailableReason.networkMissing;
   if (network.nodes.isEmpty) {
-    return (document: null, reason: ShareUnavailableReason.networkWithoutPeers);
+    return ShareUnavailableReason.networkWithoutPeers;
   }
-  return _validated(() => shareNetwork(network));
+  return null;
 }
 
-ShareTarget _bookmarkTarget(String id) {
-  final bookmark = [
-    ...builtinBookmarks,
-    ...saved.bookmarks.peek(),
-  ].where((bookmark) => bookmark.id == id).firstOrNull;
-  if (bookmark == null) {
-    return (document: null, reason: ShareUnavailableReason.bookmarkMissing);
+/// The document [id] shares; [_missingReason] said there is one.
+///
+/// A store that lost the target in between is a [StateError], which
+/// [_validated] reports as unsupported rather than as missing.
+ShareDocument _documentFor(ShareKind kind, String id) {
+  if (kind == ShareKind.network) {
+    final network = networks.networks.peek()[id];
+    if (network == null) throw StateError('Share target $id is missing');
+    return shareNetwork(network);
   }
-  return _validated(() => shareBookmark(bookmark));
+  final bookmark = _bookmarkNamed(id);
+  if (bookmark == null) throw StateError('Share target $id is missing');
+  return shareBookmark(bookmark);
 }
 
-/// The document [build] makes when it round-trips through the receiver's own
+Bookmark? _bookmarkNamed(String id) => [
+  ...builtinBookmarks,
+  ...saved.bookmarks.peek(),
+].where((bookmark) => bookmark.id == id).firstOrNull;
+
+/// The documents [build] makes when they round-trip through the receiver's own
 /// validator, else [ShareUnavailableReason.unsupported].
 ///
-/// Failures never escape: a target the sender cannot mask or the receiver
-/// would refuse is reported as unsupported instead of crashing the page.
-ShareTarget _validated(ShareDocument Function() build) {
+/// Failures never escape: a target the sender cannot mask or the receiver would
+/// refuse is reported as unsupported instead of crashing the page.
+ShareTarget _validated(List<ShareDocument> Function() build) {
   try {
-    final document = build();
-    ShareDocument.decode(document.encode());
-    return (document: document, reason: null);
+    final documents = build();
+    final decoded = decodeShareItems(encodeShareItems(documents));
+    if (decoded.length != documents.length) {
+      return _unavailable(ShareUnavailableReason.unsupported);
+    }
+    return (documents: documents, reason: null);
   } on StateError {
-    return (document: null, reason: ShareUnavailableReason.unsupported);
+    return _unavailable(ShareUnavailableReason.unsupported);
   } on FormatException {
-    return (document: null, reason: ShareUnavailableReason.unsupported);
+    return _unavailable(ShareUnavailableReason.unsupported);
+  } on ArgumentError {
+    return _unavailable(ShareUnavailableReason.unsupported);
   }
 }

@@ -372,6 +372,50 @@ void main() {
       await tester.pumpWidget(const SizedBox.shrink());
     });
 
+    testWidgets('a bundle link opens the sender with every document', (
+      tester,
+    ) async {
+      await tester.runAsync(
+        () => seedWith({
+          'n1': Network()
+            ..networkName = 'alpha'
+            ..nodes = [node],
+          'n2': Network()
+            ..networkName = 'beta'
+            ..nodes = [node],
+        }),
+      );
+      appRouter.go(shareSendPaths(ShareKind.network, ['n1', 'n2']));
+      await pumpApp(tester, size: const Size(400, 800));
+
+      expect(find.byType(QrShareSendPage), findsOneWidget);
+      expect(find.text(strings.shareItems(2)), findsOneWidget);
+      expect(find.text('alpha'), findsOneWidget);
+      expect(find.text('beta'), findsOneWidget);
+
+      await tester.pumpWidget(const SizedBox.shrink());
+    });
+
+    testWidgets('a bundle link naming a target that is gone shares nothing', (
+      tester,
+    ) async {
+      await tester.runAsync(
+        () => seedWith({
+          'n1': Network()
+            ..networkName = 'alpha'
+            ..nodes = [node],
+        }),
+      );
+      appRouter.go(shareSendPaths(ShareKind.network, ['n1', 'gone']));
+      await pumpApp(tester, size: const Size(400, 800));
+
+      expect(tester.takeException(), isNull);
+      expect(find.text(strings.shareSendNetworkMissing), findsOneWidget);
+      expect(find.byType(QrMatrixView), findsNothing);
+
+      await tester.pumpWidget(const SizedBox.shrink());
+    });
+
     testWidgets('a bookmark share link streams the saved bookmark', (
       tester,
     ) async {

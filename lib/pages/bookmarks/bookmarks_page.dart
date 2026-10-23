@@ -4,6 +4,7 @@ import 'package:signals_flutter/signals_flutter.dart';
 
 import '../../controllers/bookmarks_actions.dart';
 import '../../controllers/bookmarks_controller.dart';
+import '../../controllers/multi_selection.dart';
 import '../../l10n/l10n.dart';
 import '../../share/share_document.dart';
 import '../../share/share_routes.dart';
@@ -11,6 +12,7 @@ import '../../share/share_routes.dart';
 import 'package:yukari_core/models/bookmark.dart';
 
 import '../../widgets/empty_state/empty_state.dart';
+import '../../widgets/selection/selection_chrome.dart';
 import '../../widgets/snackbar/app_snackbar.dart';
 import 'widgets/bookmark_delete_dialog.dart';
 import 'widgets/bookmark_editor_dialog.dart';
@@ -78,54 +80,93 @@ class _BookmarksPageState extends State<BookmarksPage> {
 
   @override
   Widget build(BuildContext context) {
-    final l10n = context.l10n;
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(l10n.navBookmarks),
-        // Nothing scrolls under a shadow over the search field below.
-        scrolledUnderElevation: 0,
-        actions: [
-          SignalBuilder(
-            builder: (context) => IconButton(
-              icon: const Icon(Icons.file_download_outlined),
-              tooltip: l10n.bookmarksExportFile,
-              onPressed: _controller.canExport.value
-                  ? _controller.exportToFile
-                  : null,
-            ),
+    final selection = _controller.selection;
+    // The bars around the list follow selection mode; the rows watch it
+    // themselves.
+    return SignalBuilder(
+      builder: (context) {
+        final selecting = selection.selecting.value;
+        return SelectionScope(
+          selection: selection,
+          child: Scaffold(
+            appBar: selecting
+                ? SelectionAppBar(selection: selection)
+                : _appBar(context, selection),
+            bottomNavigationBar: selecting
+                ? SelectionToolbar(
+                    selection: selection,
+                    onShare: _shareSelection,
+                  )
+                : null,
+            endDrawer: BookmarksFilterDrawer(controller: _controller),
+            floatingActionButton: selecting
+                ? null
+                : BookmarksFabMenu(
+                    onAdd: _edit,
+                    onImport: _controller.importFromFile,
+                    onScan: () => context.push(shareReceivePath),
+                  ),
+            body: SafeArea(child: _body()),
           ),
-          SignalBuilder(
-            builder: (context) => Badge(
-              isLabelVisible: _controller.activeFilterCount.value > 0,
-              label: Text('${_controller.activeFilterCount.value}'),
-              child: Builder(
-                builder: (context) => IconButton(
-                  icon: const Icon(Icons.filter_list),
-                  tooltip: l10n.bookmarksFilters,
-                  onPressed: () => Scaffold.of(context).openEndDrawer(),
-                ),
+        );
+      },
+    );
+  }
+
+  /// The page's own app bar: the way into selection while the filters leave
+  /// something to select, the export and filter actions, and the search field.
+  AppBar _appBar(BuildContext context, MultiSelection selection) {
+    final l10n = context.l10n;
+    return AppBar(
+      title: Text(l10n.navBookmarks),
+      // Nothing scrolls under a shadow over the search field below.
+      scrolledUnderElevation: 0,
+      actions: [
+        SignalBuilder(
+          builder: (context) => _controller.hasMatches.value
+              ? SelectionEntry(selection: selection)
+              : const SizedBox.shrink(),
+        ),
+        SignalBuilder(
+          builder: (context) => IconButton(
+            icon: const Icon(Icons.file_download_outlined),
+            tooltip: l10n.bookmarksExportFile,
+            onPressed: _controller.canExport.value
+                ? _controller.exportToFile
+                : null,
+          ),
+        ),
+        SignalBuilder(
+          builder: (context) => Badge(
+            isLabelVisible: _controller.activeFilterCount.value > 0,
+            label: Text('${_controller.activeFilterCount.value}'),
+            child: Builder(
+              builder: (context) => IconButton(
+                icon: const Icon(Icons.filter_list),
+                tooltip: l10n.bookmarksFilters,
+                onPressed: () => Scaffold.of(context).openEndDrawer(),
               ),
             ),
           ),
-        ],
-        // The field belongs to the app bar, and hides with the empty state.
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(BookmarksSearchBar.height),
-          child: SignalBuilder(
-            builder: (context) => _controller.hasBookmarks.value
-                ? BookmarksSearchBar(controller: _controller)
-                : const SizedBox.shrink(),
-          ),
+        ),
+      ],
+      // The field belongs to the app bar, and hides with the empty state.
+      bottom: PreferredSize(
+        preferredSize: const Size.fromHeight(BookmarksSearchBar.height),
+        child: SignalBuilder(
+          builder: (context) => _controller.hasBookmarks.value
+              ? BookmarksSearchBar(controller: _controller)
+              : const SizedBox.shrink(),
         ),
       ),
-      endDrawer: BookmarksFilterDrawer(controller: _controller),
-      floatingActionButton: BookmarksFabMenu(
-        onAdd: _edit,
-        onImport: _controller.importFromFile,
-        onScan: () => context.push(shareReceivePath),
-      ),
-      body: SafeArea(child: _body()),
     );
+  }
+
+  /// Opens the sender on everything the selection holds.
+  void _shareSelection() {
+    final route = _controller.selectionShareRoute();
+    if (route == null) return;
+    context.push(route);
   }
 
   /// Nothing at all shows the full-page empty state; otherwise the list.

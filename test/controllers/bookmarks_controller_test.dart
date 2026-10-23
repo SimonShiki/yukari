@@ -1,10 +1,15 @@
+import 'dart:ui' show Locale;
+
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:yukari/l10n/l10n.dart';
 import 'package:yukari/constants/builtin_bookmarks.dart';
 import 'package:yukari/controllers/bookmarks_actions.dart';
 import 'package:yukari/controllers/bookmarks_controller.dart';
 import 'package:yukari_core/models/bookmark.dart';
 import 'package:yukari_core/models/node.dart';
+import 'package:yukari/share/share_document.dart';
+import 'package:yukari/share/share_routes.dart';
 import 'package:yukari/signals/bookmarks.dart' as saved;
 import 'package:yukari/utils/bookmark_codec.dart';
 
@@ -560,6 +565,65 @@ void main() {
       builtinBookmarks.map((bookmark) => bookmark.id),
     );
     expect(controller.myBookmarks.value, isEmpty);
+  });
+
+  group('selection', () {
+    test('what can be selected follows the filters', () async {
+      await seedBookmarks([
+        testBookmark('a', name: 'Alpha', category: 'Home'),
+        testBookmark('b', name: 'Beta', category: 'Work'),
+      ]);
+      final controller = controllerFor(builtins: []);
+      expect(controller.selectableIds.value, ['a', 'b']);
+
+      controller.toggleCategory('Work');
+      expect(controller.selectableIds.value, ['b']);
+
+      // Select all means all of what the page shows.
+      controller.selection
+        ..enter()
+        ..toggleAll();
+      expect(controller.selection.ids.value, {'b'});
+      expect(controller.selection.count.value, 1);
+    });
+
+    test('sharing a selection builds one bundle path and leaves it', () async {
+      await seedBookmarks([
+        testBookmark('a', name: 'Alpha'),
+        testBookmark('b', name: 'Beta', host: 'other.example.com'),
+      ]);
+      final controller = controllerFor(builtins: []);
+      controller.selection
+        ..enter()
+        ..select(['b', 'a']);
+
+      expect(
+        controller.selectionShareRoute(),
+        shareSendPaths(ShareKind.node, ['a', 'b']),
+      );
+      expect(controller.selection.selecting.value, isFalse);
+      expect(controller.selection.ids.value, isEmpty);
+    });
+
+    test('a selection with a node that cannot be shared reports it', () async {
+      await seedBookmarks([
+        testBookmark('a', name: 'Alpha'),
+        // A node that needs credentials cannot be shared as it is.
+        testBookmark('b', name: 'Beta', host: 'https://u:p@relay.example.com'),
+      ]);
+      final controller = controllerFor(builtins: []);
+      controller.selection
+        ..enter()
+        ..select(['a', 'b']);
+
+      expect(controller.selectionShareRoute(), isNull);
+      expect(messages, [
+        lookupAppLocalizations(const Locale('en')).selectionUnavailable(1),
+      ]);
+      // Nothing was shared, so the selection stays for the user to fix.
+      expect(controller.selection.selecting.value, isTrue);
+      expect(controller.selection.ids.value, {'a', 'b'});
+    });
   });
 
   test('dispose disposes the signals it created', () {

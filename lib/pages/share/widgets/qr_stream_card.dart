@@ -4,6 +4,7 @@ import 'package:signals_flutter/signals_flutter.dart';
 import '../../../controllers/qr_share_send_controller.dart';
 import '../../../l10n/l10n.dart';
 import '../../../utils/byte_units.dart';
+import '../../../widgets/card_surface/card_surface.dart';
 import 'qr_matrix_view.dart';
 
 /// The widest the code draws, in logical pixels: at this size a phone camera
@@ -21,8 +22,7 @@ class QrStreamCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final l10n = context.l10n;
-    return Card(
-      margin: EdgeInsets.zero,
+    return CardSurface(
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -30,40 +30,40 @@ class QrStreamCard extends StatelessWidget {
           children: [
             _QrFrame(controller: controller),
             const SizedBox(height: 12),
-            Row(
-              children: [
-                SignalBuilder(
-                  builder: (context) {
-                    final playing = controller.playing.value;
-                    return IconButton.filledTonal(
-                      tooltip: playing ? l10n.shareQrPause : l10n.shareQrPlay,
-                      onPressed: controller.toggle,
-                      icon: Icon(
-                        playing
-                            ? Icons.pause_rounded
-                            : Icons.play_arrow_rounded,
-                      ),
-                    );
-                  },
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: SignalBuilder(
-                    builder: (context) => Text(
-                      l10n.shareQrFrameStats(
-                        controller.framesSent.value,
-                        controller.blockCount.value,
-                        formatBytes(controller.payloadBytes.value),
-                      ),
-                      textAlign: TextAlign.end,
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant,
-                      ),
+            if (controller.staticShare)
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _stats(context, TextAlign.start),
+                  Text(
+                    l10n.shareQrFps(controller.fps.peek()),
+                    style: theme.textTheme.labelLarge?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
                     ),
                   ),
-                ),
-              ],
-            ),
+                ],
+              )
+            else
+              Row(
+                children: [
+                  SignalBuilder(
+                    builder: (context) {
+                      final playing = controller.playing.value;
+                      return IconButton.filledTonal(
+                        tooltip: playing ? l10n.shareQrPause : l10n.shareQrPlay,
+                        onPressed: controller.toggle,
+                        icon: Icon(
+                          playing
+                              ? Icons.pause_rounded
+                              : Icons.play_arrow_rounded,
+                        ),
+                      );
+                    },
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(child: _stats(context, TextAlign.end)),
+                ],
+              ),
             const SizedBox(height: 12),
             Text(
               l10n.shareQrHint,
@@ -72,6 +72,25 @@ class QrStreamCard extends StatelessWidget {
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+
+  /// The frame statistics line, which follows every frame the card shows.
+  Widget _stats(BuildContext context, TextAlign align) {
+    final theme = Theme.of(context);
+    final l10n = context.l10n;
+    return SignalBuilder(
+      builder: (context) => Text(
+        l10n.shareQrFrameStats(
+          controller.framesSent.value,
+          controller.blockCount.value,
+          formatBytes(controller.payloadBytes.value),
+        ),
+        textAlign: align,
+        style: theme.textTheme.bodyMedium?.copyWith(
+          color: theme.colorScheme.onSurfaceVariant,
         ),
       ),
     );

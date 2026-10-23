@@ -217,7 +217,6 @@
   "advancedPublicKeyHelper": "Derived from private key",
   "advancedHidePublicKey": "Hide public key",
   "advancedShowPublicKey": "Show public key",
-  "networkRefresh": "Refresh network status",
   "networkEmpty": "No networks yet",
   "networkEmptyDescription": "Add a network to get connected.",
   "networkDeleteTitle": "Delete network?",
@@ -1221,6 +1220,14 @@
       }
     }
   },
+  "shareItems": "{count, plural, =1{1 item} other{{count} items}}",
+  "@shareItems": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "shareSendSecretIncluded": "Includes the network secret",
   "shareSendNetworkMissing": "That network no longer exists.",
   "shareSendNodeMissing": "That bookmark no longer exists.",
@@ -1347,6 +1354,36 @@
   "shareReceiveAddNetwork": "Add network",
   "shareReceiveSaveNode": "Save node",
   "shareReceiveScanAnother": "Scan another",
+  "shareReceiveAddAll": "Add all {count}",
+  "@shareReceiveAddAll": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "shareReceiveAddedAll": "Added {count} items",
+  "@shareReceiveAddedAll": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "shareReceiveAddSummary": "Added {added}, duplicates {duplicates}, failed {failed}",
+  "@shareReceiveAddSummary": {
+    "placeholders": {
+      "added": {
+        "type": "int"
+      },
+      "duplicates": {
+        "type": "int"
+      },
+      "failed": {
+        "type": "int"
+      }
+    }
+  },
   "shareReceiveNetworkAdded": "Added {name}",
   "@shareReceiveNetworkAdded": {
     "placeholders": {
@@ -1376,6 +1413,38 @@
   "sharePreviewSecretIncluded": "Included",
   "sharePreviewPeers": "Initial peers",
   "sharePreviewProtocols": "Protocols",
+  "selectionEnter": "Select",
+  "selectionExit": "Exit selection",
+  "selectionSelected": "{count, plural, =1{1 selected} other{{count} selected}}",
+  "@selectionSelected": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "selectionSelectAll": "Select all",
+  "selectionDeselectAll": "Deselect all",
+  "selectionShare": "Share",
+  "selectionUnavailable": "{count, plural, =1{1 selected item cannot be shared} other{{count} selected items cannot be shared}}",
+  "@selectionUnavailable": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "selectionTooMany": "{count} items cannot be shared at once; share at most {max}.",
+  "@selectionTooMany": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "max": {
+        "type": "int"
+      }
+    }
+  },
   "cardShareQr": "Share via QR",
   "bookmarksScanQr": "Scan QR Code",
   "advancedCopyPublicKey": "Copy public key",

@@ -211,7 +211,6 @@
   "advancedPublicKeyHelper": "由私钥推导",
   "advancedHidePublicKey": "隐藏公钥",
   "advancedShowPublicKey": "显示公钥",
-  "networkRefresh": "刷新网络状态",
   "networkEmpty": "暂无网络",
   "networkEmptyDescription": "添加网络以建立连接。",
   "networkDeleteTitle": "删除网络？",
@@ -1135,6 +1134,14 @@
       }
     }
   },
+  "shareItems": "{count, plural, other{{count} 项}}",
+  "@shareItems": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "shareSendSecretIncluded": "包含网络密钥",
   "shareSendNetworkMissing": "该网络已不存在。",
   "shareSendNodeMissing": "该书签已不存在。",
@@ -1261,6 +1268,36 @@
   "shareReceiveAddNetwork": "添加网络",
   "shareReceiveSaveNode": "保存节点",
   "shareReceiveScanAnother": "继续扫描",
+  "shareReceiveAddAll": "添加全部 {count} 项",
+  "@shareReceiveAddAll": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "shareReceiveAddedAll": "已添加 {count} 项",
+  "@shareReceiveAddedAll": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "shareReceiveAddSummary": "已添加 {added} 项，重复 {duplicates} 项，失败 {failed} 项",
+  "@shareReceiveAddSummary": {
+    "placeholders": {
+      "added": {
+        "type": "int"
+      },
+      "duplicates": {
+        "type": "int"
+      },
+      "failed": {
+        "type": "int"
+      }
+    }
+  },
   "shareReceiveNetworkAdded": "已添加 {name}",
   "@shareReceiveNetworkAdded": {
     "placeholders": {
@@ -1290,6 +1327,38 @@
   "sharePreviewSecretIncluded": "已包含",
   "sharePreviewPeers": "初始节点",
   "sharePreviewProtocols": "协议",
+  "selectionEnter": "选择",
+  "selectionExit": "退出选择",
+  "selectionSelected": "{count, plural, other{已选择 {count} 项}}",
+  "@selectionSelected": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "selectionSelectAll": "全选",
+  "selectionDeselectAll": "取消全选",
+  "selectionShare": "共享",
+  "selectionUnavailable": "{count, plural, other{所选项中有 {count} 项无法分享}}",
+  "@selectionUnavailable": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "selectionTooMany": "一次最多分享 {max} 项，当前选中 {count} 项。",
+  "@selectionTooMany": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "max": {
+        "type": "int"
+      }
+    }
+  },
   "cardShareQr": "通过二维码分享",
   "bookmarksScanQr": "扫描二维码",
   "advancedCopyPublicKey": "复制公钥",

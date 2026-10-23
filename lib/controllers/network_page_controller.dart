@@ -9,6 +9,7 @@ import '../signals/instances.dart' as running;
 import '../signals/locale.dart';
 import '../signals/networks.dart' as saved;
 import '../widgets/network_card/network_card_data.dart';
+import 'multi_selection.dart';
 import 'network_instance_controller.dart';
 import 'network_page_actions.dart';
 
@@ -134,6 +135,19 @@ class NetworkPageController {
     ];
   });
 
+  /// The ids the list can select, in display order.
+  late final ReadonlySignal<List<String>> selectableIds = computed(
+    () => [for (final card in cards.value) card.id],
+  );
+
+  /// The gallery-style selection the list runs, entered from the app bar.
+  late final MultiSelection selection = MultiSelection(
+    selectable: selectableIds,
+  );
+
+  /// Whether there is a network to select, so the app bar offers selection.
+  bool get canSelect => cards.value.isNotEmpty;
+
   final List<void Function()> _cleanups = [];
   bool _disposed = false;
   bool _active = false;
@@ -164,6 +178,7 @@ class NetworkPageController {
       cleanup();
     }
     _cleanups.clear();
+    selection.dispose();
     // [instances] and [loaded] live in the shared store, which outlives this
     // controller; everything else was created here.
     for (final signal in <ReadonlySignal<Object?>>[
@@ -174,6 +189,7 @@ class NetworkPageController {
       selectedId,
       instanceTab,
       selectionRunning,
+      selectableIds,
       cards,
     ]) {
       signal.dispose();

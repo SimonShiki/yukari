@@ -132,7 +132,9 @@ final GoRouter appRouter = GoRouter(
           key: ValueKey<String>(state.uri.path),
           child: QrShareSendPage(
             kind: kind ?? ShareKind.node,
-            id: kind == null ? '' : state.pathParameters['id'] ?? '',
+            ids: kind == null
+                ? const <String>[]
+                : shareSendIds(state.pathParameters['id']),
           ),
         );
       },

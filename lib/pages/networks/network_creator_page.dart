@@ -5,6 +5,7 @@ import 'package:signals_flutter/signals_flutter.dart';
 import '../../controllers/network_page_controller.dart';
 import '../../l10n/l10n.dart';
 import '../../utils/validator.dart';
+import '../../widgets/card_surface/card_surface.dart';
 import '../../widgets/snackbar/app_snackbar.dart';
 
 /// Creates a network from a name and an optional hostname, then opens its
@@ -52,7 +53,7 @@ class _NetworkCreatorPageState extends State<NetworkCreatorPage> {
           padding: const EdgeInsets.all(16),
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 500),
-            child: Card(
+            child: CardSurface(
               child: Padding(
                 padding: const EdgeInsets.all(24),
                 child: Form(

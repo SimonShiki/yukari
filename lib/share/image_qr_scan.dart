@@ -2,8 +2,6 @@ import 'dart:async';
 import 'dart:isolate';
 import 'dart:typed_data';
 
-import 'package:flutter/foundation.dart' show kIsWeb;
-
 import 'image_qr_decode.dart';
 
 export 'image_qr_decode.dart' show ImageScanReport, decodeImageForQrPayloads;
@@ -11,15 +9,12 @@ export 'image_qr_decode.dart' show ImageScanReport, decodeImageForQrPayloads;
 /// Decodes every QR code in [bytes] **without blocking the UI thread**.
 ///
 /// The image may be a still bitmap or an animated GIF, including the GIF the
-/// share page exports. This is the scanning path for platforms that
-/// `mobile_scanner` has no camera plugin for, such as Linux and Windows, and
-/// the fallback everywhere else when the user picks an image instead of using
-/// the camera.
+/// share page exports. This is the scanning path wherever `mobile_scanner` has
+/// no camera plugin, and the fallback everywhere else when the user picks an
+/// image instead of using the camera.
 ///
-/// The work is CPU bound, so on every platform that has isolates it runs in a
-/// short-lived worker isolate and the UI isolate only receives progress,
-/// payloads and the final report. The web has no isolates: there the same
-/// decoder runs in-process but yields to the event loop between frames.
+/// The work is CPU bound, so it runs in a short-lived worker isolate and the UI
+/// isolate only receives progress, payloads and the final report.
 ///
 /// [onProgress] reports `(done, total)` frames, [onPayload] fires as soon as a
 /// frame decodes so the receiver can be fed live, and [isCancelled] is polled
@@ -29,22 +24,12 @@ Future<ImageScanReport> scanImageForQrPayloads(
   void Function(int done, int total)? onProgress,
   void Function(String payload)? onPayload,
   bool Function()? isCancelled,
-}) {
-  if (kIsWeb) {
-    return decodeImageForQrPayloads(
-      bytes,
-      onProgress: onProgress,
-      onPayload: onPayload,
-      isCancelled: isCancelled,
-    );
-  }
-  return _scanInWorker(
-    bytes,
-    onProgress: onProgress,
-    onPayload: onPayload,
-    isCancelled: isCancelled,
-  );
-}
+}) => _scanInWorker(
+  bytes,
+  onProgress: onProgress,
+  onPayload: onPayload,
+  isCancelled: isCancelled,
+);
 
 /// Scans a picked image for QR payloads; [scanImageForQrPayloads]'s signature.
 typedef ImageScanner = Future<ImageScanReport> Function(
@@ -115,7 +100,7 @@ Future<ImageScanReport> _scanInWorker(
       errorsAreFatal: true,
     );
   } on Object {
-    // Isolates are unavailable in this environment after all; decode in place.
+    // The isolate could not start; decode in place so the scan still finishes.
     fromWorker.close();
     return decodeImageForQrPayloads(
       bytes,
