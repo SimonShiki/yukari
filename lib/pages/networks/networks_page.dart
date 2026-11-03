@@ -1,0 +1,198 @@
+import 'package:go_router/go_router.dart';
+import 'package:material_ui/material_ui.dart';
+import 'package:signals_flutter/signals_flutter.dart';
+
+import '../../controllers/network_page_controller.dart';
+import '../../l10n/l10n.dart';
+import '../../widgets/network_card/network_card_data.dart';
+import '../../widgets/network_card/network_card_geometry.dart';
+import '../../widgets/selection/selection_chrome.dart';
+import '../../widgets/selection/selection_fab_menu.dart';
+import '../../widgets/selection/selection_switch.dart';
+import '../../widgets/snackbar/app_snackbar.dart';
+import 'editor_exit_guard.dart';
+import 'foreground_active.dart';
+import 'network_create_menu.dart';
+import 'network_editor_page.dart';
+import 'network_instance_page.dart';
+import 'network_page_dialogs.dart';
+import 'widgets/networks_list_pane.dart';
+
+/// The networks list, with the selected network beside it on wide windows.
+class NetworksPage extends StatefulWidget {
+  const NetworksPage({super.key, this.controller});
+
+  final NetworkPageController? controller;
+
+  @override
+  State<NetworksPage> createState() => _NetworksPageState();
+}
+
+class _NetworksPageState extends State<NetworksPage>
+    with WidgetsBindingObserver, ForegroundActive<NetworksPage> {
+  late final NetworkPageController _controller =
+      widget.controller ??
+      NetworkPageController(
+        navigate: _navigate,
+        pushRoute: (route) => context.push(route),
+        showMessage: (message) => showAppSnackBar(context, message),
+        confirmDelete: (networks) => confirmDeleteNetworks(context, networks),
+        showTunPermissionWarning: (network) => showTunPermissionWarningDialog(
+          context,
+          network,
+          _controller.activeBackend,
+          serviceSupported: _controller.serviceSupported,
+        ),
+        isWide: () => _wide,
+        invalidInput: _paneInvalid,
+        confirmDiscardDialog: () => confirmDiscardChanges(context),
+      );
+
+  /// The window class the last layout ran with, for the controller's actions.
+  bool _wide = false;
+
+  bool _paneInvalid() =>
+      hasInvalidInput(paneGuardKey(_controller.selectedId.value ?? ''));
+
+  @override
+  void initState() {
+    super.initState();
+    startForegroundTracking();
+    _controller.start();
+    registerExitGuard(networksGuardKey, _paneInvalid);
+  }
+
+  /// The 10s refresh only runs while the list is visible in the foreground.
+  @override
+  void setActive(bool active) => _controller.setActive(active);
+
+  @override
+  void dispose() {
+    stopForegroundTracking();
+    unregisterExitGuard(networksGuardKey);
+    if (widget.controller == null) _controller.dispose();
+    super.dispose();
+  }
+
+  void _navigate(String route, String? id) {
+    if (id == null || route.startsWith('/')) {
+      context.go(route);
+    } else {
+      context.goNamed(
+        route,
+        pathParameters: {'id': id},
+        extra: takeNetworkCardOrigin(),
+      );
+    }
+  }
+
+  Future<void> _select(
+    List<NetworkCardData> cards,
+    int? index, {
+    required bool wide,
+  }) async {
+    final id = index == null || index >= cards.length ? null : cards[index].id;
+    // The wide pane always shows a network, so a deselect keeps the selection.
+    if (id == null && wide) return;
+    if (id != null && !await _controller.select(id)) return;
+    if (!mounted || id == null || wide) return;
+    // Narrow windows have no detail pane, so every tap opens the route once.
+    _controller.openDetail(id);
+  }
+
+  @override
+  Widget build(BuildContext context) => LayoutBuilder(
+    builder: (context, constraints) {
+      final wide = constraints.maxWidth >= _wideBreakpoint;
+      _wide = wide;
+      return _scaffold(context, wide: wide);
+    },
+  );
+
+  /// The bars around the list follow selection mode, each in its own slot;
+  /// the list watches it itself.
+  Widget _scaffold(BuildContext context, {required bool wide}) {
+    final selection = _controller.selection;
+    return SelectionScope(
+      selection: selection,
+      child: Scaffold(
+        appBar: SelectionAppBarSwitch(
+          selection: selection,
+          bar: _appBar(context),
+        ),
+        // Selecting replaces the create menu with the selection's own menu,
+        // even on wide windows, where the create menu has no FAB to replace.
+        floatingActionButton: SelectionFabSwitch(
+          selection: selection,
+          selecting: SelectionFabMenu(
+            selection: selection,
+            onShare: _controller.openSelectionShare,
+            onDelete: _controller.deleteSelection,
+          ),
+          menu: wide ? null : NetworkCreateMenu(controller: _controller),
+        ),
+        body: SafeArea(
+          child: Row(
+            children: [
+              Expanded(
+                child: NetworksListPane(
+                  controller: _controller,
+                  wide: wide,
+                  onSelect: (cards, index) => _select(cards, index, wide: wide),
+                ),
+              ),
+              if (wide)
+                SignalBuilder(
+                  builder: (context) {
+                    final id = _controller.selectedId.value;
+                    if (id == null) return const SizedBox.shrink();
+                    return _detailPane(
+                      id,
+                      running: _controller.selectionRunning.value,
+                    );
+                  },
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// The page's own app bar: the title, and the way into selection while there
+  /// is a network to select.
+  AppBar _appBar(BuildContext context) => AppBar(
+    title: Text(context.l10n.navNetworks),
+    actions: [
+      SignalBuilder(
+        builder: (context) => _controller.canSelect
+            ? SelectionEntry(selection: _controller.selection)
+            : const SizedBox.shrink(),
+      ),
+    ],
+  );
+
+  Widget _detailPane(String id, {required bool running}) => Expanded(
+    flex: 2,
+    child: Container(
+      decoration: BoxDecoration(
+        border: Border(
+          left: BorderSide(color: Theme.of(context).colorScheme.outlineVariant),
+        ),
+      ),
+      child: running
+          ? NetworkInstancePage(
+              key: ValueKey('instance-$id'),
+              id: id,
+              tab: _controller.instanceTab,
+            )
+          : NetworkEditorPage(
+              key: ValueKey('editor-$id'),
+              id: id,
+              guardKey: paneGuardKey(id),
+            ),
+    ),
+  );
+
+  static const _wideBreakpoint = 840.0;
+}

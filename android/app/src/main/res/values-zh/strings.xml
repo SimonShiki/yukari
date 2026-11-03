@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="tile_label">Yukari</string>
+    <string name="notification_channel_name">Yukari</string>
+    <string name="notification_channel_description">显示 Yukari 正在运行的网络</string>
+    <string name="notification_connected">已连接到 %1$s</string>
+    <string name="notification_stop">停止</string>
+</resources>

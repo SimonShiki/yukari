@@ -1,0 +1,100 @@
+import 'package:material_ui/material_ui.dart';
+
+import '../../l10n/l10n.dart';
+import '../selection/selection_chrome.dart';
+
+import 'package:yukari_core/models/instance.dart';
+
+class NetworkCard extends StatelessWidget {
+  const NetworkCard({
+    super.key,
+    required this.name,
+    required this.running,
+    required this.status,
+    required this.onToggle,
+    required this.menuButton,
+    this.selecting = false,
+    this.selected = false,
+  });
+
+  final String name;
+  final bool running;
+  final InstanceStatus status;
+  final ValueChanged<bool>? onToggle;
+  final Widget menuButton;
+
+  /// Whether its page is selecting, so the row is its name and the check only:
+  /// no status badge, no start/stop button, no menu.
+  final bool selecting;
+
+  /// Whether this row is part of that selection.
+  final bool selected;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colors = theme.colorScheme;
+    final status = switch (this.status) {
+      InstanceStatus.stopped => context.l10n.cardStopped,
+      InstanceStatus.running => context.l10n.cardRunning,
+      InstanceStatus.starting => context.l10n.cardStarting,
+      InstanceStatus.stopping => context.l10n.cardStopping,
+      InstanceStatus.failed => context.l10n.cardFailed,
+      InstanceStatus.unknown => context.l10n.cardUnknown,
+    };
+    final badge = Badge(
+      backgroundColor: this.status == InstanceStatus.failed
+          ? colors.errorContainer
+          : (running
+                ? colors.primaryContainer
+                : colors.surfaceContainerHighest),
+      textColor: this.status == InstanceStatus.failed
+          ? colors.onErrorContainer
+          : (running ? colors.onPrimaryContainer : colors.onSurfaceVariant),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      label: Text(status),
+    );
+    final controls = Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        IconButton.filledTonal(
+          tooltip: running
+              ? context.l10n.cardStop(name)
+              : context.l10n.cardStart(name),
+          isSelected: running,
+          onPressed: onToggle == null ? null : () => onToggle!(!running),
+          icon: const Icon(Icons.play_arrow_rounded),
+          selectedIcon: const Icon(Icons.stop_rounded),
+          style: IconButton.styleFrom(
+            backgroundColor: running ? colors.errorContainer : null,
+            foregroundColor: running ? colors.onErrorContainer : null,
+          ),
+        ),
+        menuButton,
+      ],
+    );
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Row(
+              children: [
+                Expanded(child: Text(name, style: theme.textTheme.titleSmall)),
+                const SizedBox(width: 12),
+                if (selecting)
+                  SelectionCheck(selected: selected)
+                else ...[
+                  badge,
+                  const SizedBox(width: 8),
+                  controls,
+                ],
+              ],
+            ),
+          ],
+        );
+      },
+    );
+  }
+}

@@ -1,0 +1,24 @@
+name: Upload a native library asset
+description: Publishes one file of the `natives` release.
+
+inputs:
+  file:
+    description: The file to publish.
+    required: true
+  asset_name:
+    description: The name the file gets in the release.
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - uses: svenstaro/upload-release-action@v2
+      with:
+        repo_token: ${{ github.token }}
+        file: ${{ inputs.file }}
+        asset_name: ${{ inputs.asset_name }}
+        tag: natives
+        release_name: Native Libraries
+        overwrite: true
+        prerelease: true
+        make_latest: false

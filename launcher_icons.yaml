@@ -1,0 +1,20 @@
+# Regenerate:
+#   cd tool/icons && dart pub get
+#   dart run render_svg.dart
+#   dart run launcher_icons:launcher_icons -d "$PWD/../.." -c "$PWD/../.."
+launcher_icons:
+  image_path: "assets/generated/yukari-with-background-1024.png"
+  android:
+    generate: true
+    adaptive_icon_foreground: "assets/generated/yukari-1024.png"
+    adaptive_icon_background: "#52298c"
+    adaptive_icon_foreground_inset: 16
+    adaptive_icon_monochrome: "assets/generated/yukari-1024.png"
+    adaptive_icon_monochrome_inset: 16
+    adaptive_icon_round: "assets/generated/yukari-1024.png"
+  windows:
+    generate: true
+    image_path_unplated: "assets/generated/yukari-1024.png"
+    image_path_light_unplated: "assets/generated/yukari-on-light-1024.png"
+  linux:
+    generate: true
