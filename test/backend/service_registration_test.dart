@@ -26,7 +26,7 @@ void main() {
   test('systemd unit keeps root to what EasyTier needs', () {
     final unit = SystemdService.unit('/opt/yukari/service/bin/s', ['run']);
 
-    // Each is a decision: dropping one hands root back to the service.
+    // Each line is a decision: dropping one hands root back to the service.
     for (final line in [
       'NoNewPrivileges=yes',
       'ProtectSystem=strict',

@@ -19,8 +19,8 @@ const int shareMaxPeers = 64;
 
 /// The longest name a share document may carry.
 ///
-/// A sender clamps a name to this before encoding, so it needs the number this
-/// validator rejects past.
+/// A sender clamps a name to this before encoding, so the number has to match
+/// the limit the validator enforces.
 const int shareMaxNameLength = 128;
 const int _maxHostLength = 253;
 const int _maxPathLength = 256;
@@ -74,10 +74,10 @@ final class SharedPeer {
 /// compact, versioned JSON a QR payload or the clipboard carries; a channel
 /// may compress it, and [decode] reads the JSON back.
 ///
-/// Configs ride an optional field of version 1 rather than a new version: an
-/// older app ignores the key and imports the peers as it always did, and a
-/// document without it imports with today's defaults. A node's name is not
-/// like that: an older validator refused a name on a node share, so an old app
+/// Configs travel in an optional field of version 1 rather than a new version:
+/// an older app ignores the key and imports the peers as it always did, and a
+/// document without it imports with today's defaults. A node's name is not like
+/// that: an older validator refused a name on a node share, so an old app
 /// rejects such a document whole.
 final class ShareDocument {
   const ShareDocument({
@@ -105,7 +105,7 @@ final class ShareDocument {
 
   bool get hasSecret => secret != null;
 
-  /// This document as the compact JSON a share channel carries.
+  /// The document as the compact JSON a share channel carries.
   String encode() => jsonEncode(toJson());
 
   Map<String, Object?> toJson() => {

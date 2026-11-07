@@ -14,9 +14,9 @@ const serviceTrailingSpinner = SizedBox.square(
 
 /// The service header before the first check answers.
 ///
-/// It is laid out exactly like a real header — same leading size, same
-/// two-line shape, same trailing size — so the state landing changes only the
-/// words, never the geometry around them.
+/// Laid out like a real header — same leading size, same two-line shape, same
+/// trailing size — so the state landing changes only the words, never the
+/// geometry around them.
 class ServiceLoadingHeader extends StatelessWidget {
   const ServiceLoadingHeader({super.key, required this.l10n});
 

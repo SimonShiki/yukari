@@ -219,7 +219,7 @@ String? validatePrivateKey(String value) {
 }
 
 /// First invalid value among those the network editor validates field by
-/// field, or null. For networks that arrive whole, such as imports.
+/// field, or null. Used for networks that arrive whole, such as imports.
 String? validateNetwork(Network network) {
   String? each(Iterable<String> values, String? Function(String) validate) =>
       values.map(validate).nonNulls.firstOrNull;

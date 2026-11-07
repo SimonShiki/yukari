@@ -7,8 +7,8 @@ import '../../../l10n/l10n.dart';
 import '../../../widgets/card_surface/card_surface.dart';
 import 'share_choice_group.dart';
 
-/// tuning stream about how fast it plays, how dense each code is, and the GIF
-/// export for a receiver without a camera.
+/// The settings that tune the stream: how fast it plays, how dense each code
+/// is, and the GIF export for a receiver without a camera.
 class QrStreamSettings extends StatelessWidget {
   const QrStreamSettings({
     super.key,

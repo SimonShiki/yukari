@@ -7,12 +7,12 @@ import 'image_qr_decode.dart';
 export 'image_qr_decode.dart'
     show ImageScanReport, decodeImageForQrPayloads, maxScanImageBytes;
 
-/// Decodes every QR code in [bytes] **without blocking the UI thread**.
+/// Decodes every QR code in [bytes] without blocking the UI thread.
 ///
 /// The image may be a still bitmap or an animated GIF, including the GIF the
-/// share page exports. This is the scanning path wherever `mobile_scanner` has
-/// no camera plugin, and the fallback everywhere else when the user picks an
-/// image instead of using the camera.
+/// share page exports. The app scans through this wherever `mobile_scanner` has
+/// no camera plugin, and falls back to it everywhere else when the user picks
+/// an image instead of using the camera.
 ///
 /// The work is CPU bound, so it runs in a short-lived worker isolate and the UI
 /// isolate only receives progress, payloads and the final report.

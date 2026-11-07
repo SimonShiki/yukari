@@ -61,7 +61,7 @@ Future<NativeVersionManifest> fetchNativeVersionManifest(Uri url) async {
 /// build put into [localDirectory] and downloading the rest.
 ///
 /// [localDirectory] is null when the bundled EasyTier library was not built
-/// locally, whose runtime libraries belong to another revision.
+/// locally, as its runtime libraries belong to another revision.
 ///
 /// Downloads are cached per revision, as these files come from EasyTier rather
 /// than from this checkout: a new revision ships new files.

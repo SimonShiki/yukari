@@ -27,8 +27,7 @@ final AndroidVpn systemAndroidVpn = (
 class AndroidVpnService {
   static const _channel = MethodChannel('top.simonshiki.yukari/vpn');
 
-  /// Request VPN permission from the system
-  /// Returns true if permission is granted
+  /// Asks the system for VPN permission and answers whether it was granted.
   static Future<bool> requestVpnPermission() =>
       _invokeBool('requestVpnPermission');
 
@@ -36,8 +35,7 @@ class AndroidVpnService {
   /// asking the user: the check the background actions may run.
   static Future<bool> hasVpnPermission() => _invokeBool('hasVpnPermission');
 
-  /// Start VPN service and get TUN file descriptor
-  /// Returns the TUN fd on success
+  /// Starts the VPN service and returns the TUN file descriptor on success.
   static Future<int> startVpn({
     required String networkName,
     required String ipv4,
@@ -67,17 +65,17 @@ class AndroidVpnService {
     return result['fd'] as int;
   }
 
-  /// Stop the VPN service
+  /// Stops the VPN service.
   static Future<void> stopVpn() async {
     if (!Platform.isAndroid) return;
     await _channel.invokeMethod('stopVpn');
   }
 
-  /// Check if VPN is currently active
+  /// Whether the VPN is active right now.
   static Future<bool> isVpnActive() => _invokeBool('isVpnActive');
 
-  /// Runs the boolean [method]: false where Android is absent, or when the
-  /// platform has no answer.
+  /// Calls [method] for a boolean answer: false where Android is absent, or
+  /// when the platform has no answer.
   static Future<bool> _invokeBool(String method) async {
     if (!Platform.isAndroid) return false;
     try {

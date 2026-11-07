@@ -6,8 +6,8 @@ import 'node.dart';
 
 part 'network.g.dart';
 
-/// A saved network configuration. Fields are edited in place; validation is
-/// the responsibility of whoever writes them (see `utils/validator.dart`).
+/// A saved network configuration. Fields are edited in place, and whoever
+/// writes them validates them (see `utils/validator.dart`).
 @JsonSerializable(explicitToJson: true)
 final class Network {
   Network();

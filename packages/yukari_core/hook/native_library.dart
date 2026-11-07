@@ -4,7 +4,7 @@ import 'native_version.dart';
 
 /// Picks the EasyTier library to bundle for one target.
 ///
-/// A local xmake build is used while it was built from the current sources, so a
+/// A local xmake build is used if it was built from the current sources, so a
 /// library left over from older sources is never bundled; it is left where it is
 /// until a local build replaces it. When the sources are the ones the `natives`
 /// release was built from, the published prebuilt library is downloaded rather

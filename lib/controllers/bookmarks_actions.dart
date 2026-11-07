@@ -128,8 +128,8 @@ extension BookmarksActions on BookmarksController {
     showMessage: showMessage,
   );
 
-  /// Deletes every selected bookmark behind one confirmation the page asked
-  /// for, reporting a store failure once and leaving selection either way.
+  /// Deletes every selected bookmark after one confirmation from the page,
+  /// reporting a store failure once and leaving selection either way.
   ///
   /// The built-in shared nodes are never deleted here: they are not the
   /// store's, so a selection holding only those deletes nothing.

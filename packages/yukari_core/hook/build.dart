@@ -21,8 +21,8 @@ void main(List<String> args) async {
 
     final packageRoot = input.packageRoot;
     // A library is identified by the fingerprint of the sources that built it,
-    // and xmake.lua is where those sources are pinned. Declaring it as a
-    // dependency is what reruns the hook when it changes.
+    // and xmake.lua is where those sources are pinned. Declaring that file and
+    // ffi.h as dependencies reruns the hook when either changes.
     final sources = packageRoot.resolve('xmake.lua');
     output.dependencies.add(sources);
     output.dependencies.add(packageRoot.resolve('third_party/easytier/ffi.h'));

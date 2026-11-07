@@ -50,7 +50,7 @@ const String _separator = ' · ';
 /// [name] with the connected-peer count, the node's own address and its live
 /// traffic, in one line; just [name] when the network is not running.
 ///
-/// [traffic] is not null only while the network runs
+/// [traffic] is not null only while the network runs.
 String trayNetworkLabel(
   String name, {
   required String? peers,

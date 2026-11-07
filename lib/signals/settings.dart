@@ -18,7 +18,7 @@ part 'settings_storage.dart';
 
 /// The app's settings: every preference that persists across launches.
 ///
-/// **Initialization**: Call [initSettings] once at app startup.
+/// [initSettings] loads them once at app startup.
 final settings = Settings();
 
 /// The settings page's persisted values, grouped by where they show.

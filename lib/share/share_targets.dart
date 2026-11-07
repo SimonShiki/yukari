@@ -106,7 +106,8 @@ ShareExtras _extrasFor(ShareKind kind, List<String> ids) {
   return (selfPeer: selfPeer, configs: configs);
 }
 
-/// The document [id] shares; [_missingReason] said there is one.
+/// The document [id] shares; [_missingReason] has already established that one
+/// exists.
 ///
 /// A store that lost the target in between is a [StateError], which
 /// [_validated] reports as unsupported rather than as missing.

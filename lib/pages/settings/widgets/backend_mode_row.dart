@@ -4,7 +4,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:yukari_core/models/backend.dart';
 
 /// How many lines a mode's description may wrap onto: [M3EListItem] clips its
-/// supporting text to one line, and this is what raises that cap.
+/// supporting text to one line, and passing this raises that cap.
 const _descriptionLines = 12;
 
 /// One backend mode: its icon, name, description and selection radio.

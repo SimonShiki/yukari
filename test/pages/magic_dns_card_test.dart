@@ -30,8 +30,8 @@ const _instance = <String, Object?>{
   'events': <Object?>[],
 };
 
-/// The same for a network EasyTier addressed itself: the DHCP-assigned address
-/// in the shape `my_node_info` reports.
+/// The running EasyTier information of `alpha`, addressed by EasyTier itself:
+/// the DHCP-assigned address in the shape `my_node_info` reports.
 const _assignedInstance = <String, Object?>{
   'running': true,
   'my_node_info': <String, Object?>{
@@ -46,7 +46,7 @@ const _assignedInstance = <String, Object?>{
   'events': <Object?>[],
 };
 
-/// The same for an instance EasyTier has not addressed yet.
+/// The running EasyTier information of `alpha` before EasyTier addressed it.
 const _unaddressedInstance = <String, Object?>{
   'running': true,
   'peer_route_pairs': <Object?>[],

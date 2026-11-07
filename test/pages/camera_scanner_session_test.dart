@@ -18,7 +18,7 @@ class _FakeCamera {
   bool held = false;
 
   /// Makes the next platform disposes fail, the way a camera the platform lost
-  /// does — after the texture is released and without closing anything else.
+  /// does: after the texture is released and without closing anything else.
   bool throwOnDispose = false;
 
   _FakeScanner create(ScanPace pace) {

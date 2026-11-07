@@ -12,15 +12,14 @@ import 'networks.dart' as saved;
 /// Global running-instance state: the one place the home dashboard, the
 /// networks list and the instance pages read what is running.
 ///
-/// **Initialization**: the app relies on the initial empty state and never
-/// resets this store; [initInstances] is the tests' reset, so one test cannot
-/// see the instances another collected.
+/// The app relies on the initial empty state and never resets this store;
+/// [initInstances] is the tests' reset, so one test cannot see the instances
+/// another collected.
 ///
-/// **Mutation**: [refreshInstances] is the only writer of a collected map, so
-/// concurrent refreshes of one backend coalesce into a single call, and
-/// [forgetInstances] drops ids a delete or stop made stale.
-///
-/// **Read**: [instances], keyed by network id, and [instancesLoaded].
+/// [refreshInstances] is the only writer of a collected map, so concurrent
+/// refreshes of one backend coalesce into a single call, and [forgetInstances]
+/// drops ids a delete or stop made stale. Read [instances], keyed by network
+/// id, and [instancesLoaded].
 final Signal<Map<String, Instance>> _instances = signal({});
 final Signal<bool> _loaded = signal(false);
 final Signal<int> _revision = signal(0);

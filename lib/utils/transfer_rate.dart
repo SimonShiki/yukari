@@ -3,8 +3,8 @@ import 'dart:collection';
 /// Estimates a byte rate the way the Qrs web app measures it.
 ///
 /// The meter is fed "this many bytes moved" events and keeps their running
-/// total as a counter. The rate is that counter's growth between the **oldest
-/// and newest sample inside [_window]**, divided by the time between those two
+/// total as a counter. The rate is that counter's growth between the oldest
+/// and newest sample inside [_window], divided by the time between those two
 /// samples — `useBytesRate` in the web app's `app/composables/timeseries.ts`
 /// computes exactly this from its sampled counter.
 ///
@@ -13,7 +13,7 @@ import 'dart:collection';
 /// been running for 300 ms already reports the rate of those 300 ms, where a
 /// fixed window would report a fraction of it and climb for a full window.
 ///
-/// Two properties follow from measuring a *counter* rather than the work each
+/// Two properties follow from measuring a counter rather than the work each
 /// event releases:
 ///
 /// * A stream at a steady rate reads a steady value, whatever the interval
@@ -54,8 +54,8 @@ class TransferRateMeter {
 
   /// Time between the first recorded byte and now.
   ///
-  /// It is the span a transfer's average speed divides its payload by; zero
-  /// when nothing has been recorded since the last [clear].
+  /// Average speed divides a transfer's payload by this span; zero when
+  /// nothing has been recorded since the last [clear].
   Duration get elapsed {
     final first = _firstMicros;
     if (first == null) return Duration.zero;
@@ -103,7 +103,7 @@ class TransferRateMeter {
   /// Records that [bytes] moved at the current time.
   ///
   /// Non-positive amounts are ignored: they carry no information, and skipping
-  /// them keeps the sample queue to one entry per really moving event.
+  /// them keeps one sample per event that really moved bytes.
   void record(int bytes) {
     if (bytes <= 0) return;
 

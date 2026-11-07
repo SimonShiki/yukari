@@ -20,7 +20,8 @@ import 'package:yukari/utils/stun_probe.dart';
 import '../fake_backend.dart';
 import '../networks_fixture.dart';
 
-/// A [FakeBackend] whose reported instances and answer timing tests control.
+/// A [FakeBackend] whose reported instances and answer timing the tests
+/// control.
 class _HomeBackend extends FakeBackend {
   _HomeBackend({this.infos = const {}, this.gate});
 
@@ -550,7 +551,7 @@ void main() {
     await pumpHome(tester, controller: home);
     await settle(tester);
 
-    // The Logs entry is hidden until its backend feeding is implemented.
+    // The Logs entry is hidden until its backend can feed it.
     expect(find.text('Logs'), findsNothing);
     expect(find.text('About'), findsOneWidget);
     expect(find.byIcon(Icons.info_outline_rounded), findsOneWidget);

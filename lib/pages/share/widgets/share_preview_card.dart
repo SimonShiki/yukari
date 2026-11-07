@@ -16,7 +16,7 @@ import 'share_item_row.dart';
 /// another one.
 ///
 /// The page only builds this for a completed transfer, and the network secret
-/// is never printed — the row only says one came with the share.
+/// is never printed: the row only says one came with the share.
 class SharePreviewCard extends StatelessWidget {
   /// Creates the preview card for the completed [shares].
   const SharePreviewCard({

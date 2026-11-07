@@ -98,8 +98,9 @@ Map<String, String> listInstances() =>
 Map<String, String> collectNetworkInfos() =>
     readPairs(native.collect_network_infos, 'collect_network_infos');
 
-/// Set TUN file descriptor for an Android network instance.
-/// This must be called after starting the instance on Android.
+/// Sets the TUN file descriptor of an Android network instance.
+///
+/// Call it after the instance has started.
 void setTunFd(String instanceName, int fd) {
   using((arena) {
     final namePointer = instanceName.toNativeUtf8(allocator: arena);

@@ -21,9 +21,9 @@ Color blockCellColor(int status, ColorScheme colors) => switch (status) {
 /// A picture of the receiver's progress: one cell per block, colored by the
 /// status the fountain decoder reports for it.
 ///
-/// It is a single [CustomPaint] on purpose — a transfer can carry hundreds of
-/// blocks, and one widget per block would build and lay out that many boxes on
-/// every scan. When a scan decodes new blocks their cells pulse once for
+/// One [CustomPaint] rather than one widget per block: a transfer can carry
+/// hundreds of blocks, and that many boxes would build and lay out on every
+/// scan. When a scan decodes new blocks their cells pulse once for
 /// [_pulseDuration]; the painter repaints through that animation only, so an
 /// idle grid costs nothing.
 class BlockGrid extends StatefulWidget {

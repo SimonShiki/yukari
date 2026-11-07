@@ -166,8 +166,8 @@ Network parseEasyTierConfig(String tomlContent) {
   return network;
 }
 
-/// Tracks fields the typed parser consumed, leaving extensions without a
-/// second copy of its schema to maintain.
+/// Tracks which fields the typed parser consumed, so the unread ones become
+/// extensions without a second copy of the schema.
 final class _TrackingMap extends MapBase<dynamic, dynamic> {
   _TrackingMap(Map<dynamic, dynamic> source) : _source = source;
 

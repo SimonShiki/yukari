@@ -21,7 +21,7 @@ part 'qr_share_receive_settings.dart';
 
 /// The receive page's state: feeds payloads into a [ReceiveSession], follows
 /// its progress and turns a completed transfer into the [ShareDocument]s it
-/// carries — one for a single share, several for a bundle.
+/// carries, one for a single share, several for a bundle.
 ///
 /// Every dependency is injected, so tests drive camera frames, a worker-free
 /// scanner, the importer and the clock without a plugin or an isolate.

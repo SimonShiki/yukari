@@ -15,10 +15,9 @@ const String shareBundleKind = 'bundle';
 /// [items] as the payload a share channel carries.
 ///
 /// One item encodes exactly as [ShareDocument.encode] does, so a single-target
-/// link or QR code carries that document's own JSON. More
-/// than one becomes a bundle the receiver splits back into documents; an app
-/// older than bundles refuses one with `Unknown share kind: bundle` instead of
-/// half-accepting it.
+/// link or QR code carries that document's own JSON. More than one becomes a
+/// bundle the receiver splits back into documents; an app older than bundles
+/// refuses one with `Unknown share kind: bundle` instead of half-accepting it.
 String encodeShareItems(List<ShareDocument> items) {
   if (items.isEmpty) {
     throw ArgumentError.value(

@@ -1264,8 +1264,8 @@ class _GatedStartBackend extends FakeBackend {
   }
 }
 
-/// A backend that reports one running instance and whose stop waits, then
-/// fails.
+/// A backend that reports one running instance and whose stop waits for the
+/// test, then fails.
 class _GatedStopBackend extends FakeBackend {
   _GatedStopBackend()
     : super(

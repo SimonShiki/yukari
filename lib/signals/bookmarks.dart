@@ -16,11 +16,9 @@ final Signal<Map<String, Object?>> _extensions = signal(const {});
 
 /// The user's saved bookmarks, in display order.
 ///
-/// **Initialization**: Call [init] once at app startup.
-///
-/// **Mutation**: Use [addBookmark], [addBookmarks], [updateBookmark] and
-/// [deleteBookmark]; each persists to the [BookmarkStore] optimistically and
-/// rolls back when the write fails.
+/// [init] loads them once at startup. [addBookmark], [addBookmarks],
+/// [updateBookmark] and [deleteBookmark] change the list; each writes to the
+/// [BookmarkStore] optimistically and rolls back when the write fails.
 ReadonlySignal<List<Bookmark>> get bookmarks => _bookmarks;
 
 /// Custom extension data an imported document carried, written back on the
@@ -29,12 +27,12 @@ ReadonlySignal<Map<String, Object?>> get bookmarkExtensions => _extensions;
 
 BookmarkStore? _store;
 
-/// Operation queue to ensure sequential execution of all mutations.
+/// Runs every bookmark mutation one at a time.
 final _mutations = MutationQueue();
 
-/// Loads the persisted bookmarks into [bookmarks].
+/// Loads the persisted bookmarks and extensions into their signals.
 ///
-/// Must be called once at app startup before any bookmark operation.
+/// Call once at app startup, before any bookmark operation.
 Future<void> init(BookmarkStore store) async {
   await dispose();
   _store = store;
@@ -53,8 +51,7 @@ Bookmark? bookmarkFor(Node node) =>
 
 /// Saves [bookmark].
 ///
-/// Throws [StateError] if a bookmark with the same id exists. The update is
-/// optimistic with automatic rollback when the write fails.
+/// Throws [StateError] if a bookmark with the same id exists.
 Future<void> addBookmark(Bookmark bookmark) => _mutations.enqueue(() async {
   final saved = _bookmarks.peek();
   if (saved.any((existing) => existing.id == bookmark.id)) {
@@ -142,7 +139,7 @@ Future<void> deleteBookmark(String id) => _mutations.enqueue(() async {
 /// Completes once every queued mutation has been persisted.
 Future<void> settled() => _mutations.settled();
 
-/// Clean up resources when the bookmarks signal is no longer needed.
+/// Drops the store, once the queued mutations finish.
 Future<void> dispose() async {
   await settled();
   _store = null;

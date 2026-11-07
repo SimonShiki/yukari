@@ -95,10 +95,10 @@ final class MagicDnsSystem {
   ///
   /// Linux resolves the interface from [interfaceName] and [address] through
   /// the same helper [probe] uses, so both agree on the link this network
-  /// owns, and points that link at the server through systemd-resolved, asking
-  /// to elevate once: both values are validated and quoted, because one shell
-  /// runs both commands so the user authorizes once. Android installs its
-  /// redirect chain, which needs no interface.
+  /// owns, then points that link at the server through systemd-resolved. Both
+  /// values are validated and quoted, and one shell runs both commands, so the
+  /// user elevates once. Android installs its redirect chain, which needs no
+  /// interface.
   ///
   /// Nothing is applied when no EasyTier interface is identified: a fail-closed
   /// setup leaves another VPN's link alone.

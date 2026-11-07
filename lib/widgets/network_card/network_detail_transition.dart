@@ -7,7 +7,7 @@ import 'predictive_back_gesture_detector.dart';
 /// the card that was tapped, and a back gesture shrinks it back into it.
 ///
 /// The container follows the finger one to one, and a released gesture carries
-/// the motion on from where it was released — it never jumps back to the full
+/// the motion on from where it was released: it never jumps back to the full
 /// page first.
 class NetworkDetailTransition extends StatefulWidget {
   const NetworkDetailTransition({

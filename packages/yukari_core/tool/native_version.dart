@@ -22,8 +22,8 @@ import '../hook/native_version.dart';
 /// dart run tool/native_version.dart stamp linux x86_64 <library>
 /// ```
 ///
-/// `dart run` also builds the native assets of this package, which a machine
-/// without a toolchain and without a published library cannot satisfy. Compile
+/// `dart run` also builds the native assets of this package, a step a machine
+/// with neither a toolchain nor a published library cannot complete. Compile
 /// the tool first to run it there:
 ///
 /// ```shell

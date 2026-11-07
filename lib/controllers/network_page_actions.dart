@@ -105,7 +105,7 @@ extension NetworkPageActions on NetworkPageController {
     navigate('network-logs', id);
   }
 
-  /// Selects [id], asking first when the editor that is leaving holds invalid
+  /// Selects [id], asking first when the editor being left holds invalid
   /// input. Exactly one prompt per selection change.
   ///
   /// The wide detail pane always shows a network, so clearing the selection is

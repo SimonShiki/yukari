@@ -6,7 +6,8 @@ import 'package:yukari_core/bindings/easytier_ffi_native.dart';
 import 'package:yukari_core/bindings/generated/easytier.g.dart' as native;
 
 /// A list-style call over [count] pairs that clamps its answer to the
-/// capacity, the way EasyTier's does; [calls] records each capacity asked.
+/// capacity, the way EasyTier's does; [calls] records each capacity it was
+/// asked for.
 int Function(Pointer<native.KeyValuePair>, int) clampingList(
   int count,
   List<int> calls,

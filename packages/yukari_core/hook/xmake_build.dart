@@ -15,8 +15,8 @@ Future<Uri> buildLibraryWithXmake({
   required String easytier,
 }) async {
   // Whatever is at [library] could not be used, and the version recorded below
-  // claims the library came from the current sources. Removing it makes a run
-  // that does not write one fail, instead of recording a library it did not
+  // claims the library came from the current sources. Removing both makes a run
+  // that writes no library fail, instead of recording a library it did not
   // build.
   for (final stale in [library, File('${library.path}$versionSuffix')]) {
     if (await stale.exists()) await stale.delete();

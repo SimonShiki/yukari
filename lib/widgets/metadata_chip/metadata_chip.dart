@@ -14,12 +14,12 @@ enum MetadataChipTone {
 /// network editor and the bookmark rows.
 ///
 /// Both places used to draw their own `Badge`: the peer row took Material's
-/// default badge colors, which are the *error* tokens, so a protocol looked
+/// default badge colors, which are the error tokens, so a protocol looked
 /// like a failure. One widget keeps the two lists consistent.
 class MetadataChip extends StatelessWidget {
   const MetadataChip(this.label, {super.key, this.tone = MetadataChipTone.tag});
 
-  /// A protocol badge; [protocol] is upper-cased, e.g. `tcp` becomes `TCP`.
+  /// A protocol badge; [protocol] is upper-cased, so `tcp` becomes `TCP`.
   MetadataChip.protocol(String protocol, {Key? key})
     : this(protocol.toUpperCase(), key: key, tone: MetadataChipTone.protocol);
 

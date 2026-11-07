@@ -24,8 +24,8 @@ QrShareSendController controllerFor(
   return controller;
 }
 
-/// A sender that re-resolves [documentFor] for the options it is asked, with
-/// both extras on offer.
+/// A sender that re-resolves [documentFor] for every set of options it is
+/// asked for, with both extras on offer.
 QrShareSendController optionsController(
   ShareDocument Function(ShareOptions options) documentFor, {
   ShareExtras extras = (selfPeer: true, configs: true),

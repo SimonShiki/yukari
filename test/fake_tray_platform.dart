@@ -28,7 +28,7 @@ final class FakeTrayPlatform implements TrayPlatform {
 
   TrayMenu? get menu => menus.isEmpty ? null : menus.last;
 
-  /// The row of the last menu with [id], submenus included.
+  /// The row with [id] in the last menu, submenus included.
   TrayMenuItem? item(String id) {
     final current = menu;
     if (current == null) return null;

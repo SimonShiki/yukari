@@ -19,7 +19,8 @@ const _info = <String, Object?>{
   'events': <Object?>[],
 };
 
-/// The same, with the address EasyTier assigned in the shape it reports.
+/// EasyTier information of one running instance, with the address EasyTier
+/// assigned in the shape it reports.
 const _assignedInfo = <String, Object?>{
   'running': true,
   'my_node_info': <String, Object?>{

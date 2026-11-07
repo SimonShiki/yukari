@@ -48,8 +48,8 @@ CommandResult ok([String stdout = '']) => (exitCode: 0, stdout: stdout);
 CommandResult failed() => (exitCode: 1, stdout: '');
 
 /// What `ip` reports on a host whose [links] map each interface to its IPv4
-/// (empty when it has none), and where [decoy] owns the route to the Magic DNS
-/// server.
+/// (empty where an interface has none), and where [decoy] owns the route to the
+/// Magic DNS server.
 ///
 /// A local address answers from the local table, as it does on a real host:
 /// that route names `lo`, never the link that owns the address.
@@ -132,10 +132,10 @@ MagicDnsSystem androidSystem(FakeSystemCommand command) =>
     MagicDnsSystem(platform: MagicDnsPlatform.android, command: command);
 
 /// An Android host where the EasyTier TUN is [interface] holding [address],
-/// whose `iptables`, when it exists at all, can load the matches
-/// when [matches] says so, where the zone's rule is installed when
-/// [configured] says so and the jump from OUTPUT is there when [jump] does,
-/// and whose resolver file holds [resolvConf].
+/// where `iptables`, when it exists at all, can load the matches when [matches]
+/// says so, where the zone's rule is installed when [configured] says so, where
+/// the jump from OUTPUT is there when [jump] does, and where the resolver file
+/// holds [resolvConf].
 CommandResult? Function(String, List<String>) androidHost({
   String interface = 'et_12_xoih',
   String address = '10.126.126.2/24',

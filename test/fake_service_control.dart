@@ -24,8 +24,8 @@ final class FakeServiceControl implements ServiceControl {
   @override
   final bool supported;
 
-  /// The state [state] answers for a supported service; [start] and [stop]
-  /// move it like the service they stand for.
+  /// The state [state] answers with on a supported service; [start] and
+  /// [stop] move it like the service they stand for.
   ServiceState current;
 
   /// The actions that ran, in order.

@@ -23,13 +23,10 @@ final Signal<NetworkBackend> _backend = signal(FfiBackend());
 
 /// The backend that runs network instances: in process, or in the service.
 ///
-/// **Initialization**: Call [initBackend] once at app startup, after
-/// [initSettings].
-///
-/// **Mutation**: Use [switchBackend]; the choice persists across launches.
-///
-/// **Read**: Read `backend.value` when acting rather than holding on to it,
-/// as it changes when the user switches.
+/// [initBackend] restores the user's choice once at app startup, after
+/// [initSettings]. [switchBackend] changes it, and the choice persists across
+/// launches. Read `backend.value` at the moment you act on it rather than
+/// holding on to it, as it changes when the user switches.
 ReadonlySignal<NetworkBackend> get backend => _backend;
 
 /// The active backend's kind, for every page that reads it.

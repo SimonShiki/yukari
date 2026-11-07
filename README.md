@@ -3,16 +3,16 @@
   <img align="right" src="./assets/yukari-with-background.svg" alt="yukari-logo" width="150">
 </p>
 
-A cross-platform decentralized networking app based on [EasyTier](https://github.com/EasyTier/EasyTier), which can connect your devices everywhere ☯️.
+A cross-platform decentralized networking app built on [EasyTier](https://github.com/EasyTier/EasyTier), for connecting your devices wherever they are.
 
-Compared to the official client, this project is dedicated to improving UX while preserving EasyTier's full functionality, delivering a consistent and comfortable experience across all platforms.
+Compared with the official client, this app spends its effort on the interface. EasyTier's full functionality is still here, and every platform behaves the same way.
 
-**Tips:** This project is still in early development, and we don't provides any stable release yet.
+Yukari is in early development. There is no stable release yet.
 
 ## Features
 
-- Cross-platform: Supports Windows, Linux and Android now, with platform-specific optimizations. iOS and macOS will be supported in the future.
-- Service mode: Running actual network services as a system service, so that you can use your device as a server without keeping the app open. Android service mode is supported via KernelSU or Magisk module.
-- Easy to create networks: You don't really need to learn computer networking knowledge, just follow the app's instructions to create and manage networks easily.
-- Full EasyTier functionality: While improving UX, this project preserves all the features of EasyTier. You can seamlessly migrate existing EasyTier networks to this app.
-- Share your network easily: You can share your network or shared nodes with your friends via existing network, link or QR code.
+- **Cross-platform.** Windows, Linux and Android today, each with the platform behaviour it needs. iOS and macOS are planned.
+- **Service mode.** Instances run as a system service, so a device can act as a server without the app open. On Android, service mode runs through a KernelSU or Magisk module.
+- **Creating a network takes no networking knowledge.** Follow the prompts, and the app builds and manages the network.
+- **All of EasyTier.** The interface work costs no functionality. An existing EasyTier network moves across as it is.
+- **Sharing.** Send a network or a shared node to someone over an existing network, a link, or a QR code.

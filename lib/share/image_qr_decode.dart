@@ -40,7 +40,7 @@ class ImageScanReport {
 /// including the GIF exported by the share page. Decoding is pure Dart, so it
 /// needs no camera and no plugin.
 ///
-/// This runs on the **current** isolate and is CPU bound, so a UI caller should
+/// Decoding runs on the current isolate and is CPU bound, so a UI caller should
 /// use [scanImageForQrPayloads] instead, which moves the work to a worker
 /// isolate. A caller that decodes in place gets the same progress reports it
 /// would get from the worker.
@@ -98,8 +98,8 @@ Future<ImageScanReport> decodeImageForQrPayloads(
   return ImageScanReport(frames: total, payloads: payloads);
 }
 
-/// The decoder for [bytes], made to refuse any frame over [_maxFramePixels]
-/// before it allocates one, the declared canvas being only checked above.
+/// The decoder for [bytes], refusing any frame over [_maxFramePixels] before it
+/// is allocated. Only the caller checks the canvas an image declares.
 img.Decoder? _decoderFor(Uint8List bytes) {
   final previous = img.Decoder.defaultMaxPixels;
   // Decoders read the default when they are made, and nothing runs between.

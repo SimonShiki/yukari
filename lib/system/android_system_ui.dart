@@ -29,8 +29,8 @@ part 'android_system_ui_notification.dart';
 /// backend and service control the pages use; it never polls and keeps no
 /// state of its own beyond the traffic sample the notification needs.
 ///
-/// **Initialization**: construct it once at app startup, before the app runs,
-/// with the app-wide [backend], [backendKind], [backendStatus] signals.
+/// Construct it once at app startup, before the app runs, with the app-wide
+/// [backend], [backendKind] and [backendStatus] signals.
 class AndroidSystemUi {
   AndroidSystemUi({
     required this.backend,

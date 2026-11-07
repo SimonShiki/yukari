@@ -31,7 +31,7 @@ final class SharedConfigs {
   /// default; a share may carry one anyway, and an import keeps it.
   final String? dnsZone;
 
-  /// Whether these configs say nothing the import defaults already do.
+  /// Whether the import defaults already say everything these configs do.
   bool get isEmpty => !noTun && !acceptDns && dnsZone == null;
 
   Map<String, Object?> toJson() => {

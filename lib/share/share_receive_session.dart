@@ -12,11 +12,11 @@ const int shareMaxTransferBytes = shareMaxBytes + 4096;
 
 /// Collects the QR frames of one share until the transfer completes.
 ///
-/// It is qrs's `ReceiveSession` with every size bounded. A frame's header
-/// is the sender's word: qrs allocates whatever block count it names, and
-/// inflates the payload however large it grows. Here a header that no share
-/// could carry is refused before anything is allocated, and the payload is
-/// inflated no further than the largest share.
+/// Wraps qrs's `ReceiveSession` to bound every size. A frame's header is the
+/// sender's word: qrs allocates whatever block count it names, and inflates the
+/// payload however large it grows. Here a header that no share could carry is
+/// refused before anything is allocated, and the payload is inflated no further
+/// than the largest share.
 class ShareReceiveSession {
   final Set<String> _cached = <String>{};
   LtDecoder? _decoder;

@@ -36,8 +36,8 @@ final RegExp _pinnedRevision = RegExp(
 
 /// The EasyTier revision pinned by `xmake.lua`.
 ///
-/// The Windows runtime libraries are fetched from that revision, so sources
-/// without it cannot be built from. Throws a [FormatException] instead of
+/// The Windows runtime libraries are fetched from that revision, so a source
+/// tree without it cannot build. Throws a [FormatException] instead of
 /// guessing, as a wrong revision would bundle libraries of another version.
 String easyTierRevision(String xmakeLua) {
   final revision = _pinnedRevision.firstMatch(xmakeLua)?.group(1);
@@ -50,8 +50,8 @@ String easyTierRevision(String xmakeLua) {
   return revision;
 }
 
-/// The release asset name of the prebuilt library of a target, which is also
-/// how the version manifest is keyed.
+/// The release asset name of a target's prebuilt library, which is also how the
+/// version manifest is keyed.
 String nativeAssetName({
   required String platform,
   required String arch,
@@ -97,7 +97,7 @@ class NativeVersion {
   final String platform;
   final String arch;
 
-  /// The SHA-256 of the library file, so that a replaced or truncated copy of
+  /// The SHA-256 of the library file, so that a replaced or truncated copy at
   /// the same path is not mistaken for the library this describes.
   final String sha256;
 

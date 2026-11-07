@@ -43,7 +43,7 @@ class PickedConfig {
 /// [refreshError], a transition per id in [transitions]) and derives the row
 /// data the list binds in [cards]. The running instances and whether the
 /// backend answered come from the shared [instances] store, which every page
-/// sees. The actions it invokes with live in `network_page_actions.dart`.
+/// sees. The actions the page invokes live in `network_page_actions.dart`.
 class NetworkPageController {
   NetworkPageController({
     required this.navigate,

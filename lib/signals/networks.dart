@@ -15,33 +15,25 @@ final Signal<Map<String, Network>> _networks = signal(
   const <String, Network>{},
 );
 
-/// Global network collection state.
+/// Every saved network, keyed by id, in an unmodifiable map.
 ///
-/// This signal holds all saved networks in the application as an unmodifiable map.
+/// [init] loads the persisted networks once at startup. [addNetwork],
+/// [updateNetwork], [deleteNetwork] and [reorderNetworks] change them; read
+/// through [networks.value] or subscribe in an effect.
 ///
-/// **Initialization**: Call [init] once at app startup to load persisted networks.
-///
-/// **Mutation**: Use the provided mutation APIs:
-/// - [addNetwork] - Add a new network
-/// - [updateNetwork] - Modify an existing network
-/// - [deleteNetwork] - Remove a network
-/// - [reorderNetworks] - Change display order
-///
-/// **Read**: Access via [networks.value] or subscribe in effects/computed signals.
-///
-/// All mutations use optimistic updates with automatic rollback on error.
-/// Operations are queued and executed sequentially to prevent race conditions.
-/// They persist to the [NetworkStore], which the background service reads.
+/// Each mutation applies optimistically and rolls back when the write fails,
+/// and the mutations run one at a time, so two of them cannot interleave. They
+/// persist through the [NetworkStore] that the background service reads.
 ReadonlySignal<Map<String, Network>> get networks => _networks;
 
 NetworkStore? _store;
 
-/// Operation queue to ensure sequential execution of all network mutations.
+/// Runs every network mutation one at a time.
 final _mutations = MutationQueue();
 
-/// Initialize the networks signal by loading persisted data from [store].
+/// Loads the persisted networks out of [store].
 ///
-/// Must be called once at app startup before any network operations.
+/// Call once at app startup, before any network operation.
 Future<void> init(NetworkStore store) async {
   await dispose();
   _store = store;
@@ -59,10 +51,9 @@ Iterable<String> networkNames({String? exceptId}) => {
     ],
 }.toList();
 
-/// Add a new network to the collection.
+/// Adds the network as [key].
 ///
-/// Throws [StateError] if a network with [key] already exists.
-/// Updates are optimistic with automatic rollback on database error.
+/// Throws [StateError] when [key] is already taken.
 Future<void> addNetwork(String key, Network network) =>
     _mutations.enqueue(() async {
       final saved = _networks.peek();
@@ -76,10 +67,9 @@ Future<void> addNetwork(String key, Network network) =>
       );
     });
 
-/// Update an existing network in the collection.
+/// Replaces the network saved as [key].
 ///
-/// Throws [StateError] if network with [key] does not exist.
-/// Updates are optimistic with automatic rollback on database error.
+/// Throws [StateError] when no network has that key.
 Future<void> updateNetwork(String key, Network network) =>
     _mutations.enqueue(() async {
       final saved = _networks.peek();
@@ -93,10 +83,9 @@ Future<void> updateNetwork(String key, Network network) =>
       );
     });
 
-/// Delete a network from the collection.
+/// Removes the network saved as [key], and any deferred edit to it.
 ///
-/// Silently succeeds if network with [key] does not exist.
-/// Updates are optimistic with automatic rollback on database error.
+/// Succeeds silently when no network has that key.
 Future<void> deleteNetwork(String key) => _mutations.enqueue(() async {
   _discardNetworkEdit(key);
   final saved = _networks.peek();
@@ -108,10 +97,11 @@ Future<void> deleteNetwork(String key) => _mutations.enqueue(() async {
   );
 });
 
-/// Reorder networks by moving from [oldIndex] to [newIndex].
+/// Moves the network at [oldIndex] to [newIndex], which is where it ends up
+/// after the move rather than the index it lands in front of.
 ///
-/// Silently succeeds if indices are out of bounds or equal.
-/// Updates are optimistic with automatic rollback on database error.
+/// Succeeds silently when either index is out of bounds, or when the move
+/// leaves the order unchanged.
 Future<void> reorderNetworks(int oldIndex, int newIndex) =>
     _mutations.enqueue(() async {
       final saved = _networks.peek();
@@ -144,9 +134,7 @@ Future<void> settled() async {
   await _mutations.settled();
 }
 
-/// Clean up resources when networks signal is no longer needed.
-///
-/// Waits for all pending operations to complete before disposing.
+/// Drops the store and every deferred edit, once the queued mutations finish.
 Future<void> dispose() async {
   await settled();
   for (final id in _pendingNetworkEdits.keys.toList()) {

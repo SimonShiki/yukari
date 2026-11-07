@@ -11,10 +11,10 @@ import 'camera_scanner_session.dart';
 /// The camera preview and QR detection of the receive page.
 ///
 /// mobile_scanner fixes the detection speed when its controller is constructed,
-/// so a new [pace] needs a new controller — but the plugin also holds one camera
+/// so a new [pace] needs a new controller. The plugin also holds one camera
 /// texture for the whole process, which a new controller cannot take from the
-/// old one. The card therefore swaps its own scanner through
-/// [CameraScannerSession] instead of being re-keyed around it.
+/// old one, so the card swaps its own scanner through [CameraScannerSession]
+/// instead of being re-keyed around it.
 class CameraScannerCard extends StatefulWidget {
   /// Creates the camera card for [controller].
   const CameraScannerCard({

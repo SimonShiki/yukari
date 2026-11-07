@@ -7,8 +7,6 @@ import 'package:yukari_core/models/models.dart';
 import '../../../controllers/theming_controller.dart';
 import '../../../l10n/l10n.dart';
 
-// KernelSU geometry, in logical pixels: 72 slot, 20 tile radius, 48 ball,
-// 20/24 dot, 56 ring with 2 stroke, 16 bold check with 2.6 stroke.
 const _slot = 72.0;
 const _tileRadius = 20.0;
 const _gap = 16.0;
