@@ -227,6 +227,75 @@ void main() {
     expect(backend.retries, 1);
   });
 
+  test(
+    'an answering probe clears the status an update left unreachable',
+    () async {
+      // An update restarted the service: the check the refresh makes lands
+      // while it is still coming back, and the version probe, a moment later,
+      // is the first thing to find it listening again.
+      final status = signal(BackendStatus.unavailable);
+      final backend = _StatusBackend(status);
+      final back = Completer<void>();
+      final version = Completer<int?>();
+      backend.afterCheck = (checks) {
+        if (checks > 1) status.value = BackendStatus.ready;
+        if (checks > 1 && !back.isCompleted) back.complete();
+      };
+      final controller = _build(
+        control: FakeServiceControl(),
+        backend: backend,
+        probe: () => version.future,
+      );
+      addTearDown(controller.dispose);
+
+      await controller.install();
+      expect(controller.status.value, BackendStatus.unavailable);
+
+      version.complete(7);
+      await back.future;
+
+      expect(controller.runningVersion.value, 7);
+      expect(backend.retries, 2);
+      expect(
+        controller.status.value,
+        BackendStatus.ready,
+        reason: 'the mode row must stop calling the service unreachable',
+      );
+    },
+  );
+
+  test('a probe that answers nothing leaves the error standing', () async {
+    final status = signal(BackendStatus.unavailable);
+    final backend = _StatusBackend(status);
+    final controller = _build(
+      control: FakeServiceControl(),
+      backend: backend,
+      probe: () async => null,
+    );
+    addTearDown(controller.dispose);
+
+    await controller.refresh();
+    await pumpEventQueue();
+
+    expect(controller.status.value, BackendStatus.unavailable);
+    expect(backend.retries, 1, reason: 'nothing proved the service is back');
+  });
+
+  test('a connected backend is not checked again after the probe', () async {
+    final backend = _StatusBackend(signal(BackendStatus.ready));
+    final controller = _build(
+      control: FakeServiceControl(),
+      backend: backend,
+      probe: () async => 7,
+    );
+    addTearDown(controller.dispose);
+
+    await controller.refresh();
+    await pumpEventQueue();
+
+    expect(backend.retries, 1, reason: 'the refresh check was enough');
+  });
+
   test('an unreachable service does not block switching back', () async {
     final backend = _UnreachableBackend();
     final global = backend_signals.backend as Signal<NetworkBackend>;
@@ -277,6 +346,31 @@ class _UnreachableBackend extends FakeBackend {
   @override
   Future<Map<String, String>> collectInfos() async {
     throw const ServiceUnavailableException('gone');
+  }
+}
+
+/// A service backend whose status the test sets, and that counts its checks.
+class _StatusBackend extends FakeBackend {
+  _StatusBackend(this._status);
+
+  final Signal<BackendStatus> _status;
+
+  /// Runs after each check, so a test can say what the next one finds.
+  void Function(int checks)? afterCheck;
+
+  /// How often [retry] was called.
+  int retries = 0;
+
+  @override
+  BackendKind get kind => BackendKind.service;
+
+  @override
+  ReadonlySignal<BackendStatus> get status => _status;
+
+  @override
+  Future<void> retry() async {
+    retries++;
+    afterCheck?.call(retries);
   }
 }
 

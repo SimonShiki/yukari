@@ -293,6 +293,7 @@ void main() {
     await pump(tester, ServiceState.running, backend: backend);
     // A reachable service in service mode needs no warning.
     expect(find.text(hint), findsNothing);
+    final appRow = tester.widget(find.widgetWithText(M3EListItem, 'App'));
 
     backend.status.value = BackendStatus.unavailable;
     await tester.pump();
@@ -301,6 +302,15 @@ void main() {
     expect(
       tester.widget<Text>(text).style?.color,
       Theme.of(tester.element(text)).colorScheme.error,
+    );
+
+    backend.status.value = BackendStatus.ready;
+    await tester.pump();
+    expect(find.text(hint), findsNothing);
+    expect(
+      tester.widget(find.widgetWithText(M3EListItem, 'App')),
+      same(appRow),
+      reason: 'connection status only rebuilds the service row',
     );
   });
 

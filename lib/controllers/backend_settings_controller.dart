@@ -192,6 +192,14 @@ class BackendSettingsController {
     // written to: neither may be touched once gone.
     if (_disposed || runningVersion.disposed) return;
     runningVersion.value = version;
+    // The initial refresh can land before a restarted service is listening.
+    // The probe uses its own connection, so reconnect the active backend too.
+    final backend = _backend.value;
+    if (version != null &&
+        backend.kind == BackendKind.service &&
+        backend.status.value == BackendStatus.unavailable) {
+      await backend.retry();
+    }
   }
 
   /// Switches to [kind], stopping the running networks once confirmed.
