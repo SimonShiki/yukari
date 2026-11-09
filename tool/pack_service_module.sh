@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Packs the background service into a KernelSU/Magisk module, which runs it as
-# root on Android. The app downloads it from the ksu-service-module release,
-# which .github/workflows/ci.yml publishes.
+# root on Android. The app downloads it from its GitHub release, which
+# .github/workflows/release.yml publishes beside the APKs.
 #
 # Dart cannot build Android executables, so the module carries the Linux
 # build of packages/yukari_core/bin/yukari_service.dart for arm64 and x64,

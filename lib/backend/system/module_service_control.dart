@@ -9,6 +9,7 @@ import 'package:yukari_core/backend/privilege.dart';
 
 import 'module_download.dart';
 import 'service_control.dart';
+import 'service_module_release.dart';
 
 /// Controls the service on Android, where a KernelSU or Magisk module runs it
 /// as root; see `tool/service_module/`. Every command goes through `su`.
@@ -18,13 +19,14 @@ final class ModuleServiceControl implements ServiceControl {
   /// The module id, which names its directory under /data/adb/modules.
   static const id = 'yukari_service';
 
-  /// The latest module, which `.github/workflows/ci.yml` builds.
-  static final release = Uri.parse(
-    'https://github.com/SimonShiki/yukari/releases/download/'
-    'ksu-service-module/yukari-service-module.zip',
+  /// The module built and signed alongside this app's APKs.
+  static final release = serviceModuleReleaseAsset(
+    serviceModuleReleaseTag,
+    'yukari-service-module.zip',
   );
 
-  /// The signature CI publishes beside [release]; see [downloadSignedModule].
+  /// The signature release workflow publishes beside [release].
+  /// See [downloadSignedModule].
   static final releaseSignature = release.replace(path: '${release.path}.sig');
 
   /// Defines `module COMMAND`, which runs `yukari.sh` from the newest copy of
@@ -62,15 +64,16 @@ module() {
         (throw ElevationException('Unexpected module status: $output'));
   }
 
-  /// Downloads the latest module, installs it and starts it, replacing the
-  /// running version. Only a module CI signed gets to root.
+  /// Downloads this app release's module, installs it and starts it, replacing
+  /// the running version. Only a module signed by CI gets to root.
   @override
   Future<void> install({void Function(double? progress)? onProgress}) async {
+    final module = release;
     final zip = File(
-      p.join((await getTemporaryDirectory()).path, release.pathSegments.last),
+      p.join((await getTemporaryDirectory()).path, module.pathSegments.last),
     );
     await downloadSignedModule(
-      release,
+      module,
       releaseSignature,
       zip,
       onProgress: onProgress,

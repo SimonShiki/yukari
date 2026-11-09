@@ -5,7 +5,7 @@ import 'dart:typed_data';
 import 'package:cryptography/cryptography.dart';
 import 'package:cryptography/dart.dart';
 
-/// The Ed25519 public key `.github/workflows/ci.yml` signs the module with,
+/// The Ed25519 public key `.github/workflows/release.yml` signs the module with,
 /// from the `SERVICE_MODULE_SIGNING_KEY` secret, as base64 of its 32 bytes.
 const moduleSigningKey = '0T2G2Vv5YPTCsI6bYIP3T5v/9F8z/myEgBicKCbZva8=';
 

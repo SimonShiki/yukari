@@ -10,7 +10,7 @@ permissions:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.release.tag_name || 'canary' }}
-  # A second canary run would race the first for the same release.
+  # Only the newest requested canary needs to finish building.
   cancel-in-progress: ${{ github.event_name == 'workflow_dispatch' }}
 
 jobs:
@@ -19,6 +19,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       version: ${{ steps.read.outputs.version }}
+      release-tag: ${{ steps.read.outputs.release-tag }}
 
     steps:
       - name: Checkout repository
@@ -26,8 +27,12 @@ jobs:
 
       - name: Read the version
         id: read
+        env:
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
         run: |
           echo "version=$(sed -n 's/^version: \([^+]*\).*/\1/p' pubspec.yaml)" >> "$GITHUB_OUTPUT"
+          # A rolling canary tag would let an old APK install a newer module.
+          echo "release-tag=${RELEASE_TAG:-canary-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT}" >> "$GITHUB_OUTPUT"
 
   windows:
     needs: version
@@ -136,6 +141,7 @@ jobs:
           ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
           ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
           ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          SERVICE_MODULE_RELEASE_TAG: ${{ needs.version.outputs.release-tag }}
         run: |
           umask 077
           trap 'rm -f "$RUNNER_TEMP/yukari-release.jks"' EXIT
@@ -155,7 +161,8 @@ jobs:
           # EasyTier ships only arm64-v8a and x86_64, so the APKs keep those
           # two ABIs. Declaring them here rather than as ndk.abiFilters in
           # build.gradle.kts is what AGP's split-per-abi configuration allows.
-          flutter build apk --release --split-per-abi --target-platform android-arm64,android-x64
+          flutter build apk --release --split-per-abi --target-platform android-arm64,android-x64 \
+            --dart-define="SERVICE_MODULE_RELEASE_TAG=$SERVICE_MODULE_RELEASE_TAG"
 
       - name: Name the APKs
         env:
@@ -172,9 +179,70 @@ jobs:
           path: build/release-apk/*.apk
           if-no-files-found: error
 
+  service-module:
+    runs-on: ubuntu-26.04
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install native build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            gcc-aarch64-linux-gnu g++-aarch64-linux-gnu \
+            libc6-arm64-cross libgcc-s1-arm64-cross zip \
+            llvm-18 clang-18 libclang-18-dev
+          sudo ln -sf /usr/bin/clang-18 /usr/bin/clang
+          sudo ln -sf /usr/bin/clang++-18 /usr/bin/clang++
+
+      - name: Set up xmake
+        uses: xmake-io/github-action-setup-xmake@v1
+        with:
+          xmake-version: latest
+
+      - name: Set up Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: "1.95.0"
+          targets: aarch64-unknown-linux-gnu
+
+      - uses: ./.github/actions/setup-flutter
+
+      - name: Get dependencies
+        run: flutter pub get
+
+      - name: Pack the service module
+        env:
+          LLVM_ROOT: /usr/lib/llvm-18
+          CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER: aarch64-linux-gnu-gcc
+        run: tool/pack_service_module.sh
+
+      - name: Sign the service module
+        env:
+          SIGNING_KEY: ${{ secrets.SERVICE_MODULE_SIGNING_KEY }}
+        run: |
+          [ -n "$SIGNING_KEY" ] || { echo "SERVICE_MODULE_SIGNING_KEY is not set" >&2; exit 1; }
+          key="$RUNNER_TEMP/signing-key.pem"
+          umask 077
+          printf '%s\n' "$SIGNING_KEY" > "$key"
+          zip=build/service_module/yukari-service-module.zip
+          openssl dgst -sha256 -binary "$zip" > "$RUNNER_TEMP/digest"
+          openssl pkeyutl -sign -inkey "$key" -rawin -in "$RUNNER_TEMP/digest" -out "$zip.sig"
+          rm -f "$key"
+
+      - name: Upload the signed service module
+        uses: actions/upload-artifact@v4
+        with:
+          name: service-module
+          path: build/service_module/yukari-service-module.zip*
+          if-no-files-found: error
+
   publish:
-    name: Publish ${{ github.event.release.tag_name || 'canary' }}
-    needs: [windows, linux, android]
+    name: Publish ${{ needs.version.outputs.release-tag }}
+    needs: [version, windows, linux, android, service-module]
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -186,14 +254,6 @@ jobs:
           path: dist
           merge-multiple: true
 
-      - name: Remove the previous canary release
-        # Assets of a build that named another version would otherwise stay, and
-        # the tag would keep pointing at the commit of the first canary run.
-        if: github.event_name == 'workflow_dispatch'
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: gh release delete canary --yes --cleanup-tag || true
-
       - name: Publish
         uses: svenstaro/upload-release-action@v2
         with:
@@ -201,7 +261,8 @@ jobs:
           file: dist/*
           file_glob: true
           overwrite: true
-          tag: ${{ github.event.release.tag_name || 'canary' }}
+          tag: ${{ needs.version.outputs.release-tag }}
+          target_commit: ${{ github.sha }}
           release_name: ${{ github.event_name == 'workflow_dispatch' && 'Yukari Canary' || '' }}
           prerelease: ${{ github.event_name == 'workflow_dispatch' }}
           make_latest: ${{ github.event_name != 'workflow_dispatch' }}
