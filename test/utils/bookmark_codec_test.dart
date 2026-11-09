@@ -148,8 +148,8 @@ void main() {
       }),
     );
     expect(decoded.bookmarks.map((b) => b.node.url.toString()), [
-      'tcp://relay.example.com:11451/ws',
-      'wss://relay.example.com:11451/ws',
+      'tcp://relay.example.com:8787/ws',
+      'wss://relay.example.com:8787/ws',
     ]);
     expect(decoded.bookmarks.first.id, 'legacy');
     expect(decoded.bookmarks.map((b) => b.id).toSet(), hasLength(2));

@@ -62,11 +62,11 @@ void main() {
         },
       ],
     });
-    expect(await addSharedNode(document), 'tcp://relay.example.com:11451/ws');
+    expect(await addSharedNode(document), 'tcp://relay.example.com:8787/ws');
     final bookmarks = persistedBookmarks();
     expect(bookmarks.map((b) => b.address), [
-      'tcp://relay.example.com:11451/ws',
-      'wss://relay.example.com:11451/ws',
+      'tcp://relay.example.com:8787/ws',
+      'wss://relay.example.com:8787/ws',
     ]);
     expect(bookmarks.map((b) => b.node.publicKey), everyElement('pin'));
     expect(bookmarks.map((b) => b.name), everyElement('Old relay'));

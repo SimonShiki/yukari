@@ -44,8 +44,8 @@ void main() {
       ],
     });
     expect(network.nodes.map((node) => node.url.toString()), [
-      'tcp://[2001:db8::1]:11451/ws',
-      'wss://[2001:db8::1]:11451/ws',
+      'tcp://[2001:db8::1]:8787/ws',
+      'wss://[2001:db8::1]:8787/ws',
     ]);
     expect(network.nodes.first.name, 'Old relay');
     expect(network.nodes.map((node) => node.publicKey), everyElement('key'));
