@@ -5,7 +5,7 @@ import 'package:yukari_core/models/node.dart';
 
 /// The format version [encodeBookmarks] writes; a document from a newer
 /// version is refused rather than guessed at.
-const int bookmarkDocumentVersion = 1;
+const int bookmarkDocumentVersion = 2;
 
 /// A parsed bookmarks document: the bookmarks plus whatever custom extension
 /// data the document carried, which [encodeBookmarks] writes back untouched.
@@ -72,7 +72,7 @@ BookmarkDocument decodeBookmarks(String content) {
   }
 
   final bookmarks = <Bookmark>[
-    for (final (index, entry) in entries.indexed) _decode(entry, index),
+    for (final (index, entry) in entries.indexed) ..._decode(entry, index),
   ];
 
   return BookmarkDocument(
@@ -95,31 +95,38 @@ Map<String, Object?> _extensions(Map<String, Object?> document) => {
   if (document['extensions'] case final Map<String, Object?> extra) ...extra,
 };
 
-Bookmark _decode(Object? entry, int index) {
+List<Bookmark> _decode(Object? entry, int index) {
   final position = index + 1;
   if (entry is! Map<String, Object?>) {
     throw FormatException('Bookmark $position is not an object');
   }
 
-  final Bookmark bookmark;
   try {
-    bookmark = Bookmark.fromJson(entry);
+    final nodeJson = entry['node'] as Map<String, dynamic>;
+    if (!nodeJson.containsKey('protocols')) {
+      return [_validatedBookmark(entry, position)];
+    }
+    final nodes = nodesFromJson(nodeJson);
+    return [
+      for (final (index, node) in nodes.indexed)
+        _validatedBookmark({
+          ...entry,
+          if (index > 0) 'id': '${entry['id']}:${node.url}',
+          'node': node.toJson(),
+        }, position),
+    ];
   } catch (error) {
     throw FormatException('Bookmark $position is malformed: $error');
   }
+}
 
-  final node = bookmark.node;
+Bookmark _validatedBookmark(Map<String, dynamic> entry, int position) {
+  final bookmark = Bookmark.fromJson(entry);
   if (bookmark.id.trim().isEmpty) {
     throw FormatException('Bookmark $position has no id');
   }
-  if (nodeHost(node.url).isEmpty) {
-    throw FormatException('Bookmark $position has no address');
-  }
-  if (node.port < 1 || node.port > 65535) {
-    throw FormatException('Bookmark $position has an invalid port');
-  }
-  if (node.protocols.isEmpty) {
-    throw FormatException('Bookmark $position has no protocols');
+  if (!isValidNodeUrl((entry['node'] as Map)['url'] as String)) {
+    throw FormatException('Bookmark $position has an invalid connection URL');
   }
   return bookmark;
 }

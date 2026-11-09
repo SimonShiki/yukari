@@ -7,11 +7,10 @@ void main() {
     final original = Bookmark(
       id: 'b1',
       node: Node(
-        id: 'relay',
-        url: Uri.parse('wss://relay.example.com/path'),
-        port: 11010,
-        protocols: const [NodeProtocol.tcp, NodeProtocol.wss],
+        url: Uri.parse('tcp://relay.example.com:11010/path')
+            .replace(scheme: 'tcp', port: 11010),
         publicKey: 'AAAA',
+        name: 'relay',
       ),
       name: 'Home relay',
       description: 'The one at home',
@@ -27,9 +26,8 @@ void main() {
     final restored = Bookmark.fromJson(original.toJson());
 
     expect(restored.id, 'b1');
-    expect(restored.node.url.toString(), 'wss://relay.example.com/path');
-    expect(restored.node.port, 11010);
-    expect(restored.node.protocols, [NodeProtocol.tcp, NodeProtocol.wss]);
+    expect(restored.node.url.toString(), 'tcp://relay.example.com:11010/path');
+    expect(restored.node.url.port, 11010);
     expect(restored.node.publicKey, 'AAAA');
     expect(restored.name, 'Home relay');
     expect(restored.description, 'The one at home');
@@ -46,10 +44,8 @@ void main() {
     final bookmark = Bookmark(
       id: 'b1',
       node: Node(
-        id: 'relay',
-        url: Uri.parse('relay.example.com'),
-        port: 11010,
-        protocols: const [NodeProtocol.tcp],
+        url: Uri(scheme: 'tcp', host: 'relay.example.com', port: 11010),
+        name: 'relay',
       ),
     );
 
@@ -63,15 +59,13 @@ void main() {
     final bookmark = Bookmark(
       id: 'b1',
       node: Node(
-        id: 'relay',
-        url: Uri.parse('relay.example.com'),
-        port: 11010,
-        protocols: const [NodeProtocol.tcp],
+        url: Uri(scheme: 'tcp', host: 'relay.example.com', port: 11010),
+        name: 'relay',
       ),
     );
 
     expect(bookmark.displayName, 'relay.example.com');
-    expect(bookmark.address, 'relay.example.com:11010');
+    expect(bookmark.address, 'tcp://relay.example.com:11010');
     bookmark.name = '  ';
     expect(bookmark.displayName, 'relay.example.com');
     bookmark.name = ' Home ';
@@ -80,33 +74,28 @@ void main() {
 
   test('the copy kept by callers is independent of the original', () {
     final original = Node(
-      id: 'relay',
-      url: Uri.parse('relay.example.com'),
-      port: 11010,
-      protocols: [NodeProtocol.tcp],
+      url: Uri(scheme: 'tcp', host: 'relay.example.com', port: 11010),
       publicKey: 'AAAA',
+      name: 'relay',
     );
 
     // Adding a bookmark's node to a network must not alias the stored one.
     final copy = original.copy()
-      ..port = 12010
-      ..protocols.add(NodeProtocol.udp)
+      ..url = Uri.parse('udp://relay.example.com:12010')
       ..publicKey = 'BBBB';
 
-    expect(original.port, 11010);
-    expect(original.protocols, [NodeProtocol.tcp]);
+    expect(original.url.port, 11010);
+    expect(original.url.scheme, 'tcp');
     expect(original.publicKey, 'AAAA');
-    expect(copy.port, 12010);
-    expect(copy.protocols, [NodeProtocol.tcp, NodeProtocol.udp]);
+    expect(copy.url.port, 12010);
+    expect(copy.url.scheme, 'udp');
     expect(copy.publicKey, 'BBBB');
   });
 
   test('sameNode compares the address, not the metadata', () {
     Node node(String id, String host, int port) => Node(
-      id: id,
-      url: Uri.parse(host),
-      port: port,
-      protocols: const [NodeProtocol.tcp],
+      url: Uri(scheme: 'tcp', host: host, port: port),
+      name: id,
     );
 
     expect(

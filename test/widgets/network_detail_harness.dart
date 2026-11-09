@@ -44,7 +44,5 @@ Rect? containerOrNull(WidgetTester tester) {
 }
 
 /// The transition the pushed detail route wears.
-NetworkDetailTransition transitionOf(WidgetTester tester) =>
-    tester.widget<NetworkDetailTransition>(
-      find.byType(NetworkDetailTransition),
-    );
+NetworkDetailTransition transitionOf(WidgetTester tester) => tester
+    .widget<NetworkDetailTransition>(find.byType(NetworkDetailTransition));

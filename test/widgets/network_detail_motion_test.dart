@@ -126,5 +126,4 @@ void main() {
       expect(seen[i], lessThanOrEqualTo(seen[i - 1]));
     }
   });
-
 }

@@ -7,38 +7,19 @@ import 'share_document.dart';
 import 'share_options.dart';
 import 'share_self_peer.dart';
 
-/// The shareable peer [node] describes.
-///
-/// Only the host, port and an authority-relative path travel; the node's saved
-/// id and the network's listeners stay local. EasyTier addresses a peer by
-/// scheme, host, port and path and authenticates with the network secret, so a
-/// URL's user info (a credential) is never shared, and a node that needs it
-/// cannot be shared as it is. A bare-host URI stores the host in `url.path`, so
-/// only a URL that has an authority shares its path. [Node.publicKey] is shared
-/// when set, as a public key lets the receiver pin the peer the sender
-/// recommended.
-///
-/// Throws a [StateError] when the address carries credentials.
+/// The full connection URL and public key, without local annotations.
+/// Credentials in a URL require explicit handling and cannot be shared.
 SharedPeer sharedPeer(Node node) {
   if (node.url.userInfo.isNotEmpty) {
     throw StateError('Node address carries credentials');
   }
-  return SharedPeer(
-    host: nodeHost(node.url),
-    port: node.port,
-    protocols: node.protocols.toSet().toList(),
-    publicKey: node.publicKey,
-    path: node.url.host.isNotEmpty && node.url.path.isNotEmpty
-        ? node.url.path
-        : null,
-  );
+  return SharedPeer(url: node.url, publicKey: node.publicKey);
 }
 
 /// The masked share document of [network]: its name, its secret and one peer
 /// per node, plus the extras [options] asks for, and nothing else.
 ///
-/// An opted-in self peer is an ordinary peer entry, so an older receiver still
-/// imports it and a newer one cannot tell it apart from any other. Throws a
+/// An opted-in self peer uses the same URL entry as any other peer. Throws a
 /// [StateError] when the network has no peer, as the receiver would have
 /// nothing to connect to, or when a node's address carries credentials.
 ShareDocument shareNetwork(
@@ -76,8 +57,7 @@ ShareDocument shareBookmark(Bookmark bookmark) => ShareDocument(
 /// [Network]'s default except the configs the share carried.
 ///
 /// The shared name is kept, or numbered when [takenNames] already holds it,
-/// and the imported nodes take [SharedPeer.address] as their id so they never
-/// collide with a node saved here before.
+/// and each connection keeps its full URL as its initial local name.
 Network networkFromShare(
   ShareDocument document, {
   required Iterable<String> takenNames,
@@ -104,20 +84,13 @@ Bookmark bookmarkFromShare(ShareDocument document, {required String id}) {
   return Bookmark(
     id: id,
     node: _nodeFromPeer(peer),
-    name: document.name ?? peer.host,
+    name: document.name ?? peer.url.host,
   );
 }
 
 /// A [Node] that connects to [peer].
-Node _nodeFromPeer(SharedPeer peer) => Node(
-  id: peer.address,
-  url: peer.path == null
-      ? nodeUrlForHost(peer.host)
-      : Uri(host: peer.host, path: peer.path),
-  port: peer.port,
-  protocols: peer.protocols,
-  publicKey: peer.publicKey,
-);
+Node _nodeFromPeer(SharedPeer peer) =>
+    Node(name: peer.address, url: peer.url, publicKey: peer.publicKey);
 
 /// [name], suffixed with the first free ` (2)`, ` (3)`, ... in [takenNames].
 String _uniqueName(String name, Iterable<String> takenNames) {

@@ -3,7 +3,8 @@ import 'package:go_router/go_router.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:yukari/controllers/network_page_controller.dart';
 import 'package:yukari/l10n/l10n.dart';
-import 'package:yukari/pages/networks/network_instance_page.dart' show InstanceTab;
+import 'package:yukari/pages/networks/network_instance_page.dart'
+    show InstanceTab;
 import 'package:yukari/pages/networks/networks_page.dart';
 import 'package:yukari/router.dart';
 import 'package:yukari/signals/backend.dart' as backend_signals;

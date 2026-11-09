@@ -99,7 +99,11 @@ extension BookmarksActions on BookmarksController {
     try {
       await networks.updateNetwork(
         networkId,
-        network.copy()..nodes = [...network.nodes, bookmark.node.copy()],
+        network.copy()
+          ..nodes = [
+            ...network.nodes,
+            copyNodeForNetwork(bookmark.node, network.nodes),
+          ],
       );
       showMessage(l10n.value.bookmarksAddedToNetwork(network.networkName));
     } catch (error) {

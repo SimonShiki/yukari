@@ -143,10 +143,8 @@ void main() {
     ..networkName = name
     ..nodes = [
       Node(
-        id: 'peer',
-        url: Uri.parse('relay.example.com'),
-        port: 11010,
-        protocols: const [NodeProtocol.tcp],
+        url: Uri(scheme: 'tcp', host: 'relay.example.com', port: 11010),
+        name: 'peer',
       ),
     ];
 
@@ -539,10 +537,10 @@ void main() {
 
       await controller.deleteSelection();
 
-      expect(
-        asked.single.map((network) => network.networkName),
-        ['alpha', 'beta'],
-      );
+      expect(asked.single.map((network) => network.networkName), [
+        'alpha',
+        'beta',
+      ]);
       // Only the selected network that runs is stopped.
       expect(backend.stopped, ['alpha']);
       expect(saved.networks.value, isEmpty);
@@ -604,25 +602,22 @@ void main() {
     },
   );
 
-  test(
-    'a selection delete the store refuses is reported once',
-    () async {
-      final messages = <String>[];
-      await _seedWithFailingWrites();
-      final controller = build(backend: FakeBackend(), messages: messages);
-      addTearDown(controller.dispose);
-      await controller.refresh();
-      controller.selection
-        ..enter()
-        ..select(['n1', 'n2']);
+  test('a selection delete the store refuses is reported once', () async {
+    final messages = <String>[];
+    await _seedWithFailingWrites();
+    final controller = build(backend: FakeBackend(), messages: messages);
+    addTearDown(controller.dispose);
+    await controller.refresh();
+    controller.selection
+      ..enter()
+      ..select(['n1', 'n2']);
 
-      await controller.deleteSelection();
+    await controller.deleteSelection();
 
-      expect(saved.networks.value.keys, ['n1', 'n2']);
-      expect(messages, [strings.controllerDeleteSelectedFailed]);
-      expect(controller.deleting.value, isEmpty);
-    },
-  );
+    expect(saved.networks.value.keys, ['n1', 'n2']);
+    expect(messages, [strings.controllerDeleteSelectedFailed]);
+    expect(controller.deleting.value, isEmpty);
+  });
 
   test(
     'reorder reports a store failure, and moves a network otherwise',
@@ -840,30 +835,34 @@ void main() {
     expect(messages, isEmpty);
   });
 
-  test('an unsupported imported cipher leaves the saved networks intact', () async {
-    final store = await seedWith({'n1': Network()..networkName = 'alpha'});
-    final before = await store.file.readAsString();
-    final messages = <String>[];
-    final controller = build(
-      backend: FakeBackend(),
-      messages: messages,
-      pickConfig: () async => const PickedConfig(
-        name: 'cipher.toml',
-        content: '[network_identity]\nnetwork_name = "imported"\n'
-            '[flags]\nencryption_algorithm = "unknown"\n',
-      ),
-      validateConfig: (_) {},
-    );
-    addTearDown(controller.dispose);
+  test(
+    'an unsupported imported cipher leaves the saved networks intact',
+    () async {
+      final store = await seedWith({'n1': Network()..networkName = 'alpha'});
+      final before = await store.file.readAsString();
+      final messages = <String>[];
+      final controller = build(
+        backend: FakeBackend(),
+        messages: messages,
+        pickConfig: () async => const PickedConfig(
+          name: 'cipher.toml',
+          content:
+              '[network_identity]\nnetwork_name = "imported"\n'
+              '[flags]\nencryption_algorithm = "unknown"\n',
+        ),
+        validateConfig: (_) {},
+      );
+      addTearDown(controller.dispose);
 
-    await controller.importFromFile();
-    await saved.settled();
+      await controller.importFromFile();
+      await saved.settled();
 
-    expect(saved.networks.value.keys, ['n1']);
-    expect(await store.file.readAsString(), before);
-    expect(messages.single, contains('cipher.toml'));
-    expect(messages.single, contains('Unsupported encryption_algorithm'));
-  });
+      expect(saved.networks.value.keys, ['n1']);
+      expect(await store.file.readAsString(), before);
+      expect(messages.single, contains('cipher.toml'));
+      expect(messages.single, contains('Unsupported encryption_algorithm'));
+    },
+  );
 
   test('rejects a config EasyTier or the name rule refuses', () async {
     await seedNetworks();

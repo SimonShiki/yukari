@@ -13,11 +13,8 @@ void main() {
         runHandler: linuxHost(configured: () => true),
       );
 
-      final probe = await linuxSystem(command).probe(
-        zone: 'et.net.',
-        interfaceName: '',
-        address: address,
-      );
+      final probe = await linuxSystem(command)
+          .probe(zone: 'et.net.', interfaceName: '', address: address);
 
       expect(probe.state, MagicDnsState.configured);
       expect(probe.interface, 'et_12_xoih');
@@ -27,47 +24,41 @@ void main() {
     test('an unconfigured link reports missing', () async {
       final command = FakeSystemCommand(runHandler: linuxHost());
 
-      final probe = await linuxSystem(command).probe(
-        zone: 'et.net.',
-        interfaceName: '',
-        address: address,
-      );
+      final probe = await linuxSystem(command)
+          .probe(zone: 'et.net.', interfaceName: '', address: address);
 
       expect(probe.state, MagicDnsState.missing);
       expect(probe.interface, 'et_12_xoih');
     });
 
-    test("another VPN's route to the Magic DNS server is not the link", () async {
-      final command = FakeSystemCommand(runHandler: linuxHost());
+    test(
+      "another VPN's route to the Magic DNS server is not the link",
+      () async {
+        final command = FakeSystemCommand(runHandler: linuxHost());
 
-      final probe = await linuxSystem(command).probe(
-        zone: 'et.net.',
-        interfaceName: '',
-        address: address,
-      );
+        final probe = await linuxSystem(command)
+            .probe(zone: 'et.net.', interfaceName: '', address: address);
 
-      // The other VPN's TUN still carries the zone the service applied to it;
-      // this network's own TUN is what the probe has to read.
-      expect(probe.state, MagicDnsState.missing);
-      expect(probe.interface, 'et_12_xoih');
-      expect(command.runs.first.$2, [
-        '-4',
-        '-o',
-        'addr',
-        'show',
-        'to',
-        '10.126.126.2',
-      ]);
-    });
+        // The other VPN's TUN still carries the zone the service applied to it;
+        // this network's own TUN is what the probe has to read.
+        expect(probe.state, MagicDnsState.missing);
+        expect(probe.interface, 'et_12_xoih');
+        expect(command.runs.first.$2, [
+          '-4',
+          '-o',
+          'addr',
+          'show',
+          'to',
+          '10.126.126.2',
+        ]);
+      },
+    );
 
     test('a configured TUN name is preferred over the address', () async {
       final command = FakeSystemCommand(runHandler: linuxHost(named: 'mytun'));
 
-      final probe = await linuxSystem(command).probe(
-        zone: 'et.net.',
-        interfaceName: 'mytun',
-        address: address,
-      );
+      final probe = await linuxSystem(command)
+          .probe(zone: 'et.net.', interfaceName: 'mytun', address: address);
 
       expect(probe.interface, 'mytun');
       expect(command.runs.first.$2, ['link', 'show', 'mytun']);
@@ -76,11 +67,9 @@ void main() {
     test('a missing interface reports noInterface', () async {
       final command = FakeSystemCommand(runHandler: linuxHost());
 
-      final probe = await linuxSystem(command).probe(
-        zone: 'et.net.',
-        interfaceName: 'gone',
-        address: '10.9.9.9/24',
-      );
+      final probe = await linuxSystem(
+        command,
+      ).probe(zone: 'et.net.', interfaceName: 'gone', address: '10.9.9.9/24');
 
       expect(probe.state, MagicDnsState.noInterface);
       expect(probe.interface, isNull);
@@ -89,10 +78,8 @@ void main() {
     test('no name and no address identify nothing', () async {
       final command = FakeSystemCommand(runHandler: linuxHost());
 
-      final probe = await linuxSystem(command).probe(
-        zone: 'et.net.',
-        interfaceName: '',
-      );
+      final probe = await linuxSystem(command)
+          .probe(zone: 'et.net.', interfaceName: '');
 
       expect(probe.state, MagicDnsState.noInterface);
       expect(command.runs, isEmpty, reason: 'no hint names an EasyTier link');
@@ -103,11 +90,8 @@ void main() {
         runHandler: linuxHost(resolvectl: false),
       );
 
-      final probe = await linuxSystem(command).probe(
-        zone: 'et.net.',
-        interfaceName: '',
-        address: address,
-      );
+      final probe = await linuxSystem(command)
+          .probe(zone: 'et.net.', interfaceName: '', address: address);
 
       expect(probe.state, MagicDnsState.unsupported);
       expect(probe.interface, 'et_12_xoih');
@@ -120,11 +104,8 @@ void main() {
     test('apply authors one elevated shell command for both steps', () async {
       final command = FakeSystemCommand(runHandler: linuxHost());
 
-      await linuxSystem(command).apply(
-        zone: 'et.net.',
-        interfaceName: '',
-        address: address,
-      );
+      await linuxSystem(command)
+          .apply(zone: 'et.net.', interfaceName: '', address: address);
 
       final (executable, arguments) = command.elevated.single;
       expect(executable, 'sh');
@@ -139,30 +120,30 @@ void main() {
       );
     });
 
-    test("apply never points another VPN's TUN at the Magic DNS server", () async {
-      final command = FakeSystemCommand(runHandler: linuxHost());
+    test(
+      "apply never points another VPN's TUN at the Magic DNS server",
+      () async {
+        final command = FakeSystemCommand(runHandler: linuxHost());
 
-      await linuxSystem(command).apply(
-        zone: 'et.net.',
-        interfaceName: '',
-        address: address,
-      );
+        await linuxSystem(command)
+            .apply(zone: 'et.net.', interfaceName: '', address: address);
 
-      expect(command.elevated.single.$2.last, contains("'et_12_xoih'"));
-      expect(command.elevated.single.$2.last, isNot(contains('FlClash')));
-    });
+        expect(command.elevated.single.$2.last, contains("'et_12_xoih'"));
+        expect(command.elevated.single.$2.last, isNot(contains('FlClash')));
+      },
+    );
 
-    test('apply fails closed when no EasyTier interface is identified', () async {
-      final command = FakeSystemCommand(runHandler: linuxHost());
+    test(
+      'apply fails closed when no EasyTier interface is identified',
+      () async {
+        final command = FakeSystemCommand(runHandler: linuxHost());
 
-      await linuxSystem(command).apply(
-        zone: 'et.net.',
-        interfaceName: '',
-        address: '10.9.9.9/24',
-      );
+        await linuxSystem(command)
+            .apply(zone: 'et.net.', interfaceName: '', address: '10.9.9.9/24');
 
-      expect(command.elevated, isEmpty);
-    });
+        expect(command.elevated, isEmpty);
+      },
+    );
 
     test('apply rejects a zone or interface unsafe for a shell', () async {
       final command = FakeSystemCommand(runHandler: linuxHost());
@@ -195,10 +176,8 @@ void main() {
       );
 
       await expectLater(
-        linuxSystem(command).apply(
-          zone: 'et.net.',
-          interfaceName: 'et_12_xoih',
-        ),
+        linuxSystem(command)
+            .apply(zone: 'et.net.', interfaceName: 'et_12_xoih'),
         throwsA(isA<ElevationException>()),
       );
     });

@@ -77,11 +77,11 @@ void main() {
     );
     await pumpEventQueue();
 
-    expect(
-      autostart.applied,
-      [false, true, false],
-      reason: 'the applies do not overlap',
-    );
+    expect(autostart.applied, [
+      false,
+      true,
+      false,
+    ], reason: 'the applies do not overlap');
     expect(settings.behavior.startOnBoot.value, isFalse);
     final prefs = await SharedPreferences.getInstance();
     expect(prefs.getBool('behavior.startOnBoot'), isFalse);

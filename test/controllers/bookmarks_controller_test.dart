@@ -313,10 +313,8 @@ void main() {
     test('composes a new bookmark with a v4 id and blank fields as null', () {
       final controller = controllerFor(builtins: []);
       final node = Node(
-        id: 'peer',
-        url: Uri.parse('peer.example.com'),
-        port: 11010,
-        protocols: const [NodeProtocol.tcp],
+        url: Uri(scheme: 'tcp', host: 'peer.example.com', port: 11010),
+        name: 'peer',
       );
 
       final bookmark = controller.compose(
@@ -343,10 +341,8 @@ void main() {
       final existing = Bookmark(
         id: 'u1',
         node: Node(
-          id: 'old',
-          url: Uri.parse('old.example.com'),
-          port: 11010,
-          protocols: const [NodeProtocol.tcp],
+          url: Uri(scheme: 'tcp', host: 'old.example.com', port: 11010),
+          name: 'old',
         ),
         createdAt: created,
         updatedAt: created,
@@ -360,10 +356,8 @@ void main() {
         existing: existing,
         draft: (
           node: Node(
-            id: 'new',
-            url: Uri.parse('new.example.com'),
-            port: 12010,
-            protocols: const [NodeProtocol.udp],
+            url: Uri(scheme: 'udp', host: 'new.example.com', port: 12010),
+            name: 'new',
           ),
           name: '  Name  ',
           description: ' A description ',
@@ -410,11 +404,11 @@ void main() {
       await controller.addToNetwork(bookmark, 'n1');
 
       expect(messages.single, 'Added to alpha');
-      expect((await persisted('n1')).nodes.single.id, 'u1');
+      expect((await persisted('n1')).nodes.single.name, 'u1');
 
       // The stored node is a copy: editing the bookmark afterwards is free.
-      bookmark.node.id = 'changed';
-      expect((await persisted('n1')).nodes.single.id, 'u1');
+      bookmark.node.name = 'changed';
+      expect((await persisted('n1')).nodes.single.name, 'u1');
     });
 
     test('reports a node the network already has', () async {
@@ -611,8 +605,11 @@ void main() {
       );
 
       expect(calls.single.method, 'Clipboard.setData');
-      expect((calls.single.arguments as Map)['text'], 'peer.example.com:11010');
-      expect(messages.single, 'Copied peer.example.com:11010');
+      expect(
+        (calls.single.arguments as Map)['text'],
+        'tcp://peer.example.com:11010',
+      );
+      expect(messages.single, 'Copied tcp://peer.example.com:11010');
     });
 
     test('reports the share channel that is not implemented', () {

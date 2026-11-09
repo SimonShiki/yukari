@@ -173,9 +173,8 @@ void main() {
         runHandler: androidHost(configured: () => true, jump: () => true),
       );
 
-      final probe = await androidSystem(
-        command,
-      ).probe(zone: 'et.net.', interfaceName: '', address: _address);
+      final probe = await androidSystem(command)
+          .probe(zone: 'et.net.', interfaceName: '', address: _address);
 
       expect(probe.state, MagicDnsState.configured);
       expect(probe.interface, 'et_12_xoih');
@@ -187,9 +186,8 @@ void main() {
         runHandler: androidHost(jump: () => true),
       );
 
-      final probe = await androidSystem(
-        command,
-      ).probe(zone: 'et.net.', interfaceName: '', address: _address);
+      final probe = await androidSystem(command)
+          .probe(zone: 'et.net.', interfaceName: '', address: _address);
 
       expect(probe.state, MagicDnsState.missing);
       expect(probe.interface, 'et_12_xoih');
@@ -200,9 +198,8 @@ void main() {
         runHandler: androidHost(configured: () => true),
       );
 
-      final probe = await androidSystem(
-        command,
-      ).probe(zone: 'et.net.', interfaceName: '', address: _address);
+      final probe = await androidSystem(command)
+          .probe(zone: 'et.net.', interfaceName: '', address: _address);
 
       expect(probe.state, MagicDnsState.missing);
     });
@@ -213,9 +210,8 @@ void main() {
             executable == 'ip' ? ok('') : androidHost()(executable, arguments),
       );
 
-      final probe = await androidSystem(
-        command,
-      ).probe(zone: 'et.net.', interfaceName: '', address: _address);
+      final probe = await androidSystem(command)
+          .probe(zone: 'et.net.', interfaceName: '', address: _address);
 
       expect(probe.state, MagicDnsState.noInterface);
       expect(probe.interface, isNull);
@@ -223,14 +219,12 @@ void main() {
 
     test('no TUN name and no address identify nothing', () async {
       final command = FakeSystemCommand(
-        runHandler: (executable, arguments) => executable == 'ip'
-            ? androidHost()(executable, arguments)
-            : null,
+        runHandler: (executable, arguments) =>
+            executable == 'ip' ? androidHost()(executable, arguments) : null,
       );
 
-      final probe = await androidSystem(
-        command,
-      ).probe(zone: 'et.net.', interfaceName: '');
+      final probe = await androidSystem(command)
+          .probe(zone: 'et.net.', interfaceName: '');
 
       expect(probe.state, MagicDnsState.noInterface);
       expect(probe.interface, isNull);
@@ -242,9 +236,8 @@ void main() {
         runHandler: androidHost(iptables: false),
       );
 
-      final probe = await androidSystem(
-        command,
-      ).probe(zone: 'et.net.', interfaceName: '', address: _address);
+      final probe = await androidSystem(command)
+          .probe(zone: 'et.net.', interfaceName: '', address: _address);
 
       expect(probe.state, MagicDnsState.unsupported);
       expect(probe.interface, 'et_12_xoih');
@@ -253,9 +246,8 @@ void main() {
     test('an unusable zone runs nothing and is unsupported', () async {
       final command = FakeSystemCommand(runHandler: androidHost());
 
-      final probe = await androidSystem(
-        command,
-      ).probe(zone: 'bad zone', interfaceName: '');
+      final probe = await androidSystem(command)
+          .probe(zone: 'bad zone', interfaceName: '');
       await androidSystem(command).apply(zone: 'bad zone', interfaceName: '');
 
       expect(probe.state, MagicDnsState.unsupported);
@@ -267,9 +259,8 @@ void main() {
       final command = FakeSystemCommand();
 
       expect(
-        androidSystem(
-          command,
-        ).manualCommands(zone: 'et.net.', interfaceName: ''),
+        androidSystem(command)
+            .manualCommands(zone: 'et.net.', interfaceName: ''),
         isEmpty,
       );
       expect(command.runs, isEmpty);
@@ -483,9 +474,8 @@ void main() {
       ];
       final command = FakeSystemCommand(runHandler: _chainHost(rules));
 
-      await androidSystem(
-        command,
-      ).reset(zone: 'corp.internal', interfaceName: 'et_12_xoih');
+      await androidSystem(command)
+          .reset(zone: 'corp.internal', interfaceName: 'et_12_xoih');
 
       expect(rules, [_zoneRule]);
       expect(_verbs(command), ['-D', '-S']);
@@ -495,9 +485,8 @@ void main() {
       final rules = <String>[_zoneRule];
       final command = FakeSystemCommand(runHandler: _chainHost(rules));
 
-      await androidSystem(
-        command,
-      ).reset(zone: 'corp.internal', interfaceName: 'et_12_xoih');
+      await androidSystem(command)
+          .reset(zone: 'corp.internal', interfaceName: 'et_12_xoih');
 
       expect(rules, [_zoneRule]);
       expect(_verbs(command), ['-D', '-S']);

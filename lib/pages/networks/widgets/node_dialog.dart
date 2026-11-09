@@ -9,7 +9,7 @@ import '../../../widgets/node_form/node_form_fields.dart';
 Future<Node?> showNodeDialog(
   BuildContext context, {
   Node? node,
-  List<String> existingIds = const [],
+  List<String> existingNames = const [],
 }) async {
   final fields = GlobalKey<NodeFormFieldsState>();
   return showDialog<Node>(
@@ -18,7 +18,7 @@ Future<Node?> showNodeDialog(
       title: Text(
         node == null
             ? context.l10n.networkAddPeer
-            : context.l10n.networkEditPeerNamed(node.id),
+            : context.l10n.networkEditPeerNamed(node.name),
       ),
       content: Padding(
         padding: const EdgeInsets.only(top: 16),
@@ -28,7 +28,7 @@ Future<Node?> showNodeDialog(
             child: NodeFormFields(
               key: fields,
               initialNode: node,
-              existingIds: existingIds,
+              existingNames: existingNames,
             ),
           ),
         ),

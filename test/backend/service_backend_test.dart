@@ -292,18 +292,21 @@ void main() {
     expect(backend.status.disposed, isTrue);
   });
 
-  test('a service that answers after disposal cannot write the status', () async {
-    final locate = Completer<IpcEndpoint>();
-    final backend = ServiceBackend(() => locate.future);
+  test(
+    'a service that answers after disposal cannot write the status',
+    () async {
+      final locate = Completer<IpcEndpoint>();
+      final backend = ServiceBackend(() => locate.future);
 
-    final pending = backend.collectInfos();
-    await backend.dispose();
-    locate.complete(IpcEndpoint(_missingAddress(store), 0));
+      final pending = backend.collectInfos();
+      await backend.dispose();
+      locate.complete(IpcEndpoint(_missingAddress(store), 0));
 
-    // The unreachable service is still reported as such: the status write in
-    // the failure path is skipped, not thrown from.
-    await expectLater(pending, throwsA(isA<ServiceUnavailableException>()));
-  });
+      // The unreachable service is still reported as such: the status write in
+      // the failure path is skipped, not thrown from.
+      await expectLater(pending, throwsA(isA<ServiceUnavailableException>()));
+    },
+  );
 
   test('the default setup reads the address the backend assigned', () async {
     await store.save({'n1': _dnsNetwork('alpha')});

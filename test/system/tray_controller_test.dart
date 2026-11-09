@@ -151,9 +151,7 @@ void main() {
     var received = 0;
     final backend = FakeBackend(
       collected: () => {
-        'alpha': instanceInfo(
-          peers: [instancePeer(rx: received, tx: 0)],
-        ),
+        'alpha': instanceInfo(peers: [instancePeer(rx: received, tx: 0)]),
       },
     );
     final platform = FakeTrayPlatform();
@@ -368,7 +366,8 @@ void main() {
     await controller(platform).start();
     await pumpEventQueue();
     saved.scheduleNetworkEdit(
-      'n1', saved.networks.peek()['n1']!.copy()..hostname = 'latest',
+      'n1',
+      saved.networks.peek()['n1']!.copy()..hostname = 'latest',
       onError: (_) {},
     );
 
@@ -378,19 +377,23 @@ void main() {
     expect((await persisted('n1')).hostname, 'latest');
   });
 
-  test('closing without a tray waits for pending edits before exiting', () async {
-    final platform = FakeTrayPlatform()..available = false;
-    await controller(platform).start();
-    saved.scheduleNetworkEdit(
-      'n1', saved.networks.peek()['n1']!.copy()..hostname = 'latest',
-      onError: (_) {},
-    );
+  test(
+    'closing without a tray waits for pending edits before exiting',
+    () async {
+      final platform = FakeTrayPlatform()..available = false;
+      await controller(platform).start();
+      saved.scheduleNetworkEdit(
+        'n1',
+        saved.networks.peek()['n1']!.copy()..hostname = 'latest',
+        onError: (_) {},
+      );
 
-    expect(platform.closeWindow(), isTrue);
-    expect(platform.quitCalls, 0);
-    await waitFor(() => platform.quitCalls == 1);
-    expect((await persisted('n1')).hostname, 'latest');
-  });
+      expect(platform.closeWindow(), isTrue);
+      expect(platform.quitCalls, 0);
+      await waitFor(() => platform.quitCalls == 1);
+      expect((await persisted('n1')).hostname, 'latest');
+    },
+  );
 
   test('a failed edit save keeps the app open and shows its window', () async {
     final store = await seedWith({'n1': Network()..networkName = 'alpha'});
@@ -401,7 +404,8 @@ void main() {
     await pumpEventQueue();
     final errors = <Object>[];
     saved.scheduleNetworkEdit(
-      'n1', saved.networks.peek()['n1']!.copy()..hostname = 'unsaved',
+      'n1',
+      saved.networks.peek()['n1']!.copy()..hostname = 'unsaved',
       onError: errors.add,
     );
 

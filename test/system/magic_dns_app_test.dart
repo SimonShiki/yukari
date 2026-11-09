@@ -160,23 +160,26 @@ void main() {
     expect(magicDnsDismissedCards.value, isEmpty);
   });
 
-  test('the app setup reads the address the running instance reported', () async {
-    // Magic DNS is off, so the effect leaves this instance alone and the test
-    // only asks the setup where its address comes from.
-    await seedWith({'n1': _network('alpha', acceptDns: false)});
-    await running.refreshInstances(
-      FakeBackend(collected: () => {'alpha': _assignedInfo}),
-    );
-    final auto = initMagicDnsAuto();
-    addTearDown(auto.dispose);
+  test(
+    'the app setup reads the address the running instance reported',
+    () async {
+      // Magic DNS is off, so the effect leaves this instance alone and the test
+      // only asks the setup where its address comes from.
+      await seedWith({'n1': _network('alpha', acceptDns: false)});
+      await running.refreshInstances(
+        FakeBackend(collected: () => {'alpha': _assignedInfo}),
+      );
+      final auto = initMagicDnsAuto();
+      addTearDown(auto.dispose);
 
-    final setup = auto.setup;
-    expect(setup, isA<MagicDnsAuto>());
-    expect(
-      await (setup as MagicDnsAuto).assignedAddress!('n1'),
-      '10.126.126.2',
-    );
-  });
+      final setup = auto.setup;
+      expect(setup, isA<MagicDnsAuto>());
+      expect(
+        await (setup as MagicDnsAuto).assignedAddress!('n1'),
+        '10.126.126.2',
+      );
+    },
+  );
 
   test('dismissed cards are session state that a stop restores', () {
     resetMagicDnsDismissedCards();

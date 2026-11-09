@@ -6,7 +6,7 @@ import 'share_configs.dart';
 
 /// The share format version [ShareDocument.encode] writes; a document from a
 /// newer version is refused rather than guessed at.
-const int shareDocumentVersion = 1;
+const int shareDocumentVersion = 2;
 
 /// The media type a share document carries when it leaves the app.
 const String shareContentType = 'application/vnd.yukari.share+json';
@@ -34,35 +34,16 @@ enum ShareKind { network, node }
 
 /// One peer of a shared network, or the single peer of a shared node.
 final class SharedPeer {
-  const SharedPeer({
-    required this.host,
-    required this.port,
-    required this.protocols,
-    this.publicKey,
-    this.path,
-  });
+  const SharedPeer({required this.url, this.publicKey});
 
-  /// The peer's host, without brackets even for an IPv6 literal.
-  final String host;
-  final int port;
-
-  /// The protocols the peer offers, deduplicated and in the sender's order.
-  final List<NodeProtocol> protocols;
-
-  /// The peer's public key, shared so the receiver can pin the peer.
+  final Uri url;
   final String? publicKey;
 
-  /// The peer's authority-relative path, such as `/ws`.
-  final String? path;
-
-  String get address => '$host:$port';
+  String get address => url.toString();
 
   Map<String, Object?> toJson() => {
-    'host': host,
-    'port': port,
-    'protocols': [for (final protocol in protocols) protocol.name],
+    'url': url.toString(),
     if (publicKey != null) 'publicKey': publicKey,
-    if (path != null) 'path': path,
   };
 }
 
@@ -74,11 +55,8 @@ final class SharedPeer {
 /// compact, versioned JSON a QR payload or the clipboard carries; a channel
 /// may compress it, and [decode] reads the JSON back.
 ///
-/// Configs travel in an optional field of version 1 rather than a new version:
-/// an older app ignores the key and imports the peers as it always did, and a
-/// document without it imports with today's defaults. A node's name is not like
-/// that: an older validator refused a name on a node share, so an old app
-/// rejects such a document whole.
+/// Version 2 carries full peer URLs. Version 1 peers are accepted on import
+/// and expanded into one URL per protocol.
 final class ShareDocument {
   const ShareDocument({
     required this.kind,
@@ -149,7 +127,7 @@ final class ShareDocument {
   /// accepted.
   static ShareDocument decodeRoot(Map<String, Object?> root) {
     final version = root['v'];
-    if (version != shareDocumentVersion) {
+    if (version != 1 && version != shareDocumentVersion) {
       _reject('Unsupported share format version: $version');
     }
     final kind = switch (root['kind']) {
@@ -160,14 +138,16 @@ final class ShareDocument {
     final name = _sharedText(root['name'], 'name', shareMaxNameLength);
     final secret = _sharedText(root['secret'], 'secret', _maxKeyLength);
     final configs = configsFromJson(root['configs']);
-    final peers = _sharedPeers(root['peers']);
+    final peers = _sharedPeers(root['peers'], legacy: root['v'] == 1);
 
     if (kind == ShareKind.network) {
       if (name == null) _reject('A network share has no name');
     } else {
       if (secret != null) _reject('A node share carries no secret');
       if (configs != null) _reject('A node share carries no configs');
-      if (peers.length != 1) _reject('A node share has exactly one peer');
+      if ((root['peers'] as List).length != 1) {
+        _reject('A node share has exactly one peer');
+      }
     }
     return ShareDocument(
       kind: kind,
@@ -192,14 +172,16 @@ String? _sharedText(Object? value, String field, int maxLength) {
   return text.isEmpty ? null : text;
 }
 
-List<SharedPeer> _sharedPeers(Object? value) {
+List<SharedPeer> _sharedPeers(Object? value, {required bool legacy}) {
   if (value is! List<Object?>) _reject('Share document has no peer list');
   if (value.isEmpty || value.length > shareMaxPeers) {
     _reject('Share document has an invalid peer count');
   }
   return [
     for (final (index, entry) in value.indexed)
-      _sharedPeer(entry, 'Peer ${index + 1}'),
+      ...legacy
+          ? _legacyPeer(entry, 'Peer ${index + 1}')
+          : [_sharedPeer(entry, 'Peer ${index + 1}')],
   ];
 }
 
@@ -213,13 +195,31 @@ bool shareableHost(String host) {
   if (_invalidHostCharacters.hasMatch(host)) return false;
   // The address has to round-trip, or import would reach a different peer.
   try {
-    return nodeHost(nodeUrlForHost(host)) == host;
+    return Uri(host: host).host == host;
   } on FormatException {
     return false;
   }
 }
 
 SharedPeer _sharedPeer(Object? entry, String field) {
+  if (entry is! Map<String, Object?>) _reject('$field is not an object');
+  final value = entry['url'];
+  final url = value is String && value.length <= 4096
+      ? Uri.tryParse(value)
+      : null;
+  if (url == null ||
+      !isValidNodeUrl(value as String) ||
+      !shareableHost(url.host) ||
+      url.userInfo.isNotEmpty) {
+    _reject('$field has an invalid connection URL');
+  }
+  return SharedPeer(
+    url: url,
+    publicKey: _sharedText(entry['publicKey'], 'publicKey', _maxKeyLength),
+  );
+}
+
+List<SharedPeer> _legacyPeer(Object? entry, String field) {
   if (entry is! Map<String, Object?>) _reject('$field is not an object');
 
   final host = entry['host'];
@@ -251,13 +251,13 @@ SharedPeer _sharedPeer(Object? entry, String field) {
     if (!protocols.contains(protocol)) protocols.add(protocol);
   }
 
-  return SharedPeer(
-    host: host,
-    port: port,
-    protocols: protocols,
-    publicKey: _sharedText(entry['publicKey'], 'publicKey', _maxKeyLength),
-    path: path,
-  );
+  return [
+    for (final protocol in protocols)
+      SharedPeer(
+        url: Uri(scheme: protocol.name, host: host, port: port, path: path),
+        publicKey: _sharedText(entry['publicKey'], 'publicKey', _maxKeyLength),
+      ),
+  ];
 }
 
 /// A validated authority-relative path field, or null when it is absent.

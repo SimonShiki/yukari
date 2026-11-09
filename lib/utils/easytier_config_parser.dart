@@ -198,40 +198,17 @@ final class _TrackingMap extends MapBase<dynamic, dynamic> {
   dynamic remove(Object? key) => _source.remove(key);
 }
 
-List<Node> _parsePeers(List<dynamic> peers) {
-  final nodes = <String, Node>{};
-
-  for (final peer in peers) {
-    if (peer is! Map) continue;
-
-    final uriStr = peer['uri']?.toString();
-    if (uriStr == null) continue;
-
-    final uri = Uri.parse(uriStr);
-    final host = uri.host;
-    final port = uri.port;
-    final protocol = _parseNodeProtocol(uri.scheme);
-    final publicKey = peer['peer_public_key']?.toString();
-
-    if (protocol == null || host.isEmpty || port == 0) continue;
-
-    // EasyTier lists one peer per protocol; group them by address.
-    final nodeId = '$host:$port';
-    final node = nodes.putIfAbsent(
-      nodeId,
-      () => Node(
-        id: nodeId,
-        url: nodeUrlForHost(host),
-        port: port,
-        protocols: [],
-        publicKey: publicKey,
-      ),
-    );
-    if (!node.protocols.contains(protocol)) node.protocols.add(protocol);
-  }
-
-  return nodes.values.toList();
-}
+List<Node> _parsePeers(List<dynamic> peers) => [
+  for (final peer in peers)
+    if (peer is Map && peer['uri'] is String)
+      if (Uri.tryParse(peer['uri'] as String) case final Uri url
+          when isValidNodeUrl(peer['uri'] as String))
+        Node(
+          name: peer['uri'] as String,
+          url: url,
+          publicKey: peer['peer_public_key']?.toString(),
+        ),
+];
 
 NodeProtocol? _parseNodeProtocol(String scheme) =>
     switch (scheme.toLowerCase()) {

@@ -52,9 +52,8 @@ void main() {
     expect(staged, p.join(service.root, 'bin', 'yukari-service.exe'));
     expect(await File(staged).readAsString(), 'service');
     expect(
-      await File(
-        p.join(service.root, 'lib', 'windows-x64-easytier_ffi.dll'),
-      ).readAsString(),
+      await File(p.join(service.root, 'lib', 'windows-x64-easytier_ffi.dll'))
+          .readAsString(),
       'library',
     );
   });
@@ -70,9 +69,8 @@ void main() {
       isFalse,
     );
     expect(
-      await File(
-        p.join(service.root, 'lib', 'windows-x64-easytier_ffi.dll'),
-      ).exists(),
+      await File(p.join(service.root, 'lib', 'windows-x64-easytier_ffi.dll'))
+          .exists(),
       isTrue,
     );
   });

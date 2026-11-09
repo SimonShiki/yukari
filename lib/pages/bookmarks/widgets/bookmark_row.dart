@@ -13,7 +13,7 @@ import '../../../widgets/metadata_chip/metadata_chip.dart';
 import '../../../widgets/overflow_text/overflow_text.dart';
 import '../../../widgets/selection/selection_chrome.dart';
 
-/// One bookmark as a list segment: identity, address, protocols and tags, an
+/// One bookmark as a list segment: identity, full URL and tags, an
 /// add-to-network button and the share/edit/delete menu.
 ///
 /// A built-in shared node is read-only: its edit and delete actions are
@@ -77,8 +77,6 @@ class BookmarkRow extends StatelessWidget {
             crossAxisAlignment: WrapCrossAlignment.center,
             children: [
               Text(bookmark.address),
-              for (final protocol in bookmark.node.protocols)
-                MetadataChip.protocol(protocol.name),
               for (final tag in bookmark.tags) MetadataChip('#$tag'),
             ],
           ),

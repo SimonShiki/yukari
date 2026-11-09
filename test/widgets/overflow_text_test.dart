@@ -10,7 +10,9 @@ void main() {
       tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
-            body: Center(child: SizedBox(width: width, child: child)),
+            body: Center(
+              child: SizedBox(width: width, child: child),
+            ),
           ),
         ),
       );
@@ -47,31 +49,40 @@ void main() {
   });
 
   for (final lines in [1, 2]) {
-    testWidgets('releases text painters after layout and removal for $lines lines', (tester) async {
-      tester.view.physicalSize = const Size(1400, 800);
-      tester.view.devicePixelRatio = 1;
-      addTearDown(tester.view.reset);
-      final painters = <TextPainter>{};
-      void record(ObjectEvent event) {
-        if (event is ObjectCreated && event.object is TextPainter) {
-          painters.add(event.object as TextPainter);
+    testWidgets(
+      'releases text painters after layout and removal for $lines lines',
+      (tester) async {
+        tester.view.physicalSize = const Size(1400, 800);
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.reset);
+        final painters = <TextPainter>{};
+        void record(ObjectEvent event) {
+          if (event is ObjectCreated && event.object is TextPainter) {
+            painters.add(event.object as TextPainter);
+          }
         }
-      }
-      FlutterMemoryAllocations.instance.addListener(record);
-      addTearDown(() => FlutterMemoryAllocations.instance.removeListener(record));
 
-      await pump(tester, OverflowText(long, maxLines: lines), width: 80);
-      expect(find.byType(Tooltip), findsOneWidget);
-      await pump(tester, OverflowText(long, maxLines: lines), width: 1000);
-      expect(find.byType(Tooltip), findsNothing);
-      await pump(tester, OverflowText(long, maxLines: lines), width: 80);
-      expect(find.byType(Tooltip), findsOneWidget);
+        FlutterMemoryAllocations.instance.addListener(record);
+        addTearDown(
+          () => FlutterMemoryAllocations.instance.removeListener(record),
+        );
 
-      await tester.pumpWidget(const SizedBox.shrink());
+        await pump(tester, OverflowText(long, maxLines: lines), width: 80);
+        expect(find.byType(Tooltip), findsOneWidget);
+        await pump(tester, OverflowText(long, maxLines: lines), width: 1000);
+        expect(find.byType(Tooltip), findsNothing);
+        await pump(tester, OverflowText(long, maxLines: lines), width: 80);
+        expect(find.byType(Tooltip), findsOneWidget);
 
-      expect(painters, isNotEmpty);
-      expect(painters.every((painter) => painter.debugDisposed), isTrue,
-        reason: 'measurement painters must release their native resources');
-    });
+        await tester.pumpWidget(const SizedBox.shrink());
+
+        expect(painters, isNotEmpty);
+        expect(
+          painters.every((painter) => painter.debugDisposed),
+          isTrue,
+          reason: 'measurement painters must release their native resources',
+        );
+      },
+    );
   }
 }

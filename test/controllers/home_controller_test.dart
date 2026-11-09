@@ -34,36 +34,33 @@ void main() {
     return created;
   }
 
-  test(
-    'reads instances and the Magic DNS host',
-    () async {
-      final network = saved.networks.value['n1']!;
-      network.hostname = 'alpha-host';
-      network.flags.acceptDns = true;
-      await saved.updateNetwork('n1', network);
-      final home = controller(
-        backend: FakeBackend(
-          collected: () => {
-            'alpha': _info(peers: [_peer(rx: 1000, tx: 2000)]),
-          },
-        ),
-      );
+  test('reads instances and the Magic DNS host', () async {
+    final network = saved.networks.value['n1']!;
+    network.hostname = 'alpha-host';
+    network.flags.acceptDns = true;
+    await saved.updateNetwork('n1', network);
+    final home = controller(
+      backend: FakeBackend(
+        collected: () => {
+          'alpha': _info(peers: [_peer(rx: 1000, tx: 2000)]),
+        },
+      ),
+    );
 
-      await home.refresh();
-      await home.checkServiceVersion();
+    await home.refresh();
+    await home.checkServiceVersion();
 
-      expect(home.refreshed.value, isTrue);
-      expect(home.savedCount.value, 2);
-      expect(home.runningCount.value, 1);
-      expect(home.runningNames.value, 'alpha');
-      expect(home.serviceVersion.value, 1);
-      expect(home.address.value, '10.144.0.2');
-      expect(home.addressKind.value, AddressKind.virtual);
-      expect(home.addressSupporting.value, 'alpha-host.et.net · alpha');
-      expect(home.addressMoreCount.value, 0);
-      expect(home.addressTooltip.value, '10.144.0.2  alpha-host.et.net  alpha');
-    },
-  );
+    expect(home.refreshed.value, isTrue);
+    expect(home.savedCount.value, 2);
+    expect(home.runningCount.value, 1);
+    expect(home.runningNames.value, 'alpha');
+    expect(home.serviceVersion.value, 1);
+    expect(home.address.value, '10.144.0.2');
+    expect(home.addressKind.value, AddressKind.virtual);
+    expect(home.addressSupporting.value, 'alpha-host.et.net · alpha');
+    expect(home.addressMoreCount.value, 0);
+    expect(home.addressTooltip.value, '10.144.0.2  alpha-host.et.net  alpha');
+  });
 
   test('an EasyTier NAT type wins over the STUN probe', () async {
     final home = controller(
@@ -321,20 +318,23 @@ void main() {
     );
   });
 
-  test('disposing during the version probe writes no disposed signal', () async {
-    final gate = Completer<int?>();
-    final home = controller(
-      backend: FakeBackend(collected: () => const {}),
-      service: () => gate.future,
-    );
+  test(
+    'disposing during the version probe writes no disposed signal',
+    () async {
+      final gate = Completer<int?>();
+      final home = controller(
+        backend: FakeBackend(collected: () => const {}),
+        service: () => gate.future,
+      );
 
-    final check = home.checkServiceVersion();
-    home.dispose();
-    gate.complete(7);
+      final check = home.checkServiceVersion();
+      home.dispose();
+      gate.complete(7);
 
-    await expectLater(check, completes);
-    expect(home.serviceVersion.peek(), isNull);
-  });
+      await expectLater(check, completes);
+      expect(home.serviceVersion.peek(), isNull);
+    },
+  );
 
   test('dispose releases every signal it created', () async {
     final home = controller(

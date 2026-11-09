@@ -68,25 +68,29 @@ void main() {
     expect(instances.value.keys, ['n1']);
   });
 
-  test('a failed collection keeps the last state and releases the guard', () async {
-    await refreshInstances(
-      FakeBackend(collected: () => {'alpha': _info}),
-    );
-    final failing = CountingBackend(failCollect: true);
+  test(
+    'a failed collection keeps the last state and releases the guard',
+    () async {
+      await refreshInstances(FakeBackend(collected: () => {'alpha': _info}));
+      final failing = CountingBackend(failCollect: true);
 
-    await expectLater(refreshInstances(failing), throwsException);
-    expect(instances.value.keys, ['n1'], reason: 'the last state stands');
-    expect(instancesLoaded.value, isTrue);
+      await expectLater(refreshInstances(failing), throwsException);
+      expect(instances.value.keys, ['n1'], reason: 'the last state stands');
+      expect(instancesLoaded.value, isTrue);
 
-    // The failure must not leave the in-flight guard set.
-    await expectLater(refreshInstances(failing), throwsException);
-    expect(failing.collects, 2);
-  });
+      // The failure must not leave the in-flight guard set.
+      await expectLater(refreshInstances(failing), throwsException);
+      expect(failing.collects, 2);
+    },
+  );
 
   test('forgetInstances drops only the ids it is given', () async {
     await refreshInstances(
       FakeBackend(
-        collected: () => {'alpha': _info, 'beta': {'running': true}},
+        collected: () => {
+          'alpha': _info,
+          'beta': {'running': true},
+        },
       ),
     );
     expect(instances.value.keys, unorderedEquals(['n1', 'n2']));

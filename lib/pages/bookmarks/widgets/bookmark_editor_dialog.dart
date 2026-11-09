@@ -28,7 +28,6 @@ class _BookmarkEditorDialog extends StatefulWidget {
 
 class _BookmarkEditorDialogState extends State<_BookmarkEditorDialog> {
   final _nodeKey = GlobalKey<NodeFormFieldsState>();
-  late final _name = TextEditingController(text: widget.initial?.name ?? '');
   late final _description = TextEditingController(
     text: widget.initial?.description ?? '',
   );
@@ -41,7 +40,6 @@ class _BookmarkEditorDialogState extends State<_BookmarkEditorDialog> {
 
   @override
   void dispose() {
-    _name.dispose();
     _description.dispose();
     _category.dispose();
     _tags.dispose();
@@ -54,7 +52,7 @@ class _BookmarkEditorDialogState extends State<_BookmarkEditorDialog> {
     if (node == null) return;
     Navigator.of(context).pop((
       node: node,
-      name: _name.text,
+      name: node.name,
       description: _description.text,
       category: _category.text,
       tags: _tags.text,
@@ -89,7 +87,13 @@ class _BookmarkEditorDialogState extends State<_BookmarkEditorDialog> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             spacing: 16,
             children: [
-              _field(_name, l10n.bookmarksName, l10n.bookmarksNameHelper),
+              NodeFormFields(
+                key: _nodeKey,
+                initialNode: widget.initial == null
+                    ? null
+                    : (widget.initial!.node.copy()
+                        ..name = widget.initial!.displayName),
+              ),
               _field(
                 _description,
                 l10n.bookmarksDescription,
@@ -101,7 +105,6 @@ class _BookmarkEditorDialogState extends State<_BookmarkEditorDialog> {
                 l10n.bookmarksCategoryHelper,
               ),
               _field(_tags, l10n.bookmarksTags, l10n.bookmarksTagsHelper),
-              NodeFormFields(key: _nodeKey, initialNode: widget.initial?.node),
             ],
           ),
         ),

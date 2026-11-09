@@ -80,11 +80,9 @@ void main() {
     expect(settings.behavior.startOnBoot.value, isTrue);
     expect(settings.behavior.useSystemTray.value, isFalse);
     expect(settings.workingMode.backend.value, BackendKind.service);
-    expect(
-      autostart.applied,
-      [true],
-      reason: 'the saved start on boot is applied on load',
-    );
+    expect(autostart.applied, [
+      true,
+    ], reason: 'the saved start on boot is applied on load');
   });
 
   test('starts from the defaults when a saved value is unknown', () async {
@@ -140,7 +138,11 @@ void main() {
 
     settings.interface.setLocale(null);
     await pumpEventQueue();
-    expect(prefs.getString('locale'), isNull, reason: 'follow system clears it');
+    expect(
+      prefs.getString('locale'),
+      isNull,
+      reason: 'follow system clears it',
+    );
   });
 
   test('restores every setting after a restart', () async {

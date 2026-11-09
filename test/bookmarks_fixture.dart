@@ -28,7 +28,12 @@ Bookmark testBookmark(
   List<String> tags = const [],
 }) => Bookmark(
   id: id,
-  node: Node(id: id, url: Uri.parse(host), port: port, protocols: protocols),
+  node: Node(
+    url: host.contains('://')
+        ? Uri.parse(host).replace(scheme: protocols.first.name, port: port)
+        : Uri(scheme: protocols.first.name, host: host, port: port),
+    name: id,
+  ),
   name: name,
   description: description,
   category: category,

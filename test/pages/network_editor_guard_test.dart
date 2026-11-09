@@ -45,8 +45,10 @@ void main() {
               child: TextButton(
                 onPressed: () => Navigator.of(context).push(
                   MaterialPageRoute<void>(
-                    builder: (context) =>
-                        NetworkEditorPage(id: 'n1', guardKey: paneGuardKey('n1')),
+                    builder: (context) => NetworkEditorPage(
+                      id: 'n1',
+                      guardKey: paneGuardKey('n1'),
+                    ),
                   ),
                 ),
                 child: const Text('open'),

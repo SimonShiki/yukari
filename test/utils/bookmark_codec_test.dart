@@ -97,7 +97,10 @@ void main() {
         'bookmarks': [
           {
             ...valid,
-            'node': {...valid['node']! as Map, 'port': 70000},
+            'node': {
+              ...valid['node']! as Map,
+              'url': 'tcp://example.com:70000',
+            },
           },
         ],
       }),
@@ -122,6 +125,42 @@ void main() {
         reason: description,
       );
     });
+  });
+
+  test('migrates every old protocol while keeping bookmark annotations', () {
+    final original = testBookmark('legacy', name: 'Home', tags: ['relay'])
+      ..extensions = {'vendor': 7};
+    final decoded = decodeBookmarks(
+      jsonEncode({
+        'version': 1,
+        'bookmarks': [
+          {
+            ...original.toJson(),
+            'node': {
+              'id': 'old relay',
+              'url': 'wss://relay.example.com/ws',
+              'port': 8787,
+              'protocols': ['tcp', 'wss'],
+              'publicKey': 'pin',
+            },
+          },
+        ],
+      }),
+    );
+    expect(decoded.bookmarks.map((b) => b.node.url.toString()), [
+      'tcp://relay.example.com:11451/ws',
+      'wss://relay.example.com:11451/ws',
+    ]);
+    expect(decoded.bookmarks.first.id, 'legacy');
+    expect(decoded.bookmarks.map((b) => b.id).toSet(), hasLength(2));
+    for (final bookmark in decoded.bookmarks) {
+      expect(bookmark.name, 'Home');
+      expect(bookmark.tags, ['relay']);
+      expect(bookmark.extensions, {'vendor': 7});
+      expect(bookmark.node.publicKey, 'pin');
+      expect(bookmark.createdAt, original.createdAt);
+    }
+    expect(decodeBookmarks(encodeBookmarks(decoded)).bookmarks, hasLength(2));
   });
 
   test('an empty document holds nothing', () {

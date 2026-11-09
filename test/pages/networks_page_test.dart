@@ -416,10 +416,8 @@ void main() {
     ..networkName = name
     ..nodes = [
       Node(
-        id: 'peer',
-        url: Uri.parse('relay.example.com'),
-        port: 11010,
-        protocols: const [NodeProtocol.tcp],
+        url: Uri(scheme: 'tcp', host: 'relay.example.com', port: 11010),
+        name: 'peer',
       ),
     ];
 
@@ -483,9 +481,7 @@ void main() {
     expect(find.byTooltip(strings.selectionEnter), findsOneWidget);
   });
 
-  testWidgets('tapping a card selects it', (
-    tester,
-  ) async {
+  testWidgets('tapping a card selects it', (tester) async {
     await tester.runAsync(seedNetworks);
     final controller = await pumpList(tester, size: const Size(400, 780));
     await tester.tap(find.byTooltip(strings.selectionEnter));
@@ -591,10 +587,10 @@ void main() {
 
     await tapSelectionItem(tester, controller, strings.selectionDelete);
 
-    expect(
-      confirmed.single.map((network) => network.networkName),
-      ['alpha', 'beta'],
-    );
+    expect(confirmed.single.map((network) => network.networkName), [
+      'alpha',
+      'beta',
+    ]);
     // The network that runs is stopped before the store forgets it.
     expect(backend.stopped, ['alpha']);
     expect(saved.networks.value, isEmpty);
@@ -771,10 +767,7 @@ void main() {
 
     // A wider selection is one question, in plural wording.
     expect(find.text(strings.networkDeleteSelectedTitle(2)), findsOneWidget);
-    expect(
-      find.text(strings.networkDeleteSelectedDescription),
-      findsOneWidget,
-    );
+    expect(find.text(strings.networkDeleteSelectedDescription), findsOneWidget);
 
     // It stays destructive, like the question that names one network.
     final confirm = find.widgetWithText(FilledButton, strings.commonDelete);

@@ -14,30 +14,31 @@ import 'network_test_support.dart' hide pumpApp;
 void main() {
   useRealDetailRouter();
 
-  testWidgets('a back gesture asks before it discards, keeping the page whole', (
-    tester,
-  ) async {
-    await tester.runAsync(seedNetworks);
-    await openEditor(tester, dirty: true);
-    final whole = container(tester);
+  testWidgets(
+    'a back gesture asks before it discards, keeping the page whole',
+    (tester) async {
+      await tester.runAsync(seedNetworks);
+      await openEditor(tester, dirty: true);
+      final whole = container(tester);
 
-    // The editor can veto the pop, so the gesture is not joined at all: the
-    // page is never shrunk into a state the refusal could strand it in.
-    await backGesture(tester, 'startBackGesture', 0);
-    await backGesture(tester, 'updateBackGestureProgress', 0.5);
-    expect(container(tester), whole);
-    await backGesture(tester, 'commitBackGesture');
-    await tester.pumpAndSettle();
+      // The editor can veto the pop, so the gesture is not joined at all: the
+      // page is never shrunk into a state the refusal could strand it in.
+      await backGesture(tester, 'startBackGesture', 0);
+      await backGesture(tester, 'updateBackGestureProgress', 0.5);
+      expect(container(tester), whole);
+      await backGesture(tester, 'commitBackGesture');
+      await tester.pumpAndSettle();
 
-    expect(find.text(strings.networkDiscardTitle), findsOneWidget);
-    expect(container(tester), whole);
+      expect(find.text(strings.networkDiscardTitle), findsOneWidget);
+      expect(container(tester), whole);
 
-    // Keeping the edits leaves the editor open, at full size.
-    await tester.tap(find.text(strings.networkKeepEditing));
-    await tester.pumpAndSettle();
-    expect(find.byType(NetworkEditorPage), findsOneWidget);
-    expect(container(tester), whole);
-  });
+      // Keeping the edits leaves the editor open, at full size.
+      await tester.tap(find.text(strings.networkKeepEditing));
+      await tester.pumpAndSettle();
+      expect(find.byType(NetworkEditorPage), findsOneWidget);
+      expect(container(tester), whole);
+    },
+  );
 
   testWidgets('a valid editor joins the back gesture and shrinks away', (
     tester,

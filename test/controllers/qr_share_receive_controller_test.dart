@@ -400,9 +400,7 @@ void main() {
     controller.shares.value = [networkShare('alpha'), networkShare('beta')];
 
     expect(await controller.save(), isTrue);
-    expect(messages, <String>[
-      app.l10n.value.shareReceiveAddSummary(1, 0, 1),
-    ]);
+    expect(messages, <String>[app.l10n.value.shareReceiveAddSummary(1, 0, 1)]);
   });
 
   test('a failed save is reported and can be retried', () async {

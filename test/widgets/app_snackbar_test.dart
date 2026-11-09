@@ -73,47 +73,62 @@ void main() {
   );
 
   for (final removePage in [false, true]) {
-    testWidgets('a delayed message ${removePage ? 'ignores an unmounted page' : 'appears on a mounted page'}', (tester) async {
-      final result = Completer<String>();
-      late Future<void> pending;
-      late BuildContext pageContext;
-      final messenger = GlobalKey<ScaffoldMessengerState>();
-      final visible = ValueNotifier(true);
-      addTearDown(visible.dispose);
-      await tester.pumpWidget(MaterialApp(
-        scaffoldMessengerKey: messenger,
-        home: Scaffold(
-          body: ValueListenableBuilder<bool>(
-            valueListenable: visible,
-            builder: (_, showPage, _) => showPage
-                ? Builder(builder: (context) {
-                    pageContext = context;
-                    return FilledButton(
-                      onPressed: () {
-                        pending = result.future.then((message) => showAppSnackBar(context, message));
-                      },
-                      child: const Text('start'),
-                    );
-                  })
-                : const Text('Replacement page'),
+    testWidgets(
+      'a delayed message ${removePage ? 'ignores an unmounted page' : 'appears on a mounted page'}',
+      (tester) async {
+        final result = Completer<String>();
+        late Future<void> pending;
+        late BuildContext pageContext;
+        final messenger = GlobalKey<ScaffoldMessengerState>();
+        final visible = ValueNotifier(true);
+        addTearDown(visible.dispose);
+        await tester.pumpWidget(
+          MaterialApp(
+            scaffoldMessengerKey: messenger,
+            home: Scaffold(
+              body: ValueListenableBuilder<bool>(
+                valueListenable: visible,
+                builder: (_, showPage, _) => showPage
+                    ? Builder(
+                        builder: (context) {
+                          pageContext = context;
+                          return FilledButton(
+                            onPressed: () {
+                              pending = result.future.then(
+                                (message) => showAppSnackBar(context, message),
+                              );
+                            },
+                            child: const Text('start'),
+                          );
+                        },
+                      )
+                    : const Text('Replacement page'),
+              ),
+            ),
           ),
-        ),
-      ));
-      await tester.tap(find.text('start'));
-      if (removePage) {
-        visible.value = false;
-        await tester.pump();
-      }
-      expect(pageContext.mounted, !removePage);
+        );
+        await tester.tap(find.text('start'));
+        if (removePage) {
+          visible.value = false;
+          await tester.pump();
+        }
+        expect(pageContext.mounted, !removePage);
 
-      result.complete('Delayed result');
-      await pending;
-      await tester.pumpAndSettle();
+        result.complete('Delayed result');
+        await pending;
+        await tester.pumpAndSettle();
 
-      expect(find.text('Delayed result'), removePage ? findsNothing : findsOneWidget);
-      expect(find.byType(SnackBar), removePage ? findsNothing : findsOneWidget);
-      expect(messenger.currentState!.mounted, isTrue);
-    });
+        expect(
+          find.text('Delayed result'),
+          removePage ? findsNothing : findsOneWidget,
+        );
+        expect(
+          find.byType(SnackBar),
+          removePage ? findsNothing : findsOneWidget,
+        );
+        expect(messenger.currentState!.mounted, isTrue);
+      },
+    );
   }
 
   testWidgets('floats above the FAB without moving it', (tester) async {

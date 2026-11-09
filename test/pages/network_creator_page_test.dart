@@ -104,7 +104,9 @@ void main() {
     expect(created.single.hostname, isNull);
   });
 
-  testWidgets('the name field creates from its keyboard action', (tester) async {
+  testWidgets('the name field creates from its keyboard action', (
+    tester,
+  ) async {
     await tester.runAsync(seedNetworks);
     await pumpCreator(tester);
 

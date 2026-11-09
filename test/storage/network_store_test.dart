@@ -35,11 +35,9 @@ void main() {
       await store.save({'a': named('alpha')..networkSecret = 'secret'});
 
       expect(mode(store.file), 0x180 /* 0600 */);
-      expect(
-        store.file.parent.listSync().map((entry) => entry.path),
-        [store.file.path],
-        reason: 'no temporary file is left behind',
-      );
+      expect(store.file.parent.listSync().map((entry) => entry.path), [
+        store.file.path,
+      ], reason: 'no temporary file is left behind');
     });
 
     test('a save replaces a symlink rather than writing through it', () async {

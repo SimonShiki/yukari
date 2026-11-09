@@ -36,6 +36,7 @@ final class Network {
 
   /// Optional subnet EasyTier uses when assigning IPv4 addresses by DHCP.
   String? dhcpIpv4Cidr;
+  @JsonKey(fromJson: _nodesFromJson)
   List<Node> nodes = [];
   List<Uri> listeners = [];
   List<Uri> mappedListeners = [];
@@ -73,3 +74,7 @@ Object? _copyValue(Object? value) => switch (value) {
   List<Object?> list => list.map(_copyValue).toList(),
   _ => value,
 };
+
+List<Node> _nodesFromJson(List<dynamic> entries) => [
+  for (final entry in entries) ...nodesFromJson(entry as Map<String, dynamic>),
+];

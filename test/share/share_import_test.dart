@@ -30,9 +30,9 @@ void main() {
       final first = await persisted(firstKey);
       expect(first.networkName, 'alpha');
       expect(first.networkSecret, 's3cret');
-      expect(first.nodes.map((node) => node.id), [
-        'relay.example.com:11010',
-        '::1:443',
+      expect(first.nodes.map((node) => node.name), [
+        'tcp://relay.example.com:11010',
+        'wss://[::1]:443',
       ]);
 
       expect(await addSharedNetwork(sharedNetworkDocument()), 'alpha (2)');
@@ -46,41 +46,84 @@ void main() {
     },
   );
 
+  test('imports every connection in a legacy node share', () async {
+    await seedBookmarks();
+    final document = ShareDocument.decodeRoot({
+      'v': 1,
+      'kind': 'node',
+      'name': 'Old relay',
+      'peers': [
+        {
+          'host': 'relay.example.com',
+          'port': 8787,
+          'protocols': ['tcp', 'wss'],
+          'path': '/ws',
+          'publicKey': 'pin',
+        },
+      ],
+    });
+    expect(await addSharedNode(document), 'tcp://relay.example.com:11451/ws');
+    final bookmarks = persistedBookmarks();
+    expect(bookmarks.map((b) => b.address), [
+      'tcp://relay.example.com:11451/ws',
+      'wss://relay.example.com:11451/ws',
+    ]);
+    expect(bookmarks.map((b) => b.node.publicKey), everyElement('pin'));
+    expect(bookmarks.map((b) => b.name), everyElement('Old relay'));
+  });
+
   test('saves a shared node under a fresh bookmark id', () async {
-    await seedBookmarks([testBookmark('b1', host: 'other.example.com')]);
+    await seedBookmarks([
+      testBookmark(
+        'b1',
+        protocols: [NodeProtocol.quic],
+        host: 'other.example.com',
+      ),
+    ]);
 
     expect(
       await addSharedNode(sharedNodeDocument()),
-      'relay.example.com:11010',
+      'quic://relay.example.com:11010',
     );
     await saved.settled();
 
     final added = saved.bookmarks.value.last;
     expect(added.id, isNot('b1'));
-    expect(added.address, 'relay.example.com:11010');
+    expect(added.address, 'quic://relay.example.com:11010');
     expect(added.name, 'relay.example.com');
     expect(added.node.publicKey, 'public-key');
-    expect(persistedBookmarks().last.address, 'relay.example.com:11010');
+    expect(persistedBookmarks().last.address, 'quic://relay.example.com:11010');
   });
 
   test('saves a shared node under the name it arrived with', () async {
-    await seedBookmarks([testBookmark('b1', host: 'other.example.com')]);
+    await seedBookmarks([
+      testBookmark(
+        'b1',
+        protocols: [NodeProtocol.quic],
+        host: 'other.example.com',
+      ),
+    ]);
 
     expect(
       await addSharedNode(sharedNodeDocument(name: 'Relay One')),
-      'relay.example.com:11010',
+      'quic://relay.example.com:11010',
     );
     await saved.settled();
 
     final added = saved.bookmarks.value.last;
     expect(added.name, 'Relay One');
-    expect(added.address, 'relay.example.com:11010');
+    expect(added.address, 'quic://relay.example.com:11010');
     expect(persistedBookmarks().last.name, 'Relay One');
   });
 
   test('a shared node name never hides a saved address', () async {
     await seedBookmarks([
-      testBookmark('b1', host: 'relay.example.com', port: 11010),
+      testBookmark(
+        'b1',
+        protocols: [NodeProtocol.quic],
+        host: 'relay.example.com',
+        port: 11010,
+      ),
     ]);
 
     expect(await addSharedNode(sharedNodeDocument(name: 'Relay One')), isNull);
@@ -92,7 +135,12 @@ void main() {
 
   test('ignores a shared node whose address is already saved', () async {
     await seedBookmarks([
-      testBookmark('b1', host: 'relay.example.com', port: 11010),
+      testBookmark(
+        'b1',
+        protocols: [NodeProtocol.quic],
+        host: 'relay.example.com',
+        port: 11010,
+      ),
     ]);
 
     expect(await addSharedNode(sharedNodeDocument()), isNull);
@@ -163,10 +211,8 @@ void main() {
         ..networkName = 'alpha'
         ..nodes = [
           Node(
-            id: 'peer',
-            url: Uri.parse('relay.example.com'),
-            port: 11010,
-            protocols: const [NodeProtocol.tcp],
+            url: Uri(scheme: 'tcp', host: 'relay.example.com', port: 11010),
+            name: 'peer',
           ),
         ],
     });
@@ -179,7 +225,7 @@ void main() {
     expect(target.documents.single.name, 'alpha');
     expect(
       target.documents.single.peers.single.address,
-      'relay.example.com:11010',
+      'tcp://relay.example.com:11010',
     );
   });
 
@@ -202,10 +248,8 @@ void main() {
       ..listeners = [...listeners]
       ..nodes = [
         Node(
-          id: 'peer',
-          url: Uri.parse('relay.example.com'),
-          port: 11010,
-          protocols: const [NodeProtocol.tcp],
+          url: Uri(scheme: 'tcp', host: 'relay.example.com', port: 11010),
+          name: 'peer',
         ),
       ];
 
@@ -253,10 +297,8 @@ void main() {
         ..flags = (NetworkFlags()..noTun = true)
         ..nodes = [
           Node(
-            id: 'peer',
-            url: Uri.parse('relay.example.com'),
-            port: 11010,
-            protocols: const [NodeProtocol.tcp],
+            url: Uri(scheme: 'tcp', host: 'relay.example.com', port: 11010),
+            name: 'peer',
           ),
         ],
     });
@@ -268,8 +310,8 @@ void main() {
     );
 
     expect(chosen.documents.single.peers.map((peer) => peer.address), [
-      'relay.example.com:11010',
-      '198.51.100.7:11010',
+      'tcp://relay.example.com:11010',
+      'tcp://198.51.100.7:11010',
     ]);
     expect(chosen.documents.single.configs?.noTun, isTrue);
     expect(
@@ -289,10 +331,8 @@ void main() {
           ..dnsZone = 'home.example.com.')
         ..nodes = [
           Node(
-            id: 'peer',
-            url: Uri.parse('relay.example.com'),
-            port: 11010,
-            protocols: const [NodeProtocol.tcp],
+            url: Uri(scheme: 'tcp', host: 'relay.example.com', port: 11010),
+            name: 'peer',
           ),
         ],
     });
@@ -319,10 +359,8 @@ void main() {
       ..networkName = 'alpha'
       ..nodes = [
         Node(
-          id: 'peer',
-          url: Uri.parse('relay.example.com'),
-          port: 11010,
-          protocols: const [NodeProtocol.tcp],
+          url: Uri(scheme: 'tcp', host: 'relay.example.com', port: 11010),
+          name: 'peer',
         ),
       ];
     await seedWith({'n1': plain()});
@@ -343,10 +381,8 @@ void main() {
         ..listeners = [Uri.parse('tcp://198.51.100.7:11010')]
         ..nodes = [
           Node(
-            id: 'peer',
-            url: Uri.parse('relay.example.com'),
-            port: 11010,
-            protocols: const [NodeProtocol.tcp],
+            url: Uri(scheme: 'tcp', host: 'relay.example.com', port: 11010),
+            name: 'peer',
           ),
         ],
     });
@@ -363,9 +399,9 @@ void main() {
         .singleWhere((entry) => entry.value.networkName == 'gamma (2)')
         .key;
     final imported = await persisted(importedKey);
-    expect(imported.nodes.map((node) => node.id), [
-      'relay.example.com:11010',
-      '198.51.100.7:11010',
+    expect(imported.nodes.map((node) => node.name), [
+      'tcp://relay.example.com:11010',
+      'tcp://198.51.100.7:11010',
     ]);
   });
 
@@ -375,10 +411,12 @@ void main() {
       ..nodes = [
         for (var index = 0; index < peers; index++)
           Node(
-            id: 'peer-$index',
-            url: Uri.parse('relay$index.example.com'),
-            port: 11010,
-            protocols: const [NodeProtocol.tcp],
+            url: Uri(
+              scheme: 'tcp',
+              host: 'relay$index.example.com',
+              port: 11010,
+            ),
+            name: 'peer-$index',
           ),
       ];
 
@@ -413,10 +451,9 @@ void main() {
         ..networkName = 'alpha'
         ..nodes = [
           Node(
-            id: 'peer',
-            url: Uri.parse('https://user:pass@relay.example.com'),
-            port: 443,
-            protocols: const [NodeProtocol.tcp],
+            url: Uri.parse('https://user:pass@relay.example.com')
+                .replace(scheme: 'tcp', port: 443),
+            name: 'peer',
           ),
         ],
     });
@@ -439,7 +476,7 @@ void main() {
     expect(user.documents.single.kind, ShareKind.node);
     expect(
       user.documents.single.peers.single.address,
-      'relay.example.com:11010',
+      'tcp://relay.example.com:11010',
     );
 
     final builtin = resolveShareTarget(
@@ -447,7 +484,10 @@ void main() {
       builtinBookmarks.first.id,
     );
 
-    expect(builtin.documents.single.peers.single.address, '225284.xyz:11010');
+    expect(
+      builtin.documents.single.peers.single.address,
+      'tcp://225284.xyz:11010',
+    );
     expect(
       resolveShareTarget(ShareKind.node, 'missing').reason,
       ShareUnavailableReason.bookmarkMissing,

@@ -71,10 +71,7 @@ void main() {
   for (final xdg in [null, '', 'relative/config']) {
     test('falls back to HOME for XDG_CONFIG_HOME=$xdg', () async {
       final autostart = LinuxAutostart(
-        environment: {
-          'HOME': directory.path,
-          'XDG_CONFIG_HOME': ?xdg,
-        },
+        environment: {'HOME': directory.path, 'XDG_CONFIG_HOME': ?xdg},
       );
       expect(autostart.supported, isTrue);
       await autostart.setEnabled(true);
@@ -88,10 +85,7 @@ void main() {
       () async {
         final relativeConfig = p.relative(directory.path);
         final autostart = LinuxAutostart(
-          environment: {
-            'XDG_CONFIG_HOME': relativeConfig,
-            'HOME': ?home,
-          },
+          environment: {'XDG_CONFIG_HOME': relativeConfig, 'HOME': ?home},
         );
         expect(autostart.supported, isFalse);
         await autostart.setEnabled(true);

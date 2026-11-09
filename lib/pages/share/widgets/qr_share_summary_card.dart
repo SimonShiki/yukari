@@ -78,10 +78,7 @@ class QrShareSummaryCard extends StatelessWidget {
               Wrap(
                 spacing: 4,
                 runSpacing: 4,
-                children: [
-                  for (final protocol in peer.protocols)
-                    MetadataChip.protocol(protocol.name),
-                ],
+                children: [MetadataChip.protocol(peer.url.scheme)],
               ),
           ],
         ),

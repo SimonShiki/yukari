@@ -68,8 +68,10 @@ void main() {
   test('names no TUN and no address, so nothing is applied', () async {
     final command = FakeSystemCommand(runHandler: linuxHost());
 
-    final interface = await _auto(command, attempts: 2)
-        .start('n1', _network(ipv4: ''));
+    final interface = await _auto(
+      command,
+      attempts: 2,
+    ).start('n1', _network(ipv4: ''));
 
     expect(interface, isNull);
     expect(command.runs, isEmpty, reason: 'nothing may be guessed');
@@ -84,8 +86,7 @@ void main() {
       attempts: 5,
       retryDelay: Duration.zero,
       // The instance reports the address it was assigned only after a retry.
-      assignedAddress: (_) async =>
-          reads++ < 2 ? null : '10.126.126.2/24',
+      assignedAddress: (_) async => reads++ < 2 ? null : '10.126.126.2/24',
     );
 
     final interface = await auto.start('n1', _network(ipv4: null));
@@ -114,20 +115,23 @@ void main() {
     expect(command.elevated, isEmpty);
   });
 
-  test('the saved address is the fallback when the provider has none', () async {
-    final command = FakeSystemCommand(runHandler: linuxHost());
-    final auto = MagicDnsAuto(
-      system: linuxSystem(command),
-      attempts: 2,
-      retryDelay: Duration.zero,
-      assignedAddress: (_) async => null,
-    );
+  test(
+    'the saved address is the fallback when the provider has none',
+    () async {
+      final command = FakeSystemCommand(runHandler: linuxHost());
+      final auto = MagicDnsAuto(
+        system: linuxSystem(command),
+        attempts: 2,
+        retryDelay: Duration.zero,
+        assignedAddress: (_) async => null,
+      );
 
-    final interface = await auto.start('n1', _network());
+      final interface = await auto.start('n1', _network());
 
-    expect(interface, 'et_12_xoih');
-    expect(command.elevated, hasLength(1));
-  });
+      expect(interface, 'et_12_xoih');
+      expect(command.elevated, hasLength(1));
+    },
+  );
 
   test('waits for an interface that is still being created', () async {
     var missing = 2;

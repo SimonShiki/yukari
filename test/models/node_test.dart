@@ -1,44 +1,54 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:yukari_core/models/network.dart';
 import 'package:yukari_core/models/node.dart';
 
 void main() {
-  test('a peer host is stored and shown without an authority slash', () {
-    final url = nodeUrlForHost('47.103.14.110');
-
-    expect(url.toString(), '47.103.14.110');
-    expect(nodeHost(url), '47.103.14.110');
-    expect(nodeUrlText(url), '47.103.14.110');
-  });
-
-  test('an IPv6 peer keeps the bracketed form it parses back from', () {
-    final url = nodeUrlForHost('2001:db8::1');
-
-    expect(url.toString(), '//[2001:db8::1]');
-    expect(nodeHost(url), '2001:db8::1');
-    expect(nodeUrlText(url), '//[2001:db8::1]');
-    expect(Uri.parse(nodeUrlText(url)).host, '2001:db8::1');
-  });
-
-  test('an address with a scheme or a path keeps its full form', () {
-    expect(
-      nodeUrlText(Uri.parse('wss://relay.example.com/ws')),
-      'wss://relay.example.com/ws',
-    );
-    // A URL an older import stored as `//host` reads back clean.
-    expect(nodeUrlText(Uri(host: '47.103.14.110')), '47.103.14.110');
-  });
-
-  test('the stored form still builds the endpoint EasyTier is given', () {
+  test('stores only a name, full URL and optional public key', () {
     final node = Node(
-      id: 'relay',
-      url: nodeUrlForHost('47.103.14.110'),
-      port: 11010,
-      protocols: const [NodeProtocol.tcp],
+      name: 'Local websocket',
+      url: Uri.parse('http://localhost:11451/ws?transport=websocket'),
+      publicKey: 'key',
     );
+    expect(node.toJson(), {
+      'name': 'Local websocket',
+      'url': 'http://localhost:11451/ws?transport=websocket',
+      'publicKey': 'key',
+    });
+    expect(node.copy().toJson(), node.toJson());
+  });
 
-    expect(
-      node.endpoint(NodeProtocol.tcp).toString(),
-      'tcp://47.103.14.110:11010',
-    );
+  test('connection identity distinguishes schemes, paths and queries', () {
+    final node = Node(name: 'A', url: Uri.parse('ws://localhost:11451/ws'));
+    expect(sameNode(node, node.copy()..name = 'B'), isTrue);
+    for (final url in [
+      'http://localhost:11451/ws',
+      'ws://localhost:11451/other',
+      'ws://localhost:11451/ws?route=two',
+    ]) {
+      expect(sameNode(node, node.copy()..url = Uri.parse(url)), isFalse);
+    }
+    expect(sameNode(node, node.copy()..publicKey = 'pin'), isTrue);
+  });
+
+  test('expands every legacy protocol and keeps paths, IPv6 and keys', () {
+    final network = Network.fromJson({
+      ...Network().toJson(),
+      'nodes': [
+        {
+          'id': 'Old relay',
+          'url': 'wss://[2001:db8::1]/ws',
+          'port': 8787,
+          'protocols': ['tcp', 'wss'],
+          'publicKey': 'key',
+        },
+      ],
+    });
+    expect(network.nodes.map((node) => node.url.toString()), [
+      'tcp://[2001:db8::1]:11451/ws',
+      'wss://[2001:db8::1]:11451/ws',
+    ]);
+    expect(network.nodes.first.name, 'Old relay');
+    expect(network.nodes.map((node) => node.publicKey), everyElement('key'));
+    expect(network.copy().toJson(), network.toJson());
   });
 }

@@ -353,7 +353,7 @@ void main() {
           added.add(document);
           return 'alpha (2)';
         },
-        addNode: (document) async => 'relay.example.com:11010',
+        addNode: (document) async => 'quic://relay.example.com:11010',
       ),
     );
 
@@ -469,7 +469,7 @@ void main() {
     expect(find.text('alpha'), findsOneWidget);
     expect(find.text('beta'), findsOneWidget);
     // A network row keeps its own detail and invents no address line.
-    expect(find.text('relay.example.com:11010'), findsNothing);
+    expect(find.text('quic://relay.example.com:11010'), findsNothing);
     // No document carries configs, so the bundle says nothing about them.
     expect(find.text(strings.shareIncludesConfigs), findsNothing);
     // One action for the whole bundle, and no per-block progress.
@@ -505,7 +505,7 @@ void main() {
       tester,
       importer: ShareImporter(
         addNetwork: (document) async => fail('a node is not a network'),
-        addNode: (document) async => 'relay.example.com:11010',
+        addNode: (document) async => 'quic://relay.example.com:11010',
       ),
     );
 
@@ -520,7 +520,7 @@ void main() {
     expect(find.text('Relay One'), findsOneWidget);
     expect(find.text('Relay Two'), findsOneWidget);
     // Each row keeps the address under the name it arrived with.
-    expect(find.text('relay.example.com:11010'), findsNWidgets(2));
+    expect(find.text('quic://relay.example.com:11010'), findsNWidgets(2));
   });
 
   testWidgets('the completed node can be saved', (tester) async {
@@ -531,7 +531,7 @@ void main() {
         addNetwork: (document) async => fail('a node is not a network'),
         addNode: (document) async {
           saved.add(document);
-          return 'relay.example.com:11010';
+          return 'quic://relay.example.com:11010';
         },
       ),
     );
@@ -541,7 +541,7 @@ void main() {
 
     expect(find.text(strings.shareKindNode), findsOneWidget);
     // The headline is the address; the details do not repeat it.
-    expect(find.text('relay.example.com:11010'), findsOneWidget);
+    expect(find.text('quic://relay.example.com:11010'), findsOneWidget);
     expect(find.text(strings.sharePreviewProtocols), findsOneWidget);
 
     await tester.tap(find.text(strings.shareReceiveSaveNode));
@@ -550,7 +550,7 @@ void main() {
 
     expect(saved, hasLength(1));
     expect(messages, <String>[
-      strings.shareReceiveNodeSaved('relay.example.com:11010'),
+      strings.shareReceiveNodeSaved('quic://relay.example.com:11010'),
     ]);
     expect(controller.saved.value, isTrue);
   });
@@ -563,7 +563,7 @@ void main() {
         addNetwork: (document) async => fail('a node is not a network'),
         addNode: (document) async {
           saved.add(document);
-          return 'relay.example.com:11010';
+          return 'quic://relay.example.com:11010';
         },
       ),
     );
@@ -573,7 +573,7 @@ void main() {
 
     expect(find.text(strings.shareKindNode), findsOneWidget);
     expect(find.text('Relay One'), findsOneWidget);
-    expect(find.text('relay.example.com:11010'), findsOneWidget);
+    expect(find.text('quic://relay.example.com:11010'), findsOneWidget);
 
     await tester.tap(find.text(strings.shareReceiveSaveNode));
     await tester.pump();

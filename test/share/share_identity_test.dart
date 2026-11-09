@@ -15,13 +15,13 @@ void main() {
     final document = sharedNodeDocument(name: 'Relay One');
 
     expect(shareDisplayTitle(document), 'Relay One');
-    expect(shareDisplaySubtitle(document), 'relay.example.com:11010');
+    expect(shareDisplaySubtitle(document), 'quic://relay.example.com:11010');
   });
 
   test('an unnamed node share is titled by its address and adds nothing', () {
     final document = sharedNodeDocument();
 
-    expect(shareDisplayTitle(document), 'relay.example.com:11010');
+    expect(shareDisplayTitle(document), 'quic://relay.example.com:11010');
     expect(shareDisplaySubtitle(document), isNull);
   });
 }

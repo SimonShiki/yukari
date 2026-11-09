@@ -48,7 +48,7 @@ void main() {
       expect(saved.networks.peek()['n1']!.networkName, 'alpha');
       expect((await persisted('n1')).networkName, 'alpha');
       expect(saved.networkNames(), contains('edit-19'));
-    expect(saved.networkNames(), contains('alpha'));
+      expect(saved.networkNames(), contains('alpha'));
 
       await savedLast.future.timeout(const Duration(seconds: 5));
       await saved.settled();
@@ -78,8 +78,8 @@ void main() {
       controller.update((network) => network.hostname = 'last');
       controller.dispose();
       controller.update((network) => network.hostname = 'ignored');
-    final reopened = editor();
-    expect(reopened.working.peek()!.hostname, 'last');
+      final reopened = editor();
+      expect(reopened.working.peek()!.hostname, 'last');
       await saved.settled();
       expect((await persisted('n1')).hostname, 'last');
     },
@@ -103,10 +103,8 @@ void main() {
         network.networkName = 'draft';
         network.nodes = [
           Node(
-            id: 'peer',
-            url: Uri.parse('relay.example.com'),
-            port: 11010,
-            protocols: [NodeProtocol.tcp],
+            url: Uri(scheme: 'tcp', host: 'relay.example.com', port: 11010),
+            name: 'peer',
           ),
         ];
       });

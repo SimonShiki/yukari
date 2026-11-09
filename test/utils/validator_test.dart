@@ -52,13 +52,19 @@ void main() {
     expect(validateHost('a/b'), isNotNull);
   });
 
-  test('node URLs carry a host but no port, query or fragment', () {
-    expect(validateNodeUrl('example.com'), isNull);
+  test('node URLs contain a scheme, host and port and preserve subpaths', () {
+    expect(validateNodeUrl('example.com'), isNotNull);
     expect(validateNodeUrl('wss://example.com/path'), isNull);
-    expect(validateNodeUrl('1.2.3.4'), isNull);
+    expect(validateNodeUrl('1.2.3.4'), isNotNull);
+    expect(validateNodeUrl('http://localhost:11451/ws'), isNull);
+    expect(validateNodeUrl('wss://[2001:db8::1]/ws?route=one'), isNull);
+    expect(validateNodeUrl('tcp://example.com'), isNotNull);
+    expect(validateNodeUrl('tcp://example.com:65536'), isNotNull);
+    expect(validateNodeUrl('ws://example.com:0/ws'), isNotNull);
+    expect(validateNodeUrl('ws://example.com/ws#fragment'), isNotNull);
     expect(validateNodeUrl(''), isNotNull);
     expect(validateNodeUrl('example.com:11010'), isNotNull);
-    expect(validateNodeUrl('tcp://example.com:11010'), isNotNull);
+    expect(validateNodeUrl('tcp://example.com:11010'), isNull);
     expect(validateNodeUrl('example.com?a=b'), isNotNull);
     expect(validateNodeUrl('example.com/path'), isNotNull);
   });

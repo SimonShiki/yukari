@@ -48,7 +48,7 @@ void main() {
       'beta',
       'gamma',
     ]);
-    expect(decoded.first.peers.single.address, 'relay.example.com:11010');
+    expect(decoded.first.peers.single.address, 'tcp://relay.example.com:11010');
   });
 
   test('a bundle of named nodes keeps every name in order', () {
@@ -63,7 +63,10 @@ void main() {
       'Relay One',
       'Relay Two',
     ]);
-    expect(decoded.first.peers.single.address, 'relay.example.com:11010');
+    expect(
+      decoded.first.peers.single.address,
+      'quic://relay.example.com:11010',
+    );
   });
 
   test('refuses to encode no items, too many, or a mix of kinds', () {
@@ -139,7 +142,10 @@ void main() {
 
     expect(
       () => decodeShareItems(
-        bundleJson([item, {...item, 'padding': 'x' * shareMaxBytes}]),
+        bundleJson([
+          item,
+          {...item, 'padding': 'x' * shareMaxBytes},
+        ]),
       ),
       throwsFormatException,
     );
@@ -152,9 +158,9 @@ void main() {
     ]);
 
     expect(() => ShareDocument.decode(bundle), throwsFormatException);
-    expect(
-      decodeShareItems(bundle).map((document) => document.name),
-      ['alpha', 'beta'],
-    );
+    expect(decodeShareItems(bundle).map((document) => document.name), [
+      'alpha',
+      'beta',
+    ]);
   });
 }

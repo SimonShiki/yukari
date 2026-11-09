@@ -10,7 +10,6 @@ import 'package:yukari/controllers/bookmarks_actions.dart';
 import 'package:yukari/controllers/bookmarks_controller.dart';
 import 'package:yukari/l10n/l10n.dart';
 import 'package:yukari_core/models/bookmark.dart';
-import 'package:yukari_core/models/node.dart';
 import 'package:yukari/pages/bookmarks/bookmarks_page.dart';
 import 'package:yukari/pages/bookmarks/widgets/bookmarks_fab_menu.dart';
 import 'package:yukari/pages/share/qr_share_receive_page.dart';
@@ -23,7 +22,6 @@ import 'package:yukari/utils/bookmark_codec.dart';
 import 'package:yukari/widgets/selection/selection_chrome.dart';
 import 'package:yukari/widgets/selection/selection_fab_menu.dart';
 import 'package:yukari/widgets/selection/selection_switch.dart';
-import 'package:yukari/widgets/metadata_chip/metadata_chip.dart';
 
 import '../bookmarks_fixture.dart';
 import '../networks_fixture.dart';
@@ -201,23 +199,13 @@ void main() {
       expect(find.byType(AlertDialog), findsOneWidget);
 
       await tester.enterText(
-        find.widgetWithText(TextField, 'Name (Optional)'),
+        find.widgetWithText(TextField, 'Peer name'),
         'Mine',
       );
       await tester.enterText(
-        find.widgetWithText(TextField, 'Peer ID'),
-        'peer1',
-      );
-      await tester.enterText(
         find.widgetWithText(TextField, 'URL'),
-        'peer.example.com',
+        'ws://peer.example.com:11451/ws',
       );
-      await tester.enterText(find.widgetWithText(TextField, 'Port'), '11010');
-      // The protocol chips sit below the fold of the scrollable dialog.
-      await tester.ensureVisible(find.text('TCP'));
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('TCP'));
-      await tester.pumpAndSettle();
       await tester.tap(find.widgetWithText(FilledButton, 'Save'));
       await tester.pumpAndSettle();
       await settleStores();
@@ -226,6 +214,10 @@ void main() {
       expect(find.byType(SearchBar), findsOneWidget);
       expect(find.text('My Bookmarks'), findsOneWidget);
       expect(persistedBookmarks().single.name, 'Mine');
+      expect(
+        persistedBookmarks().single.node.url.toString(),
+        'ws://peer.example.com:11451/ws',
+      );
       expect(persistedBookmarks().single.id, isNot('peer1'));
     });
   });
@@ -289,7 +281,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.byType(AlertDialog), findsOneWidget);
-      expect(find.text('Peer ID cannot be empty'), findsOneWidget);
+      expect(find.text('Peer name cannot be empty'), findsOneWidget);
       expect(persistedBookmarks(), isEmpty);
 
       await tester.tap(find.widgetWithText(TextButton, 'Cancel'));
@@ -313,7 +305,7 @@ void main() {
       expect(find.bySemanticsLabel('Edit One'), findsOneWidget);
       semantics.dispose();
       expect(find.text('#relay'), findsOneWidget);
-      expect(find.text('relay.example.com:11010'), findsOneWidget);
+      expect(find.text('tcp://relay.example.com:11010'), findsOneWidget);
 
       // Tapping the row opens the editor, labelled for accessibility.
       await tester.tap(find.text('One'));
@@ -322,7 +314,7 @@ void main() {
       expect(find.text('Edit Bookmark'), findsOneWidget);
 
       await tester.enterText(
-        find.widgetWithText(TextField, 'Name (Optional)'),
+        find.widgetWithText(TextField, 'Peer name'),
         'Renamed',
       );
       await tester.tap(find.widgetWithText(FilledButton, 'Save'));
@@ -401,9 +393,7 @@ void main() {
     });
   });
 
-  testWidgets('tones the protocol and tag chips with the metadata tokens', (
-    tester,
-  ) async {
+  testWidgets('tones tag chips with the metadata tokens', (tester) async {
     await tester.runAsync(() async {
       await seedBookmarks([
         testBookmark(
@@ -421,19 +411,8 @@ void main() {
         find.ancestor(of: find.text(label), matching: find.byType(Badge)),
       );
 
-      expect(
-        tester
-            .widget<MetadataChip>(find.widgetWithText(MetadataChip, 'TCP'))
-            .tone,
-        MetadataChipTone.protocol,
-      );
-      expect(chip('TCP').backgroundColor, colors.secondaryContainer);
-      expect(chip('TCP').textColor, colors.onSecondaryContainer);
       expect(chip('#relay').backgroundColor, colors.surfaceContainerHighest);
       expect(chip('#relay').textColor, colors.onSurfaceVariant);
-      // The regression: a bare Badge took these, so `TCP` read as a failure.
-      expect(chip('TCP').backgroundColor, isNot(colors.errorContainer));
-      expect(chip('TCP').backgroundColor, isNot(colors.error));
     });
   });
 
@@ -631,7 +610,7 @@ void main() {
       await settleStores();
 
       expect(find.text('Add to which network?'), findsNothing);
-      expect((await persisted('n1')).nodes.single.id, 'u1');
+      expect((await persisted('n1')).nodes.single.name, 'u1');
       expect(messages.last, 'Added to alpha');
     });
   });
@@ -703,9 +682,7 @@ void main() {
     tester,
   ) async {
     await tester.runAsync(() async {
-      await seedBookmarks([
-        testBookmark('u1', name: 'One', category: 'Home'),
-      ]);
+      await seedBookmarks([testBookmark('u1', name: 'One', category: 'Home')]);
       await pumpPage(tester);
       expect(find.byTooltip(strings.selectionEnter), findsOneWidget);
 
@@ -759,7 +736,7 @@ void main() {
       expect(
         find.descendant(
           of: find.byType(M3EBottomSheet),
-          matching: find.text('peer.example.com:11010'),
+          matching: find.text('tcp://peer.example.com:11010'),
         ),
         findsOneWidget,
       );
@@ -777,7 +754,7 @@ void main() {
       await tester.tap(find.text('Show QR code'));
       await tester.pumpAndSettle();
       expect(find.byType(QrShareSendPage), findsOneWidget);
-      expect(find.text('peer.example.com:11010'), findsOneWidget);
+      expect(find.text('tcp://peer.example.com:11010'), findsOneWidget);
       expect(find.byType(BookmarksPage), findsNothing);
 
       // Back returns to the page that opened it.
@@ -792,8 +769,8 @@ void main() {
       final copied = clipboard.singleWhere(
         (call) => call.method == 'Clipboard.setData',
       );
-      expect((copied.arguments as Map)['text'], 'peer.example.com:11010');
-      expect(messages.last, 'Copied peer.example.com:11010');
+      expect((copied.arguments as Map)['text'], 'tcp://peer.example.com:11010');
+      expect(messages.last, 'Copied tcp://peer.example.com:11010');
 
       await openShare(tester, 'Alpha');
       await tester.tap(find.text('Export as JSON'));
@@ -807,9 +784,7 @@ void main() {
     });
   });
 
-  testWidgets('a tap on a row in selection toggles it', (
-    tester,
-  ) async {
+  testWidgets('a tap on a row in selection toggles it', (tester) async {
     await tester.runAsync(() async {
       await seedBookmarks([
         testBookmark('u1', name: 'One'),
@@ -841,10 +816,7 @@ void main() {
       // The check sits on its row's centre line, the same place the network
       // card puts it.
       final item = tester.getCenter(
-        find.ancestor(
-          of: find.text('One'),
-          matching: find.byType(M3EListItem),
-        ),
+        find.ancestor(of: find.text('One'), matching: find.byType(M3EListItem)),
       );
       expect(
         tester.getCenter(find.byType(SelectionCheck).first).dy,
@@ -920,10 +892,7 @@ void main() {
 
       // The selection bar has no search field, so the list moves up.
       expect(barBottom(), lessThan(withSearch));
-      expect(
-        tester.getTopLeft(find.text('One')).dy,
-        greaterThan(barBottom()),
-      );
+      expect(tester.getTopLeft(find.text('One')).dy, greaterThan(barBottom()));
     });
   });
 
@@ -1016,9 +985,7 @@ void main() {
   Bookmark sharedBuiltinNode() => sharedNode(
     id: 'shared.example.com',
     name: 'Shared One',
-    host: 'shared.example.com',
-    port: 11010,
-    protocols: const [NodeProtocol.tcp],
+    url: 'tcp://shared.example.com:11010',
   );
 
   testWidgets('a selection of built-in nodes keeps delete off', (tester) async {
@@ -1040,7 +1007,10 @@ void main() {
   testWidgets('a batch delete leaves the built-in nodes alone', (tester) async {
     await tester.runAsync(() async {
       await seedBookmarks([testBookmark('u1', name: 'One')]);
-      final controller = await pumpPage(tester, builtins: [sharedBuiltinNode()]);
+      final controller = await pumpPage(
+        tester,
+        builtins: [sharedBuiltinNode()],
+      );
       await tester.tap(find.byTooltip(strings.selectionEnter));
       await tester.pumpAndSettle();
       await tester.tap(find.text('One'));

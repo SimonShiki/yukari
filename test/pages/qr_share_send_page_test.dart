@@ -51,10 +51,8 @@ void main() {
     ..networkSecret = 's3cret'
     ..nodes = [
       Node(
-        id: 'relay.example.com:11010',
-        url: Uri.parse('relay.example.com'),
-        port: 11010,
-        protocols: const [NodeProtocol.tcp],
+        url: Uri(scheme: 'tcp', host: 'relay.example.com', port: 11010),
+        name: 'tcp://relay.example.com:11010',
       ),
     ];
 
@@ -477,7 +475,7 @@ void main() {
       ),
     );
 
-    expect(find.text('relay.example.com:11010'), findsOneWidget);
+    expect(find.text('quic://relay.example.com:11010'), findsOneWidget);
     expect(find.text(strings.shareKindNode), findsOneWidget);
     expect(find.text(strings.shareKindNetwork), findsNothing);
     expect(find.text(strings.shareQrSecretWarning), findsNothing);
@@ -499,7 +497,7 @@ void main() {
     );
 
     expect(find.text('Relay One'), findsOneWidget);
-    expect(find.text('relay.example.com:11010'), findsOneWidget);
+    expect(find.text('quic://relay.example.com:11010'), findsOneWidget);
     expect(find.text(strings.shareKindNode), findsOneWidget);
     expect(find.byType(QrMatrixView), findsOneWidget);
   });
@@ -529,7 +527,7 @@ void main() {
     expect(find.text('Relay One'), findsOneWidget);
     expect(find.text('Relay Two'), findsOneWidget);
     // Each row keeps the address under the name it was saved with.
-    expect(find.text('relay.example.com:11010'), findsNWidgets(2));
+    expect(find.text('quic://relay.example.com:11010'), findsNWidgets(2));
   });
 
   testWidgets('the options card is absent when nothing can be added', (
@@ -620,7 +618,7 @@ void main() {
     expect(find.text('beta'), findsOneWidget);
     // A network row keeps its own detail and invents no address line.
     expect(find.text(strings.shareSendPeerCount(1)), findsNWidgets(2));
-    expect(find.text('relay.example.com:11010'), findsNothing);
+    expect(find.text('tcp://relay.example.com:11010'), findsNothing);
     // Neither document carries configs, so the bundle says nothing about them.
     expect(find.text(strings.shareIncludesConfigs), findsNothing);
     expect(find.text(strings.shareQrSecretWarning), findsOneWidget);

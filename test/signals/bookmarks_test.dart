@@ -78,22 +78,42 @@ void main() {
     );
   });
 
-  test('a failed import rolls back bookmarks and extensions, then can retry', () async {
-    final store = temporaryBookmarkStore();
-    await store.save(BookmarkDocument(bookmarks: [testBookmark('b1')], extensions: const {'saved': 1}));
-    await init(store);
-    addTearDown(dispose);
-    await store.file.delete();
-    await Directory(store.file.path).create();
+  test(
+    'a failed import rolls back bookmarks and extensions, then can retry',
+    () async {
+      final store = temporaryBookmarkStore();
+      await store.save(
+        BookmarkDocument(
+          bookmarks: [testBookmark('b1')],
+          extensions: const {'saved': 1},
+        ),
+      );
+      await init(store);
+      addTearDown(dispose);
+      await store.file.delete();
+      await Directory(store.file.path).create();
 
-    await expectLater(addBookmarks([testBookmark('b2', host: 'new.example.com')], extensions: const {'new': 2}), throwsA(isA<FileSystemException>()));
+      await expectLater(
+        addBookmarks(
+          [testBookmark('b2', host: 'new.example.com')],
+          extensions: const {'new': 2},
+        ),
+        throwsA(isA<FileSystemException>()),
+      );
 
-    expect(bookmarks.peek().map((bookmark) => bookmark.id), ['b1']);
-    expect(bookmarkExtensions.peek(), {'saved': 1});
-    await Directory(store.file.path).delete();
-    expect(await addBookmarks([testBookmark('b2', host: 'new.example.com')], extensions: const {'new': 2}), 1);
-    final document = await store.load();
-    expect(document.bookmarks.map((bookmark) => bookmark.id), ['b1', 'b2']);
-    expect(document.extensions, {'saved': 1, 'new': 2});
-  });
+      expect(bookmarks.peek().map((bookmark) => bookmark.id), ['b1']);
+      expect(bookmarkExtensions.peek(), {'saved': 1});
+      await Directory(store.file.path).delete();
+      expect(
+        await addBookmarks(
+          [testBookmark('b2', host: 'new.example.com')],
+          extensions: const {'new': 2},
+        ),
+        1,
+      );
+      final document = await store.load();
+      expect(document.bookmarks.map((bookmark) => bookmark.id), ['b1', 'b2']);
+      expect(document.extensions, {'saved': 1, 'new': 2});
+    },
+  );
 }

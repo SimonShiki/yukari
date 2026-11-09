@@ -137,13 +137,18 @@ void main() {
       (Icons.edit, 'Edit'),
       (Icons.delete, 'Delete'),
     ]) {
-      final iconFinder = find.descendant(of: panel, matching: find.byIcon(icon));
+      final iconFinder = find.descendant(
+        of: panel,
+        matching: find.byIcon(icon),
+      );
       expect(iconFinder, findsOneWidget, reason: '$label icon');
       expect(
         tester.getCenter(iconFinder).dx,
         lessThan(
           tester
-              .getTopLeft(find.descendant(of: panel, matching: find.text(label)))
+              .getTopLeft(
+                find.descendant(of: panel, matching: find.text(label)),
+              )
               .dx,
         ),
         reason: '$label icon leads its label',

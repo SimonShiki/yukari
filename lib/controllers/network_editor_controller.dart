@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:signals/signals.dart';
+import 'package:uuid/uuid.dart';
 
 import '../constants/builtin_bookmarks.dart';
 
@@ -91,7 +92,7 @@ class NetworkEditorController {
 
   final _fields = <_FieldSignal<Object?>>[];
   final _selects = <String, ReadonlySignal<Object?>>{};
-  final _bookmarkFields = <(String host, int port), _NodeFlag>{};
+  final _bookmarkFields = <Uri, _NodeFlag>{};
   bool _disposed = false;
 
   /// Pushes every bound primitive, but only when its own value changed.
@@ -135,9 +136,13 @@ class NetworkEditorController {
     change(next);
     next.updatedAt = DateTime.now().toUtc();
     working.value = next;
-    stored.scheduleNetworkEdit(id, next, onError: (error) {
-      if (!_disposed) showMessage(l10n.value.controllerSave('$error'));
-    });
+    stored.scheduleNetworkEdit(
+      id,
+      next,
+      onError: (error) {
+        if (!_disposed) showMessage(l10n.value.controllerSave('$error'));
+      },
+    );
   }
 
   /// Fills the optional network secret with a fresh random one.
@@ -149,7 +154,7 @@ class NetworkEditorController {
     try {
       if (existing == null) {
         await saved.addBookmark(
-          Bookmark(id: node.id, node: node.copy(), name: node.id),
+          Bookmark(id: const Uuid().v4(), node: node.copy(), name: node.name),
         );
         showMessage(l10n.value.bookmarksSaved);
       } else {

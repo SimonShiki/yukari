@@ -29,14 +29,14 @@ extension NetworkEditorLists on NetworkEditorController {
     _syncShown(list);
   }
 
-  /// Adds [peer], or replaces the peer stored under [previousId] at its
-  /// position: an edit may change the id itself. Without [previousId], a
-  /// peer with the same id is replaced.
-  void setPeer(Node peer, {String? previousId}) {
+  /// Adds [peer], or replaces the peer stored under [previousName] at its
+  /// position: an edit may change the name itself. Without [previousName], a
+  /// peer with the same name is replaced.
+  void setPeer(Node peer, {String? previousName}) {
     update((network) {
       final peers = [...network.nodes];
-      final id = previousId ?? peer.id;
-      final index = peers.indexWhere((existing) => existing.id == id);
+      final name = previousName ?? peer.name;
+      final index = peers.indexWhere((existing) => existing.name == name);
       if (index < 0) {
         peers.add(peer);
       } else {
@@ -47,12 +47,12 @@ extension NetworkEditorLists on NetworkEditorController {
     nodes.value = List.unmodifiable(working.peek()!.nodes);
   }
 
-  /// Removes the peer stored under [id].
-  void removePeer(String id) {
+  /// Removes the peer stored under [name].
+  void removePeer(String name) {
     update(
       (network) => network.nodes = [
         for (final peer in network.nodes)
-          if (peer.id != id) peer,
+          if (peer.name != name) peer,
       ],
     );
     nodes.value = List.unmodifiable(working.peek()!.nodes);
@@ -63,8 +63,8 @@ extension NetworkEditorLists on NetworkEditorController {
     update((network) {
       final peers = [...network.nodes];
       for (final bookmark in picked) {
-        if (peers.any((peer) => peer.id == bookmark.node.id)) continue;
-        peers.add(bookmark.node.copy());
+        if (peers.any((peer) => sameNode(peer, bookmark.node))) continue;
+        peers.add(copyNodeForNetwork(bookmark.node, peers));
       }
       network.nodes = peers;
     });

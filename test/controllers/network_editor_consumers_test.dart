@@ -72,7 +72,7 @@ void main() {
 
     final network = await persisted('n1');
     expect(network.hostname, 'draft-host');
-    expect(network.nodes.single.id, bookmark.node.id);
+    expect(network.nodes.single.name, bookmark.node.name);
   });
 
   test('starting the service flushes edits before invoking the OS', () async {

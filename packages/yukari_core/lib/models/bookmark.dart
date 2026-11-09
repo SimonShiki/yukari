@@ -47,9 +47,9 @@ final class Bookmark {
   /// The name shown in lists, falling back to the node's host.
   String get displayName {
     final name = this.name?.trim();
-    return name == null || name.isEmpty ? nodeHost(node.url) : name;
+    return name == null || name.isEmpty ? node.url.host : name;
   }
 
-  /// `host:port`, the address a list shows under the name.
-  String get address => nodeHostPort(node);
+  /// The complete connection URL, including its scheme and path.
+  String get address => node.url.toString();
 }

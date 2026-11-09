@@ -84,17 +84,13 @@ bool isValidDnsZoneText(String value) =>
 String? validateDnsZone(String value) =>
     isValidDnsZoneText(value) ? null : l10n.value.validationDns;
 
-/// A peer address without port, e.g. `example.com` or `wss://example.com/path`.
+/// A complete peer connection URL, including an optional path and query.
 String? validateNodeUrl(String value) {
   final url = Uri.tryParse(value.trim());
-  if (url == null ||
-      url.hasPort ||
-      url.hasQuery ||
-      url.hasFragment ||
-      (url.hasScheme && url.host.isEmpty)) {
+  if (url == null || !isValidNodeUrl(value.trim())) {
     return l10n.value.validationNodeUrl;
   }
-  return validateHost(nodeHost(url));
+  return validateHost(url.host);
 }
 
 String? validateSocks5Proxy(String value) {

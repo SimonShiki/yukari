@@ -31,10 +31,10 @@ void main() {
 
     expect(controller.loaded.value, isTrue);
     expect(controller.isRunning.value, isTrue);
-    expect(
-      controller.peerCards.value.map((card) => card.hostname),
-      ['me', 'peer-b'],
-    );
+    expect(controller.peerCards.value.map((card) => card.hostname), [
+      'me',
+      'peer-b',
+    ]);
     expect(controller.peerCards.value.first.isSelf, isTrue);
     expect(controller.peerCards.value.last.tags, hasLength(2));
     expect(controller.peerCards.value.last.latencyMs, 5);
@@ -147,33 +147,34 @@ void main() {
     expect(controller.isExpanded(entry), isFalse);
   });
 
-  testWidgets('setActive refreshes now, then on the interval only while active', (
-    tester,
-  ) async {
-    await tester.runAsync(seedNetworks);
-    final backend = CountingBackend(collected: () => {'alpha': _info});
-    final controller = NetworkInstanceController(
-      id: 'n1',
-      backend: backend,
-      refreshInterval: const Duration(seconds: 2),
-    );
-    addTearDown(controller.dispose);
+  testWidgets(
+    'setActive refreshes now, then on the interval only while active',
+    (tester) async {
+      await tester.runAsync(seedNetworks);
+      final backend = CountingBackend(collected: () => {'alpha': _info});
+      final controller = NetworkInstanceController(
+        id: 'n1',
+        backend: backend,
+        refreshInterval: const Duration(seconds: 2),
+      );
+      addTearDown(controller.dispose);
 
-    controller.setActive(true);
-    await tester.pump();
-    expect(backend.collects, 1);
-    expect(controller.loaded.value, isTrue);
+      controller.setActive(true);
+      await tester.pump();
+      expect(backend.collects, 1);
+      expect(controller.loaded.value, isTrue);
 
-    await tester.pump(const Duration(seconds: 2));
-    expect(backend.collects, 2);
+      await tester.pump(const Duration(seconds: 2));
+      expect(backend.collects, 2);
 
-    await tester.pump(const Duration(seconds: 2));
-    expect(backend.collects, 3);
+      await tester.pump(const Duration(seconds: 2));
+      expect(backend.collects, 3);
 
-    controller.setActive(false);
-    await tester.pump(const Duration(seconds: 4));
-    expect(backend.collects, 3);
-  });
+      controller.setActive(false);
+      await tester.pump(const Duration(seconds: 4));
+      expect(backend.collects, 3);
+    },
+  );
 
   test('disposing during a refresh writes no disposed signal', () async {
     await seedNetworks();

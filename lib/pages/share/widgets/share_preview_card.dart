@@ -179,8 +179,7 @@ class SharePreviewCard extends StatelessWidget {
   /// The labeled facts of [share], in the order the app reads them.
   List<(String, String)> _details(ShareDocument share, AppLocalizations l10n) {
     final protocols = share.peers
-        .expand((peer) => peer.protocols)
-        .map((protocol) => protocol.name.toUpperCase())
+        .map((peer) => peer.url.scheme.toUpperCase())
         .toSet()
         .join(' · ');
     return [

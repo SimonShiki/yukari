@@ -344,10 +344,8 @@ void main() {
     }
 
     final node = Node(
-      id: 'peer1',
-      url: Uri.parse('relay.example.com'),
-      port: 11010,
-      protocols: const [NodeProtocol.tcp],
+      url: Uri(scheme: 'tcp', host: 'relay.example.com', port: 11010),
+      name: 'peer1',
     );
 
     testWidgets('a network share link streams the saved network', (
@@ -428,7 +426,7 @@ void main() {
       await pumpApp(tester, size: const Size(400, 800));
 
       expect(find.byType(QrShareSendPage), findsOneWidget);
-      expect(find.text('relay.example.com:11010'), findsOneWidget);
+      expect(find.text('tcp://relay.example.com:11010'), findsOneWidget);
       expect(find.byType(NavigationBar), findsNothing);
 
       await tester.pumpWidget(const SizedBox.shrink());

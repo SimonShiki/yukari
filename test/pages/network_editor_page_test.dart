@@ -67,7 +67,9 @@ void main() {
     await saving(tester, () => tester.enterText(finder, text));
   }
 
-  testWidgets('accepted text stays responsive and flushes when backgrounded', (tester) async {
+  testWidgets('accepted text stays responsive and flushes when backgrounded', (
+    tester,
+  ) async {
     await tester.runAsync(seedNetworks);
     await pumpEditor(tester);
     final hostname = field(strings.networkHostname);
@@ -77,12 +79,21 @@ void main() {
     expect(saved.networks.peek()['n1']!.hostname, isNull);
     expect(find.text('draft-host'), findsOneWidget);
 
-    addTearDown(() => WidgetsBinding.instance.handleAppLifecycleStateChanged(AppLifecycleState.resumed));
+    addTearDown(
+      () => WidgetsBinding.instance.handleAppLifecycleStateChanged(
+        AppLifecycleState.resumed,
+      ),
+    );
     await tester.runAsync(() async {
-      WidgetsBinding.instance.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
+      WidgetsBinding.instance.handleAppLifecycleStateChanged(
+        AppLifecycleState.inactive,
+      );
       await saved.settled();
     });
-    expect((await tester.runAsync(() => persisted('n1')))!.hostname, 'draft-host');
+    expect(
+      (await tester.runAsync(() => persisted('n1')))!.hostname,
+      'draft-host',
+    );
   });
 
   testWidgets('shows the saved configuration', (tester) async {
@@ -94,10 +105,8 @@ void main() {
           ipv4: '10.144.0.2/24',
           nodes: [
             Node(
-              id: 'peer-a',
-              url: Uri.parse('relay.example.com'),
-              port: 11010,
-              protocols: const [NodeProtocol.tcp],
+              url: Uri(scheme: 'tcp', host: 'relay.example.com', port: 11010),
+              name: 'peer-a',
             ),
           ],
         ),
@@ -146,7 +155,10 @@ void main() {
 
     expect(controller.working.value!.networkName, 'renamed');
     expect(find.text(strings.networkEditNamed('renamed')), findsOneWidget);
-    expect((await tester.runAsync(() => persisted('n1')))!.networkName, 'renamed');
+    expect(
+      (await tester.runAsync(() => persisted('n1')))!.networkName,
+      'renamed',
+    );
   });
 
   testWidgets('an empty or duplicate name is rejected and never saved', (
@@ -167,7 +179,9 @@ void main() {
     expect(find.text(strings.networkEditNamed('alpha')), findsOneWidget);
   });
 
-  testWidgets('the DHCP switch saves and unlocks the IPv4 field', (tester) async {
+  testWidgets('the DHCP switch saves and unlocks the IPv4 field', (
+    tester,
+  ) async {
     await tester.runAsync(seedNetworks);
     await pumpEditor(tester);
     expect(flagOf(tester, strings.networkIpv4, (f) => f.enabled), isFalse);
@@ -184,11 +198,11 @@ void main() {
     expect(controller.working.value!.ipv4, '10.144.0.2/24');
   });
 
-  testWidgets('the DHCP subnet field round-trips a usable network', (tester) async {
+  testWidgets('the DHCP subnet field round-trips a usable network', (
+    tester,
+  ) async {
     await tester.runAsync(
-      () => seedWith({
-        'n1': seededNetwork(dhcpIpv4Cidr: '192.168.100.0/24'),
-      }),
+      () => seedWith({'n1': seededNetwork(dhcpIpv4Cidr: '192.168.100.0/24')}),
     );
     await pumpEditor(tester);
 
@@ -222,7 +236,9 @@ void main() {
     expect(controller.working.value!.dhcpIpv4Cidr, '192.168.100.0/24');
   });
 
-  testWidgets('an invalid IPv4 is rejected, and fixing it saves', (tester) async {
+  testWidgets('an invalid IPv4 is rejected, and fixing it saves', (
+    tester,
+  ) async {
     await tester.runAsync(seedNetworks);
     await pumpEditor(tester);
     // DHCP keeps the address field disabled until it is turned off.
@@ -241,7 +257,9 @@ void main() {
     expect(controller.working.value!.ipv4, '10.144.0.2/24');
   });
 
-  testWidgets('invalid input and its error survive a tab switch', (tester) async {
+  testWidgets('invalid input and its error survive a tab switch', (
+    tester,
+  ) async {
     await tester.runAsync(seedNetworks);
     await pumpEditor(tester);
     await saving(tester, () => tester.tap(find.text(strings.networkDhcp)));
@@ -266,7 +284,6 @@ void main() {
     await switchTab(tester, strings.networkAdvanced);
     await expandSection(tester, strings.advancedNetworkFlags);
     final mtu = field(strings.advancedMtuHelper);
-
 
     await tester.enterText(mtu, '100');
     await tester.pumpAndSettle();
@@ -427,56 +444,57 @@ void main() {
     expect(find.text(strings.advancedDisableP2p), findsOneWidget);
   });
 
-  testWidgets('a change elsewhere rebuilds the flags and security sections not', (
-    tester,
-  ) async {
-    await tester.runAsync(seedNetworks);
-    controller = NetworkEditorController(id: 'n1', showMessage: (_) {});
-    addTearDown(controller.dispose);
-    // Alone, without a Form around them, so only their own subscriptions can
-    // make them rebuild.
-    await pumpApp(
-      tester,
-      Scaffold(
-        body: SingleChildScrollView(
-          child: Column(
-            children: [
-              AdvancedFlagsSection(controller: controller),
-              AdvancedSecuritySection(controller: controller),
-            ],
+  testWidgets(
+    'a change elsewhere rebuilds the flags and security sections not',
+    (tester) async {
+      await tester.runAsync(seedNetworks);
+      controller = NetworkEditorController(id: 'n1', showMessage: (_) {});
+      addTearDown(controller.dispose);
+      // Alone, without a Form around them, so only their own subscriptions can
+      // make them rebuild.
+      await pumpApp(
+        tester,
+        Scaffold(
+          body: SingleChildScrollView(
+            child: Column(
+              children: [
+                AdvancedFlagsSection(controller: controller),
+                AdvancedSecuritySection(controller: controller),
+              ],
+            ),
           ),
         ),
-      ),
-    );
+      );
 
-    final mtu = find.ancestor(
-      of: find.text(strings.advancedMtuHelper),
-      matching: find.byType(EditorTextField),
-    );
-    final security = find.ancestor(
-      of: find.text(strings.advancedSecureMode),
-      matching: find.byType(SwitchSegment),
-    );
-    final mtuBefore = tester.widget<EditorTextField>(mtu);
-    final securityBefore = tester.widget<SwitchSegment>(security);
+      final mtu = find.ancestor(
+        of: find.text(strings.advancedMtuHelper),
+        matching: find.byType(EditorTextField),
+      );
+      final security = find.ancestor(
+        of: find.text(strings.advancedSecureMode),
+        matching: find.byType(SwitchSegment),
+      );
+      final mtuBefore = tester.widget<EditorTextField>(mtu);
+      final securityBefore = tester.widget<SwitchSegment>(security);
 
-    await tester.runAsync(() async {
-      controller.update((n) => n.flags.disableP2p = true);
-      await saved.settled();
-    });
-    await tester.pump(const Duration(milliseconds: 100));
+      await tester.runAsync(() async {
+        controller.update((n) => n.flags.disableP2p = true);
+        await saved.settled();
+      });
+      await tester.pump(const Duration(milliseconds: 100));
 
-    expect(
-      identical(tester.widget<EditorTextField>(mtu), mtuBefore),
-      isTrue,
-      reason: 'the flags section rebuilt',
-    );
-    expect(
-      identical(tester.widget<SwitchSegment>(security), securityBefore),
-      isTrue,
-      reason: 'the security section rebuilt',
-    );
-  });
+      expect(
+        identical(tester.widget<EditorTextField>(mtu), mtuBefore),
+        isTrue,
+        reason: 'the flags section rebuilt',
+      );
+      expect(
+        identical(tester.widget<SwitchSegment>(security), securityBefore),
+        isTrue,
+        reason: 'the security section rebuilt',
+      );
+    },
+  );
 
   testWidgets('secure mode generates a key pair and can hide it again', (
     tester,
@@ -632,10 +650,8 @@ void main() {
         'n1': seededNetwork(
           nodes: [
             Node(
-              id: 'peer-a',
-              url: Uri.parse('relay.example.com'),
-              port: 11010,
-              protocols: const [NodeProtocol.tcp],
+              url: Uri(scheme: 'tcp', host: 'relay.example.com', port: 11010),
+              name: 'peer-a',
             ),
           ],
           listeners: [Uri.parse('tcp://0.0.0.0:11010')],
@@ -667,16 +683,14 @@ void main() {
     expect(hasInvalidInput(editorGuardKey('n1')), isFalse);
   });
 
-  testWidgets('peer rows show protocol chips, not endpoint URLs', (tester) async {
+  testWidgets('peer rows show their full connection URLs', (tester) async {
     await tester.runAsync(
       () => seedWith({
         'n1': seededNetwork(
           nodes: [
             Node(
-              id: 'peer-a',
-              url: Uri.parse('relay.example.com'),
-              port: 11010,
-              protocols: const [NodeProtocol.tcp],
+              url: Uri(scheme: 'tcp', host: 'relay.example.com', port: 11010),
+              name: 'peer-a',
             ),
           ],
         ),
@@ -685,16 +699,7 @@ void main() {
     await pumpEditor(tester);
 
     expect(find.text('peer-a'), findsOneWidget);
-    expect(find.textContaining('relay.example.com'), findsNothing);
-    expect(find.text('TCP'), findsOneWidget);
-
-    final colors = Theme.of(tester.element(find.text('TCP'))).colorScheme;
-    final chip = tester.widget<Badge>(
-      find.ancestor(of: find.text('TCP'), matching: find.byType(Badge)),
-    );
-    expect(chip.backgroundColor, colors.secondaryContainer);
-    expect(chip.textColor, colors.onSecondaryContainer);
-    expect(chip.backgroundColor, isNot(colors.error));
+    expect(find.text('tcp://relay.example.com:11010'), findsOneWidget);
   });
 
   testWidgets('the peer and listener footers are labeled, end aligned', (
@@ -727,9 +732,7 @@ void main() {
     await expandSection(tester, strings.advancedMappedListeners);
 
     expect(
-      find.text(
-        strings.networkAddListeners(strings.advancedMappedListeners),
-      ),
+      find.text(strings.networkAddListeners(strings.advancedMappedListeners)),
       findsOneWidget,
     );
   });

@@ -2,81 +2,87 @@ import 'package:json_annotation/json_annotation.dart';
 
 part 'node.g.dart';
 
-/// The host of a peer address, which has no scheme when written bare, such
-/// as `example.com`.
-String nodeHost(Uri uri) => uri.host.isNotEmpty ? uri.host : uri.path;
+/// Transport choices for listeners and EasyTier's default protocol.
+enum NodeProtocol { tcp, udp, ws, wss, quic, wg }
 
-/// Whether [host] is an IPv6 literal, which only parses back inside brackets.
-bool _isIpv6Literal(String host) => host.contains(':');
-
-/// The URL stored for a peer [host] typed without a scheme, as a config's
-/// `tcp://host:11010` peer reduces to.
-///
-/// A bare host parses as a path; an IPv6 literal cannot, so it keeps the
-/// bracketed authority-only form `//[::1]`.
-Uri nodeUrlForHost(String host) =>
-    _isIpv6Literal(host) ? Uri(host: host) : Uri.parse(host);
-
-/// The peer address as an editor shows it, and as [nodeUrlForHost] stores it:
-/// without the `//` an authority-only URI would otherwise print.
-///
-/// Addresses with a scheme, a path or an IPv6 host keep their full form,
-/// which is what `Uri.parse` reads back unchanged.
-String nodeUrlText(Uri uri) {
-  if (uri.host.isEmpty) return uri.path;
-  if (uri.scheme.isEmpty && uri.path.isEmpty && !_isIpv6Literal(uri.host)) {
-    return uri.host;
+/// Whether a connection URL has a scheme, a host and a usable port.
+/// Paths and queries belong to the connection; fragments do not.
+bool isValidNodeUrl(String value) {
+  final url = Uri.tryParse(value);
+  if (url == null ||
+      RegExp(r'^[A-Za-z][A-Za-z0-9+.-]*://[^/?#]*:0+(?=[/?#]|$)')
+          .hasMatch(value)) {
+    return false;
   }
-  return uri.toString();
+  try {
+    return url.hasScheme &&
+        url.hasAuthority &&
+        url.host.isNotEmpty &&
+        !url.hasFragment &&
+        !RegExp(r'\s').hasMatch(value) &&
+        ((url.hasPort && url.port > 0 && url.port <= 65535) ||
+            (!url.hasPort &&
+                {'http', 'https', 'ws', 'wss'}.contains(url.scheme)));
+  } on FormatException {
+    return false;
+  }
 }
 
-/// The host and port that identify a node's peer, whatever the node is named
-/// or its address is displayed as.
-///
-/// A record, so peer identity never depends on how an address is written.
-(String host, int port) nodeIdentity(Node node) =>
-    (nodeHost(node.url), node.port);
+/// A connection's complete address. Names and public key pins are metadata.
+Uri nodeIdentity(Node node) => node.url;
 
-/// The `host:port` an address shows under a node's name.
-String nodeHostPort(Node node) => '${nodeHost(node.url)}:${node.port}';
-
-/// Whether both nodes reach the same host and port, whatever they are named
-/// or which protocols they offer.
 bool sameNode(Node a, Node b) => nodeIdentity(a) == nodeIdentity(b);
 
-enum NodeProtocol { tcp, udp, ws, wss, quic, wg }
+/// Copies a bookmarked connection into a network without reusing a row name.
+Node copyNodeForNetwork(Node node, Iterable<Node> existing) {
+  final copy = node.copy();
+  var suffix = 2;
+  while (existing.any((peer) => peer.name == copy.name)) {
+    copy.name = '${node.name} (${suffix++})';
+  }
+  return copy;
+}
 
 @JsonSerializable()
 final class Node {
-  Node({
-    required this.id,
-    required this.url,
-    required this.port,
-    required this.protocols,
-    this.publicKey,
-  });
+  Node({required this.name, required this.url, this.publicKey});
 
-  String id;
+  String name;
   Uri url;
-  int port;
-  List<NodeProtocol> protocols;
   String? publicKey;
 
   factory Node.fromJson(Map<String, dynamic> json) => _$NodeFromJson(json);
 
   Map<String, dynamic> toJson() => _$NodeToJson(this);
 
-  /// A deep, independent copy of this node.
   Node copy() => Node.fromJson(toJson());
+}
 
-  Uri endpoint(NodeProtocol protocol) {
-    final host = nodeHost(url);
-    return Uri(
-      scheme: protocol.name,
-      userInfo: url.userInfo,
-      host: host,
-      port: port,
-      path: url.host.isEmpty ? '' : url.path,
-    );
+/// Reads an old host/port/protocols entry without losing any of its endpoints.
+/// New documents always store one full connection URL per node.
+List<Node> nodesFromJson(Map<String, dynamic> json) {
+  if (!json.containsKey('protocols')) return [Node.fromJson(json)];
+  final protocols = (json['protocols'] as List).cast<String>().toSet();
+  final port = (json['port'] as num).toInt();
+  if (protocols.isEmpty || port < 1 || port > 65535) {
+    throw const FormatException('Invalid legacy node connection');
   }
+  final url = Uri.parse(json['url'] as String);
+  final name = json['id'] as String;
+  final host = url.host.isEmpty ? url.path : url.host;
+  return [
+    for (final (index, protocol) in protocols.indexed)
+      Node(
+        name: index == 0 ? name : '$name ($protocol)',
+        url: Uri(
+          scheme: NodeProtocol.values.byName(protocol).name,
+          userInfo: url.userInfo,
+          host: host,
+          port: port,
+          path: url.host.isEmpty ? '' : url.path,
+          query: url.hasQuery ? url.query : null,
+        ),
+        publicKey: json['publicKey'] as String?,
+      ),
+  ];
 }

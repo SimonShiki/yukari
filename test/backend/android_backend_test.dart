@@ -13,9 +13,7 @@ Network _network({
 }) => Network()
   ..networkName = name
   ..ipv4 = ipv4
-  ..proxyNetworks = [
-    for (final cidr in proxyCidrs) ProxyNetwork(cidr: cidr),
-  ]
+  ..proxyNetworks = [for (final cidr in proxyCidrs) ProxyNetwork(cidr: cidr)]
   ..flags = (NetworkFlags()
     ..acceptDns = acceptDns
     ..noTun = noTun);

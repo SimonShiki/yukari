@@ -1,7 +1,6 @@
 import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:yukari_core/models/node.dart';
 import 'package:yukari/share/share_configs.dart';
 import 'package:yukari/share/share_document.dart';
 
@@ -16,10 +15,10 @@ void main() {
     expect(decoded.secret, 's3cret');
     expect(decoded.hasSecret, isTrue);
     expect(decoded.peers.map((peer) => peer.address), [
-      'relay.example.com:11010',
-      '::1:443',
+      'tcp://relay.example.com:11010',
+      'wss://[::1]:443',
     ]);
-    expect(decoded.peers.first.protocols, [NodeProtocol.tcp, NodeProtocol.udp]);
+    expect(decoded.peers.first.url.scheme, 'tcp');
     expect(decoded.peers.first.publicKey, 'public-key');
     expect(decoded.peers.last.publicKey, isNull);
   });
@@ -31,10 +30,10 @@ void main() {
     expect(decoded.name, isNull);
     expect(decoded.secret, isNull);
     expect(decoded.hasSecret, isFalse);
-    expect(decoded.peers.single.address, 'relay.example.com:11010');
-    expect(decoded.peers.single.protocols, [NodeProtocol.quic]);
+    expect(decoded.peers.single.address, 'quic://relay.example.com:11010');
+    expect(decoded.peers.single.url.scheme, 'quic');
     expect(decoded.peers.single.publicKey, 'public-key');
-    expect(decoded.peers.single.path, isNull);
+    expect(decoded.peers.single.url.path, isEmpty);
   });
 
   test('round-trips a node document under its name', () {
@@ -44,8 +43,8 @@ void main() {
 
     expect(decoded.kind, ShareKind.node);
     expect(decoded.name, 'Relay One');
-    expect(decoded.peers.single.address, 'relay.example.com:11010');
-    expect(decoded.peers.single.protocols, [NodeProtocol.quic]);
+    expect(decoded.peers.single.address, 'quic://relay.example.com:11010');
+    expect(decoded.peers.single.url.scheme, 'quic');
   });
 
   test('carries the name only when the node has one', () {
@@ -95,10 +94,12 @@ void main() {
       kind: ShareKind.node,
       peers: [
         SharedPeer(
-          host: 'relay.example.com',
-          port: 443,
-          protocols: const [NodeProtocol.wss],
-          path: '/ws',
+          url: Uri(
+            scheme: 'wss',
+            host: 'relay.example.com',
+            port: 443,
+            path: '/ws',
+          ),
         ),
       ],
     );
@@ -106,14 +107,20 @@ void main() {
     final peersJson =
         (jsonDecode(document.encode()) as Map<String, Object?>)['peers']
             as List<Object?>;
-    expect((peersJson.single as Map<String, Object?>)['path'], '/ws');
-    expect(ShareDocument.decode(document.encode()).peers.single.path, '/ws');
+    expect(
+      (peersJson.single as Map<String, Object?>)['url'],
+      'wss://relay.example.com:443/ws',
+    );
+    expect(
+      ShareDocument.decode(document.encode()).peers.single.url.path,
+      '/ws',
+    );
   });
 
   test('accepts a percent-encoded path that round-trips', () {
     final decoded = ShareDocument.decode(
       jsonEncode({
-        'v': shareDocumentVersion,
+        'v': 1,
         'kind': 'node',
         'peers': [
           {
@@ -126,7 +133,7 @@ void main() {
       }),
     );
 
-    expect(decoded.peers.single.path, '/%E4%BD%A0%E5%A5%BD');
+    expect(decoded.peers.single.url.path, '/%E4%BD%A0%E5%A5%BD');
   });
 
   test('encodes the versioned wire format', () {
@@ -138,17 +145,8 @@ void main() {
     expect(json['name'], 'alpha');
     expect(json['secret'], 's3cret');
     expect(json['peers'], [
-      {
-        'host': 'relay.example.com',
-        'port': 11010,
-        'protocols': ['tcp', 'udp'],
-        'publicKey': 'public-key',
-      },
-      {
-        'host': '::1',
-        'port': 443,
-        'protocols': ['wss'],
-      },
+      {'url': 'tcp://relay.example.com:11010', 'publicKey': 'public-key'},
+      {'url': 'wss://[::1]:443'},
     ]);
   });
 
@@ -159,7 +157,7 @@ void main() {
     final decoded = ShareDocument.decodeRoot(root);
 
     expect(decoded.kind, ShareKind.node);
-    expect(decoded.peers.single.address, 'relay.example.com:11010');
+    expect(decoded.peers.single.address, 'quic://relay.example.com:11010');
     expect(
       () => ShareDocument.decodeRoot({...root, 'kind': 'bundle'}),
       throwsFormatException,
@@ -169,7 +167,7 @@ void main() {
   test('trims a name, drops a blank secret and deduplicates protocols', () {
     final decoded = ShareDocument.decode(
       jsonEncode({
-        'v': shareDocumentVersion,
+        'v': 1,
         'kind': 'network',
         'name': ' alpha ',
         'secret': '   ',
@@ -185,19 +183,53 @@ void main() {
 
     expect(decoded.name, 'alpha');
     expect(decoded.hasSecret, isFalse);
-    expect(decoded.peers.single.protocols, [
-      NodeProtocol.tcp,
-      NodeProtocol.udp,
-    ]);
+    expect(decoded.peers.map((peer) => peer.url.scheme), ['tcp', 'udp']);
+  });
+
+  test('full URLs keep schemes, subpaths and query parameters', () {
+    final peer = SharedPeer(
+      url: Uri.parse('http://localhost:11451/ws?route=one'),
+      publicKey: 'pin',
+    );
+    final document = ShareDocument(kind: ShareKind.node, peers: [peer]);
+    final decoded = ShareDocument.decode(document.encode()).peers.single;
+    expect(decoded.url, peer.url);
+    expect(decoded.publicKey, 'pin');
+    for (final url in [
+      '',
+      'localhost:11451/ws',
+      'tcp://localhost',
+      'tcp://localhost:70000',
+      'ws://localhost:0/ws',
+      'ws://localhost/ws#fragment',
+      'ws://user:pass@localhost/ws',
+    ]) {
+      expect(
+        () => ShareDocument.decodeRoot({
+          'v': shareDocumentVersion,
+          'kind': 'node',
+          'peers': [
+            {'url': url},
+          ],
+        }),
+        throwsFormatException,
+        reason: url,
+      );
+    }
   });
 
   test('refuses malformed documents instead of accepting half of one', () {
     final base = sharedNetworkDocument().toJson();
-    final peer = sharedNetworkDocument().peers.first.toJson();
+    final peer = {
+      'host': 'relay.example.com',
+      'port': 11010,
+      'protocols': ['tcp'],
+    };
     final node = sharedNodeDocument().toJson();
     String network(Map<String, Object?> changes) =>
         jsonEncode({...base, ...changes});
     String peerWith(Map<String, Object?> changes) => network({
+      'v': 1,
       'peers': [
         {...peer, ...changes},
       ],

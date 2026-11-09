@@ -7,7 +7,6 @@ import '../../../controllers/network_editor_controller.dart';
 import '../../../l10n/l10n.dart';
 import '../../../widgets/bookmark_picker/bookmark_picker_dialog.dart';
 import '../../../widgets/list_editor/list_editor_segments.dart';
-import '../../../widgets/metadata_chip/metadata_chip.dart';
 
 /// Offers the bookmarks that are not peers yet; [sharedOnly] leaves the user's
 /// own bookmarks out.
@@ -33,7 +32,7 @@ Future<void> pickPeerBookmarks(
   controller.addBookmarks(picked);
 }
 
-/// One peer: its id, its endpoints and protocols, and its bookmark toggle.
+/// One peer: its name, full connection URL and bookmark toggle.
 class PeerRow extends StatelessWidget {
   const PeerRow({super.key, required this.controller, required this.node});
 
@@ -49,18 +48,10 @@ class PeerRow extends StatelessWidget {
       shape: Shapes.c9SidedCookie,
       color: colors.secondaryContainer,
       onColor: colors.onSecondaryContainer,
-      headline: node.id,
-      // The headline is already the id, so the row only adds the protocols.
-      supporting: Wrap(
-        spacing: 8,
-        runSpacing: 4,
-        children: [
-          for (final protocol in node.protocols)
-            MetadataChip.protocol(protocol.name),
-        ],
-      ),
+      headline: node.name,
+      supporting: Text(node.url.toString()),
       deleteTooltip: l10n.networkDeletePeer,
-      onDelete: () => controller.removePeer(node.id),
+      onDelete: () => controller.removePeer(node.name),
       actions: [
         SignalBuilder(
           builder: (context) {

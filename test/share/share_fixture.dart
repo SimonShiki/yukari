@@ -6,18 +6,18 @@ import 'package:yukari_core/models/network.dart';
 import 'package:yukari_core/models/node.dart';
 
 /// A shared network with a secret, two peers, their protocols and one key.
-ShareDocument sharedNetworkDocument() => const ShareDocument(
+ShareDocument sharedNetworkDocument() => ShareDocument(
   kind: ShareKind.network,
   name: 'alpha',
   secret: 's3cret',
   peers: [
     SharedPeer(
-      host: 'relay.example.com',
-      port: 11010,
-      protocols: [NodeProtocol.tcp, NodeProtocol.udp],
       publicKey: 'public-key',
+      url: Uri(scheme: 'tcp', host: 'relay.example.com', port: 11010),
     ),
-    SharedPeer(host: '::1', port: 443, protocols: [NodeProtocol.wss]),
+    SharedPeer(
+      url: Uri(scheme: 'wss', host: '::1', port: 443),
+    ),
   ],
 );
 
@@ -26,12 +26,10 @@ ShareDocument sharedNetworkDocument() => const ShareDocument(
 ShareDocument sharedNodeDocument({String? name}) => ShareDocument(
   kind: ShareKind.node,
   name: name,
-  peers: const [
+  peers: [
     SharedPeer(
-      host: 'relay.example.com',
-      port: 11010,
-      protocols: [NodeProtocol.quic],
       publicKey: 'public-key',
+      url: Uri(scheme: 'quic', host: 'relay.example.com', port: 11010),
     ),
   ],
 );
@@ -41,11 +39,9 @@ ShareDocument sharedNodeDocument({String? name}) => ShareDocument(
 ShareDocument networkShare(String name) => ShareDocument(
   kind: ShareKind.network,
   name: name,
-  peers: const [
+  peers: [
     SharedPeer(
-      host: 'relay.example.com',
-      port: 11010,
-      protocols: [NodeProtocol.tcp],
+      url: Uri(scheme: 'tcp', host: 'relay.example.com', port: 11010),
     ),
   ],
 );
@@ -69,18 +65,19 @@ Network noiseNetwork({required int peers}) => Network()
   ..nodes = [
     for (var index = 0; index < peers; index++)
       Node(
-        id: 'relay-${_noise(10 + index, 10)}.example.net:${10000 + index}',
-        url: Uri.parse('relay-${_noise(10 + index, 10)}.example.net'),
-        port: 10000 + index,
-        protocols: const [NodeProtocol.tcp, NodeProtocol.quic],
+        url: Uri(
+          scheme: 'tcp',
+          host: 'relay-${_noise(10 + index, 10)}.example.net',
+          port: 10000 + index,
+        ),
         publicKey: _noise(100 + index, 40),
+        name: 'relay-${_noise(10 + index, 10)}.example.net:${10000 + index}',
       ),
   ];
 
 /// A network share with [peers] pseudo-random peers, so the document does not
 /// compress below its size and the density presets have room to differ.
 ///
-/// Twelve peers compress to 855 bytes, more than the borderline preset's one
-/// code carries, so this is the smallest fixture that still streams.
+/// The payload is large enough to exercise streaming and density changes.
 ShareDocument noiseNetworkShare({required int peers}) =>
     shareNetwork(noiseNetwork(peers: peers));

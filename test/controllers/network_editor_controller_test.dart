@@ -18,18 +18,13 @@ void main() {
   final strings = lookupAppLocalizations(const Locale('en'));
 
   Node peer(String id) => Node(
-    id: id,
-    url: Uri.parse('relay.example.com'),
-    port: 11010,
-    protocols: const [NodeProtocol.tcp],
+    url: Uri(scheme: 'tcp', host: 'relay.example.com', port: 11010),
+    name: id,
   );
 
   test('holds a deep working copy and never corrupts the stored one', () async {
     await seedNetworks();
-    final controller = NetworkEditorController(
-      id: 'n1',
-      showMessage: (_) {},
-    );
+    final controller = NetworkEditorController(id: 'n1', showMessage: (_) {});
     addTearDown(controller.dispose);
 
     controller.update((n) {
@@ -80,7 +75,9 @@ void main() {
     await store.save({
       'n1': Network()
         ..networkName = 'alpha'
-        ..additionalConfiguration = {'extra': <Object?>['saved']},
+        ..additionalConfiguration = {
+          'extra': <Object?>['saved'],
+        },
     });
     await saved.init(store);
     addTearDown(saved.dispose);
@@ -102,8 +99,13 @@ void main() {
     await pumpEventQueue();
 
     expect(controller.working.value!.networkName, 'kept');
-    expect(controller.working.value!.additionalConfiguration['extra'], ['saved', 'draft']);
-    expect(saved.networks.value['n1']!.additionalConfiguration['extra'], ['saved']);
+    expect(controller.working.value!.additionalConfiguration['extra'], [
+      'saved',
+      'draft',
+    ]);
+    expect(saved.networks.value['n1']!.additionalConfiguration['extra'], [
+      'saved',
+    ]);
     expect(messages.single, startsWith(strings.controllerSave('')));
   });
 
@@ -131,16 +133,18 @@ void main() {
 
     controller.setPeer(peer('a'));
     controller.setPeer(peer('b'));
-    expect(controller.nodes.value.map((node) => node.id), ['a', 'b']);
+    expect(controller.nodes.value.map((node) => node.name), ['a', 'b']);
 
-    controller.setPeer(peer('a')..port = 12000);
-    expect(controller.nodes.value.map((node) => node.id), ['a', 'b']);
-    expect(controller.nodes.value.first.port, 12000);
+    controller.setPeer(
+      peer('a')..url = Uri.parse('tcp://relay.example.com:12000'),
+    );
+    expect(controller.nodes.value.map((node) => node.name), ['a', 'b']);
+    expect(controller.nodes.value.first.url.port, 12000);
 
     controller.removePeer('a');
-    expect(controller.nodes.value.map((node) => node.id), ['b']);
+    expect(controller.nodes.value.map((node) => node.name), ['b']);
     await saved.settled();
-    expect((await persisted('n1')).nodes.single.id, 'b');
+    expect((await persisted('n1')).nodes.single.name, 'b');
   });
 
   test('renaming a peer replaces it in place instead of adding one', () async {
@@ -150,11 +154,11 @@ void main() {
     controller.setPeer(peer('a'));
     controller.setPeer(peer('b'));
 
-    controller.setPeer(peer('renamed'), previousId: 'a');
+    controller.setPeer(peer('renamed'), previousName: 'a');
 
-    expect(controller.nodes.value.map((node) => node.id), ['renamed', 'b']);
+    expect(controller.nodes.value.map((node) => node.name), ['renamed', 'b']);
     await saved.settled();
-    expect((await persisted('n1')).nodes.map((node) => node.id), [
+    expect((await persisted('n1')).nodes.map((node) => node.name), [
       'renamed',
       'b',
     ]);
@@ -192,7 +196,7 @@ void main() {
     controller.addBookmarks([testBookmark('b1', host: 'one.example.com')]);
 
     expect(controller.nodes.value, hasLength(1));
-    expect(nodeHost(controller.nodes.value.single.url), 'one.example.com');
+    expect(controller.nodes.value.single.url.host, 'one.example.com');
   });
 
   test('saving a peer as a bookmark toggles it', () async {
@@ -221,6 +225,45 @@ void main() {
     expect(messages, [strings.bookmarksSaved, strings.bookmarksRemoved]);
   });
 
+  test(
+    'picked bookmarks keep distinct paths and unique editable names',
+    () async {
+      await seedNetworks();
+      final controller = NetworkEditorController(id: 'n1', showMessage: (_) {});
+      addTearDown(controller.dispose);
+      final a = testBookmark('a')
+        ..node = Node(name: 'Relay', url: Uri.parse('tcp://localhost:1234/a'));
+      final b = testBookmark('b')
+        ..node = Node(name: 'Relay', url: Uri.parse('tcp://localhost:1234/b'));
+      controller.addBookmarks([a, b, a]);
+      expect(controller.nodes.value.map((node) => node.name), [
+        'Relay',
+        'Relay (2)',
+      ]);
+      expect(controller.nodes.value.map((node) => node.url.path), ['/a', '/b']);
+      expect(b.node.name, 'Relay');
+      await saved.settled();
+    },
+  );
+
+  test('bookmark flags distinguish paths on the same server', () async {
+    await seedNetworks();
+    await seedBookmarks();
+    final controller = NetworkEditorController(id: 'n1', showMessage: (_) {});
+    addTearDown(controller.dispose);
+    final a = Node(name: 'A', url: Uri.parse('ws://localhost:11451/a'));
+    final b = Node(name: 'B', url: Uri.parse('ws://localhost:11451/b'));
+    final first = controller.bookmarkedNode(a);
+    final second = controller.bookmarkedNode(b);
+    await controller.toggleBookmark(a);
+    expect(first.value, isTrue);
+    expect(second.value, isFalse);
+    await controller.toggleBookmark(b);
+    expect(first.value, isTrue);
+    expect(second.value, isTrue);
+    expect(saved_bookmarks.bookmarks.value, hasLength(2));
+  });
+
   test('secure mode generates a key pair and keeps it when disabled', () async {
     await seedNetworks();
     final controller = NetworkEditorController(id: 'n1', showMessage: (_) {});
@@ -235,7 +278,10 @@ void main() {
 
     await pumpEventQueue();
 
-    expect(base64.decode(controller.working.value!.secureMode!.localPublicKey!), hasLength(32));
+    expect(
+      base64.decode(controller.working.value!.secureMode!.localPublicKey!),
+      hasLength(32),
+    );
 
     controller.setSecureMode(false);
 

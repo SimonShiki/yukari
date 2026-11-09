@@ -56,7 +56,7 @@ List<ShareDocument> decodeShareItems(String content) {
   if (root['kind'] != shareBundleKind) return [ShareDocument.decodeRoot(root)];
 
   final version = root['v'];
-  if (version != shareDocumentVersion) {
+  if (version != 1 && version != shareDocumentVersion) {
     throw FormatException('Unsupported share format version: $version');
   }
   final items = root['items'];

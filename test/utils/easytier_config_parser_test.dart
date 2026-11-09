@@ -5,7 +5,7 @@ import 'package:yukari/utils/easytier_config_parser.dart';
 import 'package:yukari_core/utils/easytier_config_serializer.dart';
 
 void main() {
-  test('parses a config and groups peers by address', () {
+  test('parses one connection per full peer URL', () {
     final network = parseEasyTierConfig('''
 hostname = "box"
 ipv4 = "10.144.144.2/24"
@@ -33,10 +33,10 @@ mtu = 1400
     expect(network.ipv4, '10.144.144.2/24');
     expect(network.listeners.single.toString(), 'tcp://0.0.0.0:11010');
     expect(network.flags.mtu, 1400);
-    final node = network.nodes.single;
-    expect(node.id, 'example.com:11010');
-    expect(node.url.toString(), 'example.com');
-    expect(node.protocols, [NodeProtocol.tcp, NodeProtocol.udp]);
+    final node = network.nodes.first;
+    expect(node.name, 'tcp://example.com:11010');
+    expect(node.url.toString(), 'tcp://example.com:11010');
+    expect(network.nodes.last.url.toString(), 'udp://example.com:11010');
 
     final roundTrip = parseEasyTierConfig(network.toEasyTierToml());
     expect(
@@ -47,6 +47,30 @@ mtu = 1400
         ..remove('createdAt')
         ..remove('updatedAt'),
     );
+  });
+
+  test('round-trips full URLs without merging schemes or subpaths', () {
+    final urls = [
+      'http://localhost:11451/ws',
+      'ws://localhost:11451/ws?route=one',
+      'ws://localhost:11451/other',
+      'wss://[2001:db8::1]/ws',
+    ];
+    final network = parseEasyTierConfig(
+      [
+        for (final url in urls)
+          '[[peer]]\nuri = "$url"\npeer_public_key = "pin"',
+      ].join('\n'),
+    );
+    expect(network.nodes.map((node) => node.url.toString()), urls);
+    final exported = TomlDocument.parse(network.toEasyTierToml()).toMap();
+    expect(
+      (exported['peer'] as List).map((peer) => (peer as Map)['uri']),
+      urls,
+    );
+    expect(network.nodes.map((node) => node.publicKey), everyElement('pin'));
+    final imported = parseEasyTierConfig(network.toEasyTierToml());
+    expect(imported.nodes.map((node) => node.url.toString()), urls);
   });
 
   test('parses and exports an EasyTier DHCP IPv4 subnet', () {

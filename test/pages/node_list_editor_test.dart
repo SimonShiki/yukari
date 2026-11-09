@@ -21,26 +21,19 @@ void main() {
     List<Node> nodes = const [],
     List<Bookmark>? sharedBookmarks,
   }) async {
-    await tester.runAsync(
-      () => seedWith({'n1': seededNetwork(nodes: nodes)}),
-    );
+    await tester.runAsync(() => seedWith({'n1': seededNetwork(nodes: nodes)}));
     controller = NetworkEditorController(
       id: 'n1',
       showMessage: (_) {},
       sharedBookmarks: sharedBookmarks,
     );
     addTearDown(controller.dispose);
-    await pumpApp(
-      tester,
-      NetworkEditorPage(id: 'n1', controller: controller),
-    );
+    await pumpApp(tester, NetworkEditorPage(id: 'n1', controller: controller));
   }
 
   Node node(String id, {int port = 11010}) => Node(
-    id: id,
-    url: Uri.parse('relay.example.com'),
-    port: port,
-    protocols: const [NodeProtocol.tcp],
+    url: Uri(scheme: 'tcp', host: 'relay.example.com', port: port),
+    name: id,
   );
 
   testWidgets('the empty peer list warns and offers the bookmarks', (
@@ -74,13 +67,8 @@ void main() {
     await tester.tap(find.text(strings.commonSave));
     await tester.pumpAndSettle();
 
-    expect(find.text(strings.networkPeerIdEmpty), findsOneWidget);
-    expect(find.text(strings.validationHostEmpty), findsOneWidget);
-    expect(
-      find.text(strings.validationRange(strings.networkPort, '1', '65535')),
-      findsOneWidget,
-    );
-    expect(find.text(strings.networkProtocolRequired), findsOneWidget);
+    expect(find.text(strings.networkPeerNameEmpty), findsOneWidget);
+    expect(find.text(strings.validationNodeUrl), findsOneWidget);
     // The dialog stays open.
     expect(find.text(strings.networkAddPeer), findsWidgets);
   });
@@ -97,9 +85,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('peer-x'), findsOneWidget);
-    // The row shows the protocols, not the endpoint URLs.
-    expect(find.text('TCP'), findsOneWidget);
-    expect(find.textContaining('relay.example.com'), findsNothing);
+    expect(find.text('tcp://relay.example.com:11010'), findsOneWidget);
   });
 
   testWidgets('the peer dialog opens on the peer it edits', (tester) async {
@@ -108,10 +94,12 @@ void main() {
     await tapVisible(tester, find.text('peer-x'));
 
     expect(find.text(strings.networkEditPeerNamed('peer-x')), findsOneWidget);
-    expect(find.text('11010'), findsWidgets);
+    expect(find.text('tcp://relay.example.com:11010'), findsWidgets);
   });
 
-  testWidgets('a peer is saved as a bookmark and removed again', (tester) async {
+  testWidgets('a peer is saved as a bookmark and removed again', (
+    tester,
+  ) async {
     await tester.runAsync(seedBookmarks);
     await pumpPeers(tester, nodes: [node('peer-x')]);
 
@@ -134,10 +122,7 @@ void main() {
 
     final other = tester.widget<PeerRow>(find.byType(PeerRow).at(1));
 
-    await tapSaving(
-      tester,
-      find.byTooltip(strings.peersSaveToBookmarks).first,
-    );
+    await tapSaving(tester, find.byTooltip(strings.peersSaveToBookmarks).first);
 
     expect(controller.bookmarkedNode(node('peer-x')).value, isTrue);
     expect(

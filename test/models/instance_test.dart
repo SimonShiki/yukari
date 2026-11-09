@@ -82,8 +82,14 @@ void main() {
     // EasyTier reports one connection per tunnel, so the same type repeats.
     peer['conns'] = <Map<String, Object?>>[
       for (var index = 0; index < 3; index++)
-        {...connection, 'tunnel': {'tunnel_type': 'tcp'}},
-      {...connection, 'tunnel': {'tunnel_type': 'quic'}},
+        {
+          ...connection,
+          'tunnel': {'tunnel_type': 'tcp'},
+        },
+      {
+        ...connection,
+        'tunnel': {'tunnel_type': 'quic'},
+      },
     ];
 
     final parsed = Instance.fromJsonAndNetwork(json, Network()).peers.single;

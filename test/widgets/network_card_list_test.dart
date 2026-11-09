@@ -130,8 +130,8 @@ void main() {
   });
 
   /// The list widget, as the page configured it.
-  M3EReorderableSegmentedList listOf(WidgetTester tester) => tester
-      .widget<M3EReorderableSegmentedList>(
+  M3EReorderableSegmentedList listOf(WidgetTester tester) =>
+      tester.widget<M3EReorderableSegmentedList>(
         find.byType(M3EReorderableSegmentedList),
       );
 

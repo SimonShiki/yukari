@@ -21,11 +21,10 @@ String _serialize(Network network) {
     'exit_nodes': network.exitNodes,
     'peer': [
       for (final node in network.nodes)
-        for (final protocol in node.protocols)
-          <String, Object?>{
-            'uri': node.endpoint(protocol).toString(),
-            if (node.publicKey != null) 'peer_public_key': node.publicKey,
-          },
+        <String, Object?>{
+          'uri': node.url.toString(),
+          if (node.publicKey != null) 'peer_public_key': node.publicKey,
+        },
     ],
     'proxy_network': [
       for (final proxy in network.proxyNetworks)

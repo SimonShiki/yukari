@@ -34,10 +34,7 @@ void main() {
       debugDefaultTargetPlatformOverride = TargetPlatform.windows;
       addTearDown(() => debugDefaultTargetPlatformOverride = null);
 
-      for (final theme in [
-        _theme(),
-        _theme(brightness: Brightness.dark),
-      ]) {
+      for (final theme in [_theme(), _theme(brightness: Brightness.dark)]) {
         for (final style in [
           theme.textTheme.displayLarge,
           theme.textTheme.titleMedium,
@@ -169,9 +166,7 @@ void main() {
       expect(oled.surfaceContainerLowest, Colors.black);
       expect(dark.surface, isNot(Colors.black));
       expect(
-        _theme(
-          mode: ThemePreference.oled,
-        ).colorScheme.surface,
+        _theme(mode: ThemePreference.oled).colorScheme.surface,
         isNot(Colors.black),
         reason: 'OLED only darkens the dark scheme',
       );

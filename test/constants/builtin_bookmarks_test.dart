@@ -8,15 +8,15 @@ void main() {
     expect(
       {
         for (final bookmark in builtinBookmarks)
-          bookmark.address: bookmark.node.protocols.single.name,
+          bookmark.address: bookmark.node.url.scheme,
       },
       {
-        '225284.xyz:11010': 'tcp',
-        '183.230.36.171:11010': 'tcp',
-        'easytier.weiai.org.cn:11010': 'tcp',
-        'et.chinokou.cn:443': 'wss',
-        'et.basd1.de:11010': 'udp',
-        'us01.225284.xyz:11010': 'udp',
+        'tcp://225284.xyz:11010': 'tcp',
+        'tcp://183.230.36.171:11010': 'tcp',
+        'tcp://easytier.weiai.org.cn:11010': 'tcp',
+        'wss://et.chinokou.cn:443': 'wss',
+        'udp://et.basd1.de:11010': 'udp',
+        'udp://us01.225284.xyz:11010': 'udp',
       },
     );
 
@@ -27,11 +27,7 @@ void main() {
 
   test('serializes each peer as the address the monitor verified', () {
     expect(
-      [
-        for (final bookmark in builtinBookmarks)
-          for (final protocol in bookmark.node.protocols)
-            bookmark.node.endpoint(protocol).toString(),
-      ],
+      [for (final bookmark in builtinBookmarks) bookmark.node.url.toString()],
       [
         'tcp://225284.xyz:11010',
         'tcp://183.230.36.171:11010',
@@ -59,7 +55,7 @@ void main() {
         for (final bookmark in builtinBookmarks)
           if (bookmark.tags.contains(sharedNodeOverseasTag)) bookmark.address,
       ],
-      ['us01.225284.xyz:11010'],
+      ['udp://us01.225284.xyz:11010'],
     );
   });
 }

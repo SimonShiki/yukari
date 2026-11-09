@@ -45,15 +45,16 @@ void main() {
       (call) async {
         calls.add(call);
         return switch (call.method) {
-          'takePendingAction' => pendingAction == null
-              ? null
-              : {
-                  'action': pendingAction,
-                  'source': 'intent',
-                  'at':
-                      pendingActionAt ??
-                      DateTime.now().millisecondsSinceEpoch,
-                },
+          'takePendingAction' =>
+            pendingAction == null
+                ? null
+                : {
+                    'action': pendingAction,
+                    'source': 'intent',
+                    'at':
+                        pendingActionAt ??
+                        DateTime.now().millisecondsSinceEpoch,
+                  },
           'requestNotificationPermission' => true,
           _ => null,
         };
@@ -102,9 +103,8 @@ void main() {
   Iterable<MethodCall> methodCalls(String method) =>
       calls.where((call) => call.method == method);
 
-  MethodCall lastCall(String method) => calls.lastWhere(
-    (call) => call.method == method,
-  );
+  MethodCall lastCall(String method) =>
+      calls.lastWhere((call) => call.method == method);
 
   Map<Object?, Object?> lastArguments(String method) =>
       lastCall(method).arguments as Map<Object?, Object?>;
@@ -126,10 +126,7 @@ void main() {
     await sendAction('toggle');
 
     expect(backend.started.keys, ['n1']);
-    expect(lastArguments('setTileState'), {
-      'active': true,
-      'label': 'alpha',
-    });
+    expect(lastArguments('setTileState'), {'active': true, 'label': 'alpha'});
     final notification = lastArguments('updateNotification');
     expect(notification['title'], 'alpha');
     // One reported peer, plus this device.
@@ -142,7 +139,12 @@ void main() {
   });
 
   for (final failure in ['platform', 'missing channel']) {
-    for (final target in ['tile', 'show notification', 'clear notification', 'permission']) {
+    for (final target in [
+      'tile',
+      'show notification',
+      'clear notification',
+      'permission',
+    ]) {
       test('network actions survive $failure during $target', () async {
         await startUi();
         final failedCalls = <MethodCall>[];
@@ -150,11 +152,14 @@ void main() {
           const MethodChannel(AndroidSystemUi.channelName),
           (call) async {
             calls.add(call);
-            final active = (call.arguments as Map<Object?, Object?>?)?['active'];
+            final active =
+                (call.arguments as Map<Object?, Object?>?)?['active'];
             final matches = switch (target) {
               'tile' => call.method == 'setTileState',
-              'show notification' => call.method == 'updateNotification' && active == true,
-              'clear notification' => call.method == 'updateNotification' && active == false,
+              'show notification' =>
+                call.method == 'updateNotification' && active == true,
+              'clear notification' =>
+                call.method == 'updateNotification' && active == false,
               _ => call.method == 'requestNotificationPermission',
             };
             if (matches) {
@@ -177,24 +182,27 @@ void main() {
     }
   }
 
-  test('denied notification permission still allows starting and stopping', () async {
-    await startUi();
-    messenger.setMockMethodCallHandler(
-      const MethodChannel(AndroidSystemUi.channelName),
-      (call) async {
-        calls.add(call);
-        return call.method == 'requestNotificationPermission' ? false : null;
-      },
-    );
+  test(
+    'denied notification permission still allows starting and stopping',
+    () async {
+      await startUi();
+      messenger.setMockMethodCallHandler(
+        const MethodChannel(AndroidSystemUi.channelName),
+        (call) async {
+          calls.add(call);
+          return call.method == 'requestNotificationPermission' ? false : null;
+        },
+      );
 
-    await sendAction('toggle');
-    expect(backend.started.keys, ['n1']);
-    await sendAction('stop');
-    await sendAction('toggle');
+      await sendAction('toggle');
+      expect(backend.started.keys, ['n1']);
+      await sendAction('stop');
+      await sendAction('toggle');
 
-    expect(backend.started.keys, ['n1']);
-    expect(methodCalls('requestNotificationPermission'), hasLength(1));
-  });
+      expect(backend.started.keys, ['n1']);
+      expect(methodCalls('requestNotificationPermission'), hasLength(1));
+    },
+  );
 
   test('counts this device in a lone running network', () async {
     backend = _TestBackend();
@@ -209,21 +217,24 @@ void main() {
     );
   });
 
-  test('the notification Stop action stops the network and clears both', () async {
-    backend = _TestBackend();
-    backends.value = backend;
-    await startUi();
-    await sendAction('toggle');
+  test(
+    'the notification Stop action stops the network and clears both',
+    () async {
+      backend = _TestBackend();
+      backends.value = backend;
+      await startUi();
+      await sendAction('toggle');
 
-    await sendAction('stop');
+      await sendAction('stop');
 
-    expect(backend.stopped, contains('alpha'));
-    expect(lastArguments('setTileState'), {
-      'active': false,
-      'label': 'Yukari',
-    });
-    expect(lastArguments('updateNotification'), {'active': false});
-  });
+      expect(backend.stopped, contains('alpha'));
+      expect(lastArguments('setTileState'), {
+        'active': false,
+        'label': 'Yukari',
+      });
+      expect(lastArguments('updateNotification'), {'active': false});
+    },
+  );
 
   test('a second tile tap stops the network', () async {
     backend = _TestBackend();
@@ -234,10 +245,7 @@ void main() {
     await sendAction('toggle');
 
     expect(backend.stopped, contains('alpha'));
-    expect(lastArguments('setTileState'), {
-      'active': false,
-      'label': 'Yukari',
-    });
+    expect(lastArguments('setTileState'), {'active': false, 'label': 'Yukari'});
   });
 
   test('remembers the network it booted for the next tile tap', () async {
@@ -254,16 +262,11 @@ void main() {
     await pumpEventQueue();
 
     expect(backend.started.keys, ['n1']);
-    expect(lastArguments('setTileState'), {
-      'active': true,
-      'label': 'alpha',
-    });
+    expect(lastArguments('setTileState'), {'active': true, 'label': 'alpha'});
   });
 
   test('a cold app boots the network booted last', () async {
-    SharedPreferences.setMockInitialValues({
-      'android.lastBootedNetwork': 'n2',
-    });
+    SharedPreferences.setMockInitialValues({'android.lastBootedNetwork': 'n2'});
     backend = _TestBackend();
     backends.value = backend;
     pendingAction = 'toggle';
@@ -307,35 +310,41 @@ void main() {
     expect(notifications.single.arguments, {'active': false});
   });
 
-  test('a fresh process clears then mirrors a network that survived it', () async {
-    backend.started['n1'] = saved.networks.value['n1']!;
-    await startUi();
-    await pumpEventQueue();
+  test(
+    'a fresh process clears then mirrors a network that survived it',
+    () async {
+      backend.started['n1'] = saved.networks.value['n1']!;
+      await startUi();
+      await pumpEventQueue();
 
-    final notifications = methodCalls('updateNotification').toList();
-    expect(notifications.first.arguments, {'active': false});
-    expect(notifications.last.arguments?['active'], isTrue);
-  });
+      final notifications = methodCalls('updateNotification').toList();
+      expect(notifications.first.arguments, {'active': false});
+      expect(notifications.last.arguments?['active'], isTrue);
+    },
+  );
 
-  test('a background tap without the VPN consent opens the app to ask', () async {
-    WidgetsBinding.instance.handleAppLifecycleStateChanged(
-      AppLifecycleState.paused,
-    );
-    var asked = false;
-    await startUi(
-      vpnPermissionGranted: () async {
-        asked = true;
-        return false;
-      },
-    );
+  test(
+    'a background tap without the VPN consent opens the app to ask',
+    () async {
+      WidgetsBinding.instance.handleAppLifecycleStateChanged(
+        AppLifecycleState.paused,
+      );
+      var asked = false;
+      await startUi(
+        vpnPermissionGranted: () async {
+          asked = true;
+          return false;
+        },
+      );
 
-    await sendAction('toggle');
+      await sendAction('toggle');
 
-    expect(asked, isTrue);
-    expect(backend.started, isEmpty);
-    expect(methodCalls('openApp'), hasLength(1));
-    expect(methodCalls('requestNotificationPermission'), isEmpty);
-  });
+      expect(asked, isTrue);
+      expect(backend.started, isEmpty);
+      expect(methodCalls('openApp'), hasLength(1));
+      expect(methodCalls('requestNotificationPermission'), isEmpty);
+    },
+  );
 
   test('a tile tap the app opens may then ask for the VPN consent', () async {
     WidgetsBinding.instance.handleAppLifecycleStateChanged(
@@ -366,37 +375,41 @@ void main() {
     expect(methodCalls('openApp'), hasLength(1));
   });
 
-  test('an intent-delivered failed start does not loop back to the app', () async {
-    WidgetsBinding.instance.handleAppLifecycleStateChanged(
-      AppLifecycleState.paused,
-    );
-    await startUi(vpnPermissionGranted: () async => true);
-    backend.startError = StateError('Foreground service start refused');
+  test(
+    'an intent-delivered failed start does not loop back to the app',
+    () async {
+      WidgetsBinding.instance.handleAppLifecycleStateChanged(
+        AppLifecycleState.paused,
+      );
+      await startUi(vpnPermissionGranted: () async => true);
+      backend.startError = StateError('Foreground service start refused');
 
-    // The app was already brought forward for this action; a start that still
-    // fails there must not open it again.
-    await sendAction('toggle', source: 'intent');
+      // The app was already brought forward for this action; a start that still
+      // fails there must not open it again.
+      await sendAction('toggle', source: 'intent');
 
-    expect(backend.started, isEmpty);
-    expect(methodCalls('openApp'), isEmpty);
-  });
+      expect(backend.started, isEmpty);
+      expect(methodCalls('openApp'), isEmpty);
+    },
+  );
 
-  test('a background tap starts silently once the VPN consent is granted', () async {
-    WidgetsBinding.instance.handleAppLifecycleStateChanged(
-      AppLifecycleState.paused,
-    );
-    await startUi(vpnPermissionGranted: () async => true);
+  test(
+    'a background tap starts silently once the VPN consent is granted',
+    () async {
+      WidgetsBinding.instance.handleAppLifecycleStateChanged(
+        AppLifecycleState.paused,
+      );
+      await startUi(vpnPermissionGranted: () async => true);
 
-    await sendAction('toggle');
+      await sendAction('toggle');
 
-    expect(backend.started.keys, ['n1']);
-    expect(methodCalls('openApp'), isEmpty);
-  });
+      expect(backend.started.keys, ['n1']);
+      expect(methodCalls('openApp'), isEmpty);
+    },
+  );
 
   test('a tile tap leaves a network the backend has no room for', () async {
-    SharedPreferences.setMockInitialValues({
-      'android.lastBootedNetwork': 'n2',
-    });
+    SharedPreferences.setMockInitialValues({'android.lastBootedNetwork': 'n2'});
     // The store shows the running instance as stopped, so the tile cannot see
     // it, while the backend still holds its single TUN slot.
     backend = _TestBackend(maxTunInstances: 1, notRunning: true);
@@ -407,11 +420,9 @@ void main() {
 
     await sendAction('toggle');
 
-    expect(
-      backend.started.keys,
-      ['n1'],
-      reason: 'the one TUN slot is taken, so beta was not booted',
-    );
+    expect(backend.started.keys, [
+      'n1',
+    ], reason: 'the one TUN slot is taken, so beta was not booted');
     expect(methodCalls('openApp'), isEmpty);
   });
 
@@ -419,10 +430,7 @@ void main() {
     kinds.value = BackendKind.service;
     control.current = ServiceState.running;
     await startUi();
-    expect(lastArguments('setTileState'), {
-      'active': true,
-      'label': 'Yukari',
-    });
+    expect(lastArguments('setTileState'), {'active': true, 'label': 'Yukari'});
 
     await sendAction('toggle');
 
@@ -430,10 +438,7 @@ void main() {
     // The backend's view of the service is what the tile follows.
     statuses.value = BackendStatus.unavailable;
     await pumpEventQueue();
-    expect(lastArguments('setTileState'), {
-      'active': false,
-      'label': 'Yukari',
-    });
+    expect(lastArguments('setTileState'), {'active': false, 'label': 'Yukari'});
     // Only the startup clear; a service-mode run shows no notification.
     final notifications = methodCalls('updateNotification').toList();
     expect(notifications, hasLength(1));

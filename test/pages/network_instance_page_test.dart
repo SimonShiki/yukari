@@ -64,14 +64,19 @@ void main() {
 
     expect(find.text('me'), findsOneWidget);
     expect(find.text('peer-b'), findsOneWidget);
-    expect(tester.getRect(find.text('me')).top, lessThan(tester.getRect(find.text('peer-b')).top));
+    expect(
+      tester.getRect(find.text('me')).top,
+      lessThan(tester.getRect(find.text('peer-b')).top),
+    );
     // One badge per protocol, and the identity and security tags.
     expect(find.text('TCP'), findsOneWidget);
     expect(find.text(strings.peerCredential), findsOneWidget);
     expect(find.text(strings.peerKeyVerified), findsOneWidget);
   });
 
-  testWidgets('peer rows stay stable until their instance data changes', (tester) async {
+  testWidgets('peer rows stay stable until their instance data changes', (
+    tester,
+  ) async {
     await tester.runAsync(seedNetworks);
     final payload = jsonDecode(jsonEncode(_instance)) as Map<String, Object?>;
     final controller = await pumpInstance(tester, collected: payload);
@@ -84,13 +89,17 @@ void main() {
     expect(controller.peerCards.peek(), same(cards));
     expect(tester.widget<PeerCard>(row), same(first));
 
-    await tester.runAsync(() => refreshInstances(FakeBackend(
-      collected: () => {'alpha': payload, 'beta': _instance},
-    )));
+    await tester.runAsync(
+      () => refreshInstances(
+        FakeBackend(collected: () => {'alpha': payload, 'beta': _instance}),
+      ),
+    );
     await tester.pumpAndSettle();
     expect(controller.peerCards.peek(), same(cards));
 
-    final pair = (payload['peer_route_pairs'] as List<Object?>).single as Map<String, Object?>;
+    final pair =
+        (payload['peer_route_pairs'] as List<Object?>).single
+            as Map<String, Object?>;
     (pair['route'] as Map<String, Object?>)['hostname'] = 'renamed-peer';
     await tester.runAsync(controller.refresh);
     await tester.pumpAndSettle();
@@ -110,8 +119,7 @@ void main() {
     tester,
   ) async {
     await tester.runAsync(seedNetworks);
-    final payload =
-        jsonDecode(jsonEncode(_instance)) as Map<String, Object?>;
+    final payload = jsonDecode(jsonEncode(_instance)) as Map<String, Object?>;
     final pair =
         (payload['peer_route_pairs'] as List<Object?>).single
             as Map<String, Object?>;
@@ -120,8 +128,14 @@ void main() {
         (peer['conns'] as List<Object?>).single as Map<String, Object?>;
     peer['conns'] = <Map<String, Object?>>[
       for (var index = 0; index < 3; index++)
-        {...connection, 'tunnel': {'tunnel_type': 'tcp'}},
-      {...connection, 'tunnel': {'tunnel_type': 'quic'}},
+        {
+          ...connection,
+          'tunnel': {'tunnel_type': 'tcp'},
+        },
+      {
+        ...connection,
+        'tunnel': {'tunnel_type': 'quic'},
+      },
     ];
     await pumpInstance(tester, collected: payload);
 
@@ -192,7 +206,10 @@ void main() {
       backend: FakeBackend(),
     );
     addTearDown(controller.dispose);
-    await pumpApp(tester, NetworkInstancePage(id: 'gone', controller: controller));
+    await pumpApp(
+      tester,
+      NetworkInstancePage(id: 'gone', controller: controller),
+    );
 
     expect(find.text(strings.networkMissing), findsWidgets);
     expect(find.text(strings.commonGoBack), findsOneWidget);
@@ -242,7 +259,9 @@ void main() {
     // Wrapped onto more than one row.
     expect(
       tester.getRect(find.text('${strings.networkFilterAll} 4')).top,
-      lessThan(tester.getRect(find.text('${strings.networkFilterConnections} 1')).top),
+      lessThan(
+        tester.getRect(find.text('${strings.networkFilterConnections} 1')).top,
+      ),
     );
 
     await tester.tap(find.text('${strings.networkFilterErrors} 2'));
@@ -349,7 +368,11 @@ void main() {
 
     // This page builds its own controller, which talks to the app's real
     // backend: pump bounded frames instead of waiting for it.
-    await pumpApp(tester, NetworkInstancePage(id: 'n1', tab: tab), settle: false);
+    await pumpApp(
+      tester,
+      NetworkInstancePage(id: 'n1', tab: tab),
+      settle: false,
+    );
     await tester.pump(const Duration(milliseconds: 300));
     expect(find.text(strings.networkNoEvents), findsOneWidget);
 
@@ -362,9 +385,8 @@ void main() {
   testWidgets('shows the collected instance details', (tester) async {
     await tester.runAsync(seedNetworks);
     final collected = await tester.runAsync(() async {
-      final raw = await File(
-        'test/fixtures/collected_instance.json',
-      ).readAsString();
+      final raw = await File('test/fixtures/collected_instance.json')
+          .readAsString();
       return jsonDecode(raw) as Map<String, Object?>;
     });
     await pumpInstance(tester, collected: collected);

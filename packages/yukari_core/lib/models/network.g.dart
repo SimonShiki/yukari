@@ -18,9 +18,7 @@ Network _$NetworkFromJson(Map<String, dynamic> json) => Network()
   ..ipv6PublicAddressPrefix = json['ipv6PublicAddressPrefix'] as String?
   ..dhcp = json['dhcp'] as bool
   ..dhcpIpv4Cidr = json['dhcpIpv4Cidr'] as String?
-  ..nodes = (json['nodes'] as List<dynamic>)
-      .map((e) => Node.fromJson(e as Map<String, dynamic>))
-      .toList()
+  ..nodes = _nodesFromJson(json['nodes'] as List)
   ..listeners = (json['listeners'] as List<dynamic>)
       .map((e) => Uri.parse(e as String))
       .toList()

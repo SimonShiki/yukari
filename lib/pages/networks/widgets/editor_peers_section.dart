@@ -52,7 +52,7 @@ class EditorPeersSection extends StatelessWidget {
             : (index) => _editPeer(context, nodes[index]),
         semanticLabelBuilder: nodes.isEmpty
             ? null
-            : (index) => l10n.networkEditPeerNamed(nodes[index].id),
+            : (index) => l10n.networkEditPeerNamed(nodes[index].name),
         children: [
           if (nodes.isEmpty)
             EmptyListSegment(
@@ -67,15 +67,21 @@ class EditorPeersSection extends StatelessWidget {
     },
   );
 
-  List<String> get _ids => [for (final node in controller.nodes.value) node.id];
+  List<String> get _names => [
+    for (final node in controller.nodes.value) node.name,
+  ];
 
   Future<void> _addPeer(BuildContext context) async {
-    final peer = await showNodeDialog(context, existingIds: _ids);
+    final peer = await showNodeDialog(context, existingNames: _names);
     if (peer != null) controller.setPeer(peer);
   }
 
   Future<void> _editPeer(BuildContext context, Node node) async {
-    final peer = await showNodeDialog(context, node: node, existingIds: _ids);
-    if (peer != null) controller.setPeer(peer, previousId: node.id);
+    final peer = await showNodeDialog(
+      context,
+      node: node,
+      existingNames: _names,
+    );
+    if (peer != null) controller.setPeer(peer, previousName: node.name);
   }
 }

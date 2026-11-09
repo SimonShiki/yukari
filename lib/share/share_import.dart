@@ -21,13 +21,20 @@ Future<String> addSharedNetwork(ShareDocument document) async {
 
 /// Saves the node [document] shares as a bookmark under a fresh id.
 ///
-/// Returns the saved `host:port`, or null when a bookmark for that address is
+/// Returns the saved connection URL, or null when that connection is
 /// already saved.
 Future<String?> addSharedNode(ShareDocument document) async {
-  final bookmark = bookmarkFromShare(document, id: const Uuid().v4());
-  if (saved.bookmarkFor(bookmark.node) != null) return null;
-  await saved.addBookmark(bookmark);
-  return bookmark.address;
+  String? firstAddress;
+  for (final peer in document.peers) {
+    final bookmark = bookmarkFromShare(
+      ShareDocument(kind: ShareKind.node, name: document.name, peers: [peer]),
+      id: const Uuid().v4(),
+    );
+    if (saved.bookmarkFor(bookmark.node) != null) continue;
+    await saved.addBookmark(bookmark);
+    firstAddress ??= bookmark.address;
+  }
+  return firstAddress;
 }
 
 /// What a batch import did: added, already saved, and failed, per document.

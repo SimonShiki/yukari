@@ -57,11 +57,9 @@ void main() {
 
       expect(File(path).readAsStringSync(), '{"port":1}');
       expect(File(path).statSync().mode & 0x1FF, 0x180 /* 0600 */);
-      expect(
-        directory.listSync().map((entry) => entry.path),
-        [path],
-        reason: 'no temporary file is left behind',
-      );
+      expect(directory.listSync().map((entry) => entry.path), [
+        path,
+      ], reason: 'no temporary file is left behind');
     });
 
     test('replaces a symlink rather than writing through it', () {

@@ -33,10 +33,7 @@ void main() {
   ///
   /// [deletable] false stands for a page with nothing it may delete, which
   /// passes no delete action at all.
-  Future<void> pumpChrome(
-    WidgetTester tester, {
-    bool deletable = true,
-  }) async {
+  Future<void> pumpChrome(WidgetTester tester, {bool deletable = true}) async {
     await tester.pumpWidget(
       MaterialApp(
         localizationsDelegates: const [AppLocalizations.delegate],
@@ -93,9 +90,8 @@ void main() {
       ),
     );
 
-    final scheme = Theme.of(
-      tester.element(find.byType(SelectionCheck).first),
-    ).colorScheme;
+    final scheme = Theme.of(tester.element(find.byType(SelectionCheck).first))
+        .colorScheme;
     final icons = tester.widgetList<Icon>(find.byType(Icon)).toList();
     expect(icons[0].icon, Icons.check_circle_rounded);
     expect(icons[0].color, scheme.primary);
