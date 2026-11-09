@@ -14,6 +14,8 @@ Future<Node?> showNodeDialog(
   final fields = GlobalKey<NodeFormFieldsState>();
   return showDialog<Node>(
     context: context,
+    useRootNavigator: false,
+    barrierDismissible: false,
     builder: (context) => AlertDialog(
       title: Text(
         node == null

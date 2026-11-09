@@ -26,6 +26,7 @@ Future<bool> showConfirmDialog(
 }) async =>
     await showDialog<bool>(
       context: context,
+      useRootNavigator: false,
       builder: (context) {
         final scheme = Theme.of(context).colorScheme;
         return AlertDialog(

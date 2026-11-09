@@ -14,6 +14,7 @@ Future<BookmarkDraft?> showBookmarkEditorDialog(
   Bookmark? initial,
 }) => showDialog<BookmarkDraft>(
   context: context,
+  useRootNavigator: false,
   builder: (context) => _BookmarkEditorDialog(initial: initial),
 );
 

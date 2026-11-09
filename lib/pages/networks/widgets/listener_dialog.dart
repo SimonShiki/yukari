@@ -12,6 +12,7 @@ import '../../../widgets/select_item/select_item.dart';
 Future<Uri?> showListenerDialog(BuildContext context, {Uri? listener}) =>
     showDialog<Uri>(
       context: context,
+      useRootNavigator: false,
       builder: (context) => _ListenerDialog(listener: listener),
     );
 

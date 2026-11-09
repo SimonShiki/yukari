@@ -17,6 +17,7 @@ Future<List<Bookmark>?> showBookmarkPicker(
   required List<Bookmark> bookmarks,
 }) => showDialog<List<Bookmark>>(
   context: context,
+  useRootNavigator: false,
   builder: (context) => _BookmarkPickerDialog(bookmarks: bookmarks),
 );
 

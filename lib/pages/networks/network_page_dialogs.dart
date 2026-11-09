@@ -48,6 +48,7 @@ Future<void> showTunPermissionWarningDialog(
       : context.l10n.networkTunRoot(name);
   await showDialog<void>(
     context: context,
+    useRootNavigator: false,
     builder: (context) => AlertDialog(
       icon: const Icon(Icons.admin_panel_settings_outlined),
       title: Text(context.l10n.networkPrivileges),

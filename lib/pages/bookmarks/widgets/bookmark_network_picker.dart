@@ -12,6 +12,7 @@ Future<String?> showBookmarkNetworkPicker(
   required List<BookmarkNetworkOption> options,
 }) => showDialog<String>(
   context: context,
+  useRootNavigator: false,
   builder: (context) => AlertDialog(
     title: Text(context.l10n.bookmarksAddToNetworkTitle),
     content: SizedBox(
