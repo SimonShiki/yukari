@@ -12,7 +12,6 @@ import 'package:yukari_core/models/bookmark.dart';
 Future<void> showBookmarkShareSheet(
   BuildContext context, {
   required Bookmark bookmark,
-  required VoidCallback onShareOverNetwork,
   required VoidCallback onShowQr,
   required VoidCallback onCopyAddress,
   required VoidCallback onExportJson,
@@ -27,13 +26,6 @@ Future<void> showBookmarkShareSheet(
     child: Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        _channel(
-          context,
-          icon: Icons.share_outlined,
-          title: context.l10n.bookmarksShareOverNetwork,
-          subtitle: context.l10n.bookmarksShareOverNetworkSubtitle,
-          onTap: onShareOverNetwork,
-        ),
         _channel(
           context,
           icon: Icons.qr_code_2,

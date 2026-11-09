@@ -1118,8 +1118,6 @@
       }
     }
   },
-  "bookmarksShareOverNetwork": "Send over network",
-  "bookmarksShareOverNetworkSubtitle": "Hand it to a peer of a connected network",
   "bookmarksShowQr": "Show QR code",
   "bookmarksShowQrSubtitle": "Let another device scan this node",
   "bookmarksCopyAddress": "Copy address",
@@ -1162,7 +1160,6 @@
     }
   },
   "bookmarksFileUnavailable": "That file cannot be read",
-  "bookmarksShareUnavailable": "Sending over a network arrives with the data plane",
   "bookmarksCopied": "Copied {address}",
   "@bookmarksCopied": {
     "placeholders": {

@@ -1032,8 +1032,6 @@
       }
     }
   },
-  "bookmarksShareOverNetwork": "通过网络发送",
-  "bookmarksShareOverNetworkSubtitle": "发送给已连接网络中的节点",
   "bookmarksShowQr": "显示二维码",
   "bookmarksShowQrSubtitle": "让另一台设备扫描此节点",
   "bookmarksCopyAddress": "复制地址",
@@ -1076,7 +1074,6 @@
     }
   },
   "bookmarksFileUnavailable": "无法读取该文件",
-  "bookmarksShareUnavailable": "通过网络分享将随数据面功能一同提供",
   "bookmarksCopied": "已复制 {address}",
   "@bookmarksCopied": {
     "placeholders": {

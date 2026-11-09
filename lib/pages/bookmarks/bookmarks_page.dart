@@ -82,7 +82,6 @@ class _BookmarksPageState extends State<BookmarksPage> {
   Future<void> _share(Bookmark bookmark) => showBookmarkShareSheet(
     context,
     bookmark: bookmark,
-    onShareOverNetwork: _controller.shareOverNetwork,
     // The saved page resolves built-in and user bookmark ids alike.
     onShowQr: () => context.push(shareSendPath(ShareKind.node, bookmark.id)),
     onCopyAddress: () => _controller.copyAddress(bookmark),

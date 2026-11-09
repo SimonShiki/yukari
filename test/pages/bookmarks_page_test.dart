@@ -729,7 +729,6 @@ void main() {
 
       await openShare(tester, 'Alpha');
       expect(find.text('Share Alpha'), findsOneWidget);
-      expect(find.text('Send over network'), findsOneWidget);
       expect(find.text('Show QR code'), findsOneWidget);
       expect(find.text('Copy address'), findsOneWidget);
       expect(find.text('Export as JSON'), findsOneWidget);
@@ -741,16 +740,7 @@ void main() {
         findsOneWidget,
       );
 
-      await tester.tap(find.text('Send over network'));
-      await tester.pumpAndSettle();
-      expect(find.text('Share Alpha'), findsNothing);
-      expect(
-        messages.last,
-        'Sending over a network arrives with the data plane',
-      );
-
       // The QR row pushes the sender over the list, carrying this bookmark.
-      await openShare(tester, 'Alpha');
       await tester.tap(find.text('Show QR code'));
       await tester.pumpAndSettle();
       expect(find.byType(QrShareSendPage), findsOneWidget);

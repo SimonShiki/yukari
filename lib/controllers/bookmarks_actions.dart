@@ -121,9 +121,6 @@ extension BookmarksActions on BookmarksController {
     }
   }
 
-  // The one share channel that is described but not implemented yet.
-  void shareOverNetwork() => showMessage(l10n.value.bookmarksShareUnavailable);
-
   /// The route that shares every selected node as one bundle, or null after
   /// reporting what cannot be shared.
   String? selectionShareRoute() => shareSelection(

@@ -612,13 +612,6 @@ void main() {
       expect(messages.single, 'Copied tcp://peer.example.com:11010');
     });
 
-    test('reports the share channel that is not implemented', () {
-      final controller = controllerFor(builtins: []);
-
-      controller.shareOverNetwork();
-
-      expect(messages, ['Sending over a network arrives with the data plane']);
-    });
   });
 
   test('the real shared nodes are inventoried and never exported', () async {
