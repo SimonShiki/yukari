@@ -1,7 +1,40 @@
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
     id("dev.flutter.flutter-gradle-plugin")
+}
+
+// Local builds use the ignored key.properties file; CI supplies one complete
+// set of environment variables instead. Never mix credentials from both.
+val signingVariables = mapOf(
+    "storeFile" to "ANDROID_KEYSTORE_PATH",
+    "storePassword" to "ANDROID_KEYSTORE_PASSWORD",
+    "keyAlias" to "ANDROID_KEY_ALIAS",
+    "keyPassword" to "ANDROID_KEY_PASSWORD",
+)
+val signingFromEnvironment = signingVariables.values.any {
+    !System.getenv(it).isNullOrEmpty()
+}
+val keystorePropertiesFile = rootProject.file("key.properties")
+val hasReleaseSigning = signingFromEnvironment || keystorePropertiesFile.exists()
+val keystoreProperties = Properties().apply {
+    if (signingFromEnvironment) {
+        signingVariables.forEach { (property, variable) ->
+            System.getenv(variable)?.let { setProperty(property, it) }
+        }
+    } else if (keystorePropertiesFile.exists()) {
+        keystorePropertiesFile.inputStream().use { load(it) }
+    }
+}
+if (hasReleaseSigning) {
+    signingVariables.forEach { (property, variable) ->
+        require(!keystoreProperties.getProperty(property).isNullOrBlank()) {
+            "Missing Android signing setting: " +
+                if (signingFromEnvironment) variable else "$property in android/key.properties"
+        }
+    }
 }
 
 android {
@@ -33,14 +66,14 @@ android {
     }
 
     signingConfigs {
-        // The release workflow writes the keystore of the ANDROID_KEYSTORE_*
-        // secrets here; without them the build is signed with the debug keys.
-        System.getenv("ANDROID_KEYSTORE_PATH")?.let { keystore ->
+        if (hasReleaseSigning) {
             create("release") {
-                storeFile = file(keystore)
-                storePassword = System.getenv("ANDROID_KEYSTORE_PASSWORD")
-                keyAlias = System.getenv("ANDROID_KEY_ALIAS")
-                keyPassword = System.getenv("ANDROID_KEY_PASSWORD")
+                storeFile = file(keystoreProperties.getProperty("storeFile")).also {
+                    require(it.isFile) { "Android signing keystore does not exist or is not a file" }
+                }
+                storePassword = keystoreProperties.getProperty("storePassword")
+                keyAlias = keystoreProperties.getProperty("keyAlias")
+                keyPassword = keystoreProperties.getProperty("keyPassword")
             }
         }
     }

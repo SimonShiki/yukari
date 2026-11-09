@@ -1,0 +1,6 @@
+# Copy to android/key.properties (already ignored), then chmod 600 that file.
+# Use an absolute path. On Windows, use forward slashes or doubled backslashes.
+storeFile=/absolute/path/to/yukari-release.jks
+storePassword=REPLACE_WITH_STORE_PASSWORD
+keyAlias=REPLACE_WITH_KEY_ALIAS
+keyPassword=REPLACE_WITH_KEY_PASSWORD

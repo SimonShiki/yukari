@@ -137,15 +137,21 @@ jobs:
           ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
           ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: |
+          umask 077
+          trap 'rm -f "$RUNNER_TEMP/yukari-release.jks"' EXIT
           if [ -n "$ANDROID_KEYSTORE_BASE64" ]; then
-            echo "$ANDROID_KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/yukari-release.jks"
+            printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/yukari-release.jks"
             export ANDROID_KEYSTORE_PATH="$RUNNER_TEMP/yukari-release.jks"
+          elif [ -n "$ANDROID_KEYSTORE_PASSWORD$ANDROID_KEY_ALIAS$ANDROID_KEY_PASSWORD" ]; then
+            echo "::error::Android signing secrets are incomplete; ANDROID_KEYSTORE_BASE64 is unset"
+            exit 1
           elif [ "$GITHUB_EVENT_NAME" = workflow_dispatch ]; then
             echo "::warning::ANDROID_KEYSTORE_BASE64 is unset; the canary APKs are signed with the debug keystore"
           else
             echo "::error::ANDROID_KEYSTORE_BASE64 is unset; a published release cannot ship debug-signed APKs"
             exit 1
           fi
+          unset ANDROID_KEYSTORE_BASE64
           # EasyTier ships only arm64-v8a and x86_64, so the APKs keep those
           # two ABIs. Declaring them here rather than as ndk.abiFilters in
           # build.gradle.kts is what AGP's split-per-abi configuration allows.
