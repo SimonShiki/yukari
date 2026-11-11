@@ -10,7 +10,7 @@
   <img src="https://img.shields.io/badge/platform-Windows%20%7C%20Linux%20%7C%20Android-52298c" alt="Windows, Linux and Android">
 </p>
 
-English | [简体中文](./README.zh-CN.md)
+English | [简体中文](./README-zh.md)
 
 A cross-platform decentralized networking app built on [EasyTier](https://github.com/EasyTier/EasyTier), for connecting your devices wherever they are.
 
