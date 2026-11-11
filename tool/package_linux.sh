@@ -51,6 +51,7 @@ Installed-Size: $(du -sk "$usr" | cut -f1)
 Section: net
 Priority: optional
 Depends: libgtk-3-0 | libgtk-3-0t64, libx11-6, libxi6, libnotify4, libstdc++6
+License: AGPL-3.0-only
 Description: Cross-platform decentralized networking tool
  Yukari is a GUI for EasyTier, a decentralized networking tool.
 EOF
@@ -62,7 +63,7 @@ Name: yukari
 Version: $version
 Release: 1
 Summary: Cross-platform decentralized networking tool
-License: Proprietary
+License: AGPL-3.0-only
 BuildArch: x86_64
 Requires: gtk3
 
@@ -97,7 +98,7 @@ builddate = $(date +%s)
 packager = top.simonshiki
 size = $(du -sb "$usr" | cut -f1)
 arch = x86_64
-license = Proprietary
+license = AGPL-3.0-only
 depend = gtk3
 depend = libnotify
 EOF
