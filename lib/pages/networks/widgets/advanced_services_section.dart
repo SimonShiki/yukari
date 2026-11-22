@@ -56,9 +56,9 @@ class AdvancedServicesSection extends StatelessWidget {
           title: l10n.advancedNoTun,
           subtitle: l10n.advancedNoTunSubtitle,
           conflict: (
-            name: 'flags.acceptDns',
-            read: (n) => n.flags.acceptDns,
-            subtitle: l10n.advancedMagicDnsNeedsTun,
+            name: 'flags.tunRequiredServices',
+            read: (n) => n.flags.acceptDns || n.flags.enableUdpBroadcastRelay,
+            subtitle: l10n.advancedNoTunNeedsTun,
           ),
         ),
       ],

@@ -100,11 +100,6 @@ class AdvancedRelaySection extends StatelessWidget {
         ),
         SignalBuilder(
           builder: (context) {
-            final value = editorSwitch(
-              controller,
-              'flags.enableUdpBroadcastRelay',
-              (n) => n.flags.enableUdpBroadcastRelay,
-            ).value;
             final noTun = editorSwitch(
               controller,
               'flags.noTun',
@@ -129,7 +124,11 @@ class AdvancedRelaySection extends StatelessWidget {
               write: (n, value) => n.flags.enableUdpBroadcastRelay = value,
               title: l10n.advancedUdpBroadcastRelay,
               subtitle: subtitle,
-              enabled: editorSwitchEnabled(value: value, conflicts: noTun),
+              conflict: (
+                name: 'flags.noTun',
+                read: (n) => n.flags.noTun,
+                subtitle: l10n.advancedUdpBroadcastRelayNeedsTun,
+              ),
             );
           },
         ),
