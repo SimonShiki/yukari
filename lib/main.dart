@@ -15,6 +15,7 @@ import 'router.dart';
 import 'signals/backend.dart';
 import 'signals/bookmarks.dart' as bookmarks;
 import 'signals/magic_dns.dart';
+import 'signals/udp_broadcast_relay.dart';
 import 'signals/networks.dart' as networks;
 import 'storage/bookmark_store.dart';
 
@@ -32,6 +33,7 @@ Future<void> main() async {
   await initSettings();
   await initBackend(dataDir);
   initMagicDnsAuto();
+  initUdpBroadcastRelayAuto();
   initLocale();
   // The theme's platform colors must be known before the first frame paints.
   await initSystemColorSchemes();

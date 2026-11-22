@@ -7,6 +7,7 @@ import 'package:yukari_core/models/models.dart';
 import 'package:yukari/pages/networks/editor_exit_guard.dart';
 import 'package:yukari/pages/networks/network_editor_page.dart';
 import 'package:yukari/pages/networks/widgets/advanced_flags_section.dart';
+import 'package:yukari/pages/networks/widgets/advanced_relay_section.dart';
 import 'package:yukari/pages/networks/widgets/advanced_security_section.dart';
 import 'package:yukari/pages/networks/widgets/editor_fields.dart';
 import 'package:yukari/signals/networks.dart' as saved;
@@ -425,6 +426,61 @@ void main() {
     await tapSaving(tester, find.text(strings.advancedNoTun));
     expect(controller.working.value!.flags.noTun, isFalse);
     expect(controller.working.value!.flags.acceptDns, isTrue);
+  });
+
+  testWidgets('No-TUN updates only the broadcast relay row in its section', (
+    tester,
+  ) async {
+    await tester.runAsync(
+      () => seedWith({
+        'n1': seededNetwork(
+          flags: NetworkFlags()
+            ..enableUdpBroadcastRelay = true
+            ..noTun = true,
+        ),
+      }),
+    );
+    controller = NetworkEditorController(id: 'n1', showMessage: (_) {});
+    addTearDown(controller.dispose);
+    await pumpApp(
+      tester,
+      Scaffold(
+        body: SingleChildScrollView(
+          child: AdvancedRelaySection(controller: controller),
+        ),
+      ),
+    );
+    await expandSection(tester, strings.advancedRelay);
+    final title = find.text(strings.advancedUdpBroadcastRelay);
+    final whitelist = field(strings.advancedRelayWhitelist);
+    final whitelistBefore = tester.widget(whitelist);
+
+    expect(
+      find.text(strings.advancedUdpBroadcastRelayNeedsTun),
+      findsOneWidget,
+    );
+    expect(
+      switchOf(tester, strings.advancedUdpBroadcastRelay).onChanged,
+      isNotNull,
+    );
+    await tapSaving(tester, title);
+    expect(controller.working.value!.flags.enableUdpBroadcastRelay, isFalse);
+    expect(
+      switchOf(tester, strings.advancedUdpBroadcastRelay).onChanged,
+      isNull,
+    );
+
+    await saving(tester, () async {
+      controller.update((network) => network.flags.noTun = false);
+    });
+    expect(
+      switchOf(tester, strings.advancedUdpBroadcastRelay).onChanged,
+      isNotNull,
+    );
+    expect(find.text(strings.advancedUdpBroadcastRelayNeedsTun), findsNothing);
+    expect(tester.widget(whitelist), same(whitelistBefore));
+    await tapSaving(tester, title);
+    expect(controller.working.value!.flags.enableUdpBroadcastRelay, isTrue);
   });
 
   testWidgets('only the uncommon sections start collapsed', (tester) async {

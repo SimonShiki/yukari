@@ -10,6 +10,7 @@ import '../models/models.dart';
 import '../storage/network_store.dart';
 import '../system/magic_dns.dart';
 import '../system/magic_dns_auto.dart';
+import '../system/udp_broadcast_relay.dart';
 import 'network_policy.dart';
 
 /// The background service: serves [backend] to the app over IPC and starts
@@ -25,6 +26,7 @@ final class ServiceDaemon {
     required this.backend,
     MagicDnsSetup? magicDns,
     MagicDnsPlatform? dnsPlatform,
+    UdpBroadcastRelaySetup? udpBroadcastRelay,
     this.log = _log,
   }) : assert(store.readOnly, 'The service must not write the network store') {
     this.magicDns =
@@ -33,6 +35,9 @@ final class ServiceDaemon {
           system: MagicDnsSystem(platform: dnsPlatform),
           assignedAddress: _assignedAddress,
         );
+    this.udpBroadcastRelay =
+        udpBroadcastRelay ??
+        UdpBroadcastRelayAuto(assignedAddress: _assignedAddress, log: log);
   }
 
   final NetworkStore store;
@@ -40,6 +45,9 @@ final class ServiceDaemon {
 
   /// The system DNS of the networks this service runs.
   late final MagicDnsSetup magicDns;
+  late final UdpBroadcastRelaySetup udpBroadcastRelay;
+  final _relayStarts = <String, ({String name, Object token})>{};
+  bool _shuttingDown = false;
   final void Function(String message) log;
   IpcServer? _server;
 
@@ -66,7 +74,10 @@ final class ServiceDaemon {
 
   /// Stops serving, reverts the DNS it configured, and stops every instance.
   Future<void> stop() async {
+    _shuttingDown = true;
     await _server?.close();
+    _relayStarts.clear();
+    await _stopBroadcastRelays();
     _dnsStopping.addAll(_dnsRuns.keys);
     await _revertAllDns();
     await backend.dispose();
@@ -110,18 +121,59 @@ final class ServiceDaemon {
     }
     await backend.start(id, network);
     _startDns(id, network);
+    unawaited(_startBroadcastRelay(id, network));
     log('Started ${network.networkName}');
   }
 
-  /// Reverts the DNS of the networks about to stop, while their TUN devices
-  /// still exist, then stops their instances.
+  /// Clears relay and DNS state while the TUN devices still exist.
   Future<void> _stop(List<String> names) async {
+    for (final MapEntry(:key, :value) in _relayStarts.entries.toList()) {
+      if (!names.contains(value.name)) continue;
+      _relayStarts.remove(key);
+      await _stopBroadcastRelays(key);
+    }
     for (final MapEntry(:key, :value) in (await _savedNetworks()).entries) {
       if (!names.contains(value.networkName)) continue;
       _dnsStopping.add(key);
       await _revertDns(key, value.networkName);
     }
     await backend.stop(names);
+  }
+
+  Future<void> _startBroadcastRelay(String id, Network network) async {
+    if (_shuttingDown || !udpBroadcastRelay.appliesTo(network)) return;
+    final run = _relayStarts[id] = (name: network.networkName, token: Object());
+    try {
+      final interface = await udpBroadcastRelay.start(id, network);
+      if (_relayStarts[id] == run) {
+        if (interface != null) {
+          log(
+            'UDP broadcast relay set up for ${network.networkName} on $interface',
+          );
+        } else {
+          _relayStarts.remove(id);
+        }
+      } else if (!_relayStarts.containsKey(id)) {
+        await _stopBroadcastRelays(id);
+      }
+    } catch (error) {
+      if (_relayStarts[id] == run) _relayStarts.remove(id);
+      log(
+        'Could not start UDP broadcast relay for ${network.networkName}: $error',
+      );
+    }
+  }
+
+  Future<void> _stopBroadcastRelays([String? id]) async {
+    try {
+      if (id == null) {
+        await udpBroadcastRelay.stopAll();
+      } else {
+        await udpBroadcastRelay.stop(id);
+      }
+    } catch (error) {
+      log('Could not stop UDP broadcast relay: $error');
+    }
   }
 
   /// Sets the DNS up in the background: waiting for a TUN device that is still
