@@ -38,7 +38,11 @@ final class AppUdpBroadcastRelayAuto {
     final instances = running.instances.value;
     final active = backendKind.value == BackendKind.ffi;
     for (final id in _started.toList()) {
-      if (!active || instances[id]?.status != InstanceStatus.running) {
+      final instance = instances[id];
+      if (!active ||
+          instance == null ||
+          instance.status != InstanceStatus.running ||
+          !setup.appliesTo(instance.network)) {
         _started.remove(id);
         unawaited(setup.stop(id));
       }
@@ -54,6 +58,18 @@ final class AppUdpBroadcastRelayAuto {
   }
 }
 
-void initUdpBroadcastRelayAuto() {
-  if (Platform.isLinux) AppUdpBroadcastRelayAuto();
+AppUdpBroadcastRelayAuto? _auto;
+
+AppUdpBroadcastRelayAuto? initUdpBroadcastRelayAuto({
+  UdpBroadcastRelaySetup? setup,
+  ReadonlySignal<BackendKind>? backendKind,
+}) {
+  final previous = _auto;
+  _auto = null;
+  if (previous != null) unawaited(previous.dispose());
+  if (!Platform.isLinux) return null;
+  return _auto = AppUdpBroadcastRelayAuto(
+    setup: setup,
+    backendKind: backendKind,
+  );
 }

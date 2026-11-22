@@ -6,8 +6,13 @@ bool udpBroadcastRelayRequested(NetworkFlags flags) =>
     flags.enableUdpBroadcastRelay && !flags.noTun;
 
 const limitedBroadcast = 0xffffffff;
+const localNetworkControlMulticast = 0xe0000000;
+const localNetworkControlMulticastEnd = 0xe00000ff;
 
 bool isIpv4Multicast(int address) => address & 0xf0000000 == 0xe0000000;
+bool isIpv4LocalNetworkControlMulticast(int address) =>
+    address >= localNetworkControlMulticast &&
+    address <= localNetworkControlMulticastEnd;
 bool _isLoopback(int address) => address >> 24 == 127;
 bool _ignoredSource(int address) =>
     address == 0 ||
@@ -128,6 +133,9 @@ UdpBroadcastNormalization normalizeUdpBroadcastPacket(
   }
 
   final originalDst = input.getUint32(16);
+  if (isIpv4LocalNetworkControlMulticast(originalDst)) {
+    return UdpBroadcastRejection.unsupportedDestination;
+  }
   final int dst;
   if (originalDst == limitedBroadcast || isIpv4Multicast(originalDst)) {
     dst = originalDst;

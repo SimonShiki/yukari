@@ -1,3 +1,5 @@
+import 'udp_broadcast_packet.dart';
+
 final class SockFilterInstruction {
   const SockFilterInstruction(this.code, this.jt, this.jf, this.k);
 
@@ -45,7 +47,7 @@ List<SockFilterInstruction> buildUdpBroadcastBpf({
 
   final sources = physicalSrcIpv4s.toSet().toList();
   final destinations = directedBroadcastIpv4s.toSet();
-  if (base.length + 2 * (sources.length + destinations.length) + 11 >
+  if (base.length + 2 * (sources.length + destinations.length) + 15 >
       maxInstructions) {
     // A large address list is checked in userspace. Device exclusions and
     // protocol/direction checks remain in the kernel.
@@ -67,6 +69,11 @@ List<SockFilterInstruction> buildUdpBroadcastBpf({
       SockFilterInstruction(0x15, 0, 1, destination),
       _accept,
     ],
+    const SockFilterInstruction(0x20, 0, 0, 16),
+    const SockFilterInstruction(0x54, 0, 0, 0xffffff00),
+    const SockFilterInstruction(0x15, 0, 1, localNetworkControlMulticast),
+    _drop,
+    const SockFilterInstruction(0x20, 0, 0, 16),
     const SockFilterInstruction(0x54, 0, 0, 0xf0000000),
     const SockFilterInstruction(0x15, 0, 1, 0xe0000000),
     _accept,

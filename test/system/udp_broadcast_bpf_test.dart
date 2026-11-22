@@ -1,7 +1,9 @@
+import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:yukari_core/system/udp_broadcast_bpf.dart';
+import 'package:yukari_core/system/udp_broadcast_linux_ffi.dart';
 
 import 'udp_broadcast_packet_fixture.dart';
 
@@ -16,10 +18,30 @@ List<SockFilterInstruction> _filter([List<int> sources = const [_source]]) =>
     );
 
 void main() {
-  test('admits outbound IPv4 UDP limited/directed broadcast and multicast', () {
+  test('detects hangup and invalid descriptors in every poll slot', () {
+    expect(pollHasDisconnect(0, pollHup, 0), isTrue);
+    expect(pollHasDisconnect(0, 0, pollNval), isTrue);
+    expect(pollHasDisconnect(0, 0, 0), isFalse);
+  });
+
+  test('captures socket option errors before arena release', () {
+    final fd = LinuxRelayLibc.socket(afInet, sockDgram, 0);
+    expect(fd, greaterThanOrEqualTo(0));
+    try {
+      expect(setIntOption(fd, solSocket, soBroadcast, 1), 0);
+      expect(setIntOption(-1, solSocket, soBroadcast, 1), isNot(0));
+    } finally {
+      LinuxRelayLibc.close(fd);
+    }
+  }, skip: !Platform.isLinux);
+
+  test('admits outbound IPv4 UDP limited/directed and global multicast', () {
     final program = _filter();
     for (final destination in [0xffffffff, _directed, 0xe000023c, 0xeffffffa]) {
       expect(_run(program, udpPacket(destination: destination)), 0xffff);
+    }
+    for (final destination in [0xe0000000, 0xe00000ff]) {
+      expect(_run(program, udpPacket(destination: destination)), 0);
     }
   });
 

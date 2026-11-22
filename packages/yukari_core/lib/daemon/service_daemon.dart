@@ -141,7 +141,11 @@ final class ServiceDaemon {
   }
 
   Future<void> _startBroadcastRelay(String id, Network network) async {
-    if (_shuttingDown || !udpBroadcastRelay.appliesTo(network)) return;
+    if (_shuttingDown || !udpBroadcastRelay.appliesTo(network)) {
+      _relayStarts.remove(id);
+      await _stopBroadcastRelays(id);
+      return;
+    }
     final run = _relayStarts[id] = (name: network.networkName, token: Object());
     try {
       final interface = await udpBroadcastRelay.start(id, network);

@@ -67,6 +67,15 @@ void main() {
     expect(result.destinationIpv4, _target.virtualBroadcast);
   });
 
+  test('rejects local network control multicast destinations', () {
+    for (final destination in [0xe0000000, 0xe00000ff]) {
+      expect(
+        _normalize(udpPacket(destination: destination)),
+        UdpBroadcastRejection.unsupportedDestination,
+      );
+    }
+  });
+
   test(
     'uses limited broadcast when a virtual prefix has no directed broadcast',
     () {

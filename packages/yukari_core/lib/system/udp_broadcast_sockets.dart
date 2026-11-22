@@ -17,7 +17,7 @@ int openBroadcastCapture() {
     // Outgoing frames are delivered to ETH_P_ALL listeners. Attach a
     // drop-all filter before subscribing, then replace it on the first scan.
     attachBroadcastFilter(fd, const [SockFilterInstruction(0x06, 0, 0, 0)]);
-    setIntOption(fd, solSocket, 8, 256 * 1024);
+    setIntOption(fd, solSocket, soReceiveBuffer, 256 * 1024);
     using((arena) {
       final address = arena<SockAddrLl>()
         ..ref.family = afPacket
@@ -134,12 +134,16 @@ final class BroadcastTransmitter {
       sockRaw | nonblockCloexec,
       ipProtoRaw,
     );
-    if (fd < 0) return -LinuxRelayLibc.errno;
+    if (fd < 0) {
+      final error = LinuxRelayLibc.errno;
+      return -(error == 0 ? einval : error);
+    }
     return using((arena) {
       final device = name.toNativeUtf8(allocator: arena);
-      if (setIntOption(fd, ipProtoIp, 3, 1) && // IP_HDRINCL
-          setIntOption(fd, solSocket, 6, 1) && // SO_BROADCAST
-          setIntOption(fd, ipProtoIp, 34, 0) && // IP_MULTICAST_LOOP
+      var error = setIntOption(fd, ipProtoIp, ipHdrIncl, 1);
+      if (error == 0) error = setIntOption(fd, solSocket, soBroadcast, 1);
+      if (error == 0) error = setIntOption(fd, ipProtoIp, ipMulticastLoop, 0);
+      if (error == 0 &&
           LinuxRelayLibc.setOption(
                 fd,
                 solSocket,
@@ -150,9 +154,9 @@ final class BroadcastTransmitter {
               0) {
         return fd;
       }
-      final error = LinuxRelayLibc.errno;
+      if (error == 0) error = LinuxRelayLibc.errno;
       LinuxRelayLibc.close(fd);
-      return -error;
+      return -(error == 0 ? einval : error);
     });
   }
 

@@ -127,9 +127,11 @@ final class BroadcastCapture {
       if (LinuxRelayLibc.errno == eintr) return false;
       checkedFd(result, 'poll UDP broadcast relay');
     }
-    if ((_polls.ref.revents | (_polls + 2).ref.revents) &
-            (pollHup | pollNval) !=
-        0) {
+    if (pollHasDisconnect(
+      _polls.ref.revents,
+      (_polls + 1).ref.revents,
+      (_polls + 2).ref.revents,
+    )) {
       throw StateError('UDP broadcast relay lost a socket');
     }
     if (_polls.ref.revents & pollErr != 0) {

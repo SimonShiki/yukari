@@ -1,6 +1,8 @@
 import 'dart:typed_data';
+import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:yukari_core/system/udp_broadcast_linux_ffi.dart';
 import 'package:yukari_core/system/udp_broadcast_multicast.dart';
 
 void main() {
@@ -55,6 +57,25 @@ Idx Device    : Count Querier Group    Users Timer Reporter
       isEmpty,
     );
   });
+
+  test('closes TUN sockets when all physical links disappear', () {
+    final closed = <int>[];
+    final groupWord = Endian.host == Endian.little ? '3C0200E0' : 'E000023C';
+    final mirror = MulticastGroupMirror(
+      readIgmp: () => '2 eth0 : 1 V3\n  $groupWord 1 0:00000000 0',
+      closeSocket: (fd) {
+        closed.add(fd);
+        return LinuxRelayLibc.close(fd);
+      },
+    );
+
+    mirror.sync({1}, {'eth0'});
+    expect(closed, isEmpty);
+    mirror.sync({1}, {});
+
+    expect(closed, hasLength(1));
+    mirror.dispose();
+  }, skip: !Platform.isLinux);
 
   test('accepts native words on big-endian hosts', () {
     const data = '2 eth0 : 1 V3\n     E000023C 1 0:00000000 0';

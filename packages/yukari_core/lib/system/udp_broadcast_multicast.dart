@@ -42,16 +42,28 @@ Set<int> multicastGroupsForInterfaces(
 }
 
 final class MulticastGroupMirror {
+  MulticastGroupMirror({
+    String Function()? readIgmp,
+    int Function(int)? closeSocket,
+  }) : _readIgmp = readIgmp ?? _readProcNetIgmp,
+       _closeSocket = closeSocket ?? LinuxRelayLibc.close;
+
+  final String Function() _readIgmp;
+  final int Function(int) _closeSocket;
   final _sockets = <int, ({int fd, Set<int> groups})>{};
 
   void sync(Set<int> indexes, Set<String> physicalNames) {
     for (final index in _sockets.keys.toList()) {
       if (!indexes.contains(index)) removeTun(index);
     }
-    if (indexes.isEmpty || physicalNames.isEmpty) return;
+    if (indexes.isEmpty) return;
+    if (physicalNames.isEmpty) {
+      dispose();
+      return;
+    }
     final String content;
     try {
-      content = File('/proc/net/igmp').readAsStringSync();
+      content = _readIgmp();
     } on FileSystemException {
       return;
     }
@@ -76,11 +88,13 @@ final class MulticastGroupMirror {
       using((arena) {
         final request = arena<IpMreqn>()..ref.ifindex = index;
         for (final group in current.difference(desired)) {
-          _membership(fd, 36, request, group);
+          _membership(fd, ipDropMembership, request, group);
           current.remove(group);
         }
         for (final group in desired.difference(current)) {
-          if (_membership(fd, 35, request, group)) current.add(group);
+          if (_membership(fd, ipAddMembership, request, group)) {
+            current.add(group);
+          }
         }
       });
     }
@@ -88,7 +102,7 @@ final class MulticastGroupMirror {
 
   void removeTun(int index) {
     final socket = _sockets.remove(index);
-    if (socket != null) LinuxRelayLibc.close(socket.fd);
+    if (socket != null) _closeSocket(socket.fd);
   }
 
   void dispose() {
@@ -97,6 +111,8 @@ final class MulticastGroupMirror {
     }
   }
 }
+
+String _readProcNetIgmp() => File('/proc/net/igmp').readAsStringSync();
 
 bool _membership(int fd, int option, Pointer<IpMreqn> request, int group) {
   request.ref.group = networkUint32(group);

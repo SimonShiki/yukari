@@ -102,6 +102,25 @@ void main() {
     expect(relay.active, isEmpty);
   });
 
+  test('stops an active relay when a relaunch disables it', () async {
+    await store.save({
+      'rpc': Network()
+        ..networkName = 'rpc'
+        ..flags.enableUdpBroadcastRelay = true,
+    });
+    await serve();
+    await client.start('rpc', Network());
+    expect(relay.active, {'rpc'});
+
+    final networks = await store.load();
+    networks['rpc']!.flags.noTun = true;
+    await store.save(networks);
+    await client.start('rpc', Network());
+    await pumpEventQueue();
+
+    expect(relay.active, isEmpty);
+  });
+
   test('cancels a relay that finishes setting up after the RPC stop', () async {
     await store.save({
       'rpc': Network()

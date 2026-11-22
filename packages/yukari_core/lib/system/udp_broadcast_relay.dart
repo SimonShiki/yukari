@@ -51,15 +51,18 @@ final class UdpBroadcastRelayAuto implements UdpBroadcastRelaySetup {
 
   @override
   Future<String?> start(String networkId, Network network) async {
-    if (!appliesTo(network)) return null;
-    if (_targets[networkId] case final existing?) {
-      return existing.target.tunName;
+    if (!appliesTo(network)) {
+      await stop(networkId);
+      return null;
     }
     final run = _starts[networkId] = Object();
     try {
       for (var attempt = 0; attempt < attempts; attempt++) {
-        final address = await assignedAddress?.call(networkId) ?? network.ipv4;
+        final assigned = await assignedAddress?.call(networkId);
         if (_starts[networkId] != run) return null;
+        final address = network.dhcp && assignedAddress != null
+            ? assigned
+            : assigned ?? network.ipv4;
         final ipv4 = _ipv4(address);
         // Named TUNs can be shared. A DHCP instance must report which
         // address belongs to it before we use that link.
@@ -79,12 +82,18 @@ final class UdpBroadcastRelayAuto implements UdpBroadcastRelaySetup {
           return _starts[networkId] == run ? tun.name : null;
         }
         if (attempt + 1 < attempts) await Future<void>.delayed(retryDelay);
+        if (_starts[networkId] != run) return null;
+      }
+      if (_starts[networkId] == run && _targets.remove(networkId) != null) {
+        await _stopTargets();
       }
       _log(
         'Could not find the TUN for UDP broadcast relay on ${network.networkName}',
       );
     } catch (error) {
-      if (_starts[networkId] == run) _targets.remove(networkId);
+      if (_starts[networkId] == run && _targets.remove(networkId) != null) {
+        await _stopTargets();
+      }
       _log(
         'Could not start UDP broadcast relay on ${network.networkName}: $error',
       );

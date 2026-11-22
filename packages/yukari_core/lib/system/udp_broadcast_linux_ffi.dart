@@ -102,9 +102,11 @@ final class LinuxRelayLibc {
 const afInet = 2, afNetlink = 16, afPacket = 17;
 const sockDgram = 2, sockRaw = 3, nonblockCloexec = 0x80800;
 const ethIp = 0x0800, ethAll = 0x0003;
-const solSocket = 1, soError = 4, soReceiveBuffer = 8;
+const solSocket = 1, soError = 4, soReceiveBuffer = 8, soBroadcast = 6;
 const soBindToDevice = 25, soAttachFilter = 26;
 const ipProtoIp = 0, ipProtoRaw = 255;
+const ipHdrIncl = 3, ipMulticastLoop = 34;
+const ipAddMembership = 35, ipDropMembership = 36;
 const pollErr = 0x008, pollHup = 0x010, pollNval = 0x020;
 const packetOutgoing = 4;
 const eintr = 4, enxio = 6, enodev = 19, einval = 22, eopnotsupp = 95;
@@ -132,17 +134,18 @@ int getIntOption(int fd, int level, int option) => using((arena) {
   return data.value;
 });
 
-bool setIntOption(int fd, int level, int option, int value) => using((arena) {
+int setIntOption(int fd, int level, int option, int value) => using((arena) {
   final data = arena<Int>()..value = value;
-  return LinuxRelayLibc.setOption(
-        fd,
-        level,
-        option,
-        data.cast(),
-        sizeOf<Int>(),
-      ) ==
-      0;
+  if (LinuxRelayLibc.setOption(fd, level, option, data.cast(), sizeOf<Int>()) ==
+      0) {
+    return 0;
+  }
+  final error = LinuxRelayLibc.errno;
+  return error == 0 ? einval : error;
 });
+
+bool pollHasDisconnect(int capture, int netlink, int event) =>
+    (capture | netlink | event) & (pollHup | pollNval) != 0;
 
 final class IfAddrs extends Struct {
   external Pointer<IfAddrs> next;

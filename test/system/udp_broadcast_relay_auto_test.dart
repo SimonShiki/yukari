@@ -1,8 +1,10 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:signals/signals.dart';
 import 'package:yukari/signals/instances.dart' as running;
+import 'package:yukari/signals/networks.dart' as saved;
 import 'package:yukari/signals/udp_broadcast_relay.dart';
 import 'package:yukari_core/models/models.dart';
 import 'package:yukari_core/system/udp_broadcast_interfaces.dart';
@@ -77,6 +79,90 @@ void main() {
     expect(snapshots.last.single.target.networkId, 'b');
     await auto.stopAll();
     expect(snapshots.last, isEmpty);
+  });
+
+  test('re-resolves and republishes a target on every start', () async {
+    final snapshots = <List<RelayRegistration>>[];
+    var tun = _tun(0x0a020304);
+    final auto = UdpBroadcastRelayAuto(
+      available: () => true,
+      interfaces: () => [tun],
+      configure: (targets) async => snapshots.add(targets),
+    );
+    addTearDown(auto.stopAll);
+
+    expect(await auto.start('a', _network()..ipv4 = '10.2.3.4'), 'et_a');
+    tun = _tun(0x0a020305);
+    expect(await auto.start('a', _network()..ipv4 = '10.2.3.5'), 'et_a');
+
+    expect(snapshots, hasLength(2));
+    expect(snapshots.last.single.target.virtualIpv4, 0x0a020305);
+  });
+
+  test('an ineligible restart removes its previously active target', () async {
+    final snapshots = <List<RelayRegistration>>[];
+    final auto = UdpBroadcastRelayAuto(
+      available: () => true,
+      interfaces: () => [_tun(0x0a020304)],
+      configure: (targets) async => snapshots.add(targets),
+    );
+    addTearDown(auto.stopAll);
+
+    await auto.start('a', _network()..ipv4 = '10.2.3.4');
+    expect(await auto.start('a', _network(noTun: true)), isNull);
+    expect(snapshots.last, isEmpty);
+  });
+
+  test(
+    'DHCP does not fall back to the saved IPv4 while assignment is pending',
+    () async {
+      final auto = UdpBroadcastRelayAuto(
+        available: () => true,
+        attempts: 1,
+        log: (_) {},
+        assignedAddress: (_) async => null,
+        interfaces: () => [_tun(0x0a020304)],
+        configure: (_) async => fail('Pending DHCP must not match the old IP'),
+      );
+      final network = _network()
+        ..dhcp = true
+        ..ipv4 = '10.2.3.4';
+
+      expect(await auto.start('a', network), isNull);
+    },
+  );
+
+  testWidgets('stop during retry avoids another assigned-address read', (
+    tester,
+  ) async {
+    await tester.runAsync(() async {
+      final scanned = Completer<void>();
+      var reads = 0;
+      final auto = UdpBroadcastRelayAuto(
+        available: () => true,
+        attempts: 3,
+        retryDelay: const Duration(milliseconds: 30),
+        assignedAddress: (_) async {
+          reads++;
+          return null;
+        },
+        interfaces: () {
+          if (!scanned.isCompleted) scanned.complete();
+          return [];
+        },
+        log: (_) {},
+      );
+
+      final network = _network()
+        ..dhcp = false
+        ..ipv4 = '10.2.3.4';
+      final start = auto.start('a', network);
+      await scanned.future;
+      await auto.stop('a');
+
+      expect(await start, isNull);
+      expect(reads, 1);
+    });
   });
 
   test(
@@ -191,6 +277,20 @@ void main() {
     },
   );
 
+  test('a DHCP renewal keeps its TUN after a scan missed the old address', () {
+    final original = _tun(0x0a020304);
+    final current = _tun(0x0a020309);
+    final target = relayTarget('a', original);
+    final updated = resolveRelayTargets(
+      [current],
+      [(target: target, followsDhcp: true)],
+      {},
+    );
+
+    expect(updated['a']!.target.virtualIpv4, current.ipv4);
+    expect(updated['a']!.target.tunIfindex, current.index);
+  });
+
   test('skips TUNs configured in a separate network namespace', () async {
     final auto = UdpBroadcastRelayAuto(
       available: () => true,
@@ -232,14 +332,62 @@ void main() {
       expect(setup.stopped, ['a', 'a']);
     },
   );
+
+  test('app relay stops when a running network becomes No-TUN', () async {
+    await seedWith({'a': _network()});
+    final setup = _Setup();
+    final auto = AppUdpBroadcastRelayAuto(
+      setup: setup,
+      backendKind: signal(BackendKind.ffi),
+    );
+    addTearDown(auto.dispose);
+    final backend = FakeBackend(
+      collected: () => {
+        'alpha': {'running': true},
+      },
+    );
+
+    await running.refreshInstances(backend);
+    expect(setup.started, ['a']);
+    final updated = saved.networks.peek()['a']!.copy()..flags.noTun = true;
+    await saved.updateNetwork('a', updated);
+    await running.refreshInstances(backend);
+    await pumpEventQueue();
+
+    expect(setup.stopped, ['a']);
+  });
+
+  test('initializer disposes the prior app-mode relay observer', () async {
+    if (!Platform.isLinux) return;
+    final firstSetup = _Setup();
+    final kind = signal(BackendKind.service);
+    final first = initUdpBroadcastRelayAuto(
+      setup: firstSetup,
+      backendKind: kind,
+    );
+    final second = initUdpBroadcastRelayAuto(
+      setup: _Setup(),
+      backendKind: kind,
+    );
+    addTearDown(() async {
+      await second?.dispose();
+    });
+
+    expect(first, isNotNull);
+    expect(second, isNotNull);
+    await pumpEventQueue();
+    expect(firstSetup.stopAllCalls, 1);
+  });
 }
 
 final class _Setup implements UdpBroadcastRelaySetup {
   final started = <String>[];
   final stopped = <String>[];
+  var stopAllCalls = 0;
 
   @override
-  bool appliesTo(Network network) => true;
+  bool appliesTo(Network network) =>
+      network.flags.enableUdpBroadcastRelay && !network.flags.noTun;
 
   @override
   Future<String?> start(String networkId, Network network) async {
@@ -251,5 +399,7 @@ final class _Setup implements UdpBroadcastRelaySetup {
   Future<void> stop(String networkId) async => stopped.add(networkId);
 
   @override
-  Future<void> stopAll() async {}
+  Future<void> stopAll() async {
+    stopAllCalls++;
+  }
 }

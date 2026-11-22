@@ -88,6 +88,7 @@ final class _WorkerConnection {
   Future<void> update(List<RelayRegistration> registrations) async {
     final port = await ready.future;
     if (port == null || exited.isCompleted) {
+      if (registrations.isEmpty) return;
       throw StateError('UDP broadcast relay worker has exited');
     }
     final reply = ReceivePort();

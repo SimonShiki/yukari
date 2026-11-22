@@ -157,7 +157,7 @@ Map<String, RelayDevice> resolveRelayTargets(
       interfaces,
       name: target.tunName,
       address: target.virtualIpv4,
-      previous: previous[target.networkId]?.target,
+      previous: previous[target.networkId]?.target ?? target,
       followsDhcp: registration.followsDhcp,
     );
     if (device != null) {
