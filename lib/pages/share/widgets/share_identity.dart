@@ -17,6 +17,11 @@ class ShareKindChip extends StatelessWidget {
   }, tone: MetadataChipTone.protocol);
 }
 
+IconData shareKindIcon(ShareKind kind) => switch (kind) {
+  ShareKind.network => Icons.hub_outlined,
+  ShareKind.node => Icons.dns_outlined,
+};
+
 /// The title a share shows: its name, or the single peer's address when it has
 /// none.
 String shareDisplayTitle(ShareDocument document) =>

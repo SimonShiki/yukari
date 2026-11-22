@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:signals/signals.dart';
 import 'package:uuid/uuid.dart';
@@ -12,6 +13,7 @@ import '../signals/bookmarks.dart' as saved;
 import '../signals/locale.dart';
 import '../signals/networks.dart' as stored;
 import '../utils/crypto_utils.dart';
+import '../utils/line_formats.dart';
 
 part 'network_editor_signals.dart';
 
@@ -76,6 +78,10 @@ class NetworkEditorController {
   /// The active backend's kind: the app-wide signal, so the startup section
   /// follows a backend switch.
   ReadonlySignal<BackendKind> get backendKind => backends.backendKind;
+
+  late final startupSupported = computed(
+    () => !Platform.isAndroid || backendKind.value == BackendKind.service,
+  );
 
   /// The initial peers, so the peer rows rebuild only when a peer changes.
   late final Signal<List<Node>> nodes = signal(
@@ -170,6 +176,7 @@ class NetworkEditorController {
     if (_disposed) return;
     unawaited(flush());
     _disposed = true;
+    startupSupported.dispose();
     _stopFields();
     _stopBookmarks();
     for (final field in _fields) {

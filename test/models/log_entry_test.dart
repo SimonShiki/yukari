@@ -2,7 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:yukari/l10n/generated/app_localizations_en.dart';
 import 'package:yukari/l10n/generated/app_localizations_zh.dart';
 import 'package:yukari_core/models/log_entry.dart';
-import 'package:yukari/widgets/log_entry/log_summary.dart';
+import 'package:yukari/pages/networks/widgets/log_entry/log_summary.dart';
 
 const _connAdded =
     '{"time":"2026-10-12T21:21:42.747707393+08:00","event":{"PeerConnAdded":'

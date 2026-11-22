@@ -6,7 +6,6 @@ import 'dart:typed_data';
 import 'package:flutter/foundation.dart' show listEquals;
 import 'package:flutter/services.dart' show HapticFeedback;
 import 'package:qrs_dart/qrs_dart.dart';
-import 'package:signals/signals.dart';
 
 import '../share/image_qr_scan.dart';
 import '../share/share_bundle.dart';
@@ -16,8 +15,9 @@ import '../share/share_receive_session.dart';
 import '../signals/locale.dart';
 import '../utils/transfer_rate.dart';
 
+import 'signal_scope.dart';
+
 part 'qr_share_receive_actions.dart';
-part 'qr_share_receive_settings.dart';
 
 /// The receive page's state: feeds payloads into a [ReceiveSession], follows
 /// its progress and turns a completed transfer into the [ShareDocument]s it
@@ -25,7 +25,7 @@ part 'qr_share_receive_settings.dart';
 ///
 /// Every dependency is injected, so tests drive camera frames, a worker-free
 /// scanner, the importer and the clock without a plugin or an isolate.
-class QrShareReceiveController {
+class QrShareReceiveController with SignalScope {
   /// Creates a controller; [cameraAvailable] defaults to [platformHasCamera].
   QrShareReceiveController({
     bool? cameraAvailable,
@@ -51,20 +51,20 @@ class QrShareReceiveController {
   // The transfer: blocks needed and decoded, accepted frames, the per-block
   // status (`1` decoded, the pending degree, `0` unknown), and the shares once
   // the transfer completes.
-  final k = signal<int>(0);
-  final decoded = signal<int>(0);
-  final frames = signal<int>(0);
-  final status = signal<List<int>>(const <int>[]);
-  final shares = signal<List<ShareDocument>>(const <ShareDocument>[]);
+  late final k = own<int>(0);
+  late final decoded = own<int>(0);
+  late final frames = own<int>(0);
+  late final status = own<List<int>>(const <int>[]);
+  late final shares = own<List<ShareDocument>>(const <ShareDocument>[]);
 
   // The page's feedback and controls: a localized error, the measured speed,
   // the camera pace, the image scan's progress, the save flags.
-  final error = signal<String?>(null);
-  final speed = signal<double>(0);
-  final pace = signal<ScanPace>(ScanPace.balanced);
-  final imageProgress = signal<({int done, int total})?>(null);
-  final saving = signal<bool>(false);
-  final saved = signal<bool>(false);
+  late final error = own<String?>(null);
+  late final speed = own<double>(0);
+  late final pace = own<ScanPace>(ScanPace.balanced);
+  late final imageProgress = own<({int done, int total})?>(null);
+  late final saving = own<bool>(false);
+  late final saved = own<bool>(false);
 
   final ShareImporter _importer;
   final ImageScanner _imageScanner;
@@ -198,16 +198,15 @@ class QrShareReceiveController {
   void dispose() {
     if (_disposed) return;
     _disposed = true;
-    k.dispose();
-    decoded.dispose();
-    frames.dispose();
-    status.dispose();
-    shares.dispose();
-    error.dispose();
-    speed.dispose();
-    pace.dispose();
-    imageProgress.dispose();
-    saving.dispose();
-    saved.dispose();
+    disposeSignals();
   }
 }
+
+/// How hard the camera card pushes the scanner.
+///
+/// Power against throughput: relaxed leaves 250 ms between attempts (the camera
+/// keeps its exposure, the battery lasts), turbo removes the throttle.
+enum ScanPace { relaxed, balanced, turbo }
+
+/// Whether `mobile_scanner` ships a camera backend for this platform.
+bool platformHasCamera() => Platform.isAndroid;

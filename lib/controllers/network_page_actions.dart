@@ -1,7 +1,6 @@
 import 'dart:convert';
 
 import 'package:file_picker/file_picker.dart';
-import 'package:signals/signals.dart';
 import 'package:uuid/uuid.dart';
 
 import 'package:yukari_core/bindings/easytier_ffi_native.dart' show parseConfig;
@@ -9,7 +8,7 @@ import 'package:yukari_core/models/models.dart';
 
 import '../share/share_document.dart';
 import '../share/share_routes.dart';
-import '../share/share_selection.dart';
+import 'share_selection.dart';
 import '../signals/instance_logs.dart';
 import '../signals/instances.dart';
 import '../signals/locale.dart';
@@ -24,7 +23,8 @@ import '../utils/validator.dart';
 import 'network_instance_controller.dart';
 import 'network_page_controller.dart';
 
-part 'network_creator_controller.dart';
+export 'network_creator_controller.dart';
+
 part 'network_page_delete.dart';
 part 'network_page_export.dart';
 part 'network_page_import.dart';

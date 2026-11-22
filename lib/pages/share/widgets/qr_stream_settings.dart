@@ -30,12 +30,18 @@ class QrStreamSettings extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            if (!controller.staticShare) ...[
-              _frameRate(context),
-              const SizedBox(height: 24),
-              _density(context),
-              const SizedBox(height: 16),
-            ],
+            SignalBuilder(
+              builder: (context) => controller.staticShare
+                  ? const SizedBox.shrink()
+                  : Column(
+                      children: [
+                        _frameRate(context),
+                        const SizedBox(height: 24),
+                        _density(context),
+                        const SizedBox(height: 16),
+                      ],
+                    ),
+            ),
             SignalBuilder(
               builder: (context) {
                 if (!controller.exporting.value) {

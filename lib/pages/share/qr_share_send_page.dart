@@ -131,20 +131,18 @@ class _QrShareSendPageState extends State<QrShareSendPage>
   }
 
   Widget _content(QrShareSendController controller) => SharePageBody(
-    // One builder for everything a share option rewrites: the summary says what
-    // the documents carry, so it moves with them. The stream itself keeps its
-    // own builders, so a frame never rebuilds this column.
-    child: SignalBuilder(
-      builder: (context) => Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        spacing: 16,
-        children: [
-          QrShareSummaryCard(documents: controller.documents.value),
-          ShareExtraOptions(controller: controller),
-          QrStreamCard(controller: controller),
-          QrStreamSettings(controller: controller, onExportGif: _exportGif),
-        ],
-      ),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      spacing: 16,
+      children: [
+        SignalBuilder(
+          builder: (context) =>
+              QrShareSummaryCard(documents: controller.documents.value),
+        ),
+        ShareExtraOptions(controller: controller),
+        QrStreamCard(controller: controller),
+        QrStreamSettings(controller: controller, onExportGif: _exportGif),
+      ],
     ),
   );
 

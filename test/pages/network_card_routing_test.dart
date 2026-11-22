@@ -7,7 +7,7 @@ import 'package:yukari/pages/networks/networks_page.dart';
 import 'package:yukari/pages/networks/widgets/networks_list_pane.dart';
 import 'package:yukari/pages/share/qr_share_send_page.dart';
 import 'package:yukari/router.dart';
-import 'package:yukari/widgets/network_card/network_card.dart';
+import 'package:yukari/pages/networks/widgets/network_card/network_card.dart';
 
 import '../networks_fixture.dart';
 import '../router_support.dart';

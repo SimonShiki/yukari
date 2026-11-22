@@ -4,8 +4,8 @@ import 'package:signals_flutter/signals_flutter.dart';
 import '../../../controllers/network_page_controller.dart';
 import '../../../l10n/l10n.dart';
 import '../../../widgets/empty_state/empty_state.dart';
-import '../../../widgets/network_card/network_card_data.dart';
-import '../../../widgets/network_card/network_card_list.dart';
+import '../../../models/network_card_data.dart';
+import 'network_card/network_card_list.dart';
 import '../network_create_menu.dart';
 
 /// The reorder the list runs while selecting: it moves nothing.
@@ -27,7 +27,8 @@ class NetworksListPane extends StatelessWidget {
   final bool wide;
 
   /// Handles a row being selected, which opens a route on narrow windows.
-  final void Function(List<NetworkCardData> cards, int? index) onSelect;
+  final void Function(List<NetworkCardData> cards, int? index, {bool fromCard})
+  onSelect;
 
   @override
   Widget build(BuildContext context) => Stack(
@@ -68,9 +69,12 @@ class NetworksListPane extends StatelessWidget {
                 // The segmented list paints the selection itself, so it
                 // takes the whole set of selected rows.
                 final selecting = selection.selecting.value;
-                final selected = controller.selectedId.value;
-                final index = cards.indexWhere((card) => card.id == selected);
-                final selectedIds = selection.ids.value;
+                final selected = wide && !selecting
+                    ? controller.selectedId.value
+                    : null;
+                final selectedIds = selecting
+                    ? selection.ids.value
+                    : {?selected};
                 return Align(
                   alignment: Alignment.topCenter,
                   child: ConstrainedBox(
@@ -80,14 +84,10 @@ class NetworksListPane extends StatelessWidget {
                       onReorder: selecting ? _keepOrder : controller.reorder,
                       keyBuilder: (index) => ValueKey(cards[index].id),
                       selecting: selecting,
-                      selectedIndices: selecting
-                          ? {
-                              for (final (index, card) in cards.indexed)
-                                if (selectedIds.contains(card.id)) index,
-                            }
-                          // Narrow windows show no pane, so nothing looks
-                          // selected.
-                          : {if (wide && index >= 0) index},
+                      selectedIndices: {
+                        for (final (index, card) in cards.indexed)
+                          if (selectedIds.contains(card.id)) index,
+                      },
                       onSelectionChanged: selecting
                           ? (indices) => selection.select([
                               for (final index in indices) cards[index].id,
@@ -95,6 +95,7 @@ class NetworksListPane extends StatelessWidget {
                           : (indices) => onSelect(
                               cards,
                               indices.isEmpty ? null : indices.first,
+                              fromCard: true,
                             ),
                     ),
                   ),

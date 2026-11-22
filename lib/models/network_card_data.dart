@@ -8,7 +8,7 @@ class NetworkCardData {
     required this.name,
     required this.status,
     required this.running,
-    required this.onOpen,
+    VoidCallback? onOpen,
     required this.onEdit,
     required this.onShare,
     required this.onExport,
@@ -24,7 +24,6 @@ class NetworkCardData {
   final InstanceStatus status;
   final bool running;
   final bool busy;
-  final VoidCallback onOpen;
   final VoidCallback onEdit;
   final VoidCallback onShare;
   final VoidCallback onExport;

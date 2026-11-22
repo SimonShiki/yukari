@@ -1,8 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:yukari/pages/networks/network_editor_page.dart';
-import 'package:yukari/widgets/network_card/network_card.dart';
-import 'package:yukari/widgets/network_card/predictive_back_gesture_detector.dart';
+import 'package:yukari/pages/networks/widgets/network_card/network_card.dart';
+import 'package:yukari/pages/networks/widgets/network_card/predictive_back_gesture_detector.dart';
 
 import '../networks_fixture.dart';
 import 'network_detail_support.dart';

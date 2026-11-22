@@ -15,7 +15,7 @@ class EditorTextField extends StatefulWidget {
   const EditorTextField({
     super.key,
     required this.label,
-    required this.initialValue,
+    this.initialValue = '',
     required this.onSaved,
     this.value,
     this.hint,
@@ -191,3 +191,39 @@ class EditorLinesField extends StatelessWidget {
     onSaved: (value) => onSaved(splitLines(value)),
   );
 }
+
+/// A numeric field with the same parsing and range validation for every caller.
+Widget editorIntField({
+  Key? key,
+  required String label,
+  String? helper,
+  String? name,
+  required int initialValue,
+  required int min,
+  required int max,
+  required ValueChanged<int> onSaved,
+}) => EditorTextField(
+  key: key,
+  label: label,
+  helper: helper,
+  initialValue: '$initialValue',
+  keyboardType: TextInputType.number,
+  validator: (value) => validateIntRange(value, name ?? label, min, max),
+  onSaved: (value) => onSaved(int.parse(value.trim())),
+);
+
+Widget editorOptionalIntField({
+  required String label,
+  required String helper,
+  required int? initialValue,
+  required int min,
+  required int max,
+  required ValueChanged<int?> onSaved,
+}) => EditorTextField(
+  label: label,
+  helper: helper,
+  initialValue: initialValue?.toString() ?? '',
+  keyboardType: TextInputType.number,
+  validator: (value) => validateOptionalIntRange(value, label, min, max),
+  onSaved: (value) => onSaved(int.tryParse(value.trim())),
+);

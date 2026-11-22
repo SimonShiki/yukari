@@ -89,10 +89,7 @@ extension HomeActions on HomeController {
     if (_disposed) return;
     setActive(false);
     _disposed = true;
-    for (final release in _disposers) {
-      release();
-    }
-    _disposers.clear();
+    disposeSignals();
     _traffic = null;
   }
 }

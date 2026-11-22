@@ -135,7 +135,6 @@ class _QrShareReceivePageState extends State<QrShareReceivePage> {
           ReceiveErrorBanner(controller: _controller),
           ReceiveProgressCard(
             controller: _controller,
-            cameraAvailable: _controller.cameraAvailable,
             onScanImage: _scanPickedImage,
           ),
         ] else

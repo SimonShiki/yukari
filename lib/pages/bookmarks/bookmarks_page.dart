@@ -20,10 +20,10 @@ import 'widgets/bookmark_delete_dialog.dart';
 import 'widgets/bookmark_editor_dialog.dart';
 import 'widgets/bookmark_network_picker.dart';
 import 'widgets/bookmark_share_sheet.dart';
-import 'widgets/bookmarks_body.dart';
 import 'widgets/bookmarks_fab_menu.dart';
 import 'widgets/bookmarks_filter_drawer.dart';
 import 'widgets/bookmarks_search_bar.dart';
+import 'widgets/bookmarks_sections.dart';
 
 /// Browse the built-in shared nodes and the user's bookmarks, and manage them.
 class BookmarksPage extends StatefulWidget {
@@ -91,44 +91,50 @@ class _BookmarksPageState extends State<BookmarksPage> {
   @override
   Widget build(BuildContext context) {
     final selection = _controller.selection;
-    // The bars around the list follow selection mode, each in its own slot;
-    // the rows watch it themselves.
+    final drawer = BookmarksFilterDrawer(controller: _controller);
+    final body = SafeArea(child: _body());
+    final fab = SelectionFabSwitch(
+      selection: selection,
+      selecting: SignalBuilder(
+        builder: (context) => SelectionFabMenu(
+          selection: selection,
+          onShare: _shareSelection,
+          onDelete: _controller.canDeleteSelection.value
+              ? _deleteSelection
+              : null,
+        ),
+      ),
+      menu: BookmarksFabMenu(
+        onAdd: _edit,
+        onImport: _controller.importFromFile,
+        onScan: () => context.push(shareReceivePath),
+      ),
+    );
     return SelectionScope(
       selection: selection,
-      child: Scaffold(
-        appBar: SelectionAppBarSwitch(
-          selection: selection,
-          bar: _appBar(context, selection),
-        ),
-        endDrawer: BookmarksFilterDrawer(controller: _controller),
-        // Selecting replaces the action menu with the selection's own.
-        floatingActionButton: SelectionFabSwitch(
-          selection: selection,
-          selecting: SignalBuilder(
-            // Only what the page can delete decides the delete item, so a
-            // selection of built-in shared nodes leaves it out.
-            builder: (context) => SelectionFabMenu(
-              selection: selection,
-              onShare: _shareSelection,
-              onDelete: _controller.selectedBookmarks.value.isEmpty
-                  ? null
-                  : _deleteSelection,
-            ),
+      child: SignalBuilder(
+        // The scaffold reads the app bar's preferred height when the search
+        // field appears or disappears. The other slots keep their widgets.
+        builder: (context) => Scaffold(
+          appBar: SelectionAppBarSwitch(
+            selection: selection,
+            bar: _appBar(context, selection, _controller.hasBookmarks.value),
           ),
-          menu: BookmarksFabMenu(
-            onAdd: _edit,
-            onImport: _controller.importFromFile,
-            onScan: () => context.push(shareReceivePath),
-          ),
+          endDrawer: drawer,
+          floatingActionButton: fab,
+          body: body,
         ),
-        body: SafeArea(child: _body()),
       ),
     );
   }
 
   /// The page's own app bar: the way into selection while the filters leave
   /// something to select, the export and filter actions, and the search field.
-  AppBar _appBar(BuildContext context, MultiSelection selection) {
+  AppBar _appBar(
+    BuildContext context,
+    MultiSelection selection,
+    bool hasBookmarks,
+  ) {
     final l10n = context.l10n;
     return AppBar(
       title: Text(l10n.navBookmarks),
@@ -164,14 +170,12 @@ class _BookmarksPageState extends State<BookmarksPage> {
         ),
       ],
       // The field belongs to the app bar, and hides with the empty state.
-      bottom: PreferredSize(
-        preferredSize: const Size.fromHeight(BookmarksSearchBar.height),
-        child: SignalBuilder(
-          builder: (context) => _controller.hasBookmarks.value
-              ? BookmarksSearchBar(controller: _controller)
-              : const SizedBox.shrink(),
-        ),
-      ),
+      bottom: hasBookmarks
+          ? PreferredSize(
+              preferredSize: const Size.fromHeight(BookmarksSearchBar.height),
+              child: BookmarksSearchBar(controller: _controller),
+            )
+          : null,
     );
   }
 
@@ -185,13 +189,7 @@ class _BookmarksPageState extends State<BookmarksPage> {
   /// Nothing at all shows the full-page empty state; otherwise the list.
   Widget _body() => SignalBuilder(
     builder: (context) => _controller.hasBookmarks.value
-        ? BookmarksBody(
-            controller: _controller,
-            onEdit: _edit,
-            onDelete: _delete,
-            onShare: _share,
-            onAddToNetwork: _addToNetwork,
-          )
+        ? _bookmarkList()
         : EmptyState(
             icon: Icons.bookmark_add_outlined,
             title: context.l10n.bookmarksEmpty,
@@ -200,6 +198,26 @@ class _BookmarksPageState extends State<BookmarksPage> {
               onPressed: _edit,
               icon: const Icon(Icons.bookmark_add_outlined),
               label: Text(context.l10n.bookmarksAdd),
+            ),
+          ),
+  );
+
+  Widget _bookmarkList() => SignalBuilder(
+    builder: (context) => _controller.hasMatches.value
+        ? BookmarksSections(
+            controller: _controller,
+            onEdit: _edit,
+            onDelete: _delete,
+            onShare: _share,
+            onAddToNetwork: _addToNetwork,
+          )
+        : EmptyState(
+            icon: Icons.search_off,
+            title: context.l10n.bookmarksNoResults,
+            message: context.l10n.bookmarksNoResultsDescription,
+            action: TextButton(
+              onPressed: _controller.clearFilters,
+              child: Text(context.l10n.bookmarksClearFilters),
             ),
           ),
   );

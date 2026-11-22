@@ -69,6 +69,7 @@ extension _AndroidSystemUiActions on AndroidSystemUi {
       if (fromTile && !_foreground) await _openApp();
       return;
     }
+    clearInstanceLogs(id);
     try {
       await _backend.start(id, network);
       await running.refreshInstances(_backend);

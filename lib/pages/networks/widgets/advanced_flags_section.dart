@@ -88,37 +88,19 @@ class AdvancedFlagsSection extends StatelessWidget {
               title: l10n.advancedQuicProxy,
               subtitle: l10n.advancedQuicProxySubtitle,
             ),
-            SignalBuilder(
-              builder: (context) {
-                final acceptDns = editorSwitch(
-                  controller,
-                  'flags.acceptDns',
-                  (n) => n.flags.acceptDns,
-                ).value;
-                final noTun = editorSwitch(
-                  controller,
-                  'flags.noTun',
-                  (n) => n.flags.noTun,
-                ).value;
-                // Magic DNS answers on the instance's TUN device, so it cannot
-                // be turned on again while the network has none.
-                final enabled = editorSwitchEnabled(
-                  value: acceptDns,
-                  conflicts: noTun,
-                );
-                return EditorSwitch(
-                  icon: Icons.dns_outlined,
-                  controller: controller,
-                  name: 'flags.acceptDns',
-                  read: (n) => n.flags.acceptDns,
-                  write: (n, value) => n.flags.acceptDns = value,
-                  title: l10n.advancedMagicDns,
-                  subtitle: enabled
-                      ? l10n.advancedMagicDnsSubtitle
-                      : l10n.advancedMagicDnsNeedsTun,
-                  enabled: enabled,
-                );
-              },
+            EditorSwitch(
+              icon: Icons.dns_outlined,
+              controller: controller,
+              name: 'flags.acceptDns',
+              read: (n) => n.flags.acceptDns,
+              write: (n, value) => n.flags.acceptDns = value,
+              title: l10n.advancedMagicDns,
+              subtitle: l10n.advancedMagicDnsSubtitle,
+              conflict: (
+                name: 'flags.noTun',
+                read: (n) => n.flags.noTun,
+                subtitle: l10n.advancedMagicDnsNeedsTun,
+              ),
             ),
             if (magicDns) ...[
               EditorTextField(
@@ -137,15 +119,14 @@ class AdvancedFlagsSection extends StatelessWidget {
                 padding: const EdgeInsets.all(8),
               ),
             ],
-            EditorTextField(
+            editorIntField(
               key: const ValueKey('mtu'),
               label: l10n.advancedMtuHelper,
-              initialValue: '${network.flags.mtu}',
-              keyboardType: TextInputType.number,
-              validator: (value) => validateIntRange(value, 'MTU', 576, 65535),
-              onSaved: (value) => controller.update(
-                (n) => n.flags.mtu = int.parse(value.trim()),
-              ),
+              initialValue: network.flags.mtu,
+              name: 'MTU',
+              min: 576,
+              max: 65535,
+              onSaved: (value) => controller.update((n) => n.flags.mtu = value),
             ),
           ],
         );

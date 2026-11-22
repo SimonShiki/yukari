@@ -3,6 +3,36 @@ part of 'network_editor_controller.dart';
 /// The working copy's lists, edited in place: the initial peers, the picked
 /// bookmarks and the two listener lists.
 extension NetworkEditorLists on NetworkEditorController {
+  /// Lists the bookmarks whose nodes are not already peers.
+  List<Bookmark> peerBookmarkOptions({required bool sharedOnly}) {
+    final present = nodes.peek().map(nodeIdentity).toSet();
+    return [
+      for (final bookmark in sharedOnly ? sharedBookmarks : pickableBookmarks)
+        if (!present.contains(nodeIdentity(bookmark.node))) bookmark,
+    ];
+  }
+
+  /// Updates the published subnets and retains each unchanged CIDR's allow list.
+  void setProxyNetworks(List<String> lines) => update((network) {
+    final existing = network.proxyNetworks;
+    network.proxyNetworks = [
+      for (final line in lines) _keepAllow(parseProxyNetwork(line), existing),
+    ];
+  });
+
+  static ProxyNetwork _keepAllow(
+    ProxyNetwork proxy,
+    List<ProxyNetwork> existing,
+  ) {
+    for (final entry in existing) {
+      if (entry.cidr == proxy.cidr) {
+        proxy.allow = entry.allow;
+        break;
+      }
+    }
+    return proxy;
+  }
+
   /// Adds a listener, or replaces [previous] at its position.
   void setListener(ListenerList list, Uri listener, {Uri? previous}) {
     update((network) {

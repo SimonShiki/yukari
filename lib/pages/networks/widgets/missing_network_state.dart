@@ -1,7 +1,7 @@
 import 'package:material_ui/material_ui.dart';
 
-import '../../l10n/l10n.dart';
-import 'empty_state.dart';
+import '../../../l10n/l10n.dart';
+import '../../../widgets/empty_state/empty_state.dart';
 
 /// The state a network page shows when its network is no longer saved.
 ///

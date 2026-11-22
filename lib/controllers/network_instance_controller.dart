@@ -11,7 +11,9 @@ import '../signals/instance_logs.dart';
 import '../signals/instances.dart' as running;
 import '../signals/locale.dart';
 import '../signals/networks.dart' as saved;
-import '../widgets/peer_card/peer_card_data.dart';
+import '../models/peer_card_data.dart';
+
+import 'signal_scope.dart';
 
 part 'network_instance_logs.dart';
 
@@ -22,7 +24,7 @@ enum InstanceTab { peers, logs }
 enum LogFilter { all, errors, peers, connections, listeners }
 
 /// One network's instance page: its peers, and its recorded events.
-class NetworkInstanceController {
+class NetworkInstanceController with SignalScope {
   NetworkInstanceController({
     required this.id,
     this.initialTab = InstanceTab.peers,
@@ -33,7 +35,7 @@ class NetworkInstanceController {
        _injected = backend {
     // The route's tab, or the list page's, drives the page's own selection.
     if (tab != null) {
-      _cleanups.add(
+      addCleanup(
         effect(() {
           final requested = tab.value;
           if (selectedTab.peek() != requested) selectedTab.value = requested;
@@ -53,10 +55,10 @@ class NetworkInstanceController {
 
   /// The tab the page shows. The page syncs its `TabController` with this, and
   /// calls [selectTab] when the user switches tabs.
-  late final Signal<InstanceTab> selectedTab = signal(initialTab);
+  late final Signal<InstanceTab> selectedTab = own(initialTab);
 
   /// The saved network, or null once it is deleted.
-  late final ReadonlySignal<Network?> network = computed(
+  late final ReadonlySignal<Network?> network = derive(
     () => saved.networks.value[id],
   );
 
@@ -64,17 +66,17 @@ class NetworkInstanceController {
   ///
   /// Evaluated untracked when first read, so the page builder that reads it
   /// watches this flag alone rather than the whole collection.
-  late final ReadonlySignal<bool> missing = computed(
+  late final ReadonlySignal<bool> missing = derive(
     () => saved.networks.value[id] == null,
   )..peek();
 
   /// The network's name, for the app bar.
-  late final ReadonlySignal<String> name = computed(
+  late final ReadonlySignal<String> name = derive(
     () => saved.networks.value[id]?.networkName ?? '',
   );
 
   /// The instance as of the last collection, or null while it is not running.
-  late final ReadonlySignal<Instance?> instance = computed(
+  late final ReadonlySignal<Instance?> instance = derive(
     () => running.instances.value[id],
   );
 
@@ -83,26 +85,26 @@ class NetworkInstanceController {
   ReadonlySignal<bool> get loaded => running.instancesLoaded;
 
   /// Whether an instance of this network is running.
-  late final ReadonlySignal<bool> isRunning = computed(
+  late final ReadonlySignal<bool> isRunning = derive(
     () => instance.value != null,
   );
 
   /// The log category the logs tab shows.
-  final Signal<LogFilter> filter = signal(LogFilter.all);
+  late final Signal<LogFilter> filter = own(LogFilter.all);
 
   /// The raw lines of the expanded log entries.
-  final Signal<Set<String>> expanded = signal(const {});
+  late final Signal<Set<String>> expanded = own(const {});
 
   /// Every recorded event of this network, newest first.
   ReadonlySignal<List<LogEntry>> get logs => instanceLogs(id);
 
   /// The events the selected filter shows, newest first.
-  late final ReadonlySignal<List<LogEntry>> visibleLogs = computed(
+  late final ReadonlySignal<List<LogEntry>> visibleLogs = derive(
     () => _matching(filter.value),
   );
 
   /// This device first, then the peers in EasyTier order.
-  late final ReadonlySignal<List<PeerCardData>> peerCards = computed(() {
+  late final ReadonlySignal<List<PeerCardData>> peerCards = derive(() {
     final current = instance.value;
     if (current == null) return const [];
     final strings = l10n.value;
@@ -112,7 +114,6 @@ class NetworkInstanceController {
     ];
   });
 
-  final List<void Function()> _cleanups = [];
   final _counts = <LogFilter, Computed<int>>{};
   bool _refreshing = false;
   bool _disposed = false;
@@ -158,28 +159,8 @@ class NetworkInstanceController {
     _active = false;
     _timer?.cancel();
     _timer = null;
-    for (final cleanup in _cleanups) {
-      cleanup();
-    }
-    _cleanups.clear();
-    for (final count in _counts.values) {
-      count.dispose();
-    }
     _counts.clear();
     // [loaded] lives in the shared store, which outlives this controller.
-    for (final signal in <ReadonlySignal<Object?>>[
-      network,
-      missing,
-      name,
-      selectedTab,
-      instance,
-      isRunning,
-      filter,
-      expanded,
-      visibleLogs,
-      peerCards,
-    ]) {
-      signal.dispose();
-    }
+    disposeSignals();
   }
 }

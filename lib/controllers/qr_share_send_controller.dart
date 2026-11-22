@@ -12,23 +12,25 @@ import '../share/share_document.dart';
 import '../share/share_options.dart';
 import '../share/share_targets.dart';
 
+import 'signal_scope.dart';
+
 part 'qr_share_send_gif.dart';
 part 'qr_share_send_options.dart';
 part 'qr_share_send_settings.dart';
 
 /// Drives the sender half of "Share via QR": the fountain-coded stream of masked
 /// [ShareDocument]s, its playback and settings, and the GIF export.
-class QrShareSendController {
+class QrShareSendController with SignalScope {
   QrShareSendController({
     required List<ShareDocument> documents,
     required double refreshRate,
     this.random,
     this.resolve,
     ShareExtras extras = noShareExtras,
-  }) : documents = signal(documents),
-       selfPeerAvailable = extras.selfPeer,
-       configsAvailable = extras.configs,
-       fps = signal(defaultShareFps(refreshRate)) {
+  }) : selfPeerAvailable = extras.selfPeer,
+       configsAvailable = extras.configs {
+    this.documents = own(documents);
+    fps = own(defaultShareFps(refreshRate));
     _rebuild();
   }
 
@@ -36,15 +38,15 @@ class QrShareSendController {
   /// target it cannot resolve instead of opening a sender.
   ///
   /// A share option replaces them, so the summary reads this signal.
-  final Signal<List<ShareDocument>> documents;
+  late final Signal<List<ShareDocument>> documents;
 
   /// The fountain's randomness source; null draws a fresh one.
   final Random? random;
 
   /// Whether the share carries this device as a peer, and whether it carries
   /// the network's non-essential config.
-  final Signal<bool> includeSelf = signal(false);
-  final Signal<bool> includeConfigs = signal(false);
+  late final Signal<bool> includeSelf = own(false);
+  late final Signal<bool> includeConfigs = own(false);
 
   /// Whether the resolved target can offer each option at all; a sender
   /// without a [ShareResolver] can offer neither.
@@ -56,36 +58,37 @@ class QrShareSendController {
   final ShareResolver? resolve;
 
   /// The frame on screen; the constructor publishes the first one.
-  final Signal<SendFrame?> frame = signal(null);
+  late final Signal<SendFrame?> frame = own(null);
 
-  final Signal<bool> playing = signal(false);
+  late final Signal<bool> playing = own(false);
 
   /// Frames per second the stream is paced at.
-  final Signal<int> fps;
+  late final Signal<int> fps;
 
   /// The block size the stream uses; changing it restarts the transfer.
   ///
   /// Starts at Easy: a masked share document is well under 1 KiB, so even Easy
   /// is only a frame or three, and its larger modules scan from farther away.
-  final Signal<QrShareDensity> density = signal(QrShareDensity.easy);
+  late final Signal<QrShareDensity> density = own(QrShareDensity.easy);
 
   /// Frames published so far, the preview frame included.
-  final Signal<int> framesSent = signal(0);
+  late final Signal<int> framesSent = own(0);
 
-  final Signal<int> blockCount = signal(0);
+  late final Signal<int> blockCount = own(0);
 
   /// Payload bytes on the wire, after compression.
-  final Signal<int> payloadBytes = signal(0);
+  late final Signal<int> payloadBytes = own(0);
 
   /// Whether a GIF export is running, and how many of its frames are written.
-  final Signal<bool> exporting = signal(false);
-  final Signal<int> exported = signal(0);
+  late final Signal<bool> exporting = own(false);
+  late final Signal<int> exported = own(0);
 
   /// The encoded documents, their deflated transfer size and whether that size
   /// fits one code; all three follow [documents].
   late Uint8List _payload;
   late int _compressedBytes;
-  late bool staticShare;
+  late final _staticShare = own(false);
+  bool get staticShare => _staticShare.value;
 
   /// The block size the session slices with: a static share sends its whole
   /// payload as one block.
@@ -115,7 +118,7 @@ class QrShareSendController {
       utf8.encode(encodeShareItems(documents.value)),
     );
     _compressedBytes = _compressedTransferBytes(_payload);
-    staticShare = fitsOneShareCode(_compressedBytes);
+    _staticShare.value = fitsOneShareCode(_compressedBytes);
     _session = SendSession.forFile(
       _payload,
       filename: _shareFileName,
@@ -244,21 +247,6 @@ class QrShareSendController {
     _timer?.cancel();
     _timer = null;
     _cancelPreRender();
-    for (final signal in <ReadonlySignal<Object?>>[
-      documents,
-      frame,
-      playing,
-      fps,
-      density,
-      framesSent,
-      blockCount,
-      payloadBytes,
-      exporting,
-      exported,
-      includeSelf,
-      includeConfigs,
-    ]) {
-      signal.dispose();
-    }
+    disposeSignals();
   }
 }

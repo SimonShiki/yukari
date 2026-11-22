@@ -64,13 +64,25 @@ class ThemingController {
     },
   );
 
-  /// The scheme [palette] generates at [brightness] with the current variant.
-  ColorScheme schemeForPalette(ThemePalette palette, Brightness brightness) =>
+  late final _lightSchemes = computed(() => _schemes(Brightness.light));
+  late final _darkSchemes = computed(() => _schemes(Brightness.dark));
+
+  List<ColorScheme> schemesFor(Brightness brightness) =>
+      (brightness == Brightness.light ? _lightSchemes : _darkSchemes).value;
+
+  List<ColorScheme> _schemes(Brightness brightness) => [
+    for (final palette in ThemePalette.values)
       buildColorScheme(
         brightness: brightness,
         mode: mode.value,
         palette: palette,
         variant: variant.value,
         useSystemColor: false,
-      );
+      ),
+  ];
+
+  void dispose() {
+    _lightSchemes.dispose();
+    _darkSchemes.dispose();
+  }
 }

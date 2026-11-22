@@ -3,8 +3,6 @@ import 'package:material_ui/material_ui.dart';
 import '../../../controllers/network_editor_controller.dart';
 import '../../../l10n/l10n.dart';
 
-import 'package:yukari_core/models/models.dart';
-
 import '../../../utils/line_formats.dart';
 import '../../../utils/validator.dart';
 import '../../../widgets/form_section/form_section.dart';
@@ -34,12 +32,7 @@ class AdvancedRoutingSection extends StatelessWidget {
               .map(formatProxyNetwork)
               .join('\n'),
           validateLine: validateProxyNetwork,
-          onSaved: (lines) => controller.update(
-            (n) => n.proxyNetworks = [
-              for (final line in lines)
-                _keepAllow(parseProxyNetwork(line), n.proxyNetworks),
-            ],
-          ),
+          onSaved: controller.setProxyNetworks,
         ),
         EditorLinesField(
           label: l10n.advancedManualRoutes,
@@ -88,19 +81,5 @@ class AdvancedRoutingSection extends StatelessWidget {
         ),
       ],
     );
-  }
-
-  /// A rewritten subnet proxy line keeps the CIDR's existing allow list.
-  static ProxyNetwork _keepAllow(
-    ProxyNetwork proxy,
-    List<ProxyNetwork> existing,
-  ) {
-    for (final entry in existing) {
-      if (entry.cidr == proxy.cidr) {
-        proxy.allow = entry.allow;
-        break;
-      }
-    }
-    return proxy;
   }
 }

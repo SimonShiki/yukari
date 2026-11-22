@@ -10,6 +10,8 @@ import '../signals/locale.dart';
 import '../utils/bookmark_search.dart';
 import 'multi_selection.dart';
 
+import 'signal_scope.dart';
+
 part 'bookmarks_filters.dart';
 
 /// The category a bookmark is filtered, listed and displayed under, trimmed.
@@ -30,13 +32,17 @@ String? trimmedOrNull(String? value) {
 /// Holds the filter state as small signals, derives one signal per piece of UI
 /// above it, and owns the mutations; the page only builds widgets and calls
 /// these methods. The filter actions live in `bookmarks_filters.dart`.
-class BookmarksController {
+class BookmarksController with SignalScope {
   BookmarksController({
     required this.showMessage,
     List<Bookmark>? builtins,
     this.pickImportFile,
     this.saveExportFile,
-  }) : _builtins = builtins ?? builtinBookmarks;
+  }) : _builtins = builtins ?? builtinBookmarks {
+    query = own('');
+    category = own<String?>(null);
+    tags = own<Set<String>>(const {});
+  }
 
   /// Reports a user-visible outcome; the page shows it in a snackbar.
   final void Function(String message) showMessage;
@@ -52,32 +58,32 @@ class BookmarksController {
   final TextEditingController searchController = TextEditingController();
 
   /// The current search text.
-  final query = signal('');
+  late final Signal<String> query;
 
   /// The single selected category, null for all categories.
-  final category = signal<String?>(null);
+  late final Signal<String?> category;
 
   /// The selected tags, matched with AND semantics.
-  final tags = signal<Set<String>>(const <String>{});
+  late final Signal<Set<String>> tags;
 
   /// The built-in shared nodes first, then the user's bookmarks.
-  late final allBookmarks = computed(
+  late final allBookmarks = derive(
     () => [..._builtins, ...saved.bookmarks.value],
   );
 
   /// The distinct trimmed categories to filter by, sorted.
-  late final categoryOptions = computed(
+  late final categoryOptions = derive(
     () =>
         _filterInventory(this, (bookmark) => [bookmarkCategoryLabel(bookmark)]),
   );
 
   /// The distinct trimmed tags to filter by, sorted.
-  late final tagOptions = computed(
+  late final tagOptions = derive(
     () => _filterInventory(this, (bookmark) => bookmark.tags),
   );
 
   /// [allBookmarks] after the category, tag and search filters.
-  late final visibleBookmarks = computed(
+  late final visibleBookmarks = derive(
     () => [
       for (final bookmark in allBookmarks.value)
         if (_matchesFilters(this, bookmark)) bookmark,
@@ -85,7 +91,7 @@ class BookmarksController {
   );
 
   /// The visible built-in shared nodes.
-  late final sharedBookmarks = computed(
+  late final sharedBookmarks = derive(
     () => [
       for (final bookmark in visibleBookmarks.value)
         if (isBuiltinBookmark(bookmark)) bookmark,
@@ -93,7 +99,7 @@ class BookmarksController {
   );
 
   /// The visible bookmarks the user saved.
-  late final myBookmarks = computed(
+  late final myBookmarks = derive(
     () => [
       for (final bookmark in visibleBookmarks.value)
         if (!isBuiltinBookmark(bookmark)) bookmark,
@@ -101,23 +107,23 @@ class BookmarksController {
   );
 
   /// Whether there is anything at all, before filtering.
-  late final hasBookmarks = computed(() => allBookmarks.value.isNotEmpty);
+  late final hasBookmarks = derive(() => allBookmarks.value.isNotEmpty);
 
   /// Whether the filters left anything to show.
-  late final hasMatches = computed(() => visibleBookmarks.value.isNotEmpty);
+  late final hasMatches = derive(() => visibleBookmarks.value.isNotEmpty);
 
   /// The filter badge's count: the chosen category plus the selected tags. The
   /// search query is not a filter and does not count.
-  late final activeFilterCount = computed(
+  late final activeFilterCount = derive(
     () => (category.value == null ? 0 : 1) + tags.value.length,
   );
 
   /// Whether there is a user bookmark to export; built-ins do not count.
-  late final canExport = computed(() => saved.bookmarks.value.isNotEmpty);
+  late final canExport = derive(() => saved.bookmarks.value.isNotEmpty);
 
   /// The ids the list can select, in the order it shows them: the selection
   /// follows the filters, and built-ins are shareable like any saved node.
-  late final selectableIds = computed(
+  late final selectableIds = derive(
     () => [for (final bookmark in visibleBookmarks.value) bookmark.id],
   );
 
@@ -126,7 +132,11 @@ class BookmarksController {
   /// The built-in shared nodes are selectable like any other row, so they are
   /// shareable but never deletable: they only arrive from [_builtins], which
   /// this reads nothing of.
-  late final ReadonlySignal<List<Bookmark>> selectedBookmarks = computed(
+  late final canDeleteSelection = derive(
+    () => selectedBookmarks.value.isNotEmpty,
+  );
+
+  late final ReadonlySignal<List<Bookmark>> selectedBookmarks = derive(
     () => [
       for (final bookmark in saved.bookmarks.value)
         if (selection.ids.value.contains(bookmark.id)) bookmark,
@@ -177,24 +187,6 @@ class BookmarksController {
     _disposed = true;
     searchController.dispose();
     selection.dispose();
-    for (final created in <ReadonlySignal<Object?>>[
-      query,
-      category,
-      tags,
-      allBookmarks,
-      categoryOptions,
-      tagOptions,
-      visibleBookmarks,
-      sharedBookmarks,
-      myBookmarks,
-      hasBookmarks,
-      hasMatches,
-      activeFilterCount,
-      canExport,
-      selectableIds,
-      selectedBookmarks,
-    ]) {
-      created.dispose();
-    }
+    disposeSignals();
   }
 }

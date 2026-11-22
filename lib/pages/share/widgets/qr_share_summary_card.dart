@@ -29,10 +29,7 @@ class QrShareSummaryCard extends StatelessWidget {
     final peer = document.peers.first;
     return CardSurface(
       child: ListTile(
-        leading: Icon(
-          network ? Icons.hub_outlined : Icons.dns_outlined,
-          color: colors.primary,
-        ),
+        leading: Icon(shareKindIcon(document.kind), color: colors.primary),
         title: Row(
           children: [
             Flexible(

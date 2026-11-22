@@ -4,7 +4,7 @@ import 'package:material_ui/material_ui.dart';
 import '../../controllers/home_controller.dart';
 import '../../l10n/l10n.dart';
 import '../../widgets/link_list/link_list.dart';
-import '../networks/foreground_active.dart';
+import '../../widgets/foreground_active.dart';
 import 'widgets/address_card.dart';
 import 'widgets/backend_header.dart';
 import 'widgets/nat_card.dart';

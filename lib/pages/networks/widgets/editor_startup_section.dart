@@ -1,11 +1,7 @@
-import 'dart:io';
-
 import 'package:material_ui/material_ui.dart';
 
 import '../../../controllers/network_editor_controller.dart';
 import '../../../l10n/l10n.dart';
-
-import 'package:yukari_core/models/models.dart';
 
 import '../../../widgets/form_section/form_section.dart';
 import 'editor_fields.dart';
@@ -16,10 +12,6 @@ class EditorStartupSection extends StatelessWidget {
   const EditorStartupSection({super.key, required this.controller});
 
   final NetworkEditorController controller;
-
-  /// Whether this platform and backend can start a network with the system.
-  static bool supported(BackendKind kind) =>
-      !Platform.isAndroid || kind == BackendKind.service;
 
   @override
   Widget build(BuildContext context) {

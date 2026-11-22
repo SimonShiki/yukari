@@ -11,7 +11,6 @@ extension _TrayMenuData on TrayController {
     final instances = running.instances.value;
     final networks = saved.networks.value;
     final canAct = _backend.value.status.value == BackendStatus.ready;
-    _measureTraffic(instances);
     return TrayMenu([
       TrayMenuItem(
         id: 'open',
@@ -48,24 +47,13 @@ extension _TrayMenuData on TrayController {
     final running = instance?.status == InstanceStatus.running;
     return TrayMenuItem(
       id: 'network:$id',
-      label: trayNetworkLabel(
-        network.networkName,
-        peers: running ? l10n.value.trayPeers(instance!.memberCount) : null,
-        traffic: running ? _samples[id] : null,
-      ),
+      label: running
+          ? '${network.networkName} · ${l10n.value.trayPeers(instance!.memberCount)}'
+          : network.networkName,
       checked: running,
       enabled: canAct,
       onSelected: () => unawaited(_toggle(id, !_networks.isRunning(id))),
     );
-  }
-
-  /// Measures the traffic of every running instance into the samples.
-  void _measureTraffic(Map<String, Instance> instances) {
-    for (final MapEntry(:key, :value) in instances.entries) {
-      if (value.status != InstanceStatus.running) continue;
-      _samples[key] = measureTraffic({key: value}, _samples[key]);
-    }
-    _samples.removeWhere((id, _) => instances[id] == null);
   }
 
   /// Starts or stops the network behind a menu row.

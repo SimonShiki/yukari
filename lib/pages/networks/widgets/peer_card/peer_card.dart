@@ -1,9 +1,9 @@
 import 'package:material_ui/material_ui.dart';
 import 'package:yukari_core/models/peer.dart';
 
-import '../metadata_chip/metadata_chip.dart';
-import '../overflow_text/overflow_text.dart';
-import 'peer_card_data.dart';
+import '../../../../widgets/metadata_chip/metadata_chip.dart';
+import '../../../../widgets/overflow_text/overflow_text.dart';
+import '../../../../models/peer_card_data.dart';
 
 class PeerCard extends StatelessWidget {
   const PeerCard({super.key, required this.data});

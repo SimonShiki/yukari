@@ -1,13 +1,12 @@
-import 'dart:math' as math;
-
 import 'package:m3e_core/m3e_core.dart';
 import 'package:material_ui/material_ui.dart';
 
-import '../../l10n/l10n.dart';
+import '../../../../l10n/l10n.dart';
 
 import 'package:yukari_core/models/bookmark.dart';
 
-import '../../utils/bookmark_search.dart';
+import '../../../../utils/bookmark_search.dart';
+import '../../../../widgets/dialog/confirm_dialog.dart';
 
 /// Asks the user which of [bookmarks] to add, and returns the chosen ones.
 ///
@@ -54,9 +53,8 @@ class _BookmarkPickerDialogState extends State<_BookmarkPickerDialog> {
     return AlertDialog(
       title: Text(context.l10n.bookmarksPickerTitle),
       content: SizedBox(
-        // Narrow on phones, and never a wall of text on a wide window.
-        width: math.min(MediaQuery.sizeOf(context).width * 0.8, 560),
-        height: MediaQuery.of(context).size.height * 0.6,
+        width: dialogContentWidth(context),
+        height: MediaQuery.sizeOf(context).height * 0.6,
         child: available.isEmpty
             ? Center(
                 child: Text(

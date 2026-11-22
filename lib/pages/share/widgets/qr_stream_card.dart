@@ -30,40 +30,43 @@ class QrStreamCard extends StatelessWidget {
           children: [
             _QrFrame(controller: controller),
             const SizedBox(height: 12),
-            if (controller.staticShare)
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _stats(context, TextAlign.start),
-                  Text(
-                    l10n.shareQrFps(controller.fps.peek()),
-                    style: theme.textTheme.labelLarge?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-                ],
-              )
-            else
-              Row(
-                children: [
-                  SignalBuilder(
-                    builder: (context) {
-                      final playing = controller.playing.value;
-                      return IconButton.filledTonal(
-                        tooltip: playing ? l10n.shareQrPause : l10n.shareQrPlay,
-                        onPressed: controller.toggle,
-                        icon: Icon(
-                          playing
-                              ? Icons.pause_rounded
-                              : Icons.play_arrow_rounded,
+            SignalBuilder(
+              builder: (context) => controller.staticShare
+                  ? Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _stats(context, TextAlign.start),
+                        Text(
+                          l10n.shareQrFps(controller.fps.value),
+                          style: theme.textTheme.labelLarge?.copyWith(
+                            color: theme.colorScheme.onSurfaceVariant,
+                          ),
                         ),
-                      );
-                    },
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(child: _stats(context, TextAlign.end)),
-                ],
-              ),
+                      ],
+                    )
+                  : Row(
+                      children: [
+                        SignalBuilder(
+                          builder: (context) {
+                            final playing = controller.playing.value;
+                            return IconButton.filledTonal(
+                              tooltip: playing
+                                  ? l10n.shareQrPause
+                                  : l10n.shareQrPlay,
+                              onPressed: controller.toggle,
+                              icon: Icon(
+                                playing
+                                    ? Icons.pause_rounded
+                                    : Icons.play_arrow_rounded,
+                              ),
+                            );
+                          },
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(child: _stats(context, TextAlign.end)),
+                      ],
+                    ),
+            ),
             const SizedBox(height: 12),
             Text(
               l10n.shareQrHint,

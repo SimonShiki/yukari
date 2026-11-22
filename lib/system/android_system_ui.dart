@@ -10,14 +10,15 @@ import '../backend/android_vpn.dart';
 import 'package:yukari_core/backend/backend.dart';
 
 import '../backend/system/service_control.dart';
-import '../controllers/home_controller.dart' show TrafficSample, measureTraffic;
 
 import 'package:yukari_core/models/models.dart';
 
+import '../signals/instance_logs.dart' show clearInstanceLogs;
 import '../signals/instances.dart' as running;
 import '../signals/locale.dart';
 import '../signals/networks.dart' as saved;
 import '../utils/byte_units.dart';
+import '../utils/traffic_sample.dart';
 
 part 'android_system_ui_actions.dart';
 part 'android_system_ui_notification.dart';

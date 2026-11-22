@@ -1,7 +1,7 @@
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:yukari/widgets/network_card/detail_container.dart';
-import 'package:yukari/widgets/network_card/network_detail_transition.dart';
+import 'package:yukari/pages/networks/widgets/network_card/detail_container.dart';
+import 'package:yukari/pages/networks/widgets/network_card/network_detail_transition.dart';
 
 /// Sends one Android predictive back gesture event to the framework, the way
 /// the platform does.

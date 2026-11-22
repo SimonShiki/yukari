@@ -16,7 +16,7 @@ import 'share/share_document.dart';
 import 'share/share_routes.dart';
 import 'signals/settings.dart';
 import 'widgets/navigation/app_shell.dart';
-import 'widgets/network_card/network_detail_page_route.dart';
+import 'pages/networks/widgets/network_card/network_detail_page_route.dart';
 
 /// The navigator above the shell, for routes that cover it full-screen.
 final GlobalKey<NavigatorState> rootNavigatorKey = GlobalKey<NavigatorState>(

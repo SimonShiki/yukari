@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'tray_menu.dart';
 
 /// The desktop side of the tray: the icon and its menu, the window they
@@ -36,3 +38,9 @@ abstract interface class TrayPlatform {
   /// Quits the app, releasing the backend first.
   Future<void> quit();
 }
+
+/// Whether the running platform can keep the app in a system tray.
+///
+/// Windows and Linux desktops can; Android and the other targets cannot, so
+/// both the setting and the tray itself stay off there.
+bool get systemTraySupported => Platform.isLinux || Platform.isWindows;

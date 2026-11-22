@@ -14,7 +14,7 @@ import 'package:yukari/share/share_document.dart';
 import 'package:yukari/share/share_routes.dart';
 import 'package:yukari/signals/networks.dart' as saved;
 import 'package:yukari_core/storage/network_store.dart';
-import 'package:yukari/widgets/network_card/network_card_list.dart';
+import 'package:yukari/pages/networks/widgets/network_card/network_card_list.dart';
 import 'package:yukari/widgets/selection/selection_fab_menu.dart';
 
 import '../fake_backend.dart';

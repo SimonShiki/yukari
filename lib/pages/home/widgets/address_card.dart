@@ -31,7 +31,10 @@ class AddressCard extends StatelessWidget {
             AddressKind.public ||
             AddressKind.unavailable => l10n.homePublicIp,
           },
-          child: DashboardValueSwitcher(child: _value(l10n, kind)),
+          child: SignalBuilder(
+            builder: (context) =>
+                DashboardValueSwitcher(child: _value(l10n, kind)),
+          ),
         );
       },
     );

@@ -1,7 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:yukari/backend/service_backend.dart';
+import 'package:yukari_core/backend/service_backend.dart';
 import 'package:yukari_core/backend/ipc/ipc_endpoint.dart';
 import 'package:yukari_core/daemon/network_policy.dart';
 import 'package:yukari/utils/easytier_config_parser.dart';

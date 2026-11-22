@@ -10,7 +10,7 @@ import 'package:yukari_core/models/node.dart';
 import '../signals/bookmarks.dart' as saved;
 import '../signals/locale.dart';
 import '../share/share_document.dart';
-import '../share/share_selection.dart';
+import 'share_selection.dart';
 import '../signals/networks.dart' as networks;
 import '../utils/bookmark_codec.dart';
 import '../utils/file_read.dart';

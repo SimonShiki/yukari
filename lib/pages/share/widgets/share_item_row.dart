@@ -26,9 +26,7 @@ class ShareItemRow extends StatelessWidget {
         Padding(
           padding: const EdgeInsets.only(top: 2),
           child: Icon(
-            document.kind == ShareKind.network
-                ? Icons.hub_outlined
-                : Icons.dns_outlined,
+            shareKindIcon(document.kind),
             size: 20,
             color: colors.primary,
           ),

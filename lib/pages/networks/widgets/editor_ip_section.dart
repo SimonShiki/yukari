@@ -18,7 +18,8 @@ class EditorIpSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
-    final network = controller.working.value!;
+    final network = controller.working.peek()!;
+    final dhcp = editorSwitch(controller, 'dhcp', (n) => n.dhcp);
     return FormSection(
       title: l10n.networkIpConfiguration,
       icon: Icons.network_check,
@@ -38,7 +39,7 @@ class EditorIpSection extends StatelessWidget {
             hint: '192.168.100.0/24',
             helper: l10n.networkDhcpIpv4CidrHelper,
             initialValue: network.dhcpIpv4Cidr ?? '',
-            enabled: controller.select('dhcp', (n) => n.dhcp, true).value,
+            enabled: dhcp.value,
             textInputAction: TextInputAction.next,
             validator: validateDhcpIpv4Cidr,
             onSaved: (value) => controller.update(
@@ -52,7 +53,7 @@ class EditorIpSection extends StatelessWidget {
             hint: '10.144.144.1/24',
             helper: l10n.networkIpv4Helper,
             initialValue: network.ipv4 ?? '',
-            enabled: !controller.select('dhcp', (n) => n.dhcp, true).value,
+            enabled: !dhcp.value,
             textInputAction: TextInputAction.next,
             validator: (value) => validateCidr(value, InternetAddressType.IPv4),
             onSaved: (value) =>

@@ -5,6 +5,7 @@ import 'package:signals_flutter/signals_flutter.dart';
 
 import '../../../controllers/home_controller.dart';
 import '../../../l10n/l10n.dart';
+import '../../../widgets/card_surface/card_surface.dart';
 
 import 'package:yukari_core/models/backend.dart';
 
@@ -31,12 +32,8 @@ class BackendHeader extends StatelessWidget {
           if (service != null) l10n.homeServiceVersion(service),
         ].join(' · ');
 
-        return Material(
+        return CardSurface(
           color: colors.container,
-          shape: const RoundedRectangleBorder(
-            borderRadius: BorderRadius.all(Radius.circular(20)),
-          ),
-          clipBehavior: Clip.antiAlias,
           child: Padding(
             padding: const EdgeInsets.all(16),
             child: Row(

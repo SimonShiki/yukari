@@ -3,7 +3,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:yukari/l10n/l10n.dart';
 import 'package:yukari/pages/networks/editor_exit_guard.dart';
 import 'package:yukari/pages/networks/network_editor_page.dart';
-import 'package:yukari/widgets/network_card/network_card.dart';
+import 'package:yukari/pages/networks/widgets/network_card/network_card.dart';
 
 import '../networks_fixture.dart';
 import 'network_detail_support.dart';

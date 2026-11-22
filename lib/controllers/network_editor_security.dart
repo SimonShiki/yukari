@@ -1,5 +1,7 @@
 import 'dart:async';
 
+import 'package:flutter/services.dart';
+
 import 'package:yukari_core/models/models.dart';
 
 import '../utils/crypto_utils.dart';
@@ -25,6 +27,14 @@ extension NetworkEditorSecurityActions on NetworkEditorController {
       mode.localPrivateKey ??= generatePrivateKey();
     });
     _deriveIfPossible();
+  }
+
+  /// Copies the derived public key for use on a peer.
+  Future<bool> copyPublicKey() async {
+    final publicKey = working.peek()?.secureMode?.localPublicKey;
+    if (publicKey == null || publicKey.isEmpty) return false;
+    await Clipboard.setData(ClipboardData(text: publicKey));
+    return true;
   }
 
   /// Generates a fresh key pair, and the public key that goes with it.

@@ -8,6 +8,7 @@ import '../backend/ipc/ipc_server.dart';
 import '../backend/service_version.dart';
 import '../models/models.dart';
 import '../storage/network_store.dart';
+import '../system/magic_dns.dart';
 import '../system/magic_dns_auto.dart';
 import 'network_policy.dart';
 
@@ -23,9 +24,15 @@ final class ServiceDaemon {
     required this.store,
     required this.backend,
     MagicDnsSetup? magicDns,
+    MagicDnsPlatform? dnsPlatform,
     this.log = _log,
   }) : assert(store.readOnly, 'The service must not write the network store') {
-    this.magicDns = magicDns ?? MagicDnsAuto(assignedAddress: _assignedAddress);
+    this.magicDns =
+        magicDns ??
+        MagicDnsAuto(
+          system: MagicDnsSystem(platform: dnsPlatform),
+          assignedAddress: _assignedAddress,
+        );
   }
 
   final NetworkStore store;

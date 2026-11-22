@@ -3,7 +3,7 @@ import 'package:signals_flutter/signals_flutter.dart';
 
 import '../../controllers/network_editor_controller.dart';
 import '../../l10n/l10n.dart';
-import '../../widgets/empty_state/missing_network_state.dart';
+import 'widgets/missing_network_state.dart';
 import '../../widgets/snackbar/app_snackbar.dart';
 import 'editor_exit_guard.dart';
 import 'editor_pop_guard.dart';

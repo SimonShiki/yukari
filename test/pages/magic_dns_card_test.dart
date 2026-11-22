@@ -11,7 +11,7 @@ import 'package:yukari/pages/networks/widgets/magic_dns_card.dart';
 import 'package:yukari/signals/instances.dart' as instances;
 import 'package:yukari/signals/magic_dns.dart';
 import 'package:yukari_core/system/magic_dns.dart';
-import 'package:yukari/widgets/peer_card/peer_card.dart';
+import 'package:yukari/pages/networks/widgets/peer_card/peer_card.dart';
 
 import '../fake_backend.dart';
 import '../networks_fixture.dart';

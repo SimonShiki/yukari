@@ -15,10 +15,12 @@ class SharePageBody extends StatelessWidget {
   final EdgeInsets padding;
 
   @override
-  Widget build(BuildContext context) => Center(
-    child: ConstrainedBox(
-      constraints: const BoxConstraints(maxWidth: 600),
-      child: SingleChildScrollView(padding: padding, child: child),
+  Widget build(BuildContext context) => SingleChildScrollView(
+    child: Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 600),
+        child: Padding(padding: padding, child: child),
+      ),
     ),
   );
 }

@@ -4,8 +4,8 @@ import 'package:signals_flutter/signals_flutter.dart';
 
 import '../../controllers/network_instance_controller.dart';
 import '../../l10n/l10n.dart';
-import '../../widgets/empty_state/missing_network_state.dart';
-import 'foreground_active.dart';
+import 'widgets/missing_network_state.dart';
+import '../../widgets/foreground_active.dart';
 import 'widgets/instance_tabs.dart';
 
 export '../../controllers/network_instance_controller.dart' show InstanceTab;

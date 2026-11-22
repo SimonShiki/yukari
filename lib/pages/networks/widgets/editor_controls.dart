@@ -4,6 +4,7 @@ import 'package:yukari_core/models/models.dart';
 
 import '../../../controllers/network_editor_controller.dart';
 import '../../../widgets/form_section/form_segments.dart';
+import '../../../widgets/select_item/select_item.dart';
 
 /// A switch segment bound to one boolean of the working copy, so flipping it
 /// rebuilds that segment only.
@@ -17,7 +18,7 @@ class EditorSwitch extends StatelessWidget {
     required this.write,
     required this.title,
     required this.subtitle,
-    this.enabled = true,
+    this.conflict,
   });
 
   /// The leading icon naming the setting.
@@ -31,17 +32,23 @@ class EditorSwitch extends StatelessWidget {
   final String title;
   final String subtitle;
 
-  /// Whether the setting can still move.
-  final bool enabled;
+  /// The conflicting switch and the explanation shown while it blocks this one.
+  final ({String name, bool Function(Network) read, String subtitle})? conflict;
 
   @override
   Widget build(BuildContext context) => SignalBuilder(
     builder: (context) {
       final value = editorSwitch(controller, name, read).value;
+      final conflict = this.conflict;
+      // A saved pair with both switches on can be repaired from either side.
+      final enabled =
+          conflict == null ||
+          value ||
+          !editorSwitch(controller, conflict.name, conflict.read).value;
       return SwitchSegment(
         icon: icon,
         title: title,
-        subtitle: subtitle,
+        subtitle: enabled ? subtitle : conflict.subtitle,
         value: value,
         enabled: enabled,
         onChanged: (bool value) =>
@@ -59,8 +66,37 @@ ReadonlySignal<bool> editorSwitch(
   bool Function(Network) read,
 ) => controller.select('switch.$name', read, false);
 
-/// Rule between two conflicting switches: turning [value] off is always
-/// allowed, turning it on waits for [conflicts] to be off. A saved network
-/// that has both on therefore stays repairable from either side.
-bool editorSwitchEnabled({required bool value, required bool conflicts}) =>
-    !conflicts || value;
+/// A select row bound to a typed field of the working copy.
+class EditorSelect<T> extends StatelessWidget {
+  const EditorSelect({
+    super.key,
+    required this.icon,
+    required this.label,
+    required this.supportingText,
+    required this.value,
+    required this.options,
+    required this.labelOf,
+    required this.onSelected,
+  });
+
+  final IconData icon;
+  final String label;
+  final String supportingText;
+  final ReadonlySignal<T> value;
+  final List<T> options;
+  final String Function(T) labelOf;
+  final ValueChanged<T> onSelected;
+
+  @override
+  Widget build(BuildContext context) => SignalBuilder(
+    builder: (context) => SelectItem<T>(
+      icon: icon,
+      label: label,
+      supportingText: supportingText,
+      value: value.value,
+      options: options,
+      labelOf: labelOf,
+      onSelected: onSelected,
+    ),
+  );
+}

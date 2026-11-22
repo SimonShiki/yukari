@@ -1,12 +1,12 @@
 import 'package:json_rpc_2/json_rpc_2.dart';
 import 'package:signals/signals.dart';
 
-import 'package:yukari_core/models/models.dart';
-import 'package:yukari_core/backend/backend.dart';
+import '../models/models.dart';
+import 'backend.dart';
 
 import 'ipc/ipc_client.dart';
 
-import 'package:yukari_core/backend/ipc/ipc_endpoint.dart';
+import 'ipc/ipc_endpoint.dart';
 
 /// Thrown when the background service cannot be reached.
 final class ServiceUnavailableException implements Exception {

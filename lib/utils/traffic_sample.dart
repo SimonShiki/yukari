@@ -1,4 +1,6 @@
-part of 'home_controller.dart';
+import 'dart:math';
+
+import 'package:yukari_core/models/instance.dart';
 
 /// The traffic of every running instance, and the rates between two samples.
 typedef TrafficSample = ({

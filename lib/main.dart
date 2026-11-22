@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:material_ui/material_ui.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:signals_flutter/signals_flutter.dart';
@@ -6,8 +8,8 @@ import 'l10n/l10n.dart';
 import 'signals/locale.dart';
 import 'signals/settings.dart';
 import 'signals/system_color.dart';
-import 'system/tray_launch.dart';
-import 'system/tray_support.dart';
+import 'system/android_system_ui.dart';
+import 'system/tray_controller.dart';
 import 'router.dart';
 
 import 'signals/backend.dart';
@@ -33,7 +35,15 @@ Future<void> main() async {
   initLocale();
   // The theme's platform colors must be known before the first frame paints.
   await initSystemColorSchemes();
-  if (systemTraySupported) launchSystemTray();
+  if (Platform.isAndroid) {
+    await AndroidSystemUi(
+      backend: backend,
+      backendKind: backendKind,
+      backendStatus: backendStatus,
+      serviceControl: serviceControl,
+    ).start();
+  }
+  launchSystemTray();
 
   runApp(const Yukari());
 }

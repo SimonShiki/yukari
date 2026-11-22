@@ -4,7 +4,7 @@ part of 'network_page_controller.dart';
 extension NetworkPageRefresh on NetworkPageController {
   /// Starts the effect that keeps the selection pointing at a saved network.
   void start() {
-    _cleanups.add(
+    addCleanup(
       effect(() {
         final ids = saved.networks.value.keys.toList();
         final selected = selectedId.peek();
@@ -112,7 +112,6 @@ extension NetworkPageRefresh on NetworkPageController {
       status: status,
       running: running,
       busy: busy,
-      onOpen: () => openDetail(id),
       onEdit: () => unawaited(edit(id)),
       onShare: () => shareByQr(id),
       onExport: () => unawaited(exportConfig(id)),

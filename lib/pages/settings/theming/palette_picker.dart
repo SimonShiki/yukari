@@ -21,16 +21,10 @@ class PalettePicker extends StatelessWidget {
   Widget build(BuildContext context) => SignalBuilder(
     builder: (context) {
       final l10n = context.l10n;
-      final selected = controller.palette.value;
       final brightness = controller.brightnessFor(
         MediaQuery.platformBrightnessOf(context),
       );
-      // Generated here so the row tracks the variant and mode too; inside the
-      // item builder those signal reads would not be subscribed.
-      final schemes = {
-        for (final palette in ThemePalette.values)
-          palette: controller.schemeForPalette(palette, brightness),
-      };
+      final schemes = controller.schemesFor(brightness);
       return SizedBox(
         height: _slot,
         child: LayoutBuilder(
@@ -47,12 +41,14 @@ class PalettePicker extends StatelessWidget {
               separatorBuilder: (_, _) => const SizedBox(width: _gap),
               itemBuilder: (context, index) {
                 final palette = ThemePalette.values[index];
-                return PaletteSwatch(
-                  palette: palette,
-                  scheme: schemes[palette]!,
-                  label: _label(l10n, palette),
-                  selected: palette == selected,
-                  onTap: () => controller.selectPalette(palette),
+                return SignalBuilder(
+                  builder: (context) => PaletteSwatch(
+                    palette: palette,
+                    scheme: schemes[index],
+                    label: _label(l10n, palette),
+                    selected: palette == controller.palette.value,
+                    onTap: () => controller.selectPalette(palette),
+                  ),
                 );
               },
             );

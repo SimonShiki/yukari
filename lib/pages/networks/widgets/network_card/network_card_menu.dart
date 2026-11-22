@@ -1,7 +1,7 @@
 import 'package:material_ui/material_ui.dart';
 
-import '../../l10n/l10n.dart';
-import '../context_menu/m3e_context_menu.dart';
+import '../../../../l10n/l10n.dart';
+import '../../../../widgets/context_menu/m3e_context_menu.dart';
 
 class NetworkCardMenu extends StatelessWidget {
   const NetworkCardMenu({

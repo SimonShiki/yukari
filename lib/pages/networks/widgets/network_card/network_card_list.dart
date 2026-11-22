@@ -2,7 +2,7 @@ import 'package:m3e_core/m3e_core.dart';
 import 'package:material_ui/material_ui.dart';
 
 import 'network_card.dart';
-import 'network_card_data.dart';
+import '../../../../models/network_card_data.dart';
 import 'network_card_geometry.dart';
 import 'network_card_menu.dart';
 
@@ -51,6 +51,10 @@ class NetworkCardList extends StatelessWidget {
       itemBuilder: (context, index) {
         final network = networks[index];
         Widget card(Widget menuButton) => NetworkCard(
+          // The drag preview is built outside the list and has its own copy.
+          key: Scrollable.maybeOf(context) == null
+              ? null
+              : NetworkCardKey(network),
           name: network.name,
           running: network.running,
           status: network.status,
@@ -62,20 +66,18 @@ class NetworkCardList extends StatelessWidget {
         // A selecting row carries no menu: its gesture would compete with the
         // tap that toggles the row.
         if (selecting) {
-          return NetworkCardGeometry(child: card(const SizedBox.shrink()));
+          return card(const SizedBox.shrink());
         }
-        return NetworkCardGeometry(
-          child: NetworkCardMenu(
-            name: network.name,
-            running: network.running,
-            busy: network.busy,
-            onEdit: network.onEdit,
-            onShare: network.onShare,
-            onExport: network.onExport,
-            onLog: network.onLog,
-            onDelete: network.onDelete,
-            builder: (context, menuButton) => card(menuButton),
-          ),
+        return NetworkCardMenu(
+          name: network.name,
+          running: network.running,
+          busy: network.busy,
+          onEdit: () => withNetworkCardOrigin(network, network.onEdit),
+          onShare: network.onShare,
+          onExport: network.onExport,
+          onLog: () => withNetworkCardOrigin(network, network.onLog),
+          onDelete: network.onDelete,
+          builder: (context, menuButton) => card(menuButton),
         );
       },
     );

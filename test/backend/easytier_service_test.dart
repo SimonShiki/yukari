@@ -4,7 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:path/path.dart' as p;
 import 'package:yukari_core/backend/ffi_backend.dart';
 import 'package:yukari_core/backend/ipc/ipc_endpoint.dart';
-import 'package:yukari/backend/service_backend.dart';
+import 'package:yukari_core/backend/service_backend.dart';
 import 'package:yukari_core/daemon/service_daemon.dart';
 import 'package:yukari_core/models/models.dart';
 import 'package:yukari_core/storage/network_store.dart';

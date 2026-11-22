@@ -8,7 +8,7 @@ import 'package:yukari/signals/locale.dart';
 import 'package:yukari/signals/settings.dart';
 import 'package:yukari/utils/validator.dart';
 import 'package:yukari/widgets/navigation/app_shell.dart';
-import 'package:yukari/widgets/network_card/network_card.dart';
+import 'package:yukari/pages/networks/widgets/network_card/network_card.dart';
 
 void main() {
   testWidgets('switches navigation, network status, and validation live', (

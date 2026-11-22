@@ -6,10 +6,11 @@ import 'package:material_ui/material_ui.dart';
 /// The fill and the corner live here and nowhere else, so a home tile and a
 /// share card cannot drift apart; each caller owns its own padding.
 class CardSurface extends StatelessWidget {
-  const CardSurface({super.key, required this.child, this.onTap});
+  const CardSurface({super.key, required this.child, this.onTap, this.color});
 
   /// The card's content, already padded by the caller.
   final Widget child;
+  final Color? color;
 
   /// What a tap on the card opens; only cards with an action pass one, and the
   /// rest stay a plain surface with no ink.
@@ -19,7 +20,7 @@ class CardSurface extends StatelessWidget {
   Widget build(BuildContext context) {
     final onTap = this.onTap;
     return Material(
-      color: Theme.of(context).colorScheme.surfaceContainer,
+      color: color ?? Theme.of(context).colorScheme.surfaceContainer,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.all(Radius.circular(20)),
       ),

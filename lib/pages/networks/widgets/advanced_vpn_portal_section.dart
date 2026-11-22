@@ -16,53 +16,46 @@ class AdvancedVpnPortalSection extends StatelessWidget {
   final NetworkEditorController controller;
 
   @override
-  Widget build(BuildContext context) => SignalBuilder(
-    builder: (context) {
-      final l10n = context.l10n;
-      final enabled = controller
-          .select(
-            'vpnPortal.enabled',
-            (n) => n.vpnPortal?.enabled ?? false,
-            false,
-          )
-          .value;
-      return FormSection(
-        title: l10n.advancedVpnPortal,
-        icon: Icons.vpn_lock,
-        description: l10n.advancedVpnPortalDescription,
-        collapsible: true,
-        children: [
-          SwitchSegment(
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    final enabled = controller.select(
+      'vpnPortal.enabled',
+      (n) => n.vpnPortal?.enabled ?? false,
+      false,
+    );
+    final listen = controller.select(
+      'vpnPortal.listen',
+      (n) => n.vpnPortal?.wireguardListen ?? '',
+      '',
+    );
+    return FormSection(
+      title: l10n.advancedVpnPortal,
+      icon: Icons.vpn_lock,
+      description: l10n.advancedVpnPortalDescription,
+      collapsible: true,
+      children: [
+        SignalBuilder(
+          builder: (context) => SwitchSegment(
             icon: Icons.vpn_lock_rounded,
             title: l10n.advancedEnableVpnPortal,
             subtitle: l10n.advancedEnableVpnPortalSubtitle,
-            value: enabled,
+            value: enabled.value,
             onChanged: controller.setVpnPortal,
           ),
-          SignalBuilder(
-            builder: (context) {
-              final listen = controller
-                  .select(
-                    'vpnPortal.listen',
-                    (n) => n.vpnPortal?.wireguardListen ?? '',
-                    '',
-                  )
-                  .value;
-              return EditorTextField(
-                key: const ValueKey('wireguardListen'),
-                label: l10n.advancedWireguardListen,
-                hint: '0.0.0.0:22022',
-                helper: l10n.advancedWireguardListenHelper,
-                initialValue: listen,
-                value: listen,
-                enabled: enabled,
-                validator: validateSocketAddress,
-                onSaved: (value) => controller.setWireguardListen(value.trim()),
-              );
-            },
+        ),
+        SignalBuilder(
+          builder: (context) => EditorTextField(
+            key: const ValueKey('wireguardListen'),
+            label: l10n.advancedWireguardListen,
+            hint: '0.0.0.0:22022',
+            helper: l10n.advancedWireguardListenHelper,
+            value: listen.value,
+            enabled: enabled.value,
+            validator: validateSocketAddress,
+            onSaved: (value) => controller.setWireguardListen(value.trim()),
           ),
-        ],
-      );
-    },
-  );
+        ),
+      ],
+    );
+  }
 }

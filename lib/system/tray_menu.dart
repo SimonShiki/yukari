@@ -1,4 +1,4 @@
-import '../controllers/home_controller.dart' show TrafficSample;
+import '../utils/traffic_sample.dart';
 
 /// The tray context menu: a plain description the platform adapter turns into
 /// a native menu, and the tests read without any plugin.
@@ -47,8 +47,7 @@ final class TrayMenuItem extends TrayMenuEntry {
 /// peer count is built from localized words.
 const String _separator = ' · ';
 
-/// [name] with the connected-peer count, the node's own address and its live
-/// traffic, in one line; just [name] when the network is not running.
+/// Formats a network label for callers of the original tray menu helper.
 ///
 /// [traffic] is not null only while the network runs.
 String trayNetworkLabel(

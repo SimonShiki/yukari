@@ -8,13 +8,13 @@ import 'package:yukari_core/backend/backend.dart';
 import 'package:yukari_core/backend/ffi_backend.dart';
 import 'package:yukari_core/backend/ipc/ipc_endpoint.dart';
 
-import '../backend/service_backend.dart';
+import 'package:yukari_core/backend/service_backend.dart';
+
 import '../backend/system/module_service_control.dart';
 import '../backend/system/service_control.dart';
 
 import 'package:yukari_core/models/models.dart';
 
-import '../system/android_system_ui.dart';
 import 'settings.dart';
 
 /// Private backing signal for the active backend.
@@ -47,14 +47,6 @@ Future<void> initBackend(String dataDir) async {
       : SystemServiceControl(dataDir: dataDir);
   final preferred = settings.workingMode.backend.value;
   _backend.value = _create(_available(preferred));
-  if (Platform.isAndroid) {
-    await AndroidSystemUi(
-      backend: backend,
-      backendKind: backendKind,
-      backendStatus: backendStatus,
-      serviceControl: serviceControl,
-    ).start();
-  }
 }
 
 /// Switches to the [kind] backend. Instances of an in-process backend stop.

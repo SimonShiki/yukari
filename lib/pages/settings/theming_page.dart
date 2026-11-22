@@ -25,6 +25,12 @@ class _ThemingPageState extends State<ThemingPage> {
   final ThemingController _controller = ThemingController();
 
   @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
     return Scaffold(

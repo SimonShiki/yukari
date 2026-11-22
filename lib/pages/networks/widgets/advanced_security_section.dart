@@ -1,4 +1,3 @@
-import 'package:flutter/services.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:signals_flutter/signals_flutter.dart';
 
@@ -6,9 +5,9 @@ import '../../../controllers/network_editor_controller.dart';
 import '../../../controllers/network_editor_security.dart';
 import '../../../l10n/l10n.dart';
 import '../../../utils/validator.dart';
-import '../../../widgets/snackbar/app_snackbar.dart';
 import '../../../widgets/form_section/form_section.dart';
 import '../../../widgets/form_section/form_segments.dart';
+import '../../../widgets/snackbar/app_snackbar.dart';
 import 'editor_fields.dart';
 
 /// Security: secure mode, and the key pair it authenticates with.
@@ -17,20 +16,9 @@ class AdvancedSecuritySection extends StatelessWidget {
 
   final NetworkEditorController controller;
 
-  /// Copies the derived public key, so it can be pasted on a peer.
-  Future<void> _copyPublicKey(BuildContext context) async {
-    final publicKey = controller.working.value?.secureMode?.localPublicKey;
-    if (publicKey == null || publicKey.isEmpty) return;
-    await Clipboard.setData(ClipboardData(text: publicKey));
-    if (!context.mounted) return;
-    showAppSnackBar(context, context.l10n.advancedPublicKeyCopied);
-  }
-
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
-    // Field seeds are read once, outside any SignalBuilder.
-    final network = controller.working.value!;
     return SignalBuilder(
       builder: (context) {
         final enabled = controller
@@ -58,7 +46,6 @@ class AdvancedSecuritySection extends StatelessWidget {
                   key: const ValueKey('privateKey'),
                   label: l10n.advancedPrivateKey,
                   helper: l10n.advancedPrivateKeyHelper,
-                  initialValue: network.secureMode?.localPrivateKey ?? '',
                   value: controller
                       .select(
                         'secureMode.privateKey',
@@ -80,7 +67,6 @@ class AdvancedSecuritySection extends StatelessWidget {
                   key: const ValueKey('publicKey'),
                   label: l10n.advancedPublicKey,
                   helper: l10n.advancedPublicKeyHelper,
-                  initialValue: network.secureMode?.localPublicKey ?? '',
                   value: controller
                       .select(
                         'secureMode.publicKey',
@@ -92,7 +78,11 @@ class AdvancedSecuritySection extends StatelessWidget {
                   hideTooltip: l10n.advancedHidePublicKey,
                   readOnly: true,
                   copyTooltip: l10n.advancedCopyPublicKey,
-                  onCopy: () => _copyPublicKey(context),
+                  onCopy: () async {
+                    if (await controller.copyPublicKey() && context.mounted) {
+                      showAppSnackBar(context, l10n.advancedPublicKeyCopied);
+                    }
+                  },
                   onSaved: (_) {},
                 ),
               ),

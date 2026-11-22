@@ -1,10 +1,9 @@
-import 'dart:io';
-
 import 'package:go_router/go_router.dart';
 import 'package:material_ui/material_ui.dart';
 
 import 'package:yukari_core/backend/backend.dart';
 
+import '../../controllers/network_page_controller.dart';
 import '../../l10n/l10n.dart';
 
 import 'package:yukari_core/models/models.dart';
@@ -42,10 +41,10 @@ Future<void> showTunPermissionWarningDialog(
   NetworkBackend backend, {
   required bool serviceSupported,
 }) async {
-  final name = network.networkName;
-  final reason = Platform.isWindows
-      ? context.l10n.networkTunWindows(name)
-      : context.l10n.networkTunRoot(name);
+  final reason = NetworkPageController.tunPermissionReason(
+    context.l10n,
+    network.networkName,
+  );
   await showDialog<void>(
     context: context,
     useRootNavigator: false,

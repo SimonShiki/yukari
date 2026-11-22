@@ -47,7 +47,6 @@ class EditorIdentitySection extends StatelessWidget {
           builder: (context) => EditorTextField(
             label: l10n.networkSecret,
             helper: l10n.networkSecretHelper,
-            initialValue: network.networkSecret ?? '',
             value: controller
                 .select('secret', (n) => n.networkSecret ?? '', '')
                 .value,

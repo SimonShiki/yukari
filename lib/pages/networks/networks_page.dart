@@ -4,14 +4,14 @@ import 'package:signals_flutter/signals_flutter.dart';
 
 import '../../controllers/network_page_controller.dart';
 import '../../l10n/l10n.dart';
-import '../../widgets/network_card/network_card_data.dart';
-import '../../widgets/network_card/network_card_geometry.dart';
+import '../../models/network_card_data.dart';
+import 'widgets/network_card/network_card_geometry.dart';
 import '../../widgets/selection/selection_chrome.dart';
 import '../../widgets/selection/selection_fab_menu.dart';
 import '../../widgets/selection/selection_switch.dart';
 import '../../widgets/snackbar/app_snackbar.dart';
 import 'editor_exit_guard.dart';
-import 'foreground_active.dart';
+import '../../widgets/foreground_active.dart';
 import 'network_create_menu.dart';
 import 'network_editor_page.dart';
 import 'network_instance_page.dart';
@@ -90,14 +90,19 @@ class _NetworksPageState extends State<NetworksPage>
     List<NetworkCardData> cards,
     int? index, {
     required bool wide,
+    required bool fromCard,
   }) async {
     final id = index == null || index >= cards.length ? null : cards[index].id;
     // The wide pane always shows a network, so a deselect keeps the selection.
     if (id == null && wide) return;
     if (id != null && !await _controller.select(id)) return;
-    if (!mounted || id == null || wide) return;
+    if (!mounted || index == null || id == null || wide) return;
     // Narrow windows have no detail pane, so every tap opens the route once.
-    _controller.openDetail(id);
+    if (fromCard) {
+      withNetworkCardOrigin(cards[index], () => _controller.openDetail(id));
+    } else {
+      _controller.openDetail(id);
+    }
   }
 
   @override
@@ -138,7 +143,8 @@ class _NetworksPageState extends State<NetworksPage>
                 child: NetworksListPane(
                   controller: _controller,
                   wide: wide,
-                  onSelect: (cards, index) => _select(cards, index, wide: wide),
+                  onSelect: (cards, index, {fromCard = false}) =>
+                      _select(cards, index, wide: wide, fromCard: fromCard),
                 ),
               ),
               if (wide)

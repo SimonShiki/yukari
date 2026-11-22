@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
-import 'package:yukari/widgets/network_card/detail_container.dart';
+import 'package:yukari/pages/networks/widgets/network_card/detail_container.dart';
 
 import 'network_detail_harness.dart';
 import 'network_detail_host.dart';

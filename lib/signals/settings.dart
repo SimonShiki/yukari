@@ -10,7 +10,7 @@ import '../l10n/l10n.dart';
 import 'package:yukari_core/models/models.dart';
 
 import '../system/autostart.dart';
-import '../system/tray_support.dart';
+import '../system/tray_platform.dart';
 
 part 'settings_groups.dart';
 part 'settings_start_on_boot.dart';

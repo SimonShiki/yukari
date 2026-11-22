@@ -1,7 +1,7 @@
 import 'package:material_ui/material_ui.dart';
 
-import '../../l10n/l10n.dart';
-import '../selection/selection_chrome.dart';
+import '../../../../l10n/l10n.dart';
+import '../../../../widgets/selection/selection_chrome.dart';
 
 import 'package:yukari_core/models/instance.dart';
 
@@ -73,28 +73,18 @@ class NetworkCard extends StatelessWidget {
         menuButton,
       ],
     );
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Row(
-              children: [
-                Expanded(child: Text(name, style: theme.textTheme.titleSmall)),
-                const SizedBox(width: 12),
-                if (selecting)
-                  SelectionCheck(selected: selected)
-                else ...[
-                  badge,
-                  const SizedBox(width: 8),
-                  controls,
-                ],
-              ],
-            ),
-          ],
-        );
-      },
+    return Row(
+      children: [
+        Expanded(child: Text(name, style: theme.textTheme.titleSmall)),
+        const SizedBox(width: 12),
+        if (selecting)
+          SelectionCheck(selected: selected)
+        else ...[
+          badge,
+          const SizedBox(width: 8),
+          controls,
+        ],
+      ],
     );
   }
 }

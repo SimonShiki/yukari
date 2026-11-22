@@ -6,8 +6,6 @@ import 'package:signals/signals.dart';
 
 import 'package:yukari_core/backend/backend.dart';
 
-import '../controllers/home_controller.dart' show measureTraffic, TrafficSample;
-
 import 'package:yukari_core/models/models.dart';
 
 import '../signals/backend.dart' as active;
@@ -15,12 +13,34 @@ import '../signals/instances.dart' as running;
 import '../signals/locale.dart';
 import '../signals/networks.dart' as saved;
 import '../signals/settings.dart';
+import 'native_tray_platform.dart';
 import 'tray_menu.dart';
 import 'tray_networks.dart';
 import 'tray_platform.dart';
 
 part 'tray_controller_close.dart';
 part 'tray_controller_menu.dart';
+
+/// Starts the system tray for this session.
+///
+/// Runs on platforms with system tray support. A failure is
+/// swallowed: the tray is optional, and it must never keep the app from
+/// starting or closing normally.
+void launchSystemTray() {
+  if (systemTraySupported) unawaited(_launch());
+}
+
+Future<void> _launch() async {
+  try {
+    final controller = TrayController(
+      platform: NativeTrayPlatform(),
+      binding: WidgetsBinding.instance,
+    );
+    await controller.start();
+  } catch (_) {
+    // No tray on this session; everything else keeps working.
+  }
+}
 
 /// Where the one-time "still running in the tray" notice was remembered.
 const _noticeShownKey = 'tray.noticeShown';
@@ -40,9 +60,8 @@ String trayIconFor(Brightness brightness) => _icons[brightness]!;
 ///
 /// The signals it reads are the same stores every page uses, so the menu shows
 /// what the app shows, and it acts through those stores and the active backend
-/// ([TrayNetworkActions]) rather than a controller of its own. While an
-/// instance runs it measures traffic with `measureTraffic`, at
-/// [refreshInterval], and leaves no timer behind otherwise.
+/// ([TrayNetworkActions]). While an instance runs, it refreshes the running
+/// instances at [refreshInterval] to update the peer counts.
 ///
 /// The tray is optional, and a desktop may show no icon even where the OS has
 /// trays. Without one, [start] keeps the close button exiting the app, so the
@@ -59,7 +78,7 @@ class TrayController with WidgetsBindingObserver {
   /// The native tray, window and notification calls.
   final TrayPlatform platform;
 
-  /// How often the menu's traffic refresh runs while an instance runs.
+  /// How often the menu refreshes peer counts while an instance runs.
   final Duration refreshInterval;
 
   /// Reports platform brightness when set; null in tests that drive
@@ -71,11 +90,9 @@ class TrayController with WidgetsBindingObserver {
   /// The start/stop actions, on the shared stores and the active backend.
   final TrayNetworkActions _networks;
 
-  /// The last traffic sample of each running instance, by network id.
-  final Map<String, TrafficSample> _samples = {};
   final List<EffectCleanup> _effects = [];
 
-  Timer? _trafficTimer;
+  Timer? _refreshTimer;
   TrayMenu? _pendingMenu;
   bool _menuScheduled = false;
   Brightness _brightness = Brightness.light;
@@ -110,7 +127,7 @@ class TrayController with WidgetsBindingObserver {
       effect(() {
         final menu = _buildMenu();
         if (_disposed) return;
-        _syncTrafficTimer(running.instances.peek().isNotEmpty);
+        _syncRefreshTimer(running.instances.peek().isNotEmpty);
         _scheduleMenuUpdate(menu);
       }),
     );
@@ -132,26 +149,26 @@ class TrayController with WidgetsBindingObserver {
     binding?.platformDispatcher.platformBrightness ?? _brightness,
   );
 
-  /// The periodic traffic refresh exists exactly while an instance runs.
-  void _syncTrafficTimer(bool hasRunning) {
-    if (hasRunning && _trafficTimer == null) {
-      _trafficTimer = Timer.periodic(
+  /// The periodic peer count refresh exists exactly while an instance runs.
+  void _syncRefreshTimer(bool hasRunning) {
+    if (hasRunning && _refreshTimer == null) {
+      _refreshTimer = Timer.periodic(
         refreshInterval,
         (_) => unawaited(_networks.refresh()),
       );
     } else if (!hasRunning) {
-      _trafficTimer?.cancel();
-      _trafficTimer = null;
+      _refreshTimer?.cancel();
+      _refreshTimer = null;
     }
   }
 
-  /// Stops the effects and the traffic timer; the tray icon stays for
+  /// Stops the effects and the refresh timer; the tray icon stays for
   /// [TrayPlatform.quit].
   void dispose() {
     if (_disposed) return;
     _disposed = true;
-    _trafficTimer?.cancel();
-    _trafficTimer = null;
+    _refreshTimer?.cancel();
+    _refreshTimer = null;
     for (final cleanup in _effects) {
       cleanup();
     }

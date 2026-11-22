@@ -36,8 +36,7 @@ class EditorBasicTab extends StatelessWidget {
         // Only this section depends on a signal: it appears when the backend
         // can start networks with the system.
         SignalBuilder(
-          builder: (context) =>
-              EditorStartupSection.supported(controller.backendKind.value)
+          builder: (context) => controller.startupSupported.value
               ? EditorStartupSection(controller: controller)
               : const SizedBox.shrink(),
         ),

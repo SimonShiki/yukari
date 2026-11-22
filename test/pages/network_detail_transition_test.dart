@@ -3,9 +3,9 @@ import 'package:material_ui/material_ui.dart';
 import 'package:yukari/controllers/network_page_controller.dart';
 import 'package:yukari/pages/networks/network_editor_page.dart';
 import 'package:yukari/pages/networks/network_instance_page.dart';
-import 'package:yukari/widgets/network_card/network_card.dart';
-import 'package:yukari/widgets/network_card/network_card_geometry.dart';
-import 'package:yukari/widgets/network_card/network_detail_transition.dart';
+import 'package:yukari/pages/networks/widgets/network_card/network_card.dart';
+import 'package:yukari/pages/networks/widgets/network_card/network_card_geometry.dart';
+import 'package:yukari/pages/networks/widgets/network_card/network_detail_transition.dart';
 
 import '../networks_fixture.dart';
 import 'network_detail_support.dart';

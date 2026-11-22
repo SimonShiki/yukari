@@ -5,7 +5,7 @@ import 'package:signals/signals.dart';
 
 import 'package:yukari_core/backend/backend.dart';
 
-import '../backend/ipc/ipc_client.dart';
+import 'package:yukari_core/backend/ipc/ipc_client.dart';
 
 import 'package:yukari_core/backend/ipc/ipc_endpoint.dart';
 import 'package:yukari_core/models/models.dart';
@@ -17,19 +17,20 @@ import '../signals/networks.dart';
 import 'package:yukari_core/system/magic_dns.dart';
 
 import '../utils/stun_probe.dart';
+import '../utils/traffic_sample.dart';
+
+import 'signal_scope.dart';
 
 part 'home_actions.dart';
 part 'home_address.dart';
-part 'home_traffic.dart';
 
 /// The Home dashboard's state: every signal the page reads, as a small
 /// primitive, so a change rebuilds the one label that shows it (AGENTS.md
 /// § Architecture).
 ///
 /// The actions the page invokes live in `home_actions.dart`, the address
-/// card's derivations in `home_address.dart` and the traffic measurement in
-/// `home_traffic.dart`.
-class HomeController {
+/// card's derivations in `home_address.dart`.
+class HomeController with SignalScope {
   HomeController({
     NetworkBackend? backend,
     Future<NatProbe> Function()? probe,
@@ -44,7 +45,6 @@ class HomeController {
   final NetworkBackend? _injected;
   final Future<NatProbe> Function() _probe;
   final Future<int?> Function() _probeServiceVersion;
-  final _disposers = <void Function()>[];
 
   EffectCleanup? _effect;
   Timer? _timer;
@@ -56,20 +56,8 @@ class HomeController {
   /// The last traffic sample, see [measureTraffic].
   TrafficSample? _traffic;
 
-  Signal<T> _own<T>(T value) {
-    final created = signal<T>(value);
-    _disposers.add(created.dispose);
-    return created;
-  }
-
-  Computed<T> _derive<T>(T Function() compute) {
-    final created = computed<T>(compute);
-    _disposers.add(created.dispose);
-    return created;
-  }
-
   /// The backend instances run in, or the injected one in tests.
-  late final Computed<NetworkBackend> _activeBackend = _derive(
+  late final Computed<NetworkBackend> _activeBackend = derive(
     () => _injected ?? active.backend.value,
   );
 
@@ -79,15 +67,15 @@ class HomeController {
   /// backend's, which this controller then owns.
   late final ReadonlySignal<BackendStatus> status = _injected == null
       ? active.backendStatus
-      : _derive(() => _activeBackend.value.status.value);
+      : derive(() => _activeBackend.value.status.value);
   late final ReadonlySignal<BackendKind> backendKind = _injected == null
       ? active.backendKind
-      : _derive(() => _activeBackend.value.kind);
-  late final Signal<int?> serviceVersion = _own<int?>(null);
-  late final Computed<bool> showSettings = _derive(
+      : derive(() => _activeBackend.value.kind);
+  late final Signal<int?> serviceVersion = own<int?>(null);
+  late final Computed<bool> showSettings = derive(
     () => status.value == BackendStatus.unavailable,
   );
-  late final Computed<String?> easyTierVersion = _derive(() {
+  late final Computed<String?> easyTierVersion = derive(() {
     for (final instance in _running.value) {
       if (instance.version case final String version?) return version;
     }
@@ -96,17 +84,17 @@ class HomeController {
 
   // -- Networks card --------------------------------------------------------
 
-  late final Signal<bool> refreshed = _own(false);
-  late final Computed<List<Instance>> _running = _derive(
+  late final Signal<bool> refreshed = own(false);
+  late final Computed<List<Instance>> _running = derive(
     () => [
       for (final instance in running.instances.value.values)
         if (instance.status == InstanceStatus.running) instance,
     ],
   );
-  late final Computed<int> savedCount = _derive(() => networks.value.length);
-  late final Computed<int> runningCount = _derive(() => _running.value.length);
-  late final Computed<String> runningNames = _derive(() => _names(', '));
-  late final Computed<String> runningNamesMultiline = _derive(
+  late final Computed<int> savedCount = derive(() => networks.value.length);
+  late final Computed<int> runningCount = derive(() => _running.value.length);
+  late final Computed<String> runningNames = derive(() => _names(', '));
+  late final Computed<String> runningNamesMultiline = derive(
     () => _names('\n'),
   );
 
@@ -116,33 +104,33 @@ class HomeController {
 
   // -- Address card ---------------------------------------------------------
 
-  late final Signal<NatProbe?> _probeResult = _own<NatProbe?>(null);
-  late final Computed<List<HomeAddressEntry>> _addresses = _derive(
+  late final Signal<NatProbe?> _probeResult = own<NatProbe?>(null);
+  late final Computed<List<HomeAddressEntry>> _addresses = derive(
     () => homeAddressesOf(_running.value),
   );
-  late final Computed<AddressKind> addressKind = _derive(
+  late final Computed<AddressKind> addressKind = derive(
     () => addressKindOf(refreshed.value, _addresses.value, _probeResult.value),
   );
-  late final Computed<String?> address = _derive(
+  late final Computed<String?> address = derive(
     () => addressOf(_addresses.value, _probeResult.value),
   );
-  late final Computed<String> addressSupporting = _derive(
+  late final Computed<String> addressSupporting = derive(
     () => addressSupportingOf(_addresses.value),
   );
-  late final Computed<int> addressMoreCount = _derive(
+  late final Computed<int> addressMoreCount = derive(
     () => addressMoreCountOf(_addresses.value),
   );
-  late final Computed<String?> addressTooltip = _derive(
+  late final Computed<String?> addressTooltip = derive(
     () => addressTooltipOf(_addresses.value),
   );
 
   // -- NAT card -------------------------------------------------------------
 
-  late final Signal<bool> probing = _own(false);
-  late final Computed<NatType?> natType = _derive(
+  late final Signal<bool> probing = own(false);
+  late final Computed<NatType?> natType = derive(
     () => _reportedNat() ?? _probeResult.value?.natType,
   );
-  late final Computed<bool> natReportedByEasytier = _derive(
+  late final Computed<bool> natReportedByEasytier = derive(
     () => _reportedNat() != null,
   );
 
@@ -157,13 +145,11 @@ class HomeController {
 
   // -- Traffic card ---------------------------------------------------------
 
-  late final Signal<double> receiveRate = _own(0.0);
-  late final Signal<double> sendRate = _own(0.0);
-  late final Signal<int> totalReceived = _own(0);
-  late final Signal<int> totalSent = _own(0);
-  late final Computed<bool> trafficIdle = _derive(
-    () => runningCount.value == 0,
-  );
+  late final Signal<double> receiveRate = own(0.0);
+  late final Signal<double> sendRate = own(0.0);
+  late final Signal<int> totalReceived = own(0);
+  late final Signal<int> totalSent = own(0);
+  late final Computed<bool> trafficIdle = derive(() => runningCount.value == 0);
 
   /// Where the networks card leads: the list, or the creator when none saved.
   String get networksRoute =>

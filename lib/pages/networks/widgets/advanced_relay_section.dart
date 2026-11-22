@@ -2,7 +2,6 @@ import 'package:material_ui/material_ui.dart';
 
 import '../../../controllers/network_editor_controller.dart';
 import '../../../l10n/l10n.dart';
-import '../../../utils/validator.dart';
 import '../../../widgets/form_section/form_section.dart';
 import 'editor_fields.dart';
 
@@ -104,22 +103,14 @@ class AdvancedRelaySection extends StatelessWidget {
           title: l10n.advancedUdpBroadcastRelay,
           subtitle: l10n.advancedUdpBroadcastRelaySubtitle,
         ),
-        EditorTextField(
+        editorOptionalIntField(
           label: l10n.advancedForeignRelayLimit,
           helper: l10n.advancedForeignRelayLimitHelper,
-          initialValue: network.flags.foreignRelayBpsLimit?.toString() ?? '',
-          keyboardType: TextInputType.number,
-          validator: (value) => validateOptionalIntRange(
-            value,
-            l10n.advancedForeignRelayLimit,
-            1,
-            0x7fffffff,
-          ),
-          onSaved: (value) => controller.update(
-            (n) => n.flags.foreignRelayBpsLimit = value.trim().isEmpty
-                ? null
-                : int.parse(value.trim()),
-          ),
+          initialValue: network.flags.foreignRelayBpsLimit,
+          min: 1,
+          max: 0x7fffffff,
+          onSaved: (value) =>
+              controller.update((n) => n.flags.foreignRelayBpsLimit = value),
         ),
       ],
     );

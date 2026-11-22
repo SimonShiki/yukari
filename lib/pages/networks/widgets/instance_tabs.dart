@@ -10,8 +10,8 @@ import '../../../l10n/l10n.dart';
 import 'package:yukari_core/system/magic_dns.dart';
 
 import '../../../widgets/empty_state/empty_state.dart';
-import '../../../widgets/log_entry/log_entry_list.dart';
-import '../../../widgets/peer_card/peer_card.dart';
+import 'log_entry/log_entry_list.dart';
+import 'peer_card/peer_card.dart';
 import 'magic_dns_card.dart';
 
 /// The peers of one running network, this device first, with the Magic DNS
@@ -101,67 +101,54 @@ class InstanceLogsTab extends StatelessWidget {
   final NetworkInstanceController controller;
 
   @override
-  Widget build(BuildContext context) => SignalBuilder(
-    builder: (context) {
-      final l10n = context.l10n;
-      final filter = controller.filter.value;
-      final entries = controller.visibleLogs.value;
-      return Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
-            child: Align(
-              alignment: AlignmentDirectional.centerStart,
-              child: Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: [
-                  for (final category in LogFilter.values)
-                    _filterChip(context, category, filter),
-                ],
-              ),
-            ),
+  Widget build(BuildContext context) => Column(
+    children: [
+      const SizedBox(height: 12),
+      Padding(
+        padding: const EdgeInsets.fromLTRB(16, 0, 16, 4),
+        child: Align(
+          alignment: AlignmentDirectional.centerStart,
+          child: Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              for (final category in LogFilter.values) _filterChip(category),
+            ],
           ),
-          Expanded(
-            child: entries.isEmpty
-                ? EmptyState(
-                    icon: Icons.article_outlined,
-                    title: l10n.networkNoEvents,
-                    message: l10n.networkNoEventsDescription,
-                  )
-                // Only the list follows the expanded entries, so opening one
-                // does not rebuild the chips above it.
-                : SignalBuilder(
-                    builder: (context) {
-                      // Subscribed here, so opening one entry rebuilds the
-                      // list only, not the chips above it.
-                      final expanded = controller.expanded.value;
-                      return LogEntryList(
-                        // Switching filters starts from the newest entry.
-                        key: ValueKey(filter),
-                        entries: entries,
-                        isExpanded: (entry) => expanded.contains(entry.raw),
-                        onToggle: controller.toggleExpanded,
-                      );
-                    },
-                  ),
-          ),
-        ],
-      );
-    },
+        ),
+      ),
+      Expanded(
+        child: SignalBuilder(
+          builder: (context) {
+            final entries = controller.visibleLogs.value;
+            if (entries.isEmpty) {
+              return EmptyState(
+                icon: Icons.article_outlined,
+                title: context.l10n.networkNoEvents,
+                message: context.l10n.networkNoEventsDescription,
+              );
+            }
+            final expanded = controller.expanded.value;
+            return LogEntryList(
+              key: ValueKey(controller.filter.value),
+              entries: entries,
+              isExpanded: (entry) => expanded.contains(entry.raw),
+              onToggle: controller.toggleExpanded,
+            );
+          },
+        ),
+      ),
+    ],
   );
 
-  Widget _filterChip(
-    BuildContext context,
-    LogFilter category,
-    LogFilter selected,
-  ) => SignalBuilder(
+  Widget _filterChip(LogFilter category) => SignalBuilder(
     builder: (context) {
       final count = controller.count(category).value;
+      final selected = category == controller.filter.value;
       return FilterChip(
         label: Text('${_label(context, category)} $count'),
-        selected: category == selected,
-        onSelected: count == 0 && category != selected
+        selected: selected,
+        onSelected: count == 0 && !selected
             ? null
             : (_) => controller.selectFilter(category),
       );

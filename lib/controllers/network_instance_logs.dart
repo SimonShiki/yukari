@@ -5,7 +5,7 @@ extension NetworkInstanceLogs on NetworkInstanceController {
   /// How many entries [category] would show, for its filter chip.
   ReadonlySignal<int> count(LogFilter category) => _counts.putIfAbsent(
     category,
-    () => computed(() => _matching(category).length),
+    () => derive(() => _matching(category).length),
   );
 
   /// Whether [entry] is expanded.

@@ -8,8 +8,8 @@ import 'package:yukari/pages/networks/network_instance_page.dart'
 import 'package:yukari/pages/networks/networks_page.dart';
 import 'package:yukari/router.dart';
 import 'package:yukari/signals/backend.dart' as backend_signals;
-import 'package:yukari/widgets/network_card/network_card_geometry.dart';
-import 'package:yukari/widgets/network_card/network_detail_page_route.dart';
+import 'package:yukari/pages/networks/widgets/network_card/network_card_geometry.dart';
+import 'package:yukari/pages/networks/widgets/network_card/network_detail_page_route.dart';
 
 import '../fake_backend.dart';
 import '../widgets/network_detail_harness.dart';

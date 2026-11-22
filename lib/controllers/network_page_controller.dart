@@ -1,20 +1,24 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:signals/signals.dart';
 
 import 'package:yukari_core/backend/backend.dart';
 import 'package:yukari_core/models/models.dart';
 
+import '../l10n/l10n.dart';
 import '../signals/backend.dart' as backends;
 import '../signals/instances.dart' as running;
 import '../signals/locale.dart';
 import '../signals/networks.dart' as saved;
-import '../widgets/network_card/network_card_data.dart';
+import '../models/network_card_data.dart';
 import 'multi_selection.dart';
 import 'network_instance_controller.dart';
 import 'network_page_actions.dart';
 
 export 'network_page_actions.dart';
+
+import 'signal_scope.dart';
 
 part 'network_page_refresh.dart';
 
@@ -44,7 +48,7 @@ class PickedConfig {
 /// data the list binds in [cards]. The running instances and whether the
 /// backend answered come from the shared [instances] store, which every page
 /// sees. The actions the page invokes live in `network_page_actions.dart`.
-class NetworkPageController {
+class NetworkPageController with SignalScope {
   NetworkPageController({
     required this.navigate,
     required this.showMessage,
@@ -103,35 +107,35 @@ class NetworkPageController {
   ReadonlySignal<Map<String, Instance>> get instances => running.instances;
 
   /// Start/stop requests that have not settled yet, keyed by network id.
-  final Signal<Map<String, NetworkTransition>> transitions = signal(const {});
+  late final Signal<Map<String, NetworkTransition>> transitions = own(const {});
 
   /// Ids whose deletion is in progress.
-  final Signal<Set<String>> deleting = signal(const {});
+  late final Signal<Set<String>> deleting = own(const {});
 
   /// Whether a refresh is running; the refresh action is disabled meanwhile.
-  final Signal<bool> refreshing = signal(false);
+  late final Signal<bool> refreshing = own(false);
 
   /// Whether the backend answered at least once: the cards stay unknown until
   /// the first successful collection.
   ReadonlySignal<bool> get loaded => running.instancesLoaded;
 
   /// Why the last refresh failed, or null.
-  final Signal<String?> refreshError = signal(null);
+  late final Signal<String?> refreshError = own(null);
 
   /// The network the detail pane shows, or null when none is selected.
-  final Signal<String?> selectedId = signal(null);
+  late final Signal<String?> selectedId = own(null);
 
   /// The tab the detail pane's instance page shows.
-  final Signal<InstanceTab> instanceTab = signal(InstanceTab.peers);
+  late final Signal<InstanceTab> instanceTab = own(InstanceTab.peers);
 
   /// Whether the selected network is running, which is what the detail pane
   /// decides between the instance page and the editor.
-  late final ReadonlySignal<bool> selectionRunning = computed(
+  late final ReadonlySignal<bool> selectionRunning = derive(
     () => instances.value.containsKey(selectedId.value),
   );
 
   /// The rows of the list, in display order.
-  late final ReadonlySignal<List<NetworkCardData>> cards = computed(() {
+  late final ReadonlySignal<List<NetworkCardData>> cards = derive(() {
     final settled = loaded.value && refreshError.value == null;
     return [
       for (final MapEntry(:key, value: network) in saved.networks.value.entries)
@@ -140,7 +144,7 @@ class NetworkPageController {
   });
 
   /// The ids the list can select, in display order.
-  late final ReadonlySignal<List<String>> selectableIds = computed(
+  late final ReadonlySignal<List<String>> selectableIds = derive(
     () => [for (final card in cards.value) card.id],
   );
 
@@ -150,9 +154,14 @@ class NetworkPageController {
   );
 
   /// Whether there is a network to select, so the app bar offers selection.
-  bool get canSelect => cards.value.isNotEmpty;
+  late final _canSelect = derive(() => cards.value.isNotEmpty);
+  bool get canSelect => _canSelect.value;
 
-  final List<void Function()> _cleanups = [];
+  static String tunPermissionReason(AppLocalizations strings, String name) =>
+      Platform.isWindows
+      ? strings.networkTunWindows(name)
+      : strings.networkTunRoot(name);
+
   bool _disposed = false;
   bool _active = false;
   Timer? _timer;
@@ -178,25 +187,9 @@ class NetworkPageController {
     _active = false;
     _timer?.cancel();
     _timer = null;
-    for (final cleanup in _cleanups) {
-      cleanup();
-    }
-    _cleanups.clear();
     selection.dispose();
     // [instances] and [loaded] live in the shared store, which outlives this
     // controller; everything else was created here.
-    for (final signal in <ReadonlySignal<Object?>>[
-      transitions,
-      deleting,
-      refreshing,
-      refreshError,
-      selectedId,
-      instanceTab,
-      selectionRunning,
-      selectableIds,
-      cards,
-    ]) {
-      signal.dispose();
-    }
+    disposeSignals();
   }
 }

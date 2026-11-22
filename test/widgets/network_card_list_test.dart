@@ -5,9 +5,9 @@ import 'package:m3e_core/m3e_core.dart'
 import 'package:material_ui/material_ui.dart';
 import 'package:yukari/l10n/l10n.dart';
 import 'package:yukari_core/models/instance.dart';
-import 'package:yukari/widgets/network_card/network_card_data.dart';
-import 'package:yukari/widgets/network_card/network_card.dart';
-import 'package:yukari/widgets/network_card/network_card_list.dart';
+import 'package:yukari/models/network_card_data.dart';
+import 'package:yukari/pages/networks/widgets/network_card/network_card.dart';
+import 'package:yukari/pages/networks/widgets/network_card/network_card_list.dart';
 import 'package:yukari/widgets/selection/selection_chrome.dart';
 
 void main() {

@@ -5,7 +5,8 @@ import 'package:yukari_core/models/models.dart';
 
 import '../../../controllers/network_editor_controller.dart';
 import '../../../l10n/l10n.dart';
-import '../../../widgets/bookmark_picker/bookmark_picker_dialog.dart';
+import '../../../widgets/card_surface/card_surface.dart';
+import 'bookmark_picker/bookmark_picker_dialog.dart';
 import '../../../widgets/list_editor/list_editor_segments.dart';
 
 /// Offers the bookmarks that are not peers yet; [sharedOnly] leaves the user's
@@ -15,18 +16,9 @@ Future<void> pickPeerBookmarks(
   NetworkEditorController controller, {
   required bool sharedOnly,
 }) async {
-  final present = {
-    for (final node in controller.nodes.value) nodeIdentity(node),
-  };
-  final source = sharedOnly
-      ? controller.sharedBookmarks
-      : controller.pickableBookmarks;
   final picked = await showBookmarkPicker(
     context,
-    bookmarks: [
-      for (final bookmark in source)
-        if (!present.contains(nodeIdentity(bookmark.node))) bookmark,
-    ],
+    bookmarks: controller.peerBookmarkOptions(sharedOnly: sharedOnly),
   );
   if (picked == null || picked.isEmpty) return;
   controller.addBookmarks(picked);
@@ -82,9 +74,8 @@ class MissingPeersNotice extends StatelessWidget {
     final l10n = context.l10n;
     final theme = Theme.of(context);
     final shared = controller.sharedBookmarks;
-    return Material(
+    return CardSurface(
       color: theme.colorScheme.tertiaryContainer,
-      borderRadius: const BorderRadius.all(Radius.circular(20)),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(

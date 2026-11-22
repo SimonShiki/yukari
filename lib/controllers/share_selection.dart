@@ -1,9 +1,9 @@
-import '../controllers/multi_selection.dart';
+import 'multi_selection.dart';
 import '../signals/locale.dart';
-import 'share_bundle.dart';
-import 'share_document.dart';
-import 'share_routes.dart';
-import 'share_targets.dart';
+import '../share/share_bundle.dart';
+import '../share/share_document.dart';
+import '../share/share_routes.dart';
+import '../share/share_targets.dart';
 
 /// The location that shares [selection]'s targets ([kind]), or null after
 /// reporting why it cannot.

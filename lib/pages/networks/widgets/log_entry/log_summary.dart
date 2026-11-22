@@ -1,4 +1,4 @@
-import '../../l10n/l10n.dart';
+import '../../../../l10n/l10n.dart';
 
 import 'package:yukari_core/models/log_entry.dart';
 

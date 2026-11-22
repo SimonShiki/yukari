@@ -32,93 +32,61 @@ class SharePreviewCard extends StatelessWidget {
   final QrShareReceiveController controller;
 
   @override
-  Widget build(BuildContext context) =>
-      shares.length == 1 ? _single(context, shares.single) : _bundle(context);
-
-  /// One share: its identity, its peers and protocols, and the add action.
-  Widget _single(BuildContext context, ShareDocument share) {
+  Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final l10n = context.l10n;
-    return CardSurface(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            _banner(context, ShareKindChip(kind: share.kind)),
-            const SizedBox(height: 12),
-            Text(
-              shareDisplayTitle(share),
-              style: theme.textTheme.headlineSmall,
-            ),
-            if (shareDisplaySubtitle(share) case final address?) ...[
-              const SizedBox(height: 4),
-              ShareAddressText(address),
-            ],
-            const SizedBox(height: 12),
-            for (final (label, value) in _details(share, l10n))
-              _DetailRow(label: label, value: value),
-            if (share.configs != null) ...[
-              const SizedBox(height: 8),
-              Text(
-                l10n.shareIncludesConfigs,
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
-                ),
-              ),
-            ],
-            const SizedBox(height: 20),
-            _actions(
-              context,
-              share.kind == ShareKind.network
-                  ? l10n.shareReceiveAddNetwork
-                  : l10n.shareReceiveSaveNode,
-            ),
-          ],
-        ),
-      ),
+    final share = shares.length == 1 ? shares.single : null;
+    final addLabel = switch (share?.kind) {
+      ShareKind.network => l10n.shareReceiveAddNetwork,
+      ShareKind.node => l10n.shareReceiveSaveNode,
+      null => l10n.shareReceiveAddAll(shares.length),
+    };
+    final supporting = theme.textTheme.bodyMedium?.copyWith(
+      color: theme.colorScheme.onSurfaceVariant,
     );
-  }
-
-  /// A bundle: how much arrived, one row per document, and one action for all.
-  Widget _bundle(BuildContext context) {
-    final theme = Theme.of(context);
-    final l10n = context.l10n;
     return CardSurface(
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            _banner(context, null),
-            const SizedBox(height: 4),
-            Text(
-              l10n.shareItems(shares.length),
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
+            _banner(
+              context,
+              share == null ? null : ShareKindChip(kind: share.kind),
             ),
-            const SizedBox(height: 16),
-            for (final share in shares) ...[
-              ShareItemRow(document: share),
+            if (share != null) ...[
               const SizedBox(height: 12),
-            ],
-            if (shares.any((share) => share.hasSecret))
-              _DetailRow(
-                label: l10n.sharePreviewSecret,
-                value: l10n.sharePreviewSecretIncluded,
-              ),
-            if (shares.any((share) => share.configs != null)) ...[
-              const SizedBox(height: 8),
               Text(
-                l10n.shareIncludesConfigs,
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
-                ),
+                shareDisplayTitle(share),
+                style: theme.textTheme.headlineSmall,
               ),
+              if (shareDisplaySubtitle(share) case final address?) ...[
+                const SizedBox(height: 4),
+                ShareAddressText(address),
+              ],
+              const SizedBox(height: 12),
+              for (final (label, value) in _details(share, l10n))
+                _DetailRow(label: label, value: value),
+            ] else ...[
+              const SizedBox(height: 4),
+              Text(l10n.shareItems(shares.length), style: supporting),
+              const SizedBox(height: 16),
+              for (final item in shares) ...[
+                ShareItemRow(document: item),
+                const SizedBox(height: 12),
+              ],
+              if (shares.any((item) => item.hasSecret))
+                _DetailRow(
+                  label: l10n.sharePreviewSecret,
+                  value: l10n.sharePreviewSecretIncluded,
+                ),
             ],
-            const SizedBox(height: 8),
-            _actions(context, l10n.shareReceiveAddAll(shares.length)),
+            if (shares.any((item) => item.configs != null)) ...[
+              const SizedBox(height: 8),
+              Text(l10n.shareIncludesConfigs, style: supporting),
+            ],
+            SizedBox(height: share == null ? 8 : 20),
+            _actions(addLabel),
           ],
         ),
       ),
@@ -144,7 +112,7 @@ class SharePreviewCard extends StatelessWidget {
   }
 
   /// The card's actions: the one that adds the shares, and the way out.
-  Widget _actions(BuildContext context, String label) => SignalBuilder(
+  Widget _actions(String label) => SignalBuilder(
     builder: (context) {
       final l10n = context.l10n;
       final saving = controller.saving.value;
