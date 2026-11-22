@@ -136,6 +136,23 @@ Future<void> deleteBookmark(String id) => _mutations.enqueue(() async {
   );
 });
 
+/// Removes every bookmark whose id is in [ids] with one persisted mutation.
+Future<void> deleteBookmarks(Iterable<String> ids) =>
+    _mutations.enqueue(() async {
+      final removed = ids.toSet();
+      final saved = _bookmarks.peek();
+      final remaining = [
+        for (final bookmark in saved)
+          if (!removed.contains(bookmark.id)) bookmark,
+      ];
+      if (remaining.length == saved.length) return;
+      await persistOptimistically(
+        _bookmarks,
+        List<Bookmark>.unmodifiable(remaining),
+        _save,
+      );
+    });
+
 /// Completes once every queued mutation has been persisted.
 Future<void> settled() => _mutations.settled();
 

@@ -26,6 +26,20 @@ void main() {
     expect(persistedBookmarks(), isEmpty);
   });
 
+  test('deletes a batch of bookmarks with one store mutation', () async {
+    await seedBookmarks([
+      testBookmark('b1'),
+      testBookmark('b2', host: 'other.example.com'),
+      testBookmark('b3', host: 'third.example.com'),
+    ]);
+
+    await deleteBookmarks(['b1', 'b3', 'missing']);
+    await settled();
+
+    expect(bookmarks.value.map((bookmark) => bookmark.id), ['b2']);
+    expect(persistedBookmarks().map((bookmark) => bookmark.id), ['b2']);
+  });
+
   test('refuses a duplicate id and an update of a missing bookmark', () async {
     await seedBookmarks([testBookmark('b1')]);
 

@@ -138,9 +138,7 @@ extension BookmarksActions on BookmarksController {
     final targets = selectedBookmarks.value;
     if (targets.isEmpty) return;
     try {
-      for (final bookmark in targets) {
-        await saved.deleteBookmark(bookmark.id);
-      }
+      await saved.deleteBookmarks(targets.map((bookmark) => bookmark.id));
     } catch (error) {
       showMessage(l10n.value.bookmarksDeleteSelectedFailed('$error'));
     }
