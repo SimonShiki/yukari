@@ -1,12 +1,16 @@
+import 'dart:io';
+
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
+import 'package:signals/signals.dart';
 import 'package:yukari/controllers/network_editor_controller.dart';
 import 'package:yukari/widgets/form_section/form_segments.dart';
 import 'package:yukari_core/models/models.dart';
 import 'package:yukari/pages/networks/editor_exit_guard.dart';
 import 'package:yukari/pages/networks/network_editor_page.dart';
 import 'package:yukari/pages/networks/widgets/advanced_flags_section.dart';
+import 'package:yukari/pages/networks/widgets/advanced_relay_section.dart';
 import 'package:yukari/pages/networks/widgets/advanced_security_section.dart';
 import 'package:yukari/pages/networks/widgets/editor_fields.dart';
 import 'package:yukari/signals/networks.dart' as saved;
@@ -21,8 +25,16 @@ void main() {
   late NetworkEditorController controller;
   late BuildContext pageContext;
 
-  Future<void> pumpEditor(WidgetTester tester, {String id = 'n1'}) async {
-    controller = NetworkEditorController(id: id, showMessage: (_) {});
+  Future<void> pumpEditor(
+    WidgetTester tester, {
+    String id = 'n1',
+    ReadonlySignal<BackendKind>? backendKind,
+  }) async {
+    controller = NetworkEditorController(
+      id: id,
+      showMessage: (_) {},
+      backendKind: backendKind,
+    );
     addTearDown(controller.dispose);
     await pumpApp(
       tester,
@@ -355,7 +367,7 @@ void main() {
 
     // The row says why it cannot move, and swallows the tap.
     expect(switchOf(tester, strings.advancedNoTun).onChanged, isNull);
-    expect(find.text(strings.advancedMagicDnsNeedsTun), findsOneWidget);
+    expect(find.text(strings.advancedNoTunNeedsTun), findsOneWidget);
 
     await tapSaving(tester, find.text(strings.advancedNoTun));
     expect(controller.working.value!.flags.noTun, isFalse);
@@ -394,6 +406,49 @@ void main() {
     expect(find.text(strings.advancedDnsSuffix), findsOneWidget);
   });
 
+  testWidgets('UDP broadcast relay blocks No-TUN until it is turned off', (
+    tester,
+  ) async {
+    await tester.runAsync(
+      () => seedWith({
+        'n1': seededNetwork(
+          flags: NetworkFlags()..enableUdpBroadcastRelay = true,
+        ),
+      }),
+    );
+    await pumpEditor(tester);
+    await switchTab(tester, strings.networkAdvanced);
+
+    expect(switchOf(tester, strings.advancedNoTun).onChanged, isNull);
+    expect(find.text(strings.advancedNoTunNeedsTun), findsOneWidget);
+    await expandSection(tester, strings.advancedRelay);
+    await tapSaving(tester, find.text(strings.advancedUdpBroadcastRelay));
+    expect(controller.working.value!.flags.enableUdpBroadcastRelay, isFalse);
+    expect(switchOf(tester, strings.advancedNoTun).onChanged, isNotNull);
+
+    await tapSaving(tester, find.text(strings.advancedNoTun));
+    expect(controller.working.value!.flags.noTun, isTrue);
+  });
+
+  testWidgets('relay subtitle follows backend changes', (tester) async {
+    if (!Platform.isLinux) return;
+    await tester.runAsync(seedNetworks);
+    final backendKind = signal(BackendKind.ffi);
+    await pumpEditor(tester, backendKind: backendKind);
+    if (controller.canCaptureBroadcasts) return;
+    await switchTab(tester, strings.networkAdvanced);
+    await expandSection(tester, strings.advancedRelay);
+
+    expect(find.text(strings.advancedUdpBroadcastRelayLinux), findsOneWidget);
+    backendKind.value = BackendKind.service;
+    await tester.pumpAndSettle();
+
+    expect(
+      find.text(strings.advancedUdpBroadcastRelaySubtitle),
+      findsOneWidget,
+    );
+  });
+
   testWidgets('a saved network with both on can still turn either one off', (
     tester,
   ) async {
@@ -425,6 +480,61 @@ void main() {
     await tapSaving(tester, find.text(strings.advancedNoTun));
     expect(controller.working.value!.flags.noTun, isFalse);
     expect(controller.working.value!.flags.acceptDns, isTrue);
+  });
+
+  testWidgets('No-TUN updates only the broadcast relay row in its section', (
+    tester,
+  ) async {
+    await tester.runAsync(
+      () => seedWith({
+        'n1': seededNetwork(
+          flags: NetworkFlags()
+            ..enableUdpBroadcastRelay = true
+            ..noTun = true,
+        ),
+      }),
+    );
+    controller = NetworkEditorController(id: 'n1', showMessage: (_) {});
+    addTearDown(controller.dispose);
+    await pumpApp(
+      tester,
+      Scaffold(
+        body: SingleChildScrollView(
+          child: AdvancedRelaySection(controller: controller),
+        ),
+      ),
+    );
+    await expandSection(tester, strings.advancedRelay);
+    final title = find.text(strings.advancedUdpBroadcastRelay);
+    final whitelist = field(strings.advancedRelayWhitelist);
+    final whitelistBefore = tester.widget(whitelist);
+
+    expect(
+      find.text(strings.advancedUdpBroadcastRelayNeedsTun),
+      findsOneWidget,
+    );
+    expect(
+      switchOf(tester, strings.advancedUdpBroadcastRelay).onChanged,
+      isNotNull,
+    );
+    await tapSaving(tester, title);
+    expect(controller.working.value!.flags.enableUdpBroadcastRelay, isFalse);
+    expect(
+      switchOf(tester, strings.advancedUdpBroadcastRelay).onChanged,
+      isNull,
+    );
+
+    await saving(tester, () async {
+      controller.update((network) => network.flags.noTun = false);
+    });
+    expect(
+      switchOf(tester, strings.advancedUdpBroadcastRelay).onChanged,
+      isNotNull,
+    );
+    expect(find.text(strings.advancedUdpBroadcastRelayNeedsTun), findsNothing);
+    expect(tester.widget(whitelist), same(whitelistBefore));
+    await tapSaving(tester, title);
+    expect(controller.working.value!.flags.enableUdpBroadcastRelay, isTrue);
   });
 
   testWidgets('only the uncommon sections start collapsed', (tester) async {

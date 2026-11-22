@@ -16,6 +16,8 @@ import 'package:yukari_core/daemon/service_daemon.dart';
 import 'package:yukari_core/models/models.dart';
 import 'package:yukari_core/storage/network_store.dart';
 import 'package:yukari_core/system/magic_dns_auto.dart';
+import 'package:yukari_core/system/udp_broadcast_packet.dart';
+import 'package:yukari_core/system/udp_broadcast_relay.dart';
 
 import '../fake_backend.dart';
 import '../networks_fixture.dart';
@@ -27,6 +29,7 @@ void main() {
   late ServiceBackend client;
   late int locates;
   late _FakeMagicDnsSetup magicDns;
+  late _FakeRelaySetup relay;
   final logs = <String>[];
 
   Future<void> serve() async {
@@ -36,6 +39,7 @@ void main() {
       store: NetworkStore(store.file, readOnly: true),
       backend: runtime,
       magicDns: magicDns,
+      udpBroadcastRelay: relay,
       log: logs.add,
     );
     await daemon.start(await ServerSocket.bind(address, 0));
@@ -53,6 +57,7 @@ void main() {
     logs.clear();
     locates = 0;
     magicDns = _FakeMagicDnsSetup();
+    relay = _FakeRelaySetup();
     store = temporaryStore();
     runtime = FakeBackend();
     await store.save({
@@ -68,6 +73,96 @@ void main() {
     expect(runtime.started.keys, ['n2']);
     expect(magicDns.started, isEmpty, reason: 'no Magic DNS asked for');
   });
+
+  test('starts relay for boot and RPC networks with a TUN', () async {
+    await store.save({
+      'boot': Network()
+        ..networkName = 'boot'
+        ..autoStart = true
+        ..flags.enableUdpBroadcastRelay = true,
+      'no-tun': Network()
+        ..networkName = 'no-tun'
+        ..autoStart = true
+        ..flags.enableUdpBroadcastRelay = true
+        ..flags.noTun = true,
+      'rpc': Network()
+        ..networkName = 'rpc'
+        ..flags.enableUdpBroadcastRelay = true,
+    });
+    await serve();
+    expect(relay.active, {'boot'});
+    await client.start('rpc', Network());
+    expect(relay.active, {'boot', 'rpc'});
+    final saved = await store.load();
+    saved['rpc']!.networkName = 'renamed';
+    await store.save(saved);
+    await client.stop(['rpc']);
+    expect(relay.active, {'boot'});
+    await daemon.stop();
+    expect(relay.active, isEmpty);
+  });
+
+  test('stops an active relay when a relaunch disables it', () async {
+    await store.save({
+      'rpc': Network()
+        ..networkName = 'rpc'
+        ..flags.enableUdpBroadcastRelay = true,
+    });
+    await serve();
+    await client.start('rpc', Network());
+    expect(relay.active, {'rpc'});
+
+    final networks = await store.load();
+    networks['rpc']!.flags.noTun = true;
+    await store.save(networks);
+    await client.start('rpc', Network());
+    await pumpEventQueue();
+
+    expect(relay.active, isEmpty);
+  });
+
+  test('cancels a relay that finishes setting up after the RPC stop', () async {
+    await store.save({
+      'rpc': Network()
+        ..networkName = 'rpc'
+        ..flags.enableUdpBroadcastRelay = true,
+    });
+    relay.gate = Completer<void>();
+    await serve();
+    await client.start('rpc', Network());
+    await client.stop(['rpc']);
+    relay.gate!.complete();
+    await pumpEventQueue();
+    expect(relay.active, isEmpty);
+  });
+
+  test(
+    'an older relay start cannot remove a newer start tracking entry',
+    () async {
+      await store.save({
+        'rpc': Network()
+          ..networkName = 'rpc'
+          ..flags.enableUdpBroadcastRelay = true,
+      });
+      final older = Completer<String?>();
+      final newer = Completer<String?>();
+      relay.gates.addAll([older, newer]);
+      await serve();
+
+      await client.start('rpc', Network());
+      await client.start('rpc', Network());
+      expect(relay.startCount, 2);
+
+      older.complete(null);
+      await pumpEventQueue();
+      newer.complete('et_rpc');
+      await pumpEventQueue();
+      expect(relay.active, {'rpc'});
+
+      await client.stop(['rpc']);
+      expect(relay.active, isEmpty);
+    },
+  );
 
   test('sets Magic DNS up for a network it starts', () async {
     await store.save({'n1': _dnsNetwork('alpha')});
@@ -393,3 +488,33 @@ InternetAddress _missingAddress(NetworkStore store) => InternetAddress(
   p.join(p.dirname(store.file.path), 'missing.sock'),
   type: InternetAddressType.unix,
 );
+
+final class _FakeRelaySetup implements UdpBroadcastRelaySetup {
+  final active = <String>{};
+  final gates = <Completer<String?>>[];
+  Completer<void>? gate;
+  var startCount = 0;
+
+  @override
+  bool appliesTo(Network network) => udpBroadcastRelayRequested(network.flags);
+
+  @override
+  Future<String?> start(String networkId, Network network) async {
+    final index = startCount++;
+    if (index < gates.length) {
+      final interface = await gates[index].future;
+      if (interface == null) return null;
+      active.add(networkId);
+      return interface;
+    }
+    if (gate case final pending?) await pending.future;
+    active.add(networkId);
+    return 'et_$networkId';
+  }
+
+  @override
+  Future<void> stop(String networkId) async => active.remove(networkId);
+
+  @override
+  Future<void> stopAll() async => active.clear();
+}

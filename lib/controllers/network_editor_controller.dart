@@ -6,6 +6,7 @@ import 'package:uuid/uuid.dart';
 
 import '../constants/builtin_bookmarks.dart';
 
+import 'package:yukari_core/backend/privilege.dart';
 import 'package:yukari_core/models/models.dart';
 
 import '../signals/backend.dart' as backends;
@@ -32,8 +33,10 @@ class NetworkEditorController {
   NetworkEditorController({
     required this.id,
     required this.showMessage,
+    ReadonlySignal<BackendKind>? backendKind,
     List<Bookmark>? sharedBookmarks,
-  }) : sharedBookmarks = sharedBookmarks ?? builtinBookmarks {
+  }) : backendKind = backendKind ?? backends.backendKind,
+       sharedBookmarks = sharedBookmarks ?? builtinBookmarks {
     working.value = stored.latestNetwork(id)?.copy();
     // Started eagerly, so every bound primitive follows the working copy.
     _stopFields = effect(() {
@@ -75,13 +78,14 @@ class NetworkEditorController {
     () => !stored.networks.value.containsKey(id),
   )..peek();
 
-  /// The active backend's kind: the app-wide signal, so the startup section
-  /// follows a backend switch.
-  ReadonlySignal<BackendKind> get backendKind => backends.backendKind;
+  /// The active backend's kind, so backend-aware editor sections can update.
+  final ReadonlySignal<BackendKind> backendKind;
 
   late final startupSupported = computed(
     () => !Platform.isAndroid || backendKind.value == BackendKind.service,
   );
+
+  late final bool canCaptureBroadcasts = canCaptureRawPackets();
 
   /// The initial peers, so the peer rows rebuild only when a peer changes.
   late final Signal<List<Node>> nodes = signal(
