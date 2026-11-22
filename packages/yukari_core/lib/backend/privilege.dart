@@ -21,9 +21,13 @@ final class ElevationException implements Exception {
 /// grants VPN access per network instead, and other platforms are unsupported.
 bool canCreateTun() {
   if (Platform.isWindows) return windows.isElevated();
-  if (Platform.isLinux) return _hasNetAdminCapability();
+  if (Platform.isLinux) return _hasCapability(12);
   return false;
 }
+
+/// Whether this process can open packet sockets on Linux or Android.
+bool canCaptureRawPackets() =>
+    (Platform.isLinux || Platform.isAndroid) && _hasCapability(13);
 
 /// Whether this process runs as root or as an elevated administrator.
 bool isElevated() =>
@@ -74,17 +78,12 @@ Future<void> runElevated(String executable, List<String> arguments) async {
   );
 }
 
-/// Checks if the process has CAP_NET_ADMIN (bit 12) in its effective set.
-///
-/// /dev/net/tun is usually world-writable, but creating the interface
-/// (TUNSETIFF) still requires CAP_NET_ADMIN, failing with EPERM otherwise.
-/// Root has all capabilities, so this covers both root and setcap'd binaries.
-bool _hasNetAdminCapability() {
+bool _hasCapability(int bit) {
   final caps = switch (_status('CapEff:')) {
     [final value, ...] => BigInt.tryParse(value, radix: 16),
     _ => null,
   };
-  return caps != null && (caps >> 12) & BigInt.one == BigInt.one;
+  return caps != null && (caps >> bit) & BigInt.one == BigInt.one;
 }
 
 /// The fields of the [key] line in /proc/self/status, or null if unreadable.

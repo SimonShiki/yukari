@@ -1,4 +1,8 @@
+import 'dart:io';
+
 import 'package:material_ui/material_ui.dart';
+import 'package:signals_flutter/signals_flutter.dart';
+import 'package:yukari_core/models/models.dart';
 
 import '../../../controllers/network_editor_controller.dart';
 import '../../../l10n/l10n.dart';
@@ -95,14 +99,40 @@ class AdvancedRelaySection extends StatelessWidget {
           title: l10n.advancedRelayForeignQuic,
           subtitle: l10n.advancedRelayForeignQuicSubtitle,
         ),
-        EditorSwitch(
-          icon: Icons.podcasts_rounded,
-          controller: controller,
-          name: 'flags.enableUdpBroadcastRelay',
-          read: (n) => n.flags.enableUdpBroadcastRelay,
-          write: (n, value) => n.flags.enableUdpBroadcastRelay = value,
-          title: l10n.advancedUdpBroadcastRelay,
-          subtitle: l10n.advancedUdpBroadcastRelaySubtitle,
+        SignalBuilder(
+          builder: (context) {
+            final value = editorSwitch(
+              controller,
+              'flags.enableUdpBroadcastRelay',
+              (n) => n.flags.enableUdpBroadcastRelay,
+            ).value;
+            final noTun = editorSwitch(
+              controller,
+              'flags.noTun',
+              (n) => n.flags.noTun,
+            ).value;
+            final appMode =
+                (Platform.isAndroid || Platform.isLinux) &&
+                controller.backendKind.value == BackendKind.ffi;
+            final subtitle = switch ((noTun, appMode)) {
+              (true, _) => l10n.advancedUdpBroadcastRelayNeedsTun,
+              (_, true) when Platform.isAndroid =>
+                l10n.advancedUdpBroadcastRelayAndroid,
+              (_, true) when !controller.canCaptureBroadcasts =>
+                l10n.advancedUdpBroadcastRelayLinux,
+              _ => l10n.advancedUdpBroadcastRelaySubtitle,
+            };
+            return EditorSwitch(
+              icon: Icons.podcasts_rounded,
+              controller: controller,
+              name: 'flags.enableUdpBroadcastRelay',
+              read: (n) => n.flags.enableUdpBroadcastRelay,
+              write: (n, value) => n.flags.enableUdpBroadcastRelay = value,
+              title: l10n.advancedUdpBroadcastRelay,
+              subtitle: subtitle,
+              enabled: editorSwitchEnabled(value: value, conflicts: noTun),
+            );
+          },
         ),
         EditorTextField(
           label: l10n.advancedForeignRelayLimit,

@@ -5,6 +5,7 @@ import 'package:uuid/uuid.dart';
 
 import '../constants/builtin_bookmarks.dart';
 
+import 'package:yukari_core/backend/privilege.dart';
 import 'package:yukari_core/models/models.dart';
 
 import '../signals/backend.dart' as backends;
@@ -76,6 +77,8 @@ class NetworkEditorController {
   /// The active backend's kind: the app-wide signal, so the startup section
   /// follows a backend switch.
   ReadonlySignal<BackendKind> get backendKind => backends.backendKind;
+
+  late final bool canCaptureBroadcasts = canCaptureRawPackets();
 
   /// The initial peers, so the peer rows rebuild only when a peer changes.
   late final Signal<List<Node>> nodes = signal(
