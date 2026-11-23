@@ -50,10 +50,7 @@ final class Instance {
             virtualIpv6: Peer.ipv6FromInet(myNodeInfo['virtual_ipv6']),
           )
         : null;
-    final pairs =
-        (json['peer_route_pairs'] as List<Object?>?)
-            ?.whereType<Map<String, Object?>>() ??
-        [];
+    final pairs = json['peer_route_pairs'] as List<Object?>? ?? const [];
     final running = json['running'] as bool? ?? false;
     final error = json['error_msg'] as String?;
 
@@ -67,16 +64,12 @@ final class Instance {
       events: (json['events'] as List<Object?>?)?.cast<String>() ?? [],
       myself: myPeer,
       version: myNodeInfo?['version'] as String?,
-      peers: pairs
-          .map((pair) {
-            try {
-              return Peer.fromJson(pair);
-            } catch (_) {
-              return null;
-            }
-          })
-          .whereType<Peer>()
-          .toList(growable: false),
+      peers: [
+        for (final pair in pairs)
+          if (pair case final Map<String, Object?> map
+              when map['route'] is Map<String, Object?>)
+            Peer.fromJson(map),
+      ],
     );
   }
 }

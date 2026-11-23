@@ -389,6 +389,15 @@ void main() {
     await tapSaving(tester, find.text(strings.advancedMagicDns));
     expect(find.text(strings.advancedDnsSuffix), findsNothing);
     expect(find.text('1400'), findsOneWidget);
+
+    await tapSaving(tester, find.text(strings.advancedMagicDns));
+    await typeInto(tester, strings.advancedDnsSuffix, 'corp.test.');
+    expect(controller.working.value!.effectiveDnsDomain, 'corp.test.');
+    await tapSaving(tester, find.text(strings.advancedMagicDns));
+    await tapSaving(tester, find.text(strings.advancedMagicDns));
+    expect(find.text('corp.test.'), findsOneWidget);
+    await typeInto(tester, strings.advancedDnsSuffix, 'et.net.');
+    expect(controller.working.value!.dns, isNull);
   });
 
   testWidgets('Magic DNS blocks No-TUN until it is turned off', (tester) async {

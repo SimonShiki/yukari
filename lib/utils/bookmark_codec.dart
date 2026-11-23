@@ -125,7 +125,10 @@ Bookmark _validatedBookmark(Map<String, dynamic> entry, int position) {
   if (bookmark.id.trim().isEmpty) {
     throw FormatException('Bookmark $position has no id');
   }
-  if (!isValidNodeUrl((entry['node'] as Map)['url'] as String)) {
+  if (!isValidNodeUrl(
+    (entry['node'] as Map)['url'] as String,
+    bookmark.node.url,
+  )) {
     throw FormatException('Bookmark $position has an invalid connection URL');
   }
   return bookmark;

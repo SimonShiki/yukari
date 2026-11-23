@@ -8,6 +8,7 @@ import '../constants/builtin_bookmarks.dart';
 
 import 'package:yukari_core/backend/privilege.dart';
 import 'package:yukari_core/models/models.dart';
+import 'package:yukari_core/utils/dns_name.dart';
 
 import '../signals/backend.dart' as backends;
 import '../signals/bookmarks.dart' as saved;

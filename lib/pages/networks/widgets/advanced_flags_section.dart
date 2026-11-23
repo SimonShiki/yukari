@@ -5,6 +5,9 @@ import '../../../controllers/network_editor_controller.dart';
 import '../../../l10n/l10n.dart';
 import '../../../utils/validator.dart';
 import '../../../widgets/form_section/form_section.dart';
+
+import 'package:yukari_core/utils/dns_name.dart';
+
 import 'editor_fields.dart';
 
 /// Network Flags: the protocol and performance switches, Magic DNS and the MTU.
@@ -16,13 +19,9 @@ class AdvancedFlagsSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
-    // Field seeds are read once, outside any SignalBuilder, so a keystroke
-    // elsewhere cannot rebuild this section.
-    final network = controller.working.value!;
     return SignalBuilder(
-      // Only the DNS suffix row depends on a switch; it carries its own key, so
-      // the MTU input below it survives the toggle.
       builder: (context) {
+        final network = controller.working.peek()!;
         final magicDns = editorSwitch(
           controller,
           'flags.acceptDns',
@@ -141,7 +140,7 @@ class AdvancedFlagsSection extends StatelessWidget {
               EditorTextField(
                 key: const ValueKey('dnsSuffix'),
                 label: l10n.advancedDnsSuffix,
-                hint: 'et.net.',
+                hint: defaultDnsDomain,
                 helper: l10n.advancedDnsSuffixHelper,
                 initialValue: network.effectiveDnsDomain,
                 validator: validateDnsZone,

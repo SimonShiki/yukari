@@ -34,80 +34,78 @@ class PeerCard extends StatelessWidget {
       ),
     };
 
-    return InkWell(
-      onTap: data.onTap,
-      borderRadius: BorderRadius.circular(12),
-      // A fixed two-line height keeps every card, including our own, aligned.
-      child: SizedBox(
-        height: textScaler.scale(64),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: Row(
-            children: [
-              Expanded(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Headline: the name, with latency as its status.
-                    Row(
-                      children: [
-                        Flexible(
-                          child: OverflowText(
-                            data.hostname,
-                            style: textTheme.titleMedium,
+    // The minimum preserves alignment while allowing both IP families to wrap.
+    return ConstrainedBox(
+      constraints: BoxConstraints(minHeight: textScaler.scale(64)),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        child: Row(
+          children: [
+            Expanded(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Headline: the name, with latency as its status.
+                  Row(
+                    children: [
+                      Flexible(
+                        child: OverflowText(
+                          data.hostname,
+                          style: textTheme.titleMedium,
+                        ),
+                      ),
+                      if (!data.isSelf && data.latencyMs != null) ...[
+                        const SizedBox(width: 8),
+                        Text(
+                          '${data.latencyMs} ms',
+                          style: textTheme.labelMedium?.copyWith(
+                            color: data.getLatencyColor(colors),
                           ),
                         ),
-                        if (!data.isSelf && data.latencyMs != null) ...[
-                          const SizedBox(width: 8),
-                          Text(
-                            '${data.latencyMs} ms',
-                            style: textTheme.labelMedium?.copyWith(
-                              color: data.getLatencyColor(colors),
-                            ),
-                          ),
-                        ],
                       ],
-                    ),
-                    const SizedBox(height: 4),
-                    // Supporting text: one line, most useful first, as
-                    // overflow is clipped.
-                    SizedBox(
-                      height: textScaler.scale(20),
-                      child: Wrap(
-                        spacing: 6,
-                        runSpacing: 4,
-                        crossAxisAlignment: WrapCrossAlignment.center,
-                        clipBehavior: Clip.hardEdge,
-                        children: [
-                          if ((data.virtualIpv4 ?? data.virtualIpv6) case final ip?)
-                            Text(
-                              ip,
-                              style: textTheme.bodyMedium?.copyWith(
-                                color: colors.onSurfaceVariant,
-                              ),
-                            ),
-                          for (final protocol in data.protocols)
-                            MetadataChip.protocol(protocol),
-                          for (final tag in data.tags) _PeerTagChip(tag: tag),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  // Supporting text can wrap when both address families exist.
+                  Wrap(
+                    spacing: 6,
+                    runSpacing: 4,
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    children: [
+                      if (data.virtualIpv4 case final ip?)
+                        SelectableText(
+                          ip,
+                          style: textTheme.bodyMedium?.copyWith(
+                            color: colors.onSurfaceVariant,
+                          ),
+                        ),
+                      if (data.virtualIpv6 case final ip?)
+                        SelectableText(
+                          ip,
+                          style: textTheme.bodyMedium?.copyWith(
+                            color: colors.onSurfaceVariant,
+                          ),
+                        ),
+                      for (final protocol in data.protocols)
+                        MetadataChip.protocol(protocol),
+                      for (final tag in data.tags) _PeerTagChip(tag: tag),
+                    ],
+                  ),
+                ],
               ),
-              const SizedBox(width: 16),
-              Badge(
-                backgroundColor: connectionBackground,
-                textColor: connectionForeground,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 4,
-                ),
-                label: Text(data.connectionStatus, style: textTheme.labelSmall),
+            ),
+            const SizedBox(width: 16),
+            Badge(
+              backgroundColor: connectionBackground,
+              textColor: connectionForeground,
+              padding: const EdgeInsets.symmetric(
+                horizontal: 10,
+                vertical: 4,
               ),
-            ],
-          ),
+              label: Text(data.connectionStatus, style: textTheme.labelSmall),
+            ),
+          ],
         ),
       ),
     );

@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import '../models/models.dart';
+import '../utils/dns_name.dart';
 import 'system_command.dart';
 
 part 'magic_dns_android.dart';
@@ -36,7 +37,7 @@ final class MagicDnsSystem {
   /// EasyTier interface the probe found.
   ///
   /// [interfaceName] is the network's configured TUN name and [address] its
-  /// virtual IPv4; together they name the interface the system DNS has to be
+  /// virtual address; together they name the interface the system DNS has to be
   /// set on, or none when the EasyTier link cannot be identified yet.
   Future<MagicDnsProbe> probe({
     required String zone,
@@ -70,7 +71,7 @@ final class MagicDnsSystem {
   }
 
   /// The EasyTier interface of one network: the configured TUN name when that
-  /// link is up, else the link that owns the network's virtual IPv4.
+  /// link is up, else the link that owns the network's virtual address.
   ///
   /// The route to [magicDnsServer] is deliberately not consulted: another
   /// VPN's TUN can own it, and its DNS is not this network's to change. Null
@@ -80,12 +81,27 @@ final class MagicDnsSystem {
       final link = await _try('ip', ['link', 'show', configuredName]);
       if (link != null && link.exitCode == 0) return configuredName;
     }
-    final host = magicDnsIpv4Host(address);
+    final host = _magicDnsIpHost(address);
     if (host == null) return null;
-    final owned = await _try('ip', ['-4', '-o', 'addr', 'show', 'to', host]);
+    final family = host.$1 == InternetAddressType.IPv4 ? '-4' : '-6';
+    final owned = await _try('ip', [
+      family,
+      '-o',
+      'addr',
+      'show',
+      'to',
+      host.$2,
+    ]);
     if (owned == null || owned.exitCode != 0) return null;
     final name = _link.firstMatch(owned.stdout)?.group(1);
     return name != null && _interface.hasMatch(name) ? name : null;
+  }
+
+  (InternetAddressType, String)? _magicDnsIpHost(String? cidr) {
+    final parts = cidr?.split('/') ?? const <String>[];
+    if (parts.isEmpty || parts.length > 2) return null;
+    final address = InternetAddress.tryParse(parts.first);
+    return address == null ? null : (address.type, address.address);
   }
 
   Future<CommandResult?> _try(String executable, List<String> arguments) async {

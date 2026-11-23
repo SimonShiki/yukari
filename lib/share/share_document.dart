@@ -208,7 +208,7 @@ SharedPeer _sharedPeer(Object? entry, String field) {
       ? Uri.tryParse(value)
       : null;
   if (url == null ||
-      !isValidNodeUrl(value as String) ||
+      !isValidNodeUrl(value as String, url) ||
       !shareableHost(url.host) ||
       url.userInfo.isNotEmpty) {
     _reject('$field has an invalid connection URL');

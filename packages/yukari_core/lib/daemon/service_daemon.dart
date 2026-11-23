@@ -1,7 +1,8 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 
-import 'package:json_rpc_2/json_rpc_2.dart';
+import 'package:json_rpc_2/json_rpc_2.dart' show Parameters, RpcException;
 
 import '../backend/backend.dart';
 import '../backend/ipc/ipc_server.dart';
@@ -54,6 +55,7 @@ final class ServiceDaemon {
   /// The DNS setups still running, and the networks stopping under them.
   final _dnsRuns = <String, Future<void>>{};
   final _dnsStopping = <String>{};
+  final _runningNames = <String, String>{};
 
   /// Serves the app on [socket], admitting peers that [admits] lets in and
   /// that present [token], then starts the networks marked to start on boot.
@@ -76,6 +78,7 @@ final class ServiceDaemon {
   Future<void> stop() async {
     _shuttingDown = true;
     await _server?.close();
+    _runningNames.clear();
     _relayStarts.clear();
     await _stopBroadcastRelays();
     _dnsStopping.addAll(_dnsRuns.keys);
@@ -120,6 +123,7 @@ final class ServiceDaemon {
       );
     }
     await backend.start(id, network);
+    _runningNames[id] = network.networkName;
     _startDns(id, network);
     unawaited(_startBroadcastRelay(id, network));
     log('Started ${network.networkName}');
@@ -127,6 +131,7 @@ final class ServiceDaemon {
 
   /// Clears relay and DNS state while the TUN devices still exist.
   Future<void> _stop(List<String> names) async {
+    _runningNames.removeWhere((_, name) => names.contains(name));
     for (final MapEntry(:key, :value) in _relayStarts.entries.toList()) {
       if (!names.contains(value.name)) continue;
       _relayStarts.remove(key);
@@ -226,15 +231,22 @@ final class ServiceDaemon {
     }
   }
 
-  /// The virtual IPv4 EasyTier assigned to the instance running as [id].
+  /// The virtual address EasyTier assigned to the instance running as [id].
   ///
   /// A network configured for DHCP carries no address of its own, so Magic DNS
   /// asks the running instance. Null when the collection fails: a setup then
   /// finds no interface and waits, rather than breaking the network's start.
   Future<String?> _assignedAddress(String id) async {
     try {
-      final instances = await backend.collect(await _savedNetworks());
-      return instances[id]?.myself?.virtualIpv4;
+      final name = _runningNames[id] ?? (await _savedNetworks())[id]?.networkName;
+      if (name == null) return null;
+      final info = (await backend.collectInfos())[name];
+      if (info == null) return null;
+      final json = jsonDecode(info) as Map<String, Object?>;
+      final myNodeInfo = json['my_node_info'] as Map<String, Object?>?;
+      if (myNodeInfo == null) return null;
+      return Peer.ipv4FromInet(myNodeInfo['virtual_ipv4']) ??
+          Peer.ipv6FromInet(myNodeInfo['virtual_ipv6']);
     } catch (_) {
       return null;
     }

@@ -248,4 +248,39 @@ data_compress_algo = "lzo"
     final reparsed = parseEasyTierConfig(reExported);
     expect(reparsed.effectiveDnsDomain, 'legacy.test.');
   });
+
+  test('rejects malformed DNS tables and empty DHCPv6 CIDRs', () {
+    expect(
+      () => parseEasyTierConfig('''
+[dns]
+domain = "example.test."
+
+[dns.zone]
+origin = "example.test."
+'''),
+      throwsFormatException,
+    );
+    expect(
+      () => parseEasyTierConfig('''
+[dns]
+domain = "example.test."
+future_option = true
+'''),
+      throwsFormatException,
+    );
+    expect(
+      () => parseEasyTierConfig('''
+[[dns.zone]]
+origin = "example.test."
+future_option = true
+'''),
+      throwsFormatException,
+    );
+    expect(() => parseEasyTierConfig('dhcpv6 = ""'), throwsFormatException);
+    expect(() => parseEasyTierConfig('dhcp = ""'), throwsFormatException);
+    expect(
+      () => parseEasyTierConfig('[dns]\ndomain = 123'),
+      throwsFormatException,
+    );
+  });
 }

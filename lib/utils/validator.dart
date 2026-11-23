@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:yukari_core/models/network.dart';
 import 'package:yukari_core/models/network_components.dart';
 import 'package:yukari_core/models/node.dart';
+import 'package:yukari_core/utils/dns_name.dart';
 
 import '../signals/locale.dart';
 import 'line_formats.dart';
@@ -108,20 +109,18 @@ String? validateHost(String value) {
 
 /// Whether [value] is a DNS zone such as `et.net.`: dotted labels that each
 /// start and end with a letter or digit, and an optional trailing dot.
-bool isValidDnsZoneText(String value) =>
-    _hostnamePattern.hasMatch(value.trim());
+bool isValidDnsZoneText(String value) {
+  final text = value.trim();
+  final name = normalizeDnsName(text);
+  if (name.isEmpty || name.length > 253 || !_hostnamePattern.hasMatch(text)) {
+    return false;
+  }
+  return name.split('.').every((label) => label.length <= 63);
+}
 
 /// A DNS domain such as `et.net.`.
 String? validateDnsZone(String value) =>
     isValidDnsZoneText(value) ? null : l10n.value.validationDns;
-
-String _normalizeDnsName(String value) {
-  var result = value.trim().toLowerCase();
-  while (result.endsWith('.')) {
-    result = result.substring(0, result.length - 1);
-  }
-  return result;
-}
 
 /// A static DNS zone origin: non-empty, valid non-root DNS name, unique among
 /// [existingOrigins].
@@ -131,11 +130,15 @@ String? validateDnsOrigin(
 }) {
   final origin = value.trim();
   if (origin.isEmpty) return l10n.value.validationDnsOriginEmpty;
-  final normalized = _normalizeDnsName(origin);
+  final normalized = normalizeDnsName(origin);
   if (normalized.isEmpty || !isValidDnsZoneText(origin)) {
     return l10n.value.validationDns;
   }
-  if (existingOrigins.map(_normalizeDnsName).contains(normalized)) {
+  final existing = existingOrigins.toList();
+  if (existing.length >= maxStaticDnsZones) {
+    return l10n.value.validationDnsZoneLimit;
+  }
+  if (existing.map(normalizeDnsName).contains(normalized)) {
     return l10n.value.validationDnsOriginExists;
   }
   return null;
@@ -150,7 +153,10 @@ String? validateDnsRecordName(String value) {
   final name = value.trim();
   if (name.isEmpty) return l10n.value.validationDnsRecordNameEmpty;
   if (name == '@' || name == '*') return null;
-  final trimmed = name.endsWith('.') ? name.substring(0, name.length - 1) : name;
+  if (name == '*.') return l10n.value.validationDnsRecordName;
+  final trimmed = name.endsWith('.')
+      ? name.substring(0, name.length - 1)
+      : name;
   if (trimmed.isEmpty) return l10n.value.validationDnsRecordName;
   final labels = trimmed.split('.');
   for (var i = 0; i < labels.length; i++) {
@@ -163,6 +169,7 @@ String? validateDnsRecordName(String value) {
       return l10n.value.validationDnsRecordName;
     }
   }
+  if (trimmed.length > 253) return l10n.value.validationDnsRecordName;
   return null;
 }
 
@@ -180,8 +187,54 @@ String? validateDnsRecordValue(String value, DnsRecordType type) {
     if (parsed?.type != InternetAddressType.IPv6) {
       return l10n.value.validationDnsRecordIpv6;
     }
+  } else if (!_validDnsRdata(trimmed, type)) {
+    return l10n.value.validationDns;
   }
   return null;
+}
+
+bool _validDnsRdata(String value, DnsRecordType type) {
+  bool dnsName(String text) => text == '.' || isValidDnsZoneText(text);
+  bool number(String text) {
+    final parsed = int.tryParse(text);
+    return parsed != null && parsed >= 0 && parsed <= 4294967295;
+  }
+
+  bool txtStrings() {
+    final pattern = RegExp(r'"((?:[^"\\]|\\.)*)"');
+    if (!RegExp(r'^(?:"(?:[^"\\]|\\.)*"\s*)+$').hasMatch(value)) {
+      return false;
+    }
+    return pattern
+        .allMatches(value)
+        .every((match) => utf8.encode(match.group(1)!).length <= 255);
+  }
+
+  final fields = value.split(RegExp(r'\s+'));
+  return switch (type) {
+    DnsRecordType.aname ||
+    DnsRecordType.cname ||
+    DnsRecordType.ns ||
+    DnsRecordType.ptr => dnsName(value),
+    DnsRecordType.mx =>
+      fields.length == 2 &&
+          number(fields[0]) &&
+          int.parse(fields[0]) <= 65535 &&
+          dnsName(fields[1]),
+    DnsRecordType.srv =>
+      fields.length == 4 &&
+          fields
+              .take(3)
+              .every((field) => number(field) && int.parse(field) <= 65535) &&
+          dnsName(fields[3]),
+    DnsRecordType.txt => txtStrings(),
+    DnsRecordType.soa =>
+      fields.length == 7 &&
+          dnsName(fields[0]) &&
+          dnsName(fields[1]) &&
+          fields.skip(2).every(number),
+    _ => true,
+  };
 }
 
 /// Validates an optional DNS TTL value (`0` to `2147483647` seconds).
@@ -190,8 +243,9 @@ String? validateDnsTtl(String value) =>
 
 /// A complete peer connection URL, including an optional path and query.
 String? validateNodeUrl(String value) {
-  final url = Uri.tryParse(value.trim());
-  if (url == null || !isValidNodeUrl(value.trim())) {
+  final trimmed = value.trim();
+  final url = Uri.tryParse(trimmed);
+  if (url == null || !isValidNodeUrl(trimmed, url)) {
     return l10n.value.validationNodeUrl;
   }
   return validateHost(url.host);
@@ -319,6 +373,9 @@ String? validatePrivateKey(String value) {
 }
 
 String? validateDnsZones(Iterable<DnsZone> zones) {
+  if (zones.length > maxStaticDnsZones) {
+    return l10n.value.validationDnsZoneLimit;
+  }
   final seen = <String>[];
   for (final zone in zones) {
     final originError = validateDnsOrigin(zone.origin, existingOrigins: seen);

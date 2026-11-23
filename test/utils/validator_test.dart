@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:yukari_core/models/network.dart';
 import 'package:yukari_core/models/network_components.dart';
+import 'package:yukari_core/utils/dns_name.dart';
 import 'package:yukari/utils/validator.dart';
 
 void main() {
@@ -148,16 +149,78 @@ void main() {
     expect(validateDnsRecordName('nas'), isNull);
     expect(validateDnsRecordName(''), isNotNull);
     expect(validateDnsRecordName('bad..name'), isNotNull);
+    expect(validateDnsRecordName('*.'), isNotNull);
+    expect(validateDnsRecordName('${'a' * 64}.test'), isNotNull);
+    expect(validateDnsOrigin('${'a' * 64}.test'), isNotNull);
+    expect(
+      validateDnsOrigin('${List.filled(4, 'a' * 63).join('.')}.test'),
+      isNotNull,
+    );
+    expect(
+      validateDnsOrigin(
+        'new.test.',
+        existingOrigins: [
+          for (var index = 0; index < maxStaticDnsZones; index++)
+            'zone$index.test.',
+        ],
+      ),
+      isNotNull,
+    );
 
     expect(validateDnsRecordValue('10.0.0.8', DnsRecordType.a), isNull);
     expect(validateDnsRecordValue('fd00::8', DnsRecordType.a), isNotNull);
     expect(validateDnsRecordValue('fd00::8', DnsRecordType.aaaa), isNull);
     expect(validateDnsRecordValue('10.0.0.8', DnsRecordType.aaaa), isNotNull);
+    expect(validateDnsRecordValue('"hello world"', DnsRecordType.txt), isNull);
+    expect(validateDnsRecordValue('   ', DnsRecordType.txt), isNotNull);
+    expect(validateDnsRecordValue('bad mx', DnsRecordType.mx), isNotNull);
     expect(
-      validateDnsRecordValue('"hello world"', DnsRecordType.txt),
+      validateDnsRecordValue('10 mail.example.test.', DnsRecordType.mx),
       isNull,
     );
-    expect(validateDnsRecordValue('   ', DnsRecordType.txt), isNotNull);
+    expect(
+      validateDnsRecordValue('10 5 5060 target', DnsRecordType.srv),
+      isNull,
+    );
+    expect(
+      validateDnsRecordValue('10 5 70000 target', DnsRecordType.srv),
+      isNotNull,
+    );
+    expect(validateDnsRecordValue('plain text', DnsRecordType.txt), isNotNull);
+    expect(
+      validateDnsRecordValue('bad..target', DnsRecordType.cname),
+      isNotNull,
+    );
+    expect(
+      validateDnsRecordValue('target.example.test.', DnsRecordType.cname),
+      isNull,
+    );
+    expect(validateDnsRecordValue('bad..target', DnsRecordType.ptr), isNotNull);
+    expect(
+      validateDnsRecordValue('"${'a' * 256}"', DnsRecordType.txt),
+      isNotNull,
+    );
+    expect(
+      validateDnsRecordValue(
+        'ns.test. hostmaster.test. 1 2 3 4 5',
+        DnsRecordType.soa,
+      ),
+      isNull,
+    );
+    expect(
+      validateDnsRecordValue(
+        'ns.test. hostmaster.test. one 2 3 4 5',
+        DnsRecordType.soa,
+      ),
+      isNotNull,
+    );
+    expect(
+      validateDnsZones([
+        for (var index = 0; index < 17; index++)
+          DnsZone(origin: 'zone$index.test.'),
+      ]),
+      isNotNull,
+    );
 
     expect(validateDnsTtl(''), isNull);
     expect(validateDnsTtl('0'), isNull);

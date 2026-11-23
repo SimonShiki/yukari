@@ -3,6 +3,7 @@ import 'package:json_annotation/json_annotation.dart';
 import 'network_flags.dart';
 import 'network_components.dart';
 import 'node.dart';
+import '../utils/dns_name.dart';
 
 part 'network.g.dart';
 
@@ -131,7 +132,7 @@ final class Network {
     final configured = dns?.domain?.trim() ?? '';
     if (configured.isNotEmpty) return configured;
     final legacy = flags.dnsZone.trim();
-    return legacy.isNotEmpty ? legacy : 'et.net.';
+    return legacy.isNotEmpty ? legacy : defaultDnsDomain;
   }
 
   /// Deduplicated Magic DNS zones served by this network: [effectiveDnsDomain]
@@ -142,7 +143,7 @@ final class Network {
     void addZone(String raw) {
       final trimmed = raw.trim();
       if (trimmed.isEmpty) return;
-      final normalized = _normalizeZoneKey(trimmed);
+      final normalized = normalizeDnsName(trimmed);
       if (normalized.isEmpty || !seen.add(normalized)) return;
       result.add(trimmed);
     }
@@ -150,14 +151,6 @@ final class Network {
     addZone(effectiveDnsDomain);
     for (final zone in dns?.zones ?? const <DnsZone>[]) {
       addZone(zone.origin);
-    }
-    return result;
-  }
-
-  static String _normalizeZoneKey(String zone) {
-    var result = zone.trim().toLowerCase();
-    while (result.endsWith('.')) {
-      result = result.substring(0, result.length - 1);
     }
     return result;
   }

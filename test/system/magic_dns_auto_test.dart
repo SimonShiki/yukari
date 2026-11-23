@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:yukari_core/models/models.dart';
 import 'package:yukari_core/system/magic_dns.dart';
 import 'package:yukari_core/system/magic_dns_auto.dart';
+import 'package:yukari_core/utils/dns_name.dart';
 
 import '../fake_system_command.dart';
 
@@ -11,9 +12,11 @@ Network _network({
   String zone = 'et.net.',
   String deviceName = '',
   String? ipv4 = '10.126.126.2/24',
+  String? ipv6,
 }) => Network()
   ..networkName = 'alpha'
   ..ipv4 = ipv4
+  ..ipv6 = ipv6
   ..flags = (NetworkFlags()
     ..acceptDns = acceptDns
     ..noTun = noTun
@@ -37,6 +40,22 @@ void main() {
 
     expect(interface, isNull);
   });
+
+  test(
+    'returns null when all configured zones were already installed',
+    () async {
+      final command = FakeSystemCommand(
+        runHandler: androidHost(configured: () => true, jump: () => true),
+      );
+      final network = _network()
+        ..dns = DnsConfig(
+          domain: 'et.net.',
+          zones: [DnsZone(origin: 'extra.test.')],
+        );
+
+      expect(await _auto(command).start('n1', network), isNull);
+    },
+  );
 
   test('applies the DNS when the interface is there', () async {
     final command = FakeSystemCommand(runHandler: androidHost());
@@ -90,6 +109,37 @@ void main() {
 
     expect(interface, isNull);
     expect(command.runs, isEmpty, reason: 'nothing may be guessed');
+  });
+
+  test('uses the saved IPv6 address when IPv4 is absent', () async {
+    final command = FakeSystemCommand(
+      runHandler: (executable, arguments) {
+        if (executable == 'ip' && arguments.firstOrNull == '-6') {
+          return ok('33: et_v6    inet6 fd00::2/64 scope global et_v6');
+        }
+        return androidHost()(executable, arguments);
+      },
+    );
+    final auto = MagicDnsAuto(
+      system: androidSystem(command),
+      attempts: 2,
+      retryDelay: Duration.zero,
+      assignedAddress: (_) async => null,
+    );
+
+    final interface = await auto.start(
+      'n1',
+      _network(ipv4: null, ipv6: 'fd00::2/64'),
+    );
+
+    expect(interface, 'et_v6');
+    expect(
+      command.runs.any(
+        (run) =>
+            run.$1 == 'ip' && run.$2.join(' ') == '-6 -o addr show to fd00::2',
+      ),
+      isTrue,
+    );
   });
 
   test(
@@ -160,10 +210,7 @@ void main() {
     );
 
     expect(MagicDnsAuto(system: system).appliesTo(_network()), isFalse);
-    expect(
-      await MagicDnsAuto(system: system).start('n1', _network()),
-      isNull,
-    );
+    expect(await MagicDnsAuto(system: system).start('n1', _network()), isNull);
     expect(command.runs, isEmpty);
   });
 
@@ -219,6 +266,45 @@ void main() {
     );
   });
 
+  test('keeps a shared zone installed until its last network stops', () async {
+    final command = FakeSystemCommand(runHandler: androidHost());
+    final auto = _auto(command);
+    await auto.start('n1', _network());
+    await auto.start('n2', _network());
+    final beforeFirstRevert = command.runs.length;
+
+    await auto.revert('n1');
+    expect(
+      command.runs
+          .skip(beforeFirstRevert)
+          .any((run) => run.$1 == 'iptables' && run.$2.contains('-D')),
+      isFalse,
+    );
+
+    await auto.revert('n2');
+    expect(
+      command.runs
+          .skip(beforeFirstRevert)
+          .any((run) => run.$1 == 'iptables' && run.$2.contains('-D')),
+      isTrue,
+    );
+  });
+
+  test('refuses a network with too many root DNS zone rules', () async {
+    final command = FakeSystemCommand(runHandler: androidHost());
+    final auto = _auto(command);
+    final network = _network()
+      ..dns = DnsConfig(
+        zones: [
+          for (var index = 0; index <= maxStaticDnsZones; index++)
+            DnsZone(origin: 'zone$index.test.'),
+        ],
+      );
+
+    expect(await auto.start('n1', network), isNull);
+    expect(command.runs, isEmpty);
+  });
+
   test('a second start configures nothing again', () async {
     var configured = false;
     final command = FakeSystemCommand(
@@ -255,33 +341,41 @@ void main() {
     );
   });
 
-  test('applies and reverts static DNS zone origins alongside primary domain', () async {
-    final command = FakeSystemCommand(runHandler: androidHost());
-    final auto = _auto(command);
-    final network = _network(zone: 'mesh.internal.')
-      ..dns = DnsConfig(
-        domain: 'mesh.internal.',
-        zones: [
-          DnsZone(origin: 'example.test.'),
-          DnsZone(origin: 'mesh.internal'),
-        ],
-      );
+  test(
+    'applies and reverts static DNS zone origins alongside primary domain',
+    () async {
+      final command = FakeSystemCommand(runHandler: androidHost());
+      final auto = _auto(command);
+      final network = _network(zone: 'mesh.internal.')
+        ..dns = DnsConfig(
+          domain: 'mesh.internal.',
+          zones: [
+            DnsZone(origin: 'example.test.'),
+            DnsZone(origin: 'mesh.internal'),
+          ],
+        );
 
-    expect(await auto.start('n1', network), 'et_12_xoih');
-    final addCalls = command.runs
-        .where((run) => run.$1 == 'iptables' && run.$2.contains('-A'))
-        .map((run) => run.$2.join(' '))
-        .toList();
-    expect(addCalls, hasLength(2));
-    expect(addCalls.first, contains('mesh'));
-    expect(addCalls.last, contains('example'));
+      expect(await auto.start('n1', network), 'et_12_xoih');
+      final addCalls = command.runs
+          .where((run) => run.$1 == 'iptables' && run.$2.contains('-A'))
+          .map((run) => run.$2.join(' '))
+          .toList();
+      expect(addCalls, hasLength(2));
+      expect(addCalls.first, contains('mesh'));
+      expect(addCalls.last, contains('example'));
 
-    final beforeRevert = command.runs.length;
-    await auto.revert('n1');
-    final deleteCalls = command.runs
-        .skip(beforeRevert)
-        .where((run) => run.$1 == 'iptables' && run.$2.contains('-D') && run.$2.contains('--hex-string'))
-        .toList();
-    expect(deleteCalls, hasLength(2));
-  });
+      final beforeRevert = command.runs.length;
+      await auto.revert('n1');
+      final deleteCalls = command.runs
+          .skip(beforeRevert)
+          .where(
+            (run) =>
+                run.$1 == 'iptables' &&
+                run.$2.contains('-D') &&
+                run.$2.contains('--hex-string'),
+          )
+          .toList();
+      expect(deleteCalls, hasLength(2));
+    },
+  );
 }

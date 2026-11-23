@@ -1,6 +1,7 @@
 import 'package:toml/toml.dart';
 
 import '../models/models.dart';
+import 'dns_name.dart';
 
 String _serialize(Network network) {
   final dns = _dns(network);
@@ -108,7 +109,7 @@ Map<String, Object?>? _dns(Network network) {
   final legacy = network.flags.dnsZone.trim();
   final explicitDomain = domain != null && domain.isNotEmpty
       ? domain
-      : legacy.isNotEmpty && legacy != 'et.net.'
+      : legacy.isNotEmpty && !isDefaultDnsDomain(legacy)
       ? legacy
       : null;
   final zones = network.dns?.zones ?? const <DnsZone>[];

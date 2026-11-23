@@ -122,18 +122,20 @@ void _publishInstances(
   final sameNetworks = identical(networks, _collectedNetworks);
   _collectedNetworks = networks;
   final next = <String, Instance>{};
+  var allReused = current.length == collected.length;
+  final currentKeys = current.keys.iterator;
   for (final MapEntry(:key, :value) in collected.entries) {
     final previous = current[key];
-    next[key] =
-        sameNetworks && previous != null && _sameInstance(previous, value)
-        ? previous
-        : value;
+    final reused =
+        sameNetworks && previous != null && _sameInstance(previous, value);
+    next[key] = reused ? previous : value;
+    // Order matters to consumers that show the first running network's data.
+    if (allReused) {
+      allReused =
+          reused && currentKeys.moveNext() && currentKeys.current == key;
+    }
   }
-  // Order matters to consumers that show the first running network's data.
-  if (mapEquals(current, next) &&
-      listEquals(current.keys.toList(), next.keys.toList())) {
-    return;
-  }
+  if (allReused) return;
   _instances.value = Map.unmodifiable(next);
 }
 

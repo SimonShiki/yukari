@@ -56,7 +56,7 @@ NetworkFlags _$NetworkFlagsFromJson(Map<String, dynamic> json) => NetworkFlags(
       EncryptionAlgorithm.aesGcm,
   disableSymmetricHolePunching:
       json['disableSymmetricHolePunching'] as bool? ?? false,
-  dnsZone: json['dnsZone'] as String? ?? 'et.net.',
+  dnsZone: json['dnsZone'] as String? ?? defaultDnsDomain,
   quicListenPort: (json['quicListenPort'] as num?)?.toInt(),
   needP2p: json['needP2p'] as bool? ?? false,
   instanceReceiveBpsLimit: (json['instanceReceiveBpsLimit'] as num?)?.toInt(),

@@ -28,7 +28,6 @@ class PeerCardData {
     this.virtualIpv6,
     this.tags = const [],
     this.isSelf = false,
-    this.onTap,
   });
 
   final String id;
@@ -43,13 +42,8 @@ class PeerCardData {
 
   /// Whether this is the local node rather than a remote peer.
   final bool isSelf;
-  final VoidCallback? onTap;
 
-  factory PeerCardData.fromPeer(
-    Peer peer,
-    AppLocalizations l10n, {
-    VoidCallback? onTap,
-  }) {
+  factory PeerCardData.fromPeer(Peer peer, AppLocalizations l10n) {
     return PeerCardData(
       id: peer.id,
       hostname: peer.hostname,
@@ -64,7 +58,6 @@ class PeerCardData {
         ?_securityTag(peer.secureAuthLevel, l10n),
         ?_fecTag(peer, l10n),
       ],
-      onTap: onTap,
     );
   }
 

@@ -26,7 +26,6 @@ class YukariVpnService : VpnService() {
         var onVpnRevoked: (() -> Unit)? = null
 
         const val EXTRA_NETWORK_NAME = "network_name"
-        const val EXTRA_IPV4_ADDR = "ipv4_addr"
         const val EXTRA_ADDRESSES = "addresses"
         const val EXTRA_MTU = "mtu"
         const val EXTRA_ROUTES = "routes"
@@ -37,12 +36,13 @@ class YukariVpnService : VpnService() {
     private var networkName: String? = null
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        val previousName = networkName
         networkName = intent?.getStringExtra(EXTRA_NETWORK_NAME) ?: "Yukari"
         val addresses = intent?.getStringArrayExtra(EXTRA_ADDRESSES)
             ?.filter { it.isNotBlank() }
             ?.toTypedArray()
             ?.takeIf { it.isNotEmpty() }
-            ?: arrayOf(intent?.getStringExtra(EXTRA_IPV4_ADDR) ?: "10.126.126.1/24")
+            ?: arrayOf("10.126.126.1/24")
         val mtu = intent?.getIntExtra(EXTRA_MTU, 1420) ?: 1420
         val routes = intent?.getStringArrayExtra(EXTRA_ROUTES) ?: arrayOf()
         val dns = intent?.getStringExtra(EXTRA_DNS)
@@ -67,6 +67,17 @@ class YukariVpnService : VpnService() {
             onTunFdReady?.invoke(nextInterface.fd)
             instance = this
         } catch (e: Exception) {
+            networkName = previousName
+            if (previousInterface != null) {
+                updateNotification(
+                    YukariNotifications.build(
+                        this,
+                        getString(R.string.tile_label),
+                        getString(R.string.notification_connected, previousName ?: "Yukari"),
+                        getString(R.string.notification_stop),
+                    ),
+                )
+            }
             onTunFailed?.invoke(e.message ?: "Could not establish the VPN")
             if (previousInterface == null) {
                 clearForegroundNotification()
@@ -100,12 +111,15 @@ class YukariVpnService : VpnService() {
             .setSession("Yukari")
             .setBlocking(false)
             .setMtu(mtu)
+            .allowFamily(OsConstants.AF_INET)
             .allowFamily(OsConstants.AF_INET6)
 
         addresses.forEach { addr ->
             val ipParts = addr.split("/")
             val defaultPrefix = if (ipParts[0].contains(':')) 64 else 24
             val prefix = ipParts.getOrNull(1)?.toIntOrNull() ?: defaultPrefix
+            val maxPrefix = if (ipParts[0].contains(':')) 128 else 32
+            require(ipParts.size <= 2 && prefix in 0..maxPrefix) { "Invalid VPN address: $addr" }
             builder.addAddress(ipParts[0], prefix)
         }
 
@@ -113,9 +127,12 @@ class YukariVpnService : VpnService() {
 
         routes.forEach { route ->
             val parts = route.split("/")
-            if (parts.size == 2) {
-                builder.addRoute(parts[0], parts[1].toInt())
-            }
+            require(parts.size == 2) { "Invalid VPN route: $route" }
+            val prefix = parts[1].toIntOrNull()
+                ?: throw IllegalArgumentException("Invalid VPN route: $route")
+            val maxPrefix = if (parts[0].contains(':')) 128 else 32
+            require(prefix in 0..maxPrefix) { "Invalid VPN route: $route" }
+            builder.addRoute(parts[0], prefix)
         }
 
         try {

@@ -44,7 +44,7 @@ SharedPeer? selfPeerForShare(Network network) {
 SharedPeer? selfPeerOf(Network network) {
   for (final listener in [...network.mappedListeners, ...network.listeners]) {
     if (listener.userInfo.isNotEmpty ||
-        !isValidNodeUrl(listener.toString()) ||
+        !isValidNodeUrl(listener.toString(), listener) ||
         _undialable(listener.host) ||
         !shareableHost(listener.host)) {
       continue;

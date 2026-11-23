@@ -21,6 +21,7 @@ List<String> _lookupRule(String pattern) => [
   'string',
   '--algo',
   'bm',
+  '--icase',
   '--hex-string',
   pattern,
   '-j',

@@ -1,6 +1,7 @@
 import 'package:json_annotation/json_annotation.dart';
 
 import 'node.dart';
+import '../utils/dns_name.dart';
 
 part 'network_flags.g.dart';
 
@@ -45,7 +46,7 @@ class NetworkFlags {
     this.multiThreadCount = 2,
     this.encryptionAlgorithm = EncryptionAlgorithm.aesGcm,
     this.disableSymmetricHolePunching = false,
-    this.dnsZone = 'et.net.',
+    this.dnsZone = defaultDnsDomain,
     this.quicListenPort,
     this.needP2p = false,
     this.instanceReceiveBpsLimit,

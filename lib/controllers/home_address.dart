@@ -11,12 +11,20 @@ typedef HomeAddressEntry = ({String address, String? host, String network});
 /// The virtual addresses of [running], in saved order.
 List<HomeAddressEntry> homeAddressesOf(List<Instance> running) => [
   for (final instance in running)
-    if (instance.myself?.virtualIpv4 case final String address)
-      (
-        address: address,
-        host: _magicDnsHostOf(instance.network),
-        network: instance.network.networkName,
-      ),
+    if (instance.myself case final myself?) ...[
+      if (myself.virtualIpv4 case final String address)
+        (
+          address: address,
+          host: _magicDnsHostOf(instance.network),
+          network: instance.network.networkName,
+        ),
+      if (myself.virtualIpv6 case final String address)
+        (
+          address: address,
+          host: _magicDnsHostOf(instance.network),
+          network: instance.network.networkName,
+        ),
+    ],
 ];
 
 /// The Magic DNS name of [network], when it asks for one: its configured

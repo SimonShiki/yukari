@@ -87,7 +87,7 @@ final class SecureMode {
   Map<String, dynamic> toJson() => _$SecureModeToJson(this);
 }
 
-@JsonSerializable(explicitToJson: true)
+@JsonSerializable()
 final class ManagedCredential {
   ManagedCredential({
     required this.id,
@@ -171,11 +171,7 @@ final class DnsRecord {
 
 @JsonSerializable(explicitToJson: true)
 final class DnsZone {
-  DnsZone({
-    required this.origin,
-    this.ttl,
-    this.records = const [],
-  });
+  DnsZone({required this.origin, this.ttl, this.records = const []});
 
   String origin;
   int? ttl;
