@@ -238,9 +238,10 @@ final class ServiceDaemon {
   /// finds no interface and waits, rather than breaking the network's start.
   Future<String?> _assignedAddress(String id) async {
     try {
+      final infos = await backend.collectInfos();
       final name = _runningNames[id] ?? (await _savedNetworks())[id]?.networkName;
       if (name == null) return null;
-      final info = (await backend.collectInfos())[name];
+      final info = infos[name];
       if (info == null) return null;
       final json = jsonDecode(info) as Map<String, Object?>;
       final myNodeInfo = json['my_node_info'] as Map<String, Object?>?;
