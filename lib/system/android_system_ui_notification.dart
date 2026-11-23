@@ -4,20 +4,27 @@ part of 'android_system_ui.dart';
 /// system needs to show it.
 extension _AndroidSystemUiNotification on AndroidSystemUi {
   void _pushNotification(
-    MapEntry<String, Instance>? entry,
+    List<MapEntry<String, Instance>> entries,
     TrafficSample sample,
   ) {
-    if (entry == null) {
+    if (entries.isEmpty) {
       if (_notification == null) return;
       _notification = null;
       _channel.invokeMethod<void>('updateNotification', {'active': false}).ignore();
       return;
     }
     _requestNotificationPermission();
+    final title = entries.length == 1
+        ? entries.single.value.network.networkName
+        : l10n.value.androidNotificationNetworks(entries.length);
+    final members = entries.fold<int>(
+      0,
+      (total, entry) => total + entry.value.memberCount,
+    );
     final next = (
-      title: entry.value.network.networkName,
+      title: title,
       text:
-          '${l10n.value.androidNotificationPeers(entry.value.memberCount)} · '
+          '${l10n.value.androidNotificationPeers(members)} · '
           '${formatTrafficRates(receive: sample.receiveRate, send: sample.sendRate)}',
     );
     if (next == _notification) return;

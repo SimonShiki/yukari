@@ -161,31 +161,37 @@ class AndroidSystemUi {
       _sampled = instances;
     }
     final kind = _kind;
-    final entry = kind == BackendKind.ffi ? _runningEntry(instances) : null;
-    if (entry != null) _rememberBooted(entry.key);
-    _pushTile(kind: kind, entry: entry);
-    _pushNotification(entry, _traffic);
+    final entries = kind == BackendKind.ffi
+        ? _runningEntries(instances)
+        : const <MapEntry<String, Instance>>[];
+    if (entries.isNotEmpty) _rememberBooted(entries.last.key);
+    _pushTile(kind: kind, entries: entries);
+    _pushNotification(entries, _traffic);
   }
 
-  /// The first running instance, or null: an in-process backend runs one.
-  MapEntry<String, Instance>? _runningEntry(Map<String, Instance> instances) {
-    for (final entry in instances.entries) {
-      if (entry.value.status == InstanceStatus.running) return entry;
-    }
-    return null;
-  }
+  /// Every running instance in display order.
+  List<MapEntry<String, Instance>> _runningEntries(
+    Map<String, Instance> instances,
+  ) => [
+    for (final entry in instances.entries)
+      if (entry.value.status == InstanceStatus.running) entry,
+  ];
 
   void _pushTile({
     required BackendKind kind,
-    required MapEntry<String, Instance>? entry,
+    required List<MapEntry<String, Instance>> entries,
   }) {
     final active = switch (kind) {
-      BackendKind.ffi => entry != null,
+      BackendKind.ffi => entries.isNotEmpty,
       BackendKind.service => backendStatus.value == BackendStatus.ready,
     };
-    final label = kind == BackendKind.ffi && entry != null
-        ? entry.value.network.networkName
-        : _idleLabel;
+    final label = switch ((kind, entries.length)) {
+      (BackendKind.ffi, 1) => entries.single.value.network.networkName,
+      (BackendKind.ffi, > 1) => l10n.value.androidNotificationNetworks(
+        entries.length,
+      ),
+      _ => _idleLabel,
+    };
     final next = (active: active, label: label);
     if (next == _tile) return;
     _tile = next;

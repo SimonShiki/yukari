@@ -196,7 +196,7 @@ void main() {
       showMessage: (_) {},
       confirmDelete: (_) async => true,
       showTunPermissionWarning: (_) async {},
-      backend: FakeBackend(maxTunInstances: 1),
+      backend: FakeBackend(),
     );
     addTearDown(controller.dispose);
     controller.setActive(true);

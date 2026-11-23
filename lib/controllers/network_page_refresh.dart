@@ -117,16 +117,7 @@ extension NetworkPageRefresh on NetworkPageController {
       onExport: () => unawaited(exportConfig(id)),
       onLog: () => unawaited(log(id)),
       onDelete: () => delete(id),
-      // A running network is always stoppable; only one that cannot start is
-      // not offered, which is what the backend's own capacity rule answers.
-      onToggle: busy || !settled || !_mayToggle(network, running)
-          ? null
-          : (start) => toggle(id, start),
+      onToggle: busy || !settled ? null : (start) => toggle(id, start),
     );
   }
-
-  /// Whether [network]'s row may act: stopping a [running] network, or
-  /// starting one the backend still has room for.
-  bool _mayToggle(Network network, bool running) =>
-      running || activeBackend.canStart(network, instances.value.values);
 }

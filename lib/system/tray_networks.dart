@@ -42,9 +42,6 @@ final class TrayNetworkActions {
     final backend = _backend.value;
     if (running.instances.peek().containsKey(id) == start) return true;
     if (start) {
-      if (!backend.canStart(network, running.instances.peek().values)) {
-        return true;
-      }
       if (await backend.tunAccess(network) != TunAccess.granted) return false;
       clearInstanceLogs(id);
       try {

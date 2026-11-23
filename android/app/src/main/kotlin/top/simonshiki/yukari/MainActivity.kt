@@ -16,7 +16,7 @@ class MainActivity : FlutterActivity() {
             flutterEngine.dartExecutor.binaryMessenger,
             VpnMethodChannel.CHANNEL,
         )
-        vpnMethodChannel = VpnMethodChannel(this)
+        vpnMethodChannel = VpnMethodChannel(this, vpnChannel)
         vpnChannel.setMethodCallHandler(vpnMethodChannel)
 
         val systemChannel = MethodChannel(

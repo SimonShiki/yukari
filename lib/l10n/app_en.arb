@@ -434,6 +434,15 @@
       }
     }
   },
+  "androidNotificationNetworks": "{count, plural, =1{1 network} other{{count} networks}}",
+  "@androidNotificationNetworks": {
+    "description": "How many networks are running together on Android",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "homeNoNetworks": "No networks",
   "homeCreateNetworkHint": "Tap to create one.",
   "homeStartNetworkHint": "Start one to connect.",
@@ -617,7 +626,6 @@
   "controllerSaveConfig": "Save EasyTier Config File",
   "controllerFileUnavailable": "Could not access the selected file.",
   "controllerReorderFailed": "Could not reorder networks. Try again.",
-  "controllerOneNetwork": "Only one network can run at a time.",
   "logCopyJson": "Copy as JSON",
   "logBackToTop": "Back to top",
   "validationRange": "{label} must be a number between {min} and {max}",
@@ -738,14 +746,6 @@
   "@controllerExportFailed": {
     "placeholders": {
       "error": {
-        "type": "String"
-      }
-    }
-  },
-  "controllerNetworkLimit": "Only {limit} networks can run at a time.",
-  "@controllerNetworkLimit": {
-    "placeholders": {
-      "limit": {
         "type": "String"
       }
     }

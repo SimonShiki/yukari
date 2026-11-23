@@ -8,7 +8,10 @@ import io.flutter.embedding.android.FlutterActivity
 import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
 
-class VpnMethodChannel(private val activity: FlutterActivity) : MethodChannel.MethodCallHandler {
+class VpnMethodChannel(
+    private val activity: FlutterActivity,
+    private val channel: MethodChannel? = null,
+) : MethodChannel.MethodCallHandler {
     companion object {
         const val CHANNEL = "top.simonshiki.yukari/vpn"
         const val VPN_PERMISSION_REQUEST = 1001
@@ -42,6 +45,11 @@ class VpnMethodChannel(private val activity: FlutterActivity) : MethodChannel.Me
                 }
             }
         }
+        YukariVpnService.onVpnRevoked = {
+            activity.runOnUiThread {
+                channel?.invokeMethod("onRevoked", null)
+            }
+        }
     }
 
     override fun onMethodCall(call: MethodCall, result: MethodChannel.Result) {
@@ -59,7 +67,9 @@ class VpnMethodChannel(private val activity: FlutterActivity) : MethodChannel.Me
             "startVpn" -> {
                 val intent = Intent(activity, YukariVpnService::class.java).apply {
                     putExtra(YukariVpnService.EXTRA_NETWORK_NAME, call.argument<String>("networkName"))
-                    putExtra(YukariVpnService.EXTRA_IPV4_ADDR, call.argument<String>("ipv4"))
+                    @Suppress("UNCHECKED_CAST")
+                    val addressesList = call.argument<List<String>>("addresses")
+                    putExtra(YukariVpnService.EXTRA_ADDRESSES, addressesList?.toTypedArray())
                     putExtra(YukariVpnService.EXTRA_MTU, call.argument<Int>("mtu"))
                     @Suppress("UNCHECKED_CAST")
                     val routesList = call.argument<List<String>>("routes")
@@ -116,6 +126,7 @@ class VpnMethodChannel(private val activity: FlutterActivity) : MethodChannel.Me
     fun detach() {
         YukariVpnService.onTunFdReady = null
         YukariVpnService.onTunFailed = null
+        YukariVpnService.onVpnRevoked = null
         pendingPermissionResult = null
         pendingStartResult = null
         startFailure = null
