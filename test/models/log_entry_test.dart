@@ -71,6 +71,34 @@ void main() {
     );
   });
 
+  test('parses DHCPv6 events and formats EN/ZH summaries and Ipv6Inet maps', () {
+    final changed = LogEntry.parse(
+      '{"event":{"DhcpIpv6Changed":[null,"fd6b:8c2d:91e4::2/64"]}}',
+    );
+    expect(changed.severity, LogSeverity.info);
+    expect(
+      formatLogSummary(changed, AppLocalizationsEn()),
+      'DHCPv6 changed from none to fd6b:8c2d:91e4::2/64',
+    );
+    expect(
+      formatLogSummary(changed, AppLocalizationsZh()),
+      'DHCPv6 已从 无 更改为 fd6b:8c2d:91e4::2/64',
+    );
+
+    final conflicted = LogEntry.parse(
+      '{"event":{"DhcpIpv6Conflicted":[{"address":{"part1":4251683885,"part2":2447638528,"part3":0,"part4":2},"network_length":64}]}}',
+    );
+    expect(conflicted.severity, LogSeverity.error);
+    expect(
+      formatLogSummary(conflicted, AppLocalizationsEn()),
+      'DHCPv6 fd6b:8c2d:91e4::2/64 conflicted',
+    );
+    expect(
+      formatLogSummary(conflicted, AppLocalizationsZh()),
+      'DHCPv6 fd6b:8c2d:91e4::2/64 发生冲突',
+    );
+  });
+
   test('keeps malformed lines instead of throwing', () {
     for (final raw in ['not json', '[]', '{"event":{"A":1,"B":2}}']) {
       final entry = LogEntry.parse(raw);

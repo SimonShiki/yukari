@@ -6,71 +6,84 @@ part of 'network.dart';
 // JsonSerializableGenerator
 // **************************************************************************
 
-Network _$NetworkFromJson(Map<String, dynamic> json) => Network()
-  ..hostname = json['hostname'] as String?
-  ..networkName = json['networkName'] as String
-  ..networkSecret = json['networkSecret'] as String?
-  ..netNamespace = json['netNamespace'] as String?
-  ..ipv4 = json['ipv4'] as String?
-  ..ipv6 = json['ipv6'] as String?
-  ..ipv6PublicAddressProvider = json['ipv6PublicAddressProvider'] as bool
-  ..ipv6PublicAddressAuto = json['ipv6PublicAddressAuto'] as bool
-  ..ipv6PublicAddressPrefix = json['ipv6PublicAddressPrefix'] as String?
-  ..dhcp = json['dhcp'] as bool
-  ..dhcpIpv4Cidr = json['dhcpIpv4Cidr'] as String?
-  ..nodes = _nodesFromJson(json['nodes'] as List)
-  ..listeners = (json['listeners'] as List<dynamic>)
-      .map((e) => Uri.parse(e as String))
-      .toList()
-  ..mappedListeners = (json['mappedListeners'] as List<dynamic>)
-      .map((e) => Uri.parse(e as String))
-      .toList()
-  ..exitNodes = (json['exitNodes'] as List<dynamic>)
-      .map((e) => e as String)
-      .toList()
-  ..proxyNetworks = (json['proxyNetworks'] as List<dynamic>)
-      .map((e) => ProxyNetwork.fromJson(e as Map<String, dynamic>))
-      .toList()
-  ..vpnPortal = json['vpnPortal'] == null
+Network _$NetworkFromJson(Map<String, dynamic> json) => Network(
+  hostname: json['hostname'] as String?,
+  networkName: json['networkName'] as String? ?? 'youkai-boundaries',
+  networkSecret: json['networkSecret'] as String?,
+  netNamespace: json['netNamespace'] as String?,
+  ipv4: json['ipv4'] as String?,
+  ipv6: json['ipv6'] as String?,
+  ipv6PublicAddressProvider:
+      json['ipv6PublicAddressProvider'] as bool? ?? false,
+  ipv6PublicAddressAuto: json['ipv6PublicAddressAuto'] as bool? ?? false,
+  ipv6PublicAddressPrefix: json['ipv6PublicAddressPrefix'] as String?,
+  dhcp: json['dhcp'] as bool? ?? true,
+  dhcpIpv4Cidr: json['dhcpIpv4Cidr'] as String?,
+  dhcpv6: json['dhcpv6'] as bool? ?? false,
+  dhcpIpv6Cidr: json['dhcpIpv6Cidr'] as String?,
+  dns: json['dns'] == null
       ? null
-      : VpnPortal.fromJson(json['vpnPortal'] as Map<String, dynamic>)
-  ..routes = (json['routes'] as List<dynamic>).map((e) => e as String).toList()
-  ..socks5Proxy = json['socks5Proxy'] == null
+      : DnsConfig.fromJson(json['dns'] as Map<String, dynamic>),
+  nodes: _nodesFromJson(json['nodes'] as List?),
+  listeners: (json['listeners'] as List<dynamic>?)
+      ?.map((e) => Uri.parse(e as String))
+      .toList(),
+  mappedListeners: (json['mappedListeners'] as List<dynamic>?)
+      ?.map((e) => Uri.parse(e as String))
+      .toList(),
+  exitNodes: (json['exitNodes'] as List<dynamic>?)
+      ?.map((e) => e as String)
+      .toList(),
+  proxyNetworks: (json['proxyNetworks'] as List<dynamic>?)
+      ?.map((e) => ProxyNetwork.fromJson(e as Map<String, dynamic>))
+      .toList(),
+  vpnPortal: json['vpnPortal'] == null
       ? null
-      : Uri.parse(json['socks5Proxy'] as String)
-  ..portForwards = (json['portForwards'] as List<dynamic>)
-      .map((e) => PortForward.fromJson(e as Map<String, dynamic>))
-      .toList()
-  ..secureMode = json['secureMode'] == null
+      : VpnPortal.fromJson(json['vpnPortal'] as Map<String, dynamic>),
+  routes: (json['routes'] as List<dynamic>?)?.map((e) => e as String).toList(),
+  socks5Proxy: json['socks5Proxy'] == null
       ? null
-      : SecureMode.fromJson(json['secureMode'] as Map<String, dynamic>)
-  ..acl = json['acl'] as Map<String, dynamic>?
-  ..tcpWhitelist = (json['tcpWhitelist'] as List<dynamic>)
-      .map((e) => e as String)
-      .toList()
-  ..udpWhitelist = (json['udpWhitelist'] as List<dynamic>)
-      .map((e) => e as String)
-      .toList()
-  ..stunServers = (json['stunServers'] as List<dynamic>)
-      .map((e) => e as String)
-      .toList()
-  ..tcpStunServers = (json['tcpStunServers'] as List<dynamic>)
-      .map((e) => e as String)
-      .toList()
-  ..stunServersV6 = (json['stunServersV6'] as List<dynamic>)
-      .map((e) => e as String)
-      .toList()
-  ..credentialFile = json['credentialFile'] as String?
-  ..managedCredentials = (json['managedCredentials'] as List<dynamic>)
-      .map((e) => ManagedCredential.fromJson(e as Map<String, dynamic>))
-      .toList()
-  ..flags = NetworkFlags.fromJson(json['flags'] as Map<String, dynamic>)
-  ..additionalFlags = json['additionalFlags'] as Map<String, dynamic>
-  ..additionalConfiguration =
-      json['additionalConfiguration'] as Map<String, dynamic>
-  ..autoStart = json['autoStart'] as bool
-  ..createdAt = DateTime.parse(json['createdAt'] as String)
-  ..updatedAt = DateTime.parse(json['updatedAt'] as String);
+      : Uri.parse(json['socks5Proxy'] as String),
+  portForwards: (json['portForwards'] as List<dynamic>?)
+      ?.map((e) => PortForward.fromJson(e as Map<String, dynamic>))
+      .toList(),
+  secureMode: json['secureMode'] == null
+      ? null
+      : SecureMode.fromJson(json['secureMode'] as Map<String, dynamic>),
+  acl: json['acl'] as Map<String, dynamic>?,
+  tcpWhitelist: (json['tcpWhitelist'] as List<dynamic>?)
+      ?.map((e) => e as String)
+      .toList(),
+  udpWhitelist: (json['udpWhitelist'] as List<dynamic>?)
+      ?.map((e) => e as String)
+      .toList(),
+  stunServers: (json['stunServers'] as List<dynamic>?)
+      ?.map((e) => e as String)
+      .toList(),
+  tcpStunServers: (json['tcpStunServers'] as List<dynamic>?)
+      ?.map((e) => e as String)
+      .toList(),
+  stunServersV6: (json['stunServersV6'] as List<dynamic>?)
+      ?.map((e) => e as String)
+      .toList(),
+  credentialFile: json['credentialFile'] as String?,
+  managedCredentials: (json['managedCredentials'] as List<dynamic>?)
+      ?.map((e) => ManagedCredential.fromJson(e as Map<String, dynamic>))
+      .toList(),
+  flags: json['flags'] == null
+      ? null
+      : NetworkFlags.fromJson(json['flags'] as Map<String, dynamic>),
+  additionalFlags: json['additionalFlags'] as Map<String, dynamic>?,
+  additionalConfiguration:
+      json['additionalConfiguration'] as Map<String, dynamic>?,
+  autoStart: json['autoStart'] as bool? ?? false,
+  createdAt: json['createdAt'] == null
+      ? null
+      : DateTime.parse(json['createdAt'] as String),
+  updatedAt: json['updatedAt'] == null
+      ? null
+      : DateTime.parse(json['updatedAt'] as String),
+);
 
 Map<String, dynamic> _$NetworkToJson(Network instance) => <String, dynamic>{
   'hostname': instance.hostname,
@@ -84,6 +97,9 @@ Map<String, dynamic> _$NetworkToJson(Network instance) => <String, dynamic>{
   'ipv6PublicAddressPrefix': instance.ipv6PublicAddressPrefix,
   'dhcp': instance.dhcp,
   'dhcpIpv4Cidr': instance.dhcpIpv4Cidr,
+  'dhcpv6': instance.dhcpv6,
+  'dhcpIpv6Cidr': instance.dhcpIpv6Cidr,
+  'dns': instance.dns?.toJson(),
   'nodes': instance.nodes.map((e) => e.toJson()).toList(),
   'listeners': instance.listeners.map((e) => e.toString()).toList(),
   'mappedListeners': instance.mappedListeners.map((e) => e.toString()).toList(),

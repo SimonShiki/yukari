@@ -52,7 +52,7 @@ SharedConfigs? configsOf(Network network) {
     noTun: flags.noTun,
     acceptDns: acceptDns,
     // A zone nobody answers on says nothing about how the network runs.
-    dnsZone: acceptDns ? _zoneToShare(flags.dnsZone) : null,
+    dnsZone: acceptDns ? _zoneToShare(network.effectiveDnsDomain) : null,
   );
   return configs.isEmpty ? null : configs;
 }
@@ -84,7 +84,10 @@ void applyConfigs(Network network, SharedConfigs configs) {
   network.flags
     ..noTun = configs.noTun
     ..acceptDns = configs.acceptDns;
-  if (configs.dnsZone case final zone?) network.flags.dnsZone = zone;
+  if (configs.dnsZone case final zone?) {
+    network.flags.dnsZone = zone;
+    if (network.dns != null) network.dns!.domain = zone;
+  }
 }
 
 /// The Magic DNS zone [zone] travels as, or null when it is the default or one

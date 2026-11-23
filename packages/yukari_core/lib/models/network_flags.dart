@@ -4,7 +4,7 @@ import 'node.dart';
 
 part 'network_flags.g.dart';
 
-enum CompressionAlgorithm { none, zstd }
+enum CompressionAlgorithm { none, zstd, lzo }
 
 enum EncryptionAlgorithm { xor, aesGcm, aes256Gcm, chacha20 }
 
@@ -54,6 +54,9 @@ class NetworkFlags {
     this.preferPeerRelay = false,
     this.enableUdpBroadcastRelay = false,
     this.socketMark,
+    this.enableUdpFec = false,
+    this.enableUdpFecKcp = false,
+    this.enableUdpFecQuic = false,
   });
 
   NodeProtocol defaultProtocol;
@@ -99,6 +102,9 @@ class NetworkFlags {
   bool preferPeerRelay;
   bool enableUdpBroadcastRelay;
   int? socketMark;
+  bool enableUdpFec;
+  bool enableUdpFecKcp;
+  bool enableUdpFecQuic;
 
   factory NetworkFlags.fromJson(Map<String, dynamic> json) =>
       _$NetworkFlagsFromJson(json);

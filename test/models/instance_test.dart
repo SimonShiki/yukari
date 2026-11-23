@@ -113,4 +113,40 @@ void main() {
     expect(peer.secureAuthLevel, SecureAuthLevel.networkSecretConfirmed);
     expect(peer.identityType, IdentityType.sharedNode);
   });
+
+  test('reads virtual IPv6 addresses and UDP FEC stats', () {
+    final json = collected();
+    final myNodeInfo = json['my_node_info'] as Map<String, Object?>;
+    myNodeInfo['virtual_ipv6'] = {
+      'address': {
+        'part1': 0xfd6b8c2d,
+        'part2': 0x91e40000,
+        'part3': 0,
+        'part4': 2,
+      },
+      'network_length': 64,
+    };
+    final pair =
+        (json['peer_route_pairs'] as List<Object?>).single
+            as Map<String, Object?>;
+    (pair['route'] as Map<String, Object?>)['ipv6_addr'] = {
+      'address': {
+        'part1': 0xfd6b8c2d,
+        'part2': 0x91e40000,
+        'part3': 0,
+        'part4': 1,
+      },
+      'network_length': 64,
+    };
+    final peerMap = pair['peer'] as Map<String, Object?>;
+    final conn = (peerMap['conns'] as List<Object?>).single as Map<String, Object?>;
+    conn['fec'] = {'active': true, 'recovered': '14'};
+
+    final instance = Instance.fromJsonAndNetwork(json, Network());
+    expect(instance.myself!.virtualIpv6, 'fd6b:8c2d:91e4::2');
+    final peer = instance.peers.single;
+    expect(peer.virtualIpv6, 'fd6b:8c2d:91e4::1');
+    expect(peer.fecActive, isTrue);
+    expect(peer.fecRecovered, 14);
+  });
 }

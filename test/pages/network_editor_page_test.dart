@@ -248,6 +248,40 @@ void main() {
     expect(controller.working.value!.dhcpIpv4Cidr, '192.168.100.0/24');
   });
 
+  testWidgets('DHCPv6 switch enables subnet field and disables static IPv6', (
+    tester,
+  ) async {
+    await tester.runAsync(seedNetworks);
+    await pumpEditor(tester);
+
+    expect(
+      flagOf(tester, strings.networkDhcpIpv6Cidr, (f) => f.enabled),
+      isFalse,
+    );
+    expect(flagOf(tester, strings.networkIpv6, (f) => f.enabled), isTrue);
+
+    await tapSaving(tester, find.text(strings.networkDhcpIpv6));
+    expect(controller.working.value!.dhcpv6, isTrue);
+    expect(
+      flagOf(tester, strings.networkDhcpIpv6Cidr, (f) => f.enabled),
+      isTrue,
+    );
+    expect(flagOf(tester, strings.networkIpv6, (f) => f.enabled), isFalse);
+
+    await tester.ensureVisible(field(strings.networkDhcpIpv6Cidr));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      field(strings.networkDhcpIpv6Cidr),
+      'fd6b:8c2d:91e4::/127',
+    );
+    await tester.pumpAndSettle();
+    expect(find.text(strings.validationDhcpIpv6Cidr), findsOneWidget);
+    expect(controller.working.value!.dhcpIpv6Cidr, isNull);
+
+    await typeInto(tester, strings.networkDhcpIpv6Cidr, 'fd42:1234::/64');
+    expect(controller.working.value!.dhcpIpv6Cidr, 'fd42:1234::/64');
+  });
+
   testWidgets('an invalid IPv4 is rejected, and fixing it saves', (
     tester,
   ) async {
@@ -744,6 +778,43 @@ void main() {
     await tester.pump(const Duration(milliseconds: 100));
     expect(find.text('Zstandard'), findsOneWidget);
     expect(find.text('ChaCha20-Poly1305'), findsOneWidget);
+
+    await tapVisible(tester, find.text('Zstandard'));
+    expect(
+      find.descendant(
+        of: find.byType(M3EMenuPanel),
+        matching: find.text('LZO'),
+      ),
+      findsOneWidget,
+    );
+    await tapSaving(tester, find.text('LZO'));
+    await tester.runAsync(() async {});
+    await tester.pumpAndSettle();
+    expect(
+      controller.working.value!.flags.compressionAlgorithm,
+      CompressionAlgorithm.lzo,
+    );
+  });
+
+  testWidgets('UDP FEC switch reveals KCP and QUIC sub-toggles', (
+    tester,
+  ) async {
+    await tester.runAsync(seedNetworks);
+    await pumpEditor(tester);
+    await switchTab(tester, strings.networkAdvanced);
+
+    expect(find.text(strings.advancedUdpFecKcp), findsNothing);
+    expect(find.text(strings.advancedUdpFecQuic), findsNothing);
+
+    await tapSaving(tester, find.text(strings.advancedUdpFec));
+    expect(controller.working.value!.flags.enableUdpFec, isTrue);
+    expect(find.text(strings.advancedUdpFecKcp), findsOneWidget);
+    expect(find.text(strings.advancedUdpFecQuic), findsOneWidget);
+
+    await tapSaving(tester, find.text(strings.advancedUdpFecKcp));
+    await tapSaving(tester, find.text(strings.advancedUdpFecQuic));
+    expect(controller.working.value!.flags.enableUdpFecKcp, isTrue);
+    expect(controller.working.value!.flags.enableUdpFecQuic, isTrue);
   });
 
   testWidgets('the SOCKS5 field hints at its shape', (tester) async {

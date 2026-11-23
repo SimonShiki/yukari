@@ -80,7 +80,7 @@ class PeerCard extends StatelessWidget {
                         crossAxisAlignment: WrapCrossAlignment.center,
                         clipBehavior: Clip.hardEdge,
                         children: [
-                          if (data.virtualIpv4 case final ip?)
+                          if ((data.virtualIpv4 ?? data.virtualIpv6) case final ip?)
                             Text(
                               ip,
                               style: textTheme.bodyMedium?.copyWith(

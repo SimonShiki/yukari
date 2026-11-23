@@ -4,6 +4,7 @@ import '../../../controllers/network_editor_controller.dart';
 import '../../../l10n/l10n.dart';
 import '../../../widgets/form_section/section_list.dart';
 import 'advanced_access_section.dart';
+import 'advanced_dns_zones_section.dart';
 import 'advanced_flags_section.dart';
 import 'advanced_p2p_section.dart';
 import 'advanced_public_ipv6_section.dart';
@@ -49,6 +50,7 @@ class EditorAdvancedTab extends StatelessWidget {
           ),
           AdvancedRoutingSection(controller: controller),
           AdvancedFlagsSection(controller: controller),
+          AdvancedDnsZonesSection(controller: controller),
           AdvancedSecuritySection(controller: controller),
           AdvancedP2pSection(controller: controller),
           AdvancedRelaySection(controller: controller),

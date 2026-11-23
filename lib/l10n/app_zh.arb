@@ -46,46 +46,6 @@
   "advancedMagicDnsNeedsTun": "魔法 DNS 需要 TUN 设备；这两项不能同时开启。",
   "advancedDnsSuffix": "DNS 后缀",
   "advancedDnsSuffixHelper": "节点名称为 <主机名>.<后缀>",
-  "magicDnsTitle": "魔法 DNS 设置",
-  "magicDnsServer": "DNS 服务器",
-  "magicDnsName": "魔法 DNS 名称",
-  "magicDnsNameUnknown": "使用本机主机名",
-  "magicDnsStartAutomatic": "启动此网络后，EasyTier 会自动配置本机系统 DNS。",
-  "magicDnsStartManual": "启动此网络后，在其节点页面配置系统 DNS。",
-  "magicDnsDismiss": "关闭",
-  "magicDnsMissing": "系统 DNS 尚未将 {zone} 的查询交给魔法 DNS 服务器。",
-  "@magicDnsMissing": {
-    "placeholders": {
-      "zone": {
-        "type": "String"
-      }
-    }
-  },
-  "magicDnsWindowsMissing": "未在本机找到 EasyTier 的 DNS。请以管理员身份（或通过服务）运行网络后重新检查。",
-  "magicDnsNoResolved": "未找到 systemd-resolved（resolvectl）。请改为在 /etc/resolv.conf 中添加以下内容：",
-  "magicDnsNoInterface": "尚未找到 EasyTier 接口，网络可能仍在启动。",
-  "magicDnsFailed": "魔法 DNS 设置失败：{error}",
-  "@magicDnsFailed": {
-    "placeholders": {
-      "error": {
-        "type": "String"
-      }
-    }
-  },
-  "magicDnsApply": "配置系统 DNS",
-  "magicDnsReset": "重置系统 DNS",
-  "magicDnsManual": "手动配置",
-  "magicDnsWindowsTest": "直接测试魔法 DNS 服务器（绕过系统解析器）：",
-  "magicDnsConflictNote": "其他 TUN 代理（例如 FlClash）可能拦截 DNS 查询：请在其 fake-IP DNS 中排除 {zone}，或关闭其 TUN。",
-  "@magicDnsConflictNote": {
-    "placeholders": {
-      "zone": {
-        "type": "String"
-      }
-    }
-  },
-  "magicDnsCopy": "复制",
-  "magicDnsCopied": "已复制",
   "advancedMtuHelper": "最大传输单元（576-65535）",
   "advancedMappedListeners": "映射监听器",
   "advancedMappedListenersDescription": "其他节点访问本节点所用的公网地址",
@@ -107,7 +67,7 @@
   "advancedSmoltcp": "用户态网络栈",
   "advancedSmoltcpSubtitle": "系统防火墙阻挡子网代理或 KCP 代理时使用 smoltcp",
   "advancedSocketMark": "套接字标记",
-  "advancedSocketMarkHelper": "仅 Linux：为底层套接字设置 SO_MARK 以用于策略路由。需要 CAP_NET_ADMIN",
+  "advancedSocketMarkHelper": "仅 Linux；为底层套接字设置 SO_MARK 以用于策略路由。需要 CAP_NET_ADMIN",
   "advancedRelay": "中继",
   "advancedRelayDescription": "为其他节点和网络转发流量",
   "advancedRelayWhitelist": "中继网络白名单",
@@ -180,7 +140,7 @@
   "advancedAutoPublicIpv6": "自动获取公网 IPv6",
   "advancedAutoPublicIpv6Subtitle": "从共享子网的节点获取公网 IPv6 地址",
   "advancedSharePublicIpv6": "共享公网 IPv6 子网",
-  "advancedSharePublicIpv6Subtitle": "仅 Linux：从本节点的子网分配地址",
+  "advancedSharePublicIpv6Subtitle": "仅 Linux；从本节点的子网分配地址",
   "advancedSharedSubnet": "共享子网（可选）",
   "advancedSharedSubnetHelper": "要共享的子网。留空则从路由中检测",
   "advancedVpnPortal": "VPN 门户",
@@ -1462,5 +1422,51 @@
   "themingVariantMonochrome": "单色",
   "themingVariantNeutral": "中性",
   "themingVariantRainbow": "彩虹",
-  "themingVariantFruitSalad": "水果沙拉"
+  "themingVariantFruitSalad": "水果沙拉",
+  "networkDhcpIpv6": "启用 DHCPv6",
+  "networkDhcpIpv6Description": "自动分配 IPv6 地址",
+  "networkDhcpIpv6Cidr": "DHCPv6 子网（可选）",
+  "networkDhcpIpv6CidrHelper": "自动分配 IPv6 地址所使用的网络",
+  "advancedUdpFec": "UDP 前向纠错 (FEC)",
+  "advancedUdpFecSubtitle": "在 UDP 上附加 RS 冗余包以对抗丢包",
+  "advancedUdpFecKcp": "为 KCP 流量启用 FEC",
+  "advancedUdpFecKcpSubtitle": "在启用 FEC 时同时保护 KCP 代理流量",
+  "advancedUdpFecQuic": "为 QUIC 流量启用 FEC",
+  "advancedUdpFecQuicSubtitle": "在启用 FEC 时同时保护 QUIC 代理流量",
+  "peerFec": "FEC",
+  "peerFecDescription": "此连接已启用 UDP 前向纠错",
+  "peerFecRecoveredDescription": "UDP 前向纠错已启用（已恢复 {count} 个包）",
+  "logDhcpIpv6Changed": "DHCPv6 已从 {a} 更改为 {b}",
+  "logDhcpIpv6Conflicted": "DHCPv6 {a} 发生冲突",
+  "validationIpv6Network": "无效的 IPv6 网络 CIDR：{value}",
+  "validationDhcpIpv6Cidr": "请输入可用的 IPv6 网络，前缀范围为 /0 至 /126",
+  "validationDnsOriginEmpty": "区域域名不能为空",
+  "validationDnsOriginExists": "该区域域名已存在",
+  "validationDnsRecordNameEmpty": "记录名称不能为空",
+  "validationDnsRecordName": "请输入 @、* 或有效的 DNS 名称",
+  "validationDnsRecordValueEmpty": "记录值不能为空",
+  "validationDnsRecordIpv4": "A 记录必须填写有效的 IPv4 地址",
+  "validationDnsRecordIpv6": "AAAA 记录必须填写有效的 IPv6 地址",
+  "advancedDnsZones": "静态 DNS 区域",
+  "advancedDnsZonesDescription": "由 Magic DNS 在本地应答的权威区域和资源记录",
+  "advancedDnsNoZones": "尚未配置静态 DNS 区域",
+  "advancedDnsAddZone": "添加区域",
+  "advancedDnsEditZone": "编辑区域",
+  "advancedDnsDeleteZone": "删除区域",
+  "advancedDnsZoneOrigin": "区域域名",
+  "advancedDnsZoneOriginHelper": "此区域托管的非根域名，例如 example.test.",
+  "advancedDnsTtl": "TTL（秒，可选）",
+  "advancedDnsZoneTtlHelper": "此区域的默认记录 TTL（留空则为 0）",
+  "advancedDnsRecordTtlHelper": "覆盖此记录所属区域的默认 TTL",
+  "advancedDnsTtlSeconds": "TTL {seconds} 秒",
+  "advancedDnsRecordCount": "{count} 条记录",
+  "advancedDnsNoRecords": "此区域暂无记录",
+  "advancedDnsAddRecord": "添加记录",
+  "advancedDnsEditRecord": "编辑记录",
+  "advancedDnsDeleteRecord": "删除记录",
+  "advancedDnsRecordName": "记录名称",
+  "advancedDnsRecordNameHelper": "使用 @ 表示区域根、相对名称或完整域名",
+  "advancedDnsRecordType": "记录类型",
+  "advancedDnsRecordValue": "记录值",
+  "advancedDnsRecordValueHelper": "标准 DNS 显示格式的记录数据"
 }

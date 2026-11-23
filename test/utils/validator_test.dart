@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:yukari_core/models/network.dart';
+import 'package:yukari_core/models/network_components.dart';
 import 'package:yukari/utils/validator.dart';
 
 void main() {
@@ -111,6 +112,66 @@ void main() {
       validateNetwork(Network()..dhcpIpv4Cidr = '192.168.100.0/31'),
       isNotNull,
     );
+  });
+
+  test('IPv6 networks and DHCPv6 subnets validate prefix and host bits', () {
+    expect(validateIpv6Network('fd00::/64'), isNull);
+    expect(validateIpv6Network('fd00::1/64'), isNotNull);
+    expect(validateIpv6Network('::/0'), isNull);
+
+    expect(validateDhcpIpv6Cidr(''), isNull);
+    expect(validateDhcpIpv6Cidr('fd6b:8c2d:91e4::/64'), isNull);
+    expect(validateDhcpIpv6Cidr('fd6b:8c2d:91e4::1/64'), isNotNull);
+    expect(validateDhcpIpv6Cidr('fd6b:8c2d:91e4::/127'), isNotNull);
+    expect(
+      validateNetwork(Network()..dhcpIpv6Cidr = 'fd6b:8c2d:91e4::/127'),
+      isNotNull,
+    );
+  });
+
+  test('DNS origins, record names, values and TTLs validate rules', () {
+    expect(
+      validateDnsOrigin('example.test.', existingOrigins: ['other.test']),
+      isNull,
+    );
+    expect(validateDnsOrigin(''), isNotNull);
+    expect(validateDnsOrigin('.'), isNotNull);
+    expect(
+      validateDnsOrigin('example.test', existingOrigins: ['EXAMPLE.TEST.']),
+      isNotNull,
+    );
+
+    expect(validateDnsRecordName('@'), isNull);
+    expect(validateDnsRecordName('*'), isNull);
+    expect(validateDnsRecordName('*.svc'), isNull);
+    expect(validateDnsRecordName('_sip._tcp'), isNull);
+    expect(validateDnsRecordName('nas'), isNull);
+    expect(validateDnsRecordName(''), isNotNull);
+    expect(validateDnsRecordName('bad..name'), isNotNull);
+
+    expect(validateDnsRecordValue('10.0.0.8', DnsRecordType.a), isNull);
+    expect(validateDnsRecordValue('fd00::8', DnsRecordType.a), isNotNull);
+    expect(validateDnsRecordValue('fd00::8', DnsRecordType.aaaa), isNull);
+    expect(validateDnsRecordValue('10.0.0.8', DnsRecordType.aaaa), isNotNull);
+    expect(
+      validateDnsRecordValue('"hello world"', DnsRecordType.txt),
+      isNull,
+    );
+    expect(validateDnsRecordValue('   ', DnsRecordType.txt), isNotNull);
+
+    expect(validateDnsTtl(''), isNull);
+    expect(validateDnsTtl('0'), isNull);
+    expect(validateDnsTtl('120'), isNull);
+    expect(validateDnsTtl('-1'), isNotNull);
+
+    final dupNetwork = Network()
+      ..dns = DnsConfig(
+        zones: [
+          DnsZone(origin: 'example.test.'),
+          DnsZone(origin: 'example.test'),
+        ],
+      );
+    expect(validateNetwork(dupNetwork), isNotNull);
   });
 
   test('proxy networks map only to networks of the same size', () {

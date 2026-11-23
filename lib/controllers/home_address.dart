@@ -24,7 +24,7 @@ List<HomeAddressEntry> homeAddressesOf(List<Instance> running) => [
 String? _magicDnsHostOf(Network network) {
   if (!magicDnsRequested(network.flags)) return null;
   final hostname = network.hostname ?? '';
-  final zone = network.flags.dnsZone;
+  final zone = network.effectiveDnsDomain;
   if (hostname.isEmpty || zone.isEmpty) return null;
   return magicDnsNameOf(host: hostname, zone: zone);
 }

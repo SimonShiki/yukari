@@ -1,5 +1,6 @@
 import 'package:toml/toml.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:yukari_core/bindings/easytier_ffi_native.dart' as ffi;
 import 'package:yukari_core/models/models.dart';
 import 'package:yukari/utils/easytier_config_parser.dart';
 import 'package:yukari_core/utils/easytier_config_serializer.dart';
@@ -153,5 +154,98 @@ future_flag = { enabled = true, names = ["one", "two"] }
       parseEasyTierConfig(network.toEasyTierToml()).additionalFlags,
       network.additionalFlags,
     );
+  });
+
+  test('round-trips LZO, UDP FEC, DHCPv6, and expanded Magic DNS zones', () {
+    final network = Network()
+      ..networkName = 'fec-dns-net'
+      ..dhcp = true
+      ..dhcpIpv4Cidr = '10.20.0.0/24'
+      ..dhcpv6 = true
+      ..dhcpIpv6Cidr = 'fd42:1234::/64'
+      ..flags.compressionAlgorithm = CompressionAlgorithm.lzo
+      ..flags.enableUdpFec = true
+      ..flags.enableUdpFecKcp = true
+      ..flags.enableUdpFecQuic = true
+      ..flags.acceptDns = true
+      ..flags.dnsZone = 'mesh.test.'
+      ..dns = DnsConfig(
+        domain: 'mesh.test.',
+        zones: [
+          DnsZone(
+            origin: 'example.test.',
+            ttl: 60,
+            records: [
+              DnsRecord(name: 'nas', type: DnsRecordType.a, value: '10.0.0.8'),
+              DnsRecord(
+                name: 'v6',
+                type: DnsRecordType.aaaa,
+                value: 'fd00::8',
+                ttl: 120,
+              ),
+              DnsRecord(
+                name: 'info',
+                type: DnsRecordType.txt,
+                value: '"local records"',
+              ),
+              DnsRecord(
+                name: '@',
+                type: DnsRecordType.mx,
+                value: '10 mail.example.test.',
+              ),
+              DnsRecord(
+                name: '_sip._tcp',
+                type: DnsRecordType.srv,
+                value: '10 5 5060 sip.example.test.',
+              ),
+            ],
+          ),
+        ],
+      );
+
+    final toml = network.toEasyTierToml();
+    // Deprecated tld_dns_zone is omitted when [dns].domain is emitted.
+    expect(toml, isNot(contains('tld_dns_zone')));
+
+    // Validate against the real EasyTier FFI parser (45a6b6f1).
+    ffi.parseConfig(toml);
+
+    final roundTrip = parseEasyTierConfig(toml);
+    expect(roundTrip.dhcpv6, isTrue);
+    expect(roundTrip.dhcpIpv6Cidr, 'fd42:1234::/64');
+    expect(roundTrip.flags.compressionAlgorithm, CompressionAlgorithm.lzo);
+    expect(roundTrip.flags.enableUdpFec, isTrue);
+    expect(roundTrip.flags.enableUdpFecKcp, isTrue);
+    expect(roundTrip.flags.enableUdpFecQuic, isTrue);
+    expect(roundTrip.flags.dnsZone, 'mesh.test.');
+    expect(roundTrip.effectiveDnsDomain, 'mesh.test.');
+    expect(roundTrip.dns?.domain, 'mesh.test.');
+    final zone = roundTrip.dns!.zones.single;
+    expect(zone.origin, 'example.test.');
+    expect(zone.ttl, 60);
+    expect(zone.records, hasLength(5));
+    expect(zone.records[1].ttl, 120);
+    expect(zone.records[2].type, DnsRecordType.txt);
+    expect(zone.records[2].value, '"local records"');
+  });
+
+  test('migrates legacy flags.tld_dns_zone when [dns] is absent', () {
+    final network = parseEasyTierConfig('''
+dhcpv6 = true
+
+[flags]
+tld_dns_zone = "legacy.test."
+data_compress_algo = "lzo"
+''');
+    expect(network.dhcpv6, isTrue);
+    expect(network.dhcpIpv6Cidr, isNull);
+    expect(network.flags.compressionAlgorithm, CompressionAlgorithm.lzo);
+    expect(network.flags.dnsZone, 'legacy.test.');
+    expect(network.effectiveDnsDomain, 'legacy.test.');
+
+    final reExported = network.toEasyTierToml();
+    ffi.parseConfig(reExported);
+    final reparsed = parseEasyTierConfig(reExported);
+    expect(reparsed.effectiveDnsDomain, 'legacy.test.');
   });
 }

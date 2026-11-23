@@ -138,16 +138,19 @@ void main() {
     'my_node_info.hostname': 'renamed',
     'my_node_info.version': 'new-version',
     'my_node_info.virtual_ipv4.address.addr': 1,
+    'my_node_info.virtual_ipv6': 'fd6b:8c2d:91e4::2/64',
     'my_node_info.stun_info.udp_nat_type': 'FullCone',
     'peer_route_pairs': [],
     'peer_route_pairs.0.route.peer_id': '9',
     'peer_route_pairs.0.route.hostname': 'renamed',
     'peer_route_pairs.0.route.ipv4_addr.address.addr': 1,
+    'peer_route_pairs.0.route.ipv6_addr': 'fd6b:8c2d:91e4::1/64',
     'peer_route_pairs.0.route.stun_info': {'udp_nat_type': 'FullCone'},
     'peer_route_pairs.0.route.next_hop_peer_id': '2',
     'peer_route_pairs.0.peer.conns.0.peer_identity_type': 'Credential',
     'peer_route_pairs.0.peer.conns.0.secure_auth_level': 'PeerVerified',
     'peer_route_pairs.0.peer.conns.0.tunnel': {'tunnel_type': 'quic'},
+    'peer_route_pairs.0.peer.conns.0.fec': {'active': true, 'recovered': '1'},
     'peer_route_pairs.0.peer.conns.0.stats.latency_us': '1000',
     'peer_route_pairs.0.peer.conns.0.stats.rx_bytes': '1001',
     'peer_route_pairs.0.peer.conns.0.stats.tx_bytes': '2001',
@@ -171,6 +174,29 @@ void main() {
       expect(instances.peek(), same(updated));
     });
   }
+
+  test('publishes an increment to UDP FEC recovered count', () async {
+    final info = _info();
+    _replace(info, 'peer_route_pairs.0.peer.conns.0.fec', {
+      'active': true,
+      'recovered': '1',
+    });
+    final backend = FakeBackend(collected: () => {'alpha': info});
+    await refreshInstances(backend);
+    final first = instances.peek();
+
+    _replace(info, 'peer_route_pairs.0.peer.conns.0.fec', {
+      'active': true,
+      'recovered': '2',
+    });
+    await refreshInstances(backend);
+
+    expect(instances.peek(), isNot(same(first)));
+    expect(instances.peek()['n1']!.peers.single.fecRecovered, 2);
+    final updated = instances.peek();
+    await refreshInstances(backend);
+    expect(instances.peek(), same(updated));
+  });
 }
 
 Map<String, Object?> _info() =>

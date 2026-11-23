@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:yukari_core/models/network.dart';
+import 'package:yukari_core/models/network_components.dart';
 import 'package:yukari_core/models/node.dart';
 
 import '../signals/locale.dart';
@@ -49,6 +50,36 @@ String? validateDhcpIpv4Cidr(String value) {
       : l10n.value.validationDhcpIpv4Cidr;
 }
 
+/// An IPv6 network such as `fd00::/64`, without host bits.
+String? validateIpv6Network(String value) {
+  final parts = value.split('/');
+  final address = parts.length == 2 ? InternetAddress.tryParse(parts[0]) : null;
+  final prefix = parts.length == 2 ? int.tryParse(parts[1]) : null;
+  if (address?.type == InternetAddressType.IPv6 &&
+      prefix != null &&
+      prefix >= 0 &&
+      prefix <= 128) {
+    final bits = address!.rawAddress.fold(
+      BigInt.zero,
+      (acc, byte) => (acc << 8) | BigInt.from(byte),
+    );
+    final shift = 128 - prefix;
+    if ((bits >> shift) << shift == bits) return null;
+  }
+  return l10n.value.validationIpv6Network(value);
+}
+
+/// A DHCPv6 subnet must be an IPv6 network address with prefix `/0` to `/126`.
+String? validateDhcpIpv6Cidr(String value) {
+  if (value.isEmpty) return null;
+  final networkError = validateIpv6Network(value);
+  if (networkError != null) return networkError;
+  final prefix = int.tryParse(value.split('/').last);
+  return prefix != null && prefix <= 126
+      ? null
+      : l10n.value.validationDhcpIpv6Cidr;
+}
+
 String? validateIntRange(String value, String label, int min, int max) {
   final number = int.tryParse(value.trim());
   if (number == null || number < min || number > max) {
@@ -83,6 +114,79 @@ bool isValidDnsZoneText(String value) =>
 /// A DNS domain such as `et.net.`.
 String? validateDnsZone(String value) =>
     isValidDnsZoneText(value) ? null : l10n.value.validationDns;
+
+String _normalizeDnsName(String value) {
+  var result = value.trim().toLowerCase();
+  while (result.endsWith('.')) {
+    result = result.substring(0, result.length - 1);
+  }
+  return result;
+}
+
+/// A static DNS zone origin: non-empty, valid non-root DNS name, unique among
+/// [existingOrigins].
+String? validateDnsOrigin(
+  String value, {
+  Iterable<String> existingOrigins = const [],
+}) {
+  final origin = value.trim();
+  if (origin.isEmpty) return l10n.value.validationDnsOriginEmpty;
+  final normalized = _normalizeDnsName(origin);
+  if (normalized.isEmpty || !isValidDnsZoneText(origin)) {
+    return l10n.value.validationDns;
+  }
+  if (existingOrigins.map(_normalizeDnsName).contains(normalized)) {
+    return l10n.value.validationDnsOriginExists;
+  }
+  return null;
+}
+
+final _dnsOwnerLabelPattern = RegExp(
+  r'^[A-Za-z0-9_]([A-Za-z0-9_-]*[A-Za-z0-9_])?$',
+);
+
+/// A DNS record owner name (`@`, `*`, relative owner labels, or FQDN).
+String? validateDnsRecordName(String value) {
+  final name = value.trim();
+  if (name.isEmpty) return l10n.value.validationDnsRecordNameEmpty;
+  if (name == '@' || name == '*') return null;
+  final trimmed = name.endsWith('.') ? name.substring(0, name.length - 1) : name;
+  if (trimmed.isEmpty) return l10n.value.validationDnsRecordName;
+  final labels = trimmed.split('.');
+  for (var i = 0; i < labels.length; i++) {
+    final label = labels[i];
+    if (label.isEmpty || label.length > 63) {
+      return l10n.value.validationDnsRecordName;
+    }
+    if (i == 0 && label == '*') continue;
+    if (!_dnsOwnerLabelPattern.hasMatch(label)) {
+      return l10n.value.validationDnsRecordName;
+    }
+  }
+  return null;
+}
+
+/// Validates a static DNS record's presentation RDATA value for [type].
+String? validateDnsRecordValue(String value, DnsRecordType type) {
+  final trimmed = value.trim();
+  if (trimmed.isEmpty) return l10n.value.validationDnsRecordValueEmpty;
+  if (type == DnsRecordType.a) {
+    final parsed = InternetAddress.tryParse(trimmed);
+    if (parsed?.type != InternetAddressType.IPv4) {
+      return l10n.value.validationDnsRecordIpv4;
+    }
+  } else if (type == DnsRecordType.aaaa) {
+    final parsed = InternetAddress.tryParse(trimmed);
+    if (parsed?.type != InternetAddressType.IPv6) {
+      return l10n.value.validationDnsRecordIpv6;
+    }
+  }
+  return null;
+}
+
+/// Validates an optional DNS TTL value (`0` to `2147483647` seconds).
+String? validateDnsTtl(String value) =>
+    validateOptionalIntRange(value, l10n.value.advancedDnsTtl, 0, 2147483647);
 
 /// A complete peer connection URL, including an optional path and query.
 String? validateNodeUrl(String value) {
@@ -214,6 +318,30 @@ String? validatePrivateKey(String value) {
   return l10n.value.validationPrivateKey;
 }
 
+String? validateDnsZones(Iterable<DnsZone> zones) {
+  final seen = <String>[];
+  for (final zone in zones) {
+    final originError = validateDnsOrigin(zone.origin, existingOrigins: seen);
+    if (originError != null) return originError;
+    seen.add(zone.origin);
+    if (zone.ttl case final int ttl) {
+      final ttlError = validateDnsTtl('$ttl');
+      if (ttlError != null) return ttlError;
+    }
+    for (final record in zone.records) {
+      final nameError = validateDnsRecordName(record.name);
+      if (nameError != null) return nameError;
+      final valueError = validateDnsRecordValue(record.value, record.type);
+      if (valueError != null) return valueError;
+      if (record.ttl case final int ttl) {
+        final ttlError = validateDnsTtl('$ttl');
+        if (ttlError != null) return ttlError;
+      }
+    }
+  }
+  return null;
+}
+
 /// First invalid value among those the network editor validates field by
 /// field, or null. Used for networks that arrive whole, such as imports.
 String? validateNetwork(Network network) {
@@ -224,6 +352,7 @@ String? validateNetwork(Network network) {
       validateCidr(network.ipv4 ?? '', InternetAddressType.IPv4) ??
       validateDhcpIpv4Cidr(network.dhcpIpv4Cidr ?? '') ??
       validateCidr(network.ipv6 ?? '', InternetAddressType.IPv6) ??
+      validateDhcpIpv6Cidr(network.dhcpIpv6Cidr ?? '') ??
       validateSocks5Proxy(network.socks5Proxy?.toString() ?? '') ??
       validateIntRange('${flags.mtu}', 'MTU', 576, 65535) ??
       validateIntRange(
@@ -232,7 +361,8 @@ String? validateNetwork(Network network) {
         1,
         256,
       ) ??
-      validateDnsZone(flags.dnsZone) ??
+      validateDnsZone(network.effectiveDnsDomain) ??
+      validateDnsZones(network.dns?.zones ?? const []) ??
       each(
         network.proxyNetworks.map(formatProxyNetwork),
         validateProxyNetwork,

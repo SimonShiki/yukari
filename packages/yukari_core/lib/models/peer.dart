@@ -1,3 +1,6 @@
+import 'dart:io';
+import 'dart:typed_data';
+
 import 'node.dart';
 
 enum SecureAuthLevel {
@@ -39,6 +42,9 @@ final class Peer {
     required this.natType,
     required this.connectionType,
     this.virtualIpv4,
+    this.virtualIpv6,
+    this.fecActive = false,
+    this.fecRecovered = 0,
   });
 
   final String id;
@@ -57,6 +63,15 @@ final class Peer {
   /// Address in the virtual network, such as `10.144.0.1`, once assigned.
   final String? virtualIpv4;
 
+  /// IPv6 address in the virtual network, such as `fd6b:8c2d:91e4::1`, once assigned.
+  final String? virtualIpv6;
+
+  /// Whether UDP FEC is active on any connection to this peer.
+  final bool fecActive;
+
+  /// Total packets recovered by UDP FEC across connections to this peer.
+  final int fecRecovered;
+
   factory Peer.fromJson(Map<String, Object?> json) {
     final route = json['route'] as Map<String, Object?>?;
     if (route == null) {
@@ -69,6 +84,14 @@ final class Peer {
         const [];
     final connection = connections.firstOrNull ?? const <String, Object?>{};
     final stats = connection['stats'] as Map<String, Object?>?;
+    var fecActive = false;
+    var fecRecovered = 0;
+    for (final conn in connections) {
+      if (conn['fec'] case final Map<String, Object?> fec) {
+        if (fec['active'] == true) fecActive = true;
+        fecRecovered += _int(fec['recovered']);
+      }
+    }
 
     return Peer(
       id: '${route['peer_id']}',
@@ -78,6 +101,9 @@ final class Peer {
           ? PeerConnectionType.direct
           : PeerConnectionType.relay,
       virtualIpv4: ipv4FromInet(route['ipv4_addr']),
+      virtualIpv6: ipv6FromInet(route['ipv6_addr']),
+      fecActive: fecActive,
+      fecRecovered: fecRecovered,
       identityType: _enum(
         IdentityType.values,
         _identityTypeNames,
@@ -117,6 +143,35 @@ final class Peer {
   static String? ipv4FromInet(Object? inet) {
     if (inet case {'address': {'addr': final int addr}}) {
       return [24, 16, 8, 0].map((shift) => (addr >> shift) & 0xff).join('.');
+    }
+    return null;
+  }
+
+  /// Formats an `Ipv6Inet` message, whose address consists of four 32-bit parts.
+  static String? ipv6FromInet(Object? inet) {
+    if (inet is String && inet.isNotEmpty) {
+      final host = inet.split('/').first.trim();
+      final parsed = InternetAddress.tryParse(host);
+      return parsed?.type == InternetAddressType.IPv6 ? parsed!.address : null;
+    }
+    if (inet case {
+      'address': {
+        'part1': final int p1,
+        'part2': final int p2,
+        'part3': final int p3,
+        'part4': final int p4,
+      },
+    }) {
+      final bytes = Uint8List(16);
+      final parts = [p1, p2, p3, p4];
+      for (var i = 0; i < 4; i++) {
+        final part = parts[i];
+        bytes[i * 4] = (part >> 24) & 0xff;
+        bytes[i * 4 + 1] = (part >> 16) & 0xff;
+        bytes[i * 4 + 2] = (part >> 8) & 0xff;
+        bytes[i * 4 + 3] = part & 0xff;
+      }
+      return InternetAddress.fromRawAddress(bytes).address;
     }
     return null;
   }

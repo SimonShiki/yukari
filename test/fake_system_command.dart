@@ -4,21 +4,16 @@ import 'package:yukari_core/system/magic_dns.dart';
 import 'package:yukari_core/system/system_command.dart';
 
 /// Stands in for the OS: answers commands from [runHandler], and records what
-/// ran, elevated or not.
+/// ran.
 final class FakeSystemCommand implements SystemCommand {
-  FakeSystemCommand({this.runHandler, this.elevateHandler});
+  FakeSystemCommand({this.runHandler});
 
   /// Answers one command; null throws [ProcessException], as a missing
   /// executable does.
   final CommandResult? Function(String executable, List<String> arguments)?
   runHandler;
 
-  /// Runs one elevated command; throwing stands in for a failed elevation.
-  final Future<void> Function(String executable, List<String> arguments)?
-  elevateHandler;
-
   final runs = <(String, List<String>)>[];
-  final elevated = <(String, List<String>)>[];
 
   @override
   Future<CommandResult> run(String executable, List<String> arguments) async {
@@ -32,12 +27,6 @@ final class FakeSystemCommand implements SystemCommand {
       throw ProcessException(executable, arguments, 'not found', 127);
     }
     return result;
-  }
-
-  @override
-  Future<void> runElevated(String executable, List<String> arguments) async {
-    elevated.add((executable, arguments));
-    await elevateHandler?.call(executable, arguments);
   }
 }
 
@@ -78,54 +67,6 @@ CommandResult? _ip(
   }
   return null;
 }
-
-/// A Linux host with one EasyTier TUN, [interface], holding [address]; one
-/// other VPN's TUN, [decoy], which owns the route to the Magic DNS server and
-/// already carries the leaked zone; and, when a test needs the configured TUN
-/// name to differ from the link owning the address, [named].
-///
-/// The decoy is answered on purpose: an interface resolved through a route to
-/// the Magic DNS server is the bug these fakes lock away from.
-CommandResult? Function(String, List<String>) linuxHost({
-  String interface = 'et_12_xoih',
-  String address = '10.126.126.2/24',
-  String? named,
-  String decoy = 'FlClash',
-  bool Function()? configured,
-  bool resolvectl = true,
-}) {
-  final links = <String, String>{
-    interface: address,
-    decoy: '198.18.0.1/30',
-    ?named: '',
-  };
-  return (executable, arguments) {
-    if (executable == 'ip') return _ip(arguments, links, decoy);
-    if (executable != 'resolvectl') return null;
-    if (!resolvectl) {
-      throw ProcessException(executable, arguments, 'not found', 127);
-    }
-    final name = arguments.length > 1 ? arguments[1] : '';
-    // The other VPN's link still holds the zone the service applied to it.
-    final shows =
-        name == decoy || (name == interface && (configured?.call() ?? false));
-    if (arguments.first == 'dns') {
-      return ok(shows ? 'Link 5 ($name): 100.100.100.101' : 'Link 5 ($name):');
-    }
-    if (arguments.first == 'domain') {
-      return ok(shows ? 'Link 5 ($name): ~et.net' : 'Link 5 ($name):');
-    }
-    return null;
-  };
-}
-
-/// The Magic DNS system of a Linux host driven by [command].
-MagicDnsSystem linuxSystem(FakeSystemCommand command) =>
-    MagicDnsSystem(platform: MagicDnsPlatform.linux, command: command);
-
-/// The Magic DNS system of a Windows host driven by [command].
-MagicDnsSystem windowsSystem(FakeSystemCommand command) =>
-    MagicDnsSystem(platform: MagicDnsPlatform.windows, command: command);
 
 /// The Magic DNS system of the Android root service driven by [command].
 MagicDnsSystem androidSystem(FakeSystemCommand command) =>

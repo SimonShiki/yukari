@@ -7,6 +7,7 @@ import 'package:yukari_core/models/models.dart';
 import 'package:yukari_core/system/magic_dns.dart';
 
 const _defaultDhcpIpv4 = '10.126.126.1/24';
+const _defaultDhcpIpv6 = 'fd6b:8c2d:91e4::1/64';
 const _magicDnsRoute = '$magicDnsServer/32';
 
 /// One TUN-enabled network participating in Android's shared VPN interface.
@@ -59,7 +60,9 @@ final class AndroidVpnMember {
     }
     if ((network.ipv6 == null || network.ipv6!.isEmpty) &&
         (assignedIpv6 == null || assignedIpv6!.isEmpty)) {
-      return _bootstrapDhcpIpv4(network.dhcpIpv4Cidr);
+      return network.dhcp || !network.dhcpv6
+          ? _bootstrapDhcpIpv4(network.dhcpIpv4Cidr)
+          : null;
     }
     return null;
   }
@@ -70,6 +73,9 @@ final class AndroidVpnMember {
     }
     if (network.ipv6 case final ipv6? when ipv6.isNotEmpty) {
       return _ensureCidr(ipv6, defaultPrefix: 64);
+    }
+    if (network.dhcpv6) {
+      return _bootstrapDhcpIpv6(network.dhcpIpv6Cidr);
     }
     return null;
   }
@@ -280,6 +286,20 @@ String _bootstrapDhcpIpv4(String? dhcpIpv4Cidr) {
   final shift = 32 - parsed.prefix;
   final network = (_addressBits(parsed.address) >> shift) << shift;
   final firstHost = _bitsToAddress(network + BigInt.one, isV4: true);
+  return '${firstHost.address}/${parsed.prefix}';
+}
+
+String _bootstrapDhcpIpv6(String? dhcpIpv6Cidr) {
+  if (dhcpIpv6Cidr == null || dhcpIpv6Cidr.isEmpty) return _defaultDhcpIpv6;
+  final parsed = _parseCidr(dhcpIpv6Cidr);
+  if (parsed == null ||
+      parsed.address.type != InternetAddressType.IPv6 ||
+      parsed.prefix > 126) {
+    return _defaultDhcpIpv6;
+  }
+  final shift = 128 - parsed.prefix;
+  final network = (_addressBits(parsed.address) >> shift) << shift;
+  final firstHost = _bitsToAddress(network + BigInt.one, isV4: false);
   return '${firstHost.address}/${parsed.prefix}';
 }
 

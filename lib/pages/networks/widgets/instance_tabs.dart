@@ -6,29 +6,15 @@ import 'package:signals_flutter/signals_flutter.dart';
 
 import '../../../controllers/network_instance_controller.dart';
 import '../../../l10n/l10n.dart';
-
-import 'package:yukari_core/system/magic_dns.dart';
-
 import '../../../widgets/empty_state/empty_state.dart';
 import 'log_entry/log_entry_list.dart';
 import 'peer_card/peer_card.dart';
-import 'magic_dns_card.dart';
 
-/// The peers of one running network, this device first, with the Magic DNS
-/// helper above them while it needs attention.
+/// The peers of one running network, this device first.
 class InstancePeersTab extends StatelessWidget {
-  const InstancePeersTab({
-    super.key,
-    required this.controller,
-    this.magicDnsSystem,
-  });
+  const InstancePeersTab({super.key, required this.controller});
 
   final NetworkInstanceController controller;
-
-  /// Test-only: the system reader the Magic DNS card uses. Null reads the
-  /// host; production never sets this.
-  @visibleForTesting
-  final MagicDnsSystem? magicDnsSystem;
 
   @override
   Widget build(BuildContext context) => SignalBuilder(
@@ -47,18 +33,6 @@ class InstancePeersTab extends StatelessWidget {
       final peers = controller.peerCards.value;
       return CustomScrollView(
         slivers: [
-          SliverToBoxAdapter(
-            child: Center(
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 840),
-                child: MagicDnsCard(
-                  networkId: controller.id,
-                  system: magicDnsSystem,
-                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-                ),
-              ),
-            ),
-          ),
           if (peers.isEmpty)
             SliverFillRemaining(
               hasScrollBody: false,
@@ -71,8 +45,8 @@ class InstancePeersTab extends StatelessWidget {
           else
             SliverLayoutBuilder(
               builder: (context, constraints) {
-                // Keep the peers in the same 840 wide column as the helper
-                // above them on wide windows, without losing laziness.
+                // Keep the peers in an 840px max-width column on wide windows,
+                // without losing laziness.
                 final inset = math.max(
                   0.0,
                   (constraints.crossAxisExtent - 840) / 2,

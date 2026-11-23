@@ -40,6 +40,8 @@ String formatLogSummary(LogEntry entry, AppLocalizations l10n) {
     ),
     'DhcpIpv4Changed' => l10n.logDhcpIpv4Changed(arg(0), arg(1)),
     'DhcpIpv4Conflicted' => l10n.logDhcpIpv4Conflicted(arg(0)),
+    'DhcpIpv6Changed' => l10n.logDhcpIpv6Changed(arg(0), arg(1)),
+    'DhcpIpv6Conflicted' => l10n.logDhcpIpv6Conflicted(arg(0)),
     'PublicIpv6Changed' => l10n.logPublicIpv6Changed(arg(0), arg(1)),
     'PublicIpv6RoutesUpdated' => l10n.logPublicIpv6RoutesUpdated(
       arg(0),

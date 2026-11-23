@@ -20,6 +20,8 @@ part 'network_editor_signals.dart';
 
 part 'network_editor_lists.dart';
 
+part 'network_editor_dns.dart';
+
 /// Which of a network's two listener lists a list editor edits.
 enum ListenerList { local, mapped }
 
@@ -98,6 +100,11 @@ class NetworkEditorController {
   );
   late final Signal<List<Uri>> mappedListeners = signal(
     working.value?.mappedListeners ?? const [],
+  );
+
+  /// The static Magic DNS zones, for the static DNS zone editor.
+  late final Signal<List<DnsZone>> dnsZones = signal(
+    working.value?.dns?.zones ?? const [],
   );
 
   final _fields = <_FieldSignal<Object?>>[];
@@ -198,6 +205,7 @@ class NetworkEditorController {
       nodes,
       listeners,
       mappedListeners,
+      dnsZones,
     ]) {
       signal.dispose();
     }

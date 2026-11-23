@@ -1,7 +1,9 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:yukari_core/models/network.dart';
+import 'package:yukari_core/models/node.dart';
 import 'package:yukari_core/storage/network_store.dart';
 
 import '../networks_fixture.dart';
@@ -16,6 +18,71 @@ void main() {
     final loaded = await NetworkStore(store.file, readOnly: true).load();
     expect(loaded.keys, ['b', 'a']);
     expect(loaded['a']!.networkName, 'alpha');
+  });
+
+  test('loads legacy networks.json missing newer fields with mutable defaults', () async {
+    final store = temporaryStore();
+    await store.file.parent.create(recursive: true);
+    await store.file.writeAsString(
+      jsonEncode({
+        'legacy': {
+          'networkName': 'old-net',
+          'dhcp': false,
+          'ipv4': '10.144.144.2/24',
+          'nodes': [
+            {'name': 'relay', 'url': 'tcp://example.com:11010'},
+          ],
+          'flags': {'mtu': 1400},
+        },
+      }),
+    );
+
+    final loaded = await store.load();
+    final network = loaded['legacy']!;
+    expect(network.networkName, 'old-net');
+    expect(network.dhcp, isFalse);
+    expect(network.ipv4, '10.144.144.2/24');
+    expect(network.dhcpv6, isFalse);
+    expect(network.dhcpIpv6Cidr, isNull);
+    expect(network.dns, isNull);
+    expect(network.ipv6PublicAddressProvider, isFalse);
+    expect(network.ipv6PublicAddressAuto, isFalse);
+    expect(network.tcpStunServers, isEmpty);
+    expect(network.stunServersV6, isEmpty);
+    expect(network.managedCredentials, isEmpty);
+    expect(network.autoStart, isFalse);
+    expect(network.flags.mtu, 1400);
+    expect(network.nodes.single.url.toString(), 'tcp://example.com:11010');
+
+    // Collections must remain mutable because the editor mutates them in place.
+    network.nodes.add(
+      Node(name: 'second', url: Uri.parse('udp://example.com:11010')),
+    );
+    network.additionalFlags['custom'] = true;
+    network.additionalConfiguration['extra'] = 1;
+    expect(network.nodes, hasLength(2));
+    expect(network.additionalFlags['custom'], isTrue);
+    expect(network.additionalConfiguration['extra'], 1);
+  });
+
+  test('Network.fromJson({}) populates all defaults and mutable collections', () {
+    final network = Network.fromJson({});
+    expect(network.networkName, 'youkai-boundaries');
+    expect(network.dhcp, isTrue);
+    expect(network.dhcpv6, isFalse);
+    expect(network.autoStart, isFalse);
+    expect(network.flags.mtu, 1380);
+    expect(network.createdAt, isNotNull);
+    expect(network.updatedAt, isNotNull);
+
+    network.nodes.add(
+      Node(name: 'peer', url: Uri.parse('tcp://example.com:11010')),
+    );
+    network.listeners.add(Uri.parse('tcp://0.0.0.0:11010'));
+    network.additionalFlags['k'] = 'v';
+    network.additionalConfiguration['k'] = 'v';
+    expect(network.nodes, hasLength(1));
+    expect(network.listeners, hasLength(1));
   });
 
   test('a missing file holds no networks', () async {

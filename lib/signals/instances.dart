@@ -165,4 +165,7 @@ bool _samePeer(Peer? a, Peer? b) =>
         listEquals(a.protocols, b.protocols) &&
         a.natType == b.natType &&
         a.connectionType == b.connectionType &&
-        a.virtualIpv4 == b.virtualIpv4);
+        a.virtualIpv4 == b.virtualIpv4 &&
+        a.virtualIpv6 == b.virtualIpv6 &&
+        a.fecActive == b.fecActive &&
+        a.fecRecovered == b.fecRecovered);

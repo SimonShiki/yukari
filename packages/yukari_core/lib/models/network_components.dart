@@ -87,7 +87,7 @@ final class SecureMode {
   Map<String, dynamic> toJson() => _$SecureModeToJson(this);
 }
 
-@JsonSerializable()
+@JsonSerializable(explicitToJson: true)
 final class ManagedCredential {
   ManagedCredential({
     required this.id,
@@ -111,4 +111,91 @@ final class ManagedCredential {
       _$ManagedCredentialFromJson(json);
 
   Map<String, dynamic> toJson() => _$ManagedCredentialToJson(this);
+}
+
+@JsonEnum(fieldRename: FieldRename.screamingSnake)
+enum DnsRecordType {
+  a('A'),
+  aaaa('AAAA'),
+  aname('ANAME'),
+  caa('CAA'),
+  cert('CERT'),
+  cname('CNAME'),
+  csync('CSYNC'),
+  hinfo('HINFO'),
+  https('HTTPS'),
+  mx('MX'),
+  naptr('NAPTR'),
+  ns('NS'),
+  openpgpkey('OPENPGPKEY'),
+  ptr('PTR'),
+  soa('SOA'),
+  srv('SRV'),
+  sshfp('SSHFP'),
+  svcb('SVCB'),
+  tlsa('TLSA'),
+  txt('TXT');
+
+  const DnsRecordType(this.wireName);
+
+  final String wireName;
+
+  static DnsRecordType? tryParse(String value) {
+    final normalized = value.trim().toUpperCase();
+    for (final type in DnsRecordType.values) {
+      if (type.wireName == normalized) return type;
+    }
+    return null;
+  }
+}
+
+@JsonSerializable()
+final class DnsRecord {
+  DnsRecord({
+    required this.name,
+    required this.type,
+    required this.value,
+    this.ttl,
+  });
+
+  String name;
+  DnsRecordType type;
+  String value;
+  int? ttl;
+
+  factory DnsRecord.fromJson(Map<String, dynamic> json) =>
+      _$DnsRecordFromJson(json);
+
+  Map<String, dynamic> toJson() => _$DnsRecordToJson(this);
+}
+
+@JsonSerializable(explicitToJson: true)
+final class DnsZone {
+  DnsZone({
+    required this.origin,
+    this.ttl,
+    this.records = const [],
+  });
+
+  String origin;
+  int? ttl;
+  List<DnsRecord> records;
+
+  factory DnsZone.fromJson(Map<String, dynamic> json) =>
+      _$DnsZoneFromJson(json);
+
+  Map<String, dynamic> toJson() => _$DnsZoneToJson(this);
+}
+
+@JsonSerializable(explicitToJson: true)
+final class DnsConfig {
+  DnsConfig({this.domain, this.zones = const []});
+
+  String? domain;
+  List<DnsZone> zones;
+
+  factory DnsConfig.fromJson(Map<String, dynamic> json) =>
+      _$DnsConfigFromJson(json);
+
+  Map<String, dynamic> toJson() => _$DnsConfigToJson(this);
 }
