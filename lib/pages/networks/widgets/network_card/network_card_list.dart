@@ -52,7 +52,7 @@ class NetworkCardList extends StatelessWidget {
         final network = networks[index];
         Widget card(Widget menuButton) => NetworkCard(
           // The drag preview is built outside the list and has its own copy.
-          key: Scrollable.maybeOf(context) == null
+          key: Scrollable.maybeOf(context, axis: Axis.vertical) == null
               ? null
               : NetworkCardKey(network),
           name: network.name,
