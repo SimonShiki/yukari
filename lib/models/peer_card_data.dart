@@ -25,6 +25,7 @@ class PeerCardData {
     required this.connectionStatus,
     required this.connectionType,
     this.virtualIpv4,
+    this.virtualIpv6,
     this.tags = const [],
     this.isSelf = false,
     this.onTap,
@@ -37,6 +38,7 @@ class PeerCardData {
   final String connectionStatus;
   final PeerConnectionType connectionType;
   final String? virtualIpv4;
+  final String? virtualIpv6;
   final List<PeerTag> tags;
 
   /// Whether this is the local node rather than a remote peer.
@@ -56,9 +58,11 @@ class PeerCardData {
       connectionStatus: _formatConnectionType(peer.connectionType, l10n),
       connectionType: peer.connectionType,
       virtualIpv4: peer.virtualIpv4,
+      virtualIpv6: peer.virtualIpv6,
       tags: [
         ?_identityTag(peer.identityType, l10n),
         ?_securityTag(peer.secureAuthLevel, l10n),
+        ?_fecTag(peer, l10n),
       ],
       onTap: onTap,
     );
@@ -74,8 +78,21 @@ class PeerCardData {
         connectionStatus: l10n.peerLocal,
         connectionType: PeerConnectionType.local,
         virtualIpv4: self.virtualIpv4,
+        virtualIpv6: self.virtualIpv6,
         isSelf: true,
       );
+
+  static PeerTag? _fecTag(Peer peer, AppLocalizations l10n) {
+    if (!peer.fecActive) return null;
+    return PeerTag(
+      Icons.healing_rounded,
+      l10n.peerFec,
+      peer.fecRecovered > 0
+          ? l10n.peerFecRecoveredDescription(peer.fecRecovered)
+          : l10n.peerFecDescription,
+      PeerTagTone.positive,
+    );
+  }
 
   // Admins, which hold the network secret, are the usual case.
   static PeerTag? _identityTag(IdentityType type, AppLocalizations l10n) =>

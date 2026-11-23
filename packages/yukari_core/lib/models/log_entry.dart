@@ -1,5 +1,7 @@
 import 'dart:convert';
 
+import 'peer.dart';
+
 enum LogCategory { peer, connection, listener, system }
 
 enum LogSeverity { info, success, warning, error }
@@ -64,6 +66,7 @@ final class LogEntry {
     'ConnectionError' ||
     'ConnectError' ||
     'DhcpIpv4Conflicted' ||
+    'DhcpIpv6Conflicted' ||
     'Unknown' => LogSeverity.error,
     'UdpBroadcastRelayStartResult' when _field('error') != null =>
       LogSeverity.error,
@@ -114,10 +117,20 @@ final class LogEntry {
   static String text(Object? value, {String none = 'none'}) => switch (value) {
     null => none,
     {'url': final Object url} => '$url',
+    {'address': {'addr': _}} => _inetText(Peer.ipv4FromInet(value), value),
+    {'address': {'part1': _}} => _inetText(Peer.ipv6FromInet(value), value),
     List<Object?> list when list.isEmpty => none,
     List<Object?> list => list.map((item) => text(item, none: none)).join(', '),
     _ => '$value',
   };
+
+  static String _inetText(String? host, Object value) {
+    if (host == null) return '$value';
+    if (value case {'network_length': final int len}) {
+      return '$host/$len';
+    }
+    return host;
+  }
 
   static Iterable<(String, String)> _flatten(String path, Object? value) sync* {
     switch (value) {

@@ -10,7 +10,63 @@ part 'network.g.dart';
 /// writes them validates them (see `utils/validator.dart`).
 @JsonSerializable(explicitToJson: true)
 final class Network {
-  Network();
+  Network({
+    this.hostname,
+    this.networkName = 'youkai-boundaries',
+    this.networkSecret,
+    this.netNamespace,
+    this.ipv4,
+    this.ipv6,
+    this.ipv6PublicAddressProvider = false,
+    this.ipv6PublicAddressAuto = false,
+    this.ipv6PublicAddressPrefix,
+    this.dhcp = true,
+    this.dhcpIpv4Cidr,
+    this.dhcpv6 = false,
+    this.dhcpIpv6Cidr,
+    this.dns,
+    List<Node>? nodes,
+    List<Uri>? listeners,
+    List<Uri>? mappedListeners,
+    List<String>? exitNodes,
+    List<ProxyNetwork>? proxyNetworks,
+    this.vpnPortal,
+    List<String>? routes,
+    this.socks5Proxy,
+    List<PortForward>? portForwards,
+    this.secureMode,
+    this.acl,
+    List<String>? tcpWhitelist,
+    List<String>? udpWhitelist,
+    List<String>? stunServers,
+    List<String>? tcpStunServers,
+    List<String>? stunServersV6,
+    this.credentialFile,
+    List<ManagedCredential>? managedCredentials,
+    NetworkFlags? flags,
+    Map<String, Object?>? additionalFlags,
+    Map<String, Object?>? additionalConfiguration,
+    this.autoStart = false,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+  }) : nodes = nodes ?? [],
+       listeners = listeners ?? [],
+       mappedListeners = mappedListeners ?? [],
+       exitNodes = exitNodes ?? [],
+       proxyNetworks = proxyNetworks ?? [],
+       routes = routes ?? [],
+       portForwards = portForwards ?? [],
+       tcpWhitelist = tcpWhitelist ?? [],
+       udpWhitelist = udpWhitelist ?? [],
+       stunServers = stunServers ?? [],
+       tcpStunServers = tcpStunServers ?? [],
+       stunServersV6 = stunServersV6 ?? [],
+       managedCredentials = managedCredentials ?? [],
+       flags = flags ?? NetworkFlags(),
+       additionalFlags = additionalFlags ?? {},
+       additionalConfiguration = additionalConfiguration ?? {},
+       createdAt = createdAt ?? DateTime.now().toUtc(),
+       updatedAt = updatedAt ?? DateTime.now().toUtc();
 
   factory Network.fromJson(Map<String, dynamic> json) =>
       _$NetworkFromJson(json);
@@ -24,45 +80,87 @@ final class Network {
     ..additionalConfiguration = _copyMap(additionalConfiguration);
 
   String? hostname;
-  String networkName = 'youkai-boundaries';
+  String networkName;
   String? networkSecret;
   String? netNamespace;
   String? ipv4;
   String? ipv6;
-  bool ipv6PublicAddressProvider = false;
-  bool ipv6PublicAddressAuto = false;
+  bool ipv6PublicAddressProvider;
+  bool ipv6PublicAddressAuto;
   String? ipv6PublicAddressPrefix;
-  bool dhcp = true;
+  bool dhcp;
 
   /// Optional subnet EasyTier uses when assigning IPv4 addresses by DHCP.
   String? dhcpIpv4Cidr;
+  bool dhcpv6;
+
+  /// Optional subnet EasyTier uses when assigning IPv6 addresses by DHCPv6.
+  String? dhcpIpv6Cidr;
+  DnsConfig? dns;
   @JsonKey(fromJson: _nodesFromJson)
-  List<Node> nodes = [];
-  List<Uri> listeners = [];
-  List<Uri> mappedListeners = [];
-  List<String> exitNodes = [];
-  List<ProxyNetwork> proxyNetworks = [];
+  List<Node> nodes;
+  List<Uri> listeners;
+  List<Uri> mappedListeners;
+  List<String> exitNodes;
+  List<ProxyNetwork> proxyNetworks;
   VpnPortal? vpnPortal;
-  List<String> routes = [];
+  List<String> routes;
   Uri? socks5Proxy;
-  List<PortForward> portForwards = [];
+  List<PortForward> portForwards;
   SecureMode? secureMode;
   Map<String, Object?>? acl;
-  List<String> tcpWhitelist = [];
-  List<String> udpWhitelist = [];
-  List<String> stunServers = [];
-  List<String> tcpStunServers = [];
-  List<String> stunServersV6 = [];
+  List<String> tcpWhitelist;
+  List<String> udpWhitelist;
+  List<String> stunServers;
+  List<String> tcpStunServers;
+  List<String> stunServersV6;
   String? credentialFile;
-  List<ManagedCredential> managedCredentials = [];
-  NetworkFlags flags = NetworkFlags();
-  Map<String, Object?> additionalFlags = {};
-  Map<String, Object?> additionalConfiguration = {};
+  List<ManagedCredential> managedCredentials;
+  NetworkFlags flags;
+  Map<String, Object?> additionalFlags;
+  Map<String, Object?> additionalConfiguration;
 
   /// Whether the background service runs this network when the system boots.
-  bool autoStart = false;
-  DateTime createdAt = DateTime.now().toUtc();
-  DateTime updatedAt = DateTime.now().toUtc();
+  bool autoStart;
+  DateTime createdAt;
+  DateTime updatedAt;
+
+  /// Effective Magic DNS root domain for this network, preferring `[dns].domain`
+  /// over the deprecated `flags.dnsZone` fallback.
+  String get effectiveDnsDomain {
+    final configured = dns?.domain?.trim() ?? '';
+    if (configured.isNotEmpty) return configured;
+    final legacy = flags.dnsZone.trim();
+    return legacy.isNotEmpty ? legacy : 'et.net.';
+  }
+
+  /// Deduplicated Magic DNS zones served by this network: [effectiveDnsDomain]
+  /// first, followed by any configured static zone origins.
+  List<String> get magicDnsZones {
+    final seen = <String>{};
+    final result = <String>[];
+    void addZone(String raw) {
+      final trimmed = raw.trim();
+      if (trimmed.isEmpty) return;
+      final normalized = _normalizeZoneKey(trimmed);
+      if (normalized.isEmpty || !seen.add(normalized)) return;
+      result.add(trimmed);
+    }
+
+    addZone(effectiveDnsDomain);
+    for (final zone in dns?.zones ?? const <DnsZone>[]) {
+      addZone(zone.origin);
+    }
+    return result;
+  }
+
+  static String _normalizeZoneKey(String zone) {
+    var result = zone.trim().toLowerCase();
+    while (result.endsWith('.')) {
+      result = result.substring(0, result.length - 1);
+    }
+    return result;
+  }
 }
 
 Map<String, Object?> _copyMap(Map<String, Object?> value) => {
@@ -75,6 +173,7 @@ Object? _copyValue(Object? value) => switch (value) {
   _ => value,
 };
 
-List<Node> _nodesFromJson(List<dynamic> entries) => [
-  for (final entry in entries) ...nodesFromJson(entry as Map<String, dynamic>),
+List<Node> _nodesFromJson(List<dynamic>? entries) => [
+  for (final entry in entries ?? const <dynamic>[])
+    ...nodesFromJson(entry as Map<String, dynamic>),
 ];

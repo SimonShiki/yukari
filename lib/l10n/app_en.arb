@@ -52,46 +52,6 @@
   "advancedMagicDnsNeedsTun": "Magic DNS needs the TUN device; the two options cannot both be on.",
   "advancedDnsSuffix": "DNS Suffix",
   "advancedDnsSuffixHelper": "Peers are named <hostname>.<suffix>",
-  "magicDnsTitle": "Magic DNS setup",
-  "magicDnsServer": "DNS server",
-  "magicDnsName": "Magic DNS name",
-  "magicDnsNameUnknown": "Uses this device's hostname",
-  "magicDnsStartAutomatic": "Start this network. EasyTier then configures this machine's system DNS automatically.",
-  "magicDnsStartManual": "Start this network, then configure the system DNS from its peers tab.",
-  "magicDnsDismiss": "Dismiss",
-  "magicDnsMissing": "System DNS does not send {zone} to the Magic DNS server yet.",
-  "@magicDnsMissing": {
-    "placeholders": {
-      "zone": {
-        "type": "String"
-      }
-    }
-  },
-  "magicDnsWindowsMissing": "EasyTier's DNS was not found on this machine. Run the network as administrator (or through the service), then check again.",
-  "magicDnsNoResolved": "systemd-resolved (resolvectl) is not available. Add these lines to /etc/resolv.conf instead:",
-  "magicDnsNoInterface": "The EasyTier interface was not found yet. The network may still be starting.",
-  "magicDnsFailed": "Magic DNS setup failed: {error}",
-  "@magicDnsFailed": {
-    "placeholders": {
-      "error": {
-        "type": "String"
-      }
-    }
-  },
-  "magicDnsApply": "Configure system DNS",
-  "magicDnsReset": "Reset system DNS",
-  "magicDnsManual": "Manual setup",
-  "magicDnsWindowsTest": "Test the Magic DNS server directly (it bypasses the system resolver):",
-  "magicDnsConflictNote": "Another TUN proxy (for example FlClash) can capture DNS queries: exclude {zone} from its fake-IP DNS or turn off its TUN.",
-  "@magicDnsConflictNote": {
-    "placeholders": {
-      "zone": {
-        "type": "String"
-      }
-    }
-  },
-  "magicDnsCopy": "Copy",
-  "magicDnsCopied": "Copied",
   "advancedMtuHelper": "Maximum Transmission Unit (576-65535)",
   "advancedMappedListeners": "Mapped Listeners",
   "advancedMappedListenersDescription": "Public addresses peers use to reach this node",
@@ -113,7 +73,7 @@
   "advancedSmoltcp": "User-Space Network Stack",
   "advancedSmoltcpSubtitle": "Use smoltcp when system firewalls block subnet or KCP proxying",
   "advancedSocketMark": "Socket Mark",
-  "advancedSocketMarkHelper": "Linux only: SO_MARK for policy routing of underlay sockets. Needs CAP_NET_ADMIN",
+  "advancedSocketMarkHelper": "Linux only; SO_MARK for policy routing of underlay sockets. Needs CAP_NET_ADMIN",
   "advancedRelay": "Relay",
   "advancedRelayDescription": "Forwarding traffic for other peers and networks",
   "advancedRelayWhitelist": "Relay Network Whitelist",
@@ -186,7 +146,7 @@
   "advancedAutoPublicIpv6": "Auto Public IPv6",
   "advancedAutoPublicIpv6Subtitle": "Get a public IPv6 address from a peer sharing its subnet",
   "advancedSharePublicIpv6": "Share Public IPv6 Subnet",
-  "advancedSharePublicIpv6Subtitle": "Linux only: hand out addresses from this node’s subnet",
+  "advancedSharePublicIpv6Subtitle": "Linux only; hand out addresses from this node’s subnet",
   "advancedSharedSubnet": "Shared Subnet (Optional)",
   "advancedSharedSubnetHelper": "Subnet to share. Leave empty to detect it from routes",
   "advancedVpnPortal": "VPN Portal",
@@ -1596,5 +1556,96 @@
   "themingVariantMonochrome": "Monochrome",
   "themingVariantNeutral": "Neutral",
   "themingVariantRainbow": "Rainbow",
-  "themingVariantFruitSalad": "Fruit salad"
+  "themingVariantFruitSalad": "Fruit salad",
+  "networkDhcpIpv6": "Enable DHCPv6",
+  "networkDhcpIpv6Description": "Automatically assign IPv6 addresses",
+  "networkDhcpIpv6Cidr": "DHCPv6 Subnet (Optional)",
+  "networkDhcpIpv6CidrHelper": "Network used for automatic IPv6 assignment",
+  "advancedUdpFec": "UDP Forward Error Correction",
+  "advancedUdpFecSubtitle": "Add RS parity packets over UDP to reduce packet loss",
+  "advancedUdpFecKcp": "FEC for KCP traffic",
+  "advancedUdpFecKcpSubtitle": "Protect KCP proxy streams with UDP FEC when enabled",
+  "advancedUdpFecQuic": "FEC for QUIC traffic",
+  "advancedUdpFecQuicSubtitle": "Protect QUIC proxy streams with UDP FEC when enabled",
+  "peerFec": "FEC",
+  "peerFecDescription": "UDP Forward Error Correction is active on this connection",
+  "peerFecRecoveredDescription": "UDP Forward Error Correction active ({count} recovered)",
+  "@peerFecRecoveredDescription": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "logDhcpIpv6Changed": "DHCPv6 changed from {a} to {b}",
+  "@logDhcpIpv6Changed": {
+    "placeholders": {
+      "a": {
+        "type": "String"
+      },
+      "b": {
+        "type": "String"
+      }
+    }
+  },
+  "logDhcpIpv6Conflicted": "DHCPv6 {a} conflicted",
+  "@logDhcpIpv6Conflicted": {
+    "placeholders": {
+      "a": {
+        "type": "String"
+      }
+    }
+  },
+  "validationIpv6Network": "Invalid IPv6 network CIDR: {value}",
+  "@validationIpv6Network": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "validationDhcpIpv6Cidr": "Must be a usable IPv6 network with a prefix from /0 to /126",
+  "validationDnsOriginEmpty": "Zone origin cannot be empty",
+  "validationDnsOriginExists": "Zone origin already exists",
+  "validationDnsRecordNameEmpty": "Record name cannot be empty",
+  "validationDnsRecordName": "Must be @, *, or a valid DNS owner name",
+  "validationDnsRecordValueEmpty": "Record value cannot be empty",
+  "validationDnsRecordIpv4": "Must be a valid IPv4 address for an A record",
+  "validationDnsRecordIpv6": "Must be a valid IPv6 address for an AAAA record",
+  "advancedDnsZones": "Static DNS Zones",
+  "advancedDnsZonesDescription": "Authoritative zones and records answered locally by Magic DNS",
+  "advancedDnsNoZones": "No static DNS zones configured",
+  "advancedDnsAddZone": "Add Zone",
+  "advancedDnsEditZone": "Edit Zone",
+  "advancedDnsDeleteZone": "Delete zone",
+  "advancedDnsZoneOrigin": "Zone Origin",
+  "advancedDnsZoneOriginHelper": "Non-root domain served by this zone, e.g. example.test.",
+  "advancedDnsTtl": "TTL (Seconds, Optional)",
+  "advancedDnsZoneTtlHelper": "Default record TTL for this zone (leave empty for 0)",
+  "advancedDnsRecordTtlHelper": "Overrides the zone TTL for this record",
+  "advancedDnsTtlSeconds": "TTL {seconds}s",
+  "@advancedDnsTtlSeconds": {
+    "placeholders": {
+      "seconds": {
+        "type": "int"
+      }
+    }
+  },
+  "advancedDnsRecordCount": "{count, plural, =0{No records} =1{1 record} other{{count} records}}",
+  "@advancedDnsRecordCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "advancedDnsNoRecords": "No records in this zone",
+  "advancedDnsAddRecord": "Add Record",
+  "advancedDnsEditRecord": "Edit Record",
+  "advancedDnsDeleteRecord": "Delete record",
+  "advancedDnsRecordName": "Record Name",
+  "advancedDnsRecordNameHelper": "Use @ for the zone apex, a relative label, or a FQDN",
+  "advancedDnsRecordType": "Record Type",
+  "advancedDnsRecordValue": "Record Value",
+  "advancedDnsRecordValueHelper": "DNS RDATA in presentation format"
 }

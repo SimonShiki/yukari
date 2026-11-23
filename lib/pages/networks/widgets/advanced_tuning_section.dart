@@ -70,6 +70,7 @@ class AdvancedTuningSection extends StatelessWidget {
           labelOf: (algorithm) => switch (algorithm) {
             CompressionAlgorithm.none => l10n.advancedCompressionNone,
             CompressionAlgorithm.zstd => 'Zstandard',
+            CompressionAlgorithm.lzo => 'LZO',
           },
           onSelected: (algorithm) => controller.update(
             (n) => n.flags.compressionAlgorithm = algorithm,

@@ -65,6 +65,9 @@ NetworkFlags _$NetworkFlagsFromJson(Map<String, dynamic> json) => NetworkFlags(
   preferPeerRelay: json['preferPeerRelay'] as bool? ?? false,
   enableUdpBroadcastRelay: json['enableUdpBroadcastRelay'] as bool? ?? false,
   socketMark: (json['socketMark'] as num?)?.toInt(),
+  enableUdpFec: json['enableUdpFec'] as bool? ?? false,
+  enableUdpFecKcp: json['enableUdpFecKcp'] as bool? ?? false,
+  enableUdpFecQuic: json['enableUdpFecQuic'] as bool? ?? false,
 );
 
 Map<String, dynamic> _$NetworkFlagsToJson(NetworkFlags instance) =>
@@ -114,6 +117,9 @@ Map<String, dynamic> _$NetworkFlagsToJson(NetworkFlags instance) =>
       'preferPeerRelay': instance.preferPeerRelay,
       'enableUdpBroadcastRelay': instance.enableUdpBroadcastRelay,
       'socketMark': instance.socketMark,
+      'enableUdpFec': instance.enableUdpFec,
+      'enableUdpFecKcp': instance.enableUdpFecKcp,
+      'enableUdpFecQuic': instance.enableUdpFecQuic,
     };
 
 const _$NodeProtocolEnumMap = {
@@ -128,6 +134,7 @@ const _$NodeProtocolEnumMap = {
 const _$CompressionAlgorithmEnumMap = {
   CompressionAlgorithm.none: 'none',
   CompressionAlgorithm.zstd: 'zstd',
+  CompressionAlgorithm.lzo: 'lzo',
 };
 
 const _$EncryptionAlgorithmEnumMap = {

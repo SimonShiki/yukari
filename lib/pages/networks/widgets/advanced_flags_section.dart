@@ -6,7 +6,6 @@ import '../../../l10n/l10n.dart';
 import '../../../utils/validator.dart';
 import '../../../widgets/form_section/form_section.dart';
 import 'editor_fields.dart';
-import 'magic_dns_card.dart';
 
 /// Network Flags: the protocol and performance switches, Magic DNS and the MTU.
 class AdvancedFlagsSection extends StatelessWidget {
@@ -28,6 +27,11 @@ class AdvancedFlagsSection extends StatelessWidget {
           controller,
           'flags.acceptDns',
           (n) => n.flags.acceptDns,
+        ).value;
+        final udpFec = editorSwitch(
+          controller,
+          'flags.enableUdpFec',
+          (n) => n.flags.enableUdpFec,
         ).value;
         return FormSection(
           title: l10n.advancedNetworkFlags,
@@ -89,6 +93,37 @@ class AdvancedFlagsSection extends StatelessWidget {
               subtitle: l10n.advancedQuicProxySubtitle,
             ),
             EditorSwitch(
+              icon: Icons.healing_rounded,
+              controller: controller,
+              name: 'flags.enableUdpFec',
+              read: (n) => n.flags.enableUdpFec,
+              write: (n, value) => n.flags.enableUdpFec = value,
+              title: l10n.advancedUdpFec,
+              subtitle: l10n.advancedUdpFecSubtitle,
+            ),
+            if (udpFec) ...[
+              EditorSwitch(
+                key: const ValueKey('enableUdpFecKcp'),
+                icon: Icons.swap_calls_rounded,
+                controller: controller,
+                name: 'flags.enableUdpFecKcp',
+                read: (n) => n.flags.enableUdpFecKcp,
+                write: (n, value) => n.flags.enableUdpFecKcp = value,
+                title: l10n.advancedUdpFecKcp,
+                subtitle: l10n.advancedUdpFecKcpSubtitle,
+              ),
+              EditorSwitch(
+                key: const ValueKey('enableUdpFecQuic'),
+                icon: Icons.bolt_rounded,
+                controller: controller,
+                name: 'flags.enableUdpFecQuic',
+                read: (n) => n.flags.enableUdpFecQuic,
+                write: (n, value) => n.flags.enableUdpFecQuic = value,
+                title: l10n.advancedUdpFecQuic,
+                subtitle: l10n.advancedUdpFecQuicSubtitle,
+              ),
+            ],
+            EditorSwitch(
               icon: Icons.dns_outlined,
               controller: controller,
               name: 'flags.acceptDns',
@@ -102,23 +137,16 @@ class AdvancedFlagsSection extends StatelessWidget {
                 subtitle: l10n.advancedMagicDnsNeedsTun,
               ),
             ),
-            if (magicDns) ...[
+            if (magicDns)
               EditorTextField(
                 key: const ValueKey('dnsSuffix'),
                 label: l10n.advancedDnsSuffix,
                 hint: 'et.net.',
                 helper: l10n.advancedDnsSuffixHelper,
-                initialValue: network.flags.dnsZone,
+                initialValue: network.effectiveDnsDomain,
                 validator: validateDnsZone,
-                onSaved: (value) =>
-                    controller.update((n) => n.flags.dnsZone = value.trim()),
+                onSaved: controller.setDnsDomain,
               ),
-              MagicDnsCard(
-                key: const ValueKey('magicDnsCard'),
-                networkId: controller.id,
-                padding: const EdgeInsets.all(8),
-              ),
-            ],
             editorIntField(
               key: const ValueKey('mtu'),
               label: l10n.advancedMtuHelper,

@@ -20,6 +20,7 @@ class EditorIpSection extends StatelessWidget {
     final l10n = context.l10n;
     final network = controller.working.peek()!;
     final dhcp = editorSwitch(controller, 'dhcp', (n) => n.dhcp);
+    final dhcpv6 = editorSwitch(controller, 'dhcpv6', (n) => n.dhcpv6);
     return FormSection(
       title: l10n.networkIpConfiguration,
       icon: Icons.network_check,
@@ -60,15 +61,41 @@ class EditorIpSection extends StatelessWidget {
                 controller.update((n) => n.ipv4 = value.isEmpty ? null : value),
           ),
         ),
-        EditorTextField(
-          label: l10n.networkIpv6,
-          hint: 'fd00::1/64',
-          helper: l10n.networkIpv6Helper,
-          initialValue: network.ipv6 ?? '',
-          textInputAction: TextInputAction.next,
-          validator: (value) => validateCidr(value, InternetAddressType.IPv6),
-          onSaved: (value) =>
-              controller.update((n) => n.ipv6 = value.isEmpty ? null : value),
+        EditorSwitch(
+          icon: Icons.autorenew_rounded,
+          controller: controller,
+          name: 'dhcpv6',
+          read: (n) => n.dhcpv6,
+          write: (n, value) => n.dhcpv6 = value,
+          title: l10n.networkDhcpIpv6,
+          subtitle: l10n.networkDhcpIpv6Description,
+        ),
+        SignalBuilder(
+          builder: (context) => EditorTextField(
+            label: l10n.networkDhcpIpv6Cidr,
+            hint: 'fd6b:8c2d:91e4::/64',
+            helper: l10n.networkDhcpIpv6CidrHelper,
+            initialValue: network.dhcpIpv6Cidr ?? '',
+            enabled: dhcpv6.value,
+            textInputAction: TextInputAction.next,
+            validator: validateDhcpIpv6Cidr,
+            onSaved: (value) => controller.update(
+              (n) => n.dhcpIpv6Cidr = value.isEmpty ? null : value,
+            ),
+          ),
+        ),
+        SignalBuilder(
+          builder: (context) => EditorTextField(
+            label: l10n.networkIpv6,
+            hint: 'fd00::1/64',
+            helper: l10n.networkIpv6Helper,
+            initialValue: network.ipv6 ?? '',
+            enabled: !dhcpv6.value,
+            textInputAction: TextInputAction.next,
+            validator: (value) => validateCidr(value, InternetAddressType.IPv6),
+            onSaved: (value) =>
+                controller.update((n) => n.ipv6 = value.isEmpty ? null : value),
+          ),
         ),
       ],
     );

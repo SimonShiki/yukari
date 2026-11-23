@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:yukari_core/models/models.dart';
+import 'package:yukari_core/system/magic_dns.dart';
 import 'package:yukari_core/system/magic_dns_auto.dart';
 
 import '../fake_system_command.dart';
@@ -35,7 +36,6 @@ void main() {
     final interface = await _auto(command).start('n1', _network());
 
     expect(interface, isNull);
-    expect(command.elevated, isEmpty);
   });
 
   test('applies the DNS when the interface is there', () async {
@@ -57,7 +57,6 @@ void main() {
 
     expect(interface, isNull);
     expect(command.runs, isEmpty, reason: 'nothing may be guessed');
-    expect(command.elevated, isEmpty);
   });
 
   test('applies the address EasyTier assigned to a DHCP network', () async {
@@ -91,7 +90,6 @@ void main() {
 
     expect(interface, isNull);
     expect(command.runs, isEmpty, reason: 'nothing may be guessed');
-    expect(command.elevated, isEmpty);
   });
 
   test(
@@ -139,7 +137,6 @@ void main() {
 
     expect(interface, isNull);
     expect(command.runs, hasLength(3));
-    expect(command.elevated, isEmpty);
   });
 
   test('never touches a network it does not apply to', () async {
@@ -155,18 +152,19 @@ void main() {
     expect(command.runs, isNotEmpty, reason: 'the applicable one probed');
   });
 
-  test('Windows and Linux hosts need nothing from MagicDnsAuto', () async {
+  test('non-Android hosts need nothing from MagicDnsAuto', () async {
     final command = FakeSystemCommand();
+    final system = MagicDnsSystem(
+      platform: MagicDnsPlatform.other,
+      command: command,
+    );
 
-    for (final system in [windowsSystem(command), linuxSystem(command)]) {
-      expect(MagicDnsAuto(system: system).appliesTo(_network()), isFalse);
-      expect(
-        await MagicDnsAuto(system: system).start('n1', _network()),
-        isNull,
-      );
-    }
+    expect(MagicDnsAuto(system: system).appliesTo(_network()), isFalse);
+    expect(
+      await MagicDnsAuto(system: system).start('n1', _network()),
+      isNull,
+    );
     expect(command.runs, isEmpty);
-    expect(command.elevated, isEmpty);
   });
 
   test('a failed setup never reaches the caller', () async {
@@ -255,5 +253,35 @@ void main() {
       command.runs.any((run) => run.$1 == 'iptables' && run.$2.contains('-D')),
       isTrue,
     );
+  });
+
+  test('applies and reverts static DNS zone origins alongside primary domain', () async {
+    final command = FakeSystemCommand(runHandler: androidHost());
+    final auto = _auto(command);
+    final network = _network(zone: 'mesh.internal.')
+      ..dns = DnsConfig(
+        domain: 'mesh.internal.',
+        zones: [
+          DnsZone(origin: 'example.test.'),
+          DnsZone(origin: 'mesh.internal'),
+        ],
+      );
+
+    expect(await auto.start('n1', network), 'et_12_xoih');
+    final addCalls = command.runs
+        .where((run) => run.$1 == 'iptables' && run.$2.contains('-A'))
+        .map((run) => run.$2.join(' '))
+        .toList();
+    expect(addCalls, hasLength(2));
+    expect(addCalls.first, contains('mesh'));
+    expect(addCalls.last, contains('example'));
+
+    final beforeRevert = command.runs.length;
+    await auto.revert('n1');
+    final deleteCalls = command.runs
+        .skip(beforeRevert)
+        .where((run) => run.$1 == 'iptables' && run.$2.contains('-D') && run.$2.contains('--hex-string'))
+        .toList();
+    expect(deleteCalls, hasLength(2));
   });
 }

@@ -163,6 +163,28 @@ void main() {
       expect(request.routes, ['100.100.100.101/32', '192.168.100.0/24']);
     });
 
+    test('bootstraps DHCPv6 default and custom subnets alongside DHCPv4', () {
+      final v6Only = androidVpnRequest(
+        _network()
+          ..dhcp = false
+          ..dhcpv6 = true,
+      );
+      expect(v6Only.addresses, ['fd6b:8c2d:91e4::1/64']);
+      expect(v6Only.routes, ['100.100.100.101/32', 'fd6b:8c2d:91e4::/64']);
+
+      final dualStack = androidVpnRequest(
+        _network(dhcpIpv4Cidr: '192.168.100.0/24')
+          ..dhcpv6 = true
+          ..dhcpIpv6Cidr = 'fd42:1234::/64',
+      );
+      expect(dualStack.addresses, ['192.168.100.1/24', 'fd42:1234::1/64']);
+      expect(dualStack.routes, [
+        '100.100.100.101/32',
+        '192.168.100.0/24',
+        'fd42:1234::/64',
+      ]);
+    });
+
     test('aggregates multiple members including IPv6 and deduplicates Magic DNS', () {
       final config = buildAndroidVpnConfig([
         AndroidVpnMember(

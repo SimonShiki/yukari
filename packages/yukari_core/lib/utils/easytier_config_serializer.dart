@@ -3,10 +3,15 @@ import 'package:toml/toml.dart';
 import '../models/models.dart';
 
 String _serialize(Network network) {
+  final dns = _dns(network);
+  final omitTldDnsZone = dns != null && dns.containsKey('domain');
   final configuration = <String, Object?>{
     'dhcp': network.dhcp && network.dhcpIpv4Cidr != null
         ? network.dhcpIpv4Cidr
         : network.dhcp,
+    'dhcpv6': network.dhcpv6 && network.dhcpIpv6Cidr != null
+        ? network.dhcpIpv6Cidr
+        : network.dhcpv6,
     'ipv6_public_addr_provider': network.ipv6PublicAddressProvider,
     'ipv6_public_addr_auto': network.ipv6PublicAddressAuto,
     'network_identity': <String, Object?>{
@@ -44,7 +49,12 @@ String _serialize(Network network) {
           'dst_addr': forward.destinationAddress,
         },
     ],
-    'flags': _flags(network.flags, network.additionalFlags),
+    'flags': _flags(
+      network.flags,
+      network.additionalFlags,
+      omitTldDnsZone: omitTldDnsZone,
+    ),
+    'dns': ?dns,
     'tcp_whitelist': network.tcpWhitelist,
     'udp_whitelist': network.udpWhitelist,
     // EasyTier reads an empty STUN list as disabling STUN.
@@ -93,10 +103,43 @@ String _serialize(Network network) {
   return TomlDocument.fromMap(configuration).toString();
 }
 
+Map<String, Object?>? _dns(Network network) {
+  final domain = network.dns?.domain?.trim();
+  final legacy = network.flags.dnsZone.trim();
+  final explicitDomain = domain != null && domain.isNotEmpty
+      ? domain
+      : legacy.isNotEmpty && legacy != 'et.net.'
+      ? legacy
+      : null;
+  final zones = network.dns?.zones ?? const <DnsZone>[];
+  if (explicitDomain == null && zones.isEmpty) return null;
+  return <String, Object?>{
+    'domain': ?explicitDomain,
+    if (zones.isNotEmpty)
+      'zone': [
+        for (final zone in zones)
+          <String, Object?>{
+            'origin': zone.origin,
+            'ttl': ?zone.ttl,
+            'records': [
+              for (final record in zone.records)
+                <String, Object?>{
+                  'name': record.name,
+                  'type': record.type.wireName,
+                  'ttl': ?record.ttl,
+                  'value': record.value,
+                },
+            ],
+          },
+      ],
+  };
+}
+
 Map<String, Object?> _flags(
   NetworkFlags flags,
-  Map<String, Object?> additional,
-) {
+  Map<String, Object?> additional, {
+  required bool omitTldDnsZone,
+}) {
   final values = <String, Object?>{
     'default_protocol': flags.defaultProtocol.name,
     'dev_name': flags.deviceName,
@@ -131,12 +174,15 @@ Map<String, Object?> _flags(
     'multi_thread_count': flags.multiThreadCount,
     'encryption_algorithm': _encryptionAlgorithm(flags.encryptionAlgorithm),
     'disable_sym_hole_punching': flags.disableSymmetricHolePunching,
-    'tld_dns_zone': flags.dnsZone,
+    if (!omitTldDnsZone) 'tld_dns_zone': flags.dnsZone,
     'need_p2p': flags.needP2p,
     'disable_upnp': flags.disableUpnp,
     'disable_relay_data': flags.disableRelayData,
     'prefer_peer_relay': flags.preferPeerRelay,
     'enable_udp_broadcast_relay': flags.enableUdpBroadcastRelay,
+    'enable_udp_fec': flags.enableUdpFec,
+    'enable_udp_fec_kcp': flags.enableUdpFecKcp,
+    'enable_udp_fec_quic': flags.enableUdpFecQuic,
     if (flags.foreignRelayBpsLimit != null)
       'foreign_relay_bps_limit': flags.foreignRelayBpsLimit.toString(),
     if (flags.quicListenPort != null) 'quic_listen_port': flags.quicListenPort,
@@ -177,6 +223,7 @@ Map<String, Object?> _secureMode(SecureMode mode) => <String, Object?>{
 String _compressionAlgorithm(CompressionAlgorithm value) => switch (value) {
   CompressionAlgorithm.none => 'None',
   CompressionAlgorithm.zstd => 'Zstd',
+  CompressionAlgorithm.lzo => 'Lzo',
 };
 
 String _encryptionAlgorithm(EncryptionAlgorithm value) => switch (value) {

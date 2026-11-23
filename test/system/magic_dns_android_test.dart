@@ -178,7 +178,6 @@ void main() {
 
       expect(probe.state, MagicDnsState.configured);
       expect(probe.interface, 'et_12_xoih');
-      expect(command.elevated, isEmpty);
     });
 
     test('reports missing when the rule is not installed', () async {
@@ -254,17 +253,6 @@ void main() {
       expect(probe.interface, isNull);
       expect(command.runs, isEmpty);
     });
-
-    test('offers no hand-written fallback', () {
-      final command = FakeSystemCommand();
-
-      expect(
-        androidSystem(command)
-            .manualCommands(zone: 'et.net.', interfaceName: ''),
-        isEmpty,
-      );
-      expect(command.runs, isEmpty);
-    });
   });
 
   group('the Android redirect', () {
@@ -312,7 +300,6 @@ void main() {
         '-j',
         'YUKARI_MAGIC_DNS',
       ]);
-      expect(command.elevated, isEmpty, reason: 'the service is already root');
     });
 
     test('returns the name servers the resolver file names', () async {
@@ -464,7 +451,6 @@ void main() {
         '-F',
         '-X',
       ]);
-      expect(command.elevated, isEmpty);
     });
 
     test('reset keeps a sibling zone\'s rule and the chain', () async {
@@ -572,7 +558,6 @@ void main() {
       );
 
       expect(await _auto(command).start('n1', _network()), isNull);
-      expect(command.elevated, isEmpty);
     });
   });
 }

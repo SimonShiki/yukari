@@ -59,6 +59,18 @@ Network parseEasyTierConfig(String tomlContent) {
     network.dhcpIpv4Cidr = dhcp;
   }
 
+  final dhcpv6 = config['dhcpv6'];
+  if (dhcpv6 is bool) {
+    network.dhcpv6 = dhcpv6;
+  } else if (dhcpv6 is String) {
+    network.dhcpv6 = true;
+    network.dhcpIpv6Cidr = dhcpv6;
+  }
+
+  if (config['dns'] is Map) {
+    network.dns = _parseDns(config['dns'] as Map);
+  }
+
   if (config['listeners'] is List) {
     network.listeners = (config['listeners'] as List)
         .map((e) => Uri.parse(e.toString()))
@@ -159,6 +171,10 @@ Network parseEasyTierConfig(String tomlContent) {
     final flags = _TrackingMap(config['flags'] as Map);
     network.flags = _parseFlags(flags);
     network.additionalFlags = flags.unread;
+  }
+
+  if (network.dns?.domain case final String domain when domain.isNotEmpty) {
+    network.flags.dnsZone = domain;
   }
 
   network.additionalConfiguration = config.unread;
@@ -278,10 +294,58 @@ ManagedCredential _parseManagedCredential(Map<dynamic, dynamic> data) =>
       reusable: data['reusable'] as bool? ?? true,
     );
 
+DnsConfig _parseDns(Map<dynamic, dynamic> data) {
+  final rawDomain = data['domain'];
+  final domain = rawDomain is String && rawDomain.trim().isNotEmpty
+      ? rawDomain.trim()
+      : null;
+  final rawZones = data['zone'];
+  final zones = <DnsZone>[];
+  if (rawZones is List) {
+    for (final entry in rawZones) {
+      if (entry is! Map) {
+        throw const FormatException('DNS zone entry must be a map');
+      }
+      final origin = entry['origin']?.toString().trim() ?? '';
+      if (origin.isEmpty) {
+        throw const FormatException('DNS zone origin cannot be empty');
+      }
+      final ttl = entry['ttl'] as int?;
+      final records = <DnsRecord>[];
+      final rawRecords = entry['records'];
+      if (rawRecords is List) {
+        for (final rawRecord in rawRecords) {
+          if (rawRecord is! Map) {
+            throw const FormatException('DNS record entry must be a map');
+          }
+          final name = rawRecord['name']?.toString().trim() ?? '';
+          final value = rawRecord['value']?.toString() ?? '';
+          final typeText = rawRecord['type']?.toString() ?? '';
+          final type = DnsRecordType.tryParse(typeText);
+          if (name.isEmpty || value.trim().isEmpty || type == null) {
+            throw FormatException('Invalid DNS record: $rawRecord');
+          }
+          records.add(
+            DnsRecord(
+              name: name,
+              type: type,
+              value: value,
+              ttl: rawRecord['ttl'] as int?,
+            ),
+          );
+        }
+      }
+      zones.add(DnsZone(origin: origin, ttl: ttl, records: records));
+    }
+  }
+  return DnsConfig(domain: domain, zones: zones);
+}
+
 NetworkFlags _parseFlags(_TrackingMap data) {
   CompressionAlgorithm parseCompressionAlgorithm(String value) =>
       switch (value.toLowerCase()) {
         'zstd' => CompressionAlgorithm.zstd,
+        'lzo' => CompressionAlgorithm.lzo,
         _ => CompressionAlgorithm.none,
       };
 
@@ -358,5 +422,8 @@ NetworkFlags _parseFlags(_TrackingMap data) {
     enableUdpBroadcastRelay:
         data['enable_udp_broadcast_relay'] as bool? ?? false,
     socketMark: data['socket_mark'] as int?,
+    enableUdpFec: data['enable_udp_fec'] as bool? ?? false,
+    enableUdpFecKcp: data['enable_udp_fec_kcp'] as bool? ?? false,
+    enableUdpFecQuic: data['enable_udp_fec_quic'] as bool? ?? false,
   );
 }

@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'dart:io';
 
 import '../models/models.dart';
@@ -7,45 +6,28 @@ import 'system_command.dart';
 part 'magic_dns_android.dart';
 part 'magic_dns_android_rules.dart';
 part 'magic_dns_facts.dart';
-part 'magic_dns_manual.dart';
 part 'magic_dns_platform.dart';
 
 /// The address EasyTier Magic DNS answers from inside the tunnel.
 const magicDnsServer = '100.100.100.101';
 
-/// The zone EasyTier uses when the network does not name one.
-const magicDnsDefaultZone = 'et.net.';
-
 /// The system DNS side of EasyTier Magic DNS.
 ///
-/// Windows lets EasyTier set NRPT rules via `DnsPolicyConfig`, and Linux lets
-/// EasyTier configure `systemd-resolved` over D-Bus; both are read here, with
-/// Linux keeping an elevated `resolvectl` fallback when D-Bus setup is not
-/// available (e.g. unprivileged in-app runs). The Android root service
-/// redirects the zone's own lookups into the tunnel instead; see
+/// Windows (NRPT) and Linux (`systemd-resolved` over D-Bus) are configured
+/// natively by EasyTier, and Android app mode uses `VpnService`. The Android
+/// root service redirects the zone's own lookups into the tunnel instead; see
 /// `MagicDnsAndroid`.
 final class MagicDnsSystem {
   MagicDnsSystem({MagicDnsPlatform? platform, SystemCommand? command})
     : platform = platform ?? _runningPlatform(),
       _command = command ?? const ProcessSystemCommand();
 
-  /// The platform whose system DNS this helper shows.
+  /// The platform whose system DNS this helper configures.
   final MagicDnsPlatform platform;
   final SystemCommand _command;
 
-  /// Whether EasyTier configures this platform's system DNS itself.
-  bool get automatic =>
-      platform == MagicDnsPlatform.windows ||
-      platform == MagicDnsPlatform.linux;
-
-  /// Whether this process configures this platform's system DNS: the manual
-  /// fallback on Linux, and the root service on Android.
-  bool get configurable =>
-      platform == MagicDnsPlatform.linux ||
-      platform == MagicDnsPlatform.android;
-
-  /// Whether this platform has any system DNS support to show.
-  bool get supported => platform != MagicDnsPlatform.other;
+  /// Whether this process configures the host's system DNS.
+  bool get supported => platform == MagicDnsPlatform.android;
 
   static final _interface = RegExp(r'^[A-Za-z0-9_.-]+$');
   static final _link = RegExp(r'^\d+:\s+([^\s:]+)', multiLine: true);
@@ -64,130 +46,27 @@ final class MagicDnsSystem {
     if (!supported) {
       return (state: MagicDnsState.unsupported, interface: null);
     }
-    if (platform == MagicDnsPlatform.windows) {
-      return _probeWindows(zone: zone);
-    }
-    if (platform == MagicDnsPlatform.android) {
-      return _probeAndroid(
-        zone: zone,
-        interfaceName: interfaceName,
-        address: address,
-      );
-    }
-    final interface = await _findInterface(interfaceName, address);
-    if (interface == null) {
-      return (state: MagicDnsState.noInterface, interface: null);
-    }
-    final dns = await _try('resolvectl', ['dns', interface]);
-    final domain = await _try('resolvectl', ['domain', interface]);
-    // No resolvectl, or no systemd-resolved answering it: only hand-written
-    // configuration is left.
-    if (dns == null || domain == null) {
-      return (state: MagicDnsState.unsupported, interface: interface);
-    }
-    // A routing domain is what sends the zone to this link only.
-    final configured =
-        dns.exitCode == 0 &&
-        domain.exitCode == 0 &&
-        dns.stdout.contains(magicDnsServer) &&
-        domain.stdout.contains('~${magicDnsZoneBase(zone)}');
-    return (
-      state: configured ? MagicDnsState.configured : MagicDnsState.missing,
-      interface: interface,
+    return _probeAndroid(
+      zone: zone,
+      interfaceName: interfaceName,
+      address: address,
     );
   }
 
-  /// Sends [zone]'s lookups to the Magic DNS server on the network's own link.
-  ///
-  /// Linux resolves the interface from [interfaceName] and [address] through
-  /// the same helper [probe] uses, so both agree on the link this network
-  /// owns, then points that link at the server through systemd-resolved. Both
-  /// values are validated and quoted, and one shell runs both commands, so the
-  /// user elevates once. Android installs its redirect chain, which needs no
-  /// interface.
-  ///
-  /// Nothing is applied when no EasyTier interface is identified: a fail-closed
-  /// setup leaves another VPN's link alone.
+  /// Sends [zone]'s lookups to the Magic DNS server on the Android root service.
   Future<void> apply({
     required String zone,
     required String interfaceName,
     String? address,
   }) async {
-    if (platform == MagicDnsPlatform.android) return _applyAndroid(zone: zone);
-    final base = _checked(magicDnsZoneBase(zone), _zoneName, 'zone');
-    if (interfaceName.isNotEmpty) {
-      _checked(interfaceName, _interface, 'interfaceName');
-    }
-    final name = await _findInterface(interfaceName, address);
-    if (name == null) return;
-    await _command.runElevated('sh', [
-      '-c',
-      'resolvectl dns ${_quote(name)} $magicDnsServer && '
-          'resolvectl domain ${_quote(name)} ${_quote('~$base')} && '
-          'resolvectl dnsovertls ${_quote(name)} no && '
-          'resolvectl dnssec ${_quote(name)} no',
-    ]);
+    if (!supported) return;
+    return _applyAndroid(zone: zone);
   }
 
   /// Gives the system DNS back the configuration it had before [apply].
-  ///
-  /// [zone] names the configuration on platforms that serve several zones at
-  /// once; Linux reverts [interfaceName] as a whole and ignores it.
   Future<void> reset({required String interfaceName, String? zone}) async {
-    if (platform == MagicDnsPlatform.android) return _resetAndroid(zone: zone);
-    final name = _checked(interfaceName, _interface, 'interfaceName');
-    await _command.runElevated('resolvectl', ['revert', name]);
-  }
-
-  static const _windowsNrptQuery =
-      r'Get-DnsClientNrptPolicy -Effective | '
-      r'ForEach-Object { ($_.Namespace -join ",") + "=" + ($_.NameServers -join ";") }';
-
-  /// Windows routes Magic DNS zones through NRPT policies via PowerShell,
-  /// which needs no elevation to read; EasyTier writes its own, so nothing is
-  /// written here.
-  Future<MagicDnsProbe> _probeWindows({required String zone}) async {
-    final base = magicDnsZoneBase(zone).toLowerCase();
-    if (!_zoneName.hasMatch(base)) {
-      return (state: MagicDnsState.missing, interface: null);
-    }
-    final nrpt = await _try('powershell.exe', [
-      '-NoProfile',
-      '-NonInteractive',
-      '-Command',
-      _windowsNrptQuery,
-    ]);
-    var configured = false;
-    if (nrpt != null && nrpt.exitCode == 0) {
-      final expectedSuffix = '.$base';
-      for (final line in LineSplitter.split(nrpt.stdout)) {
-        final sep = line.indexOf('=');
-        if (sep < 0) continue;
-        final namespaces = line
-            .substring(0, sep)
-            .split(',')
-            .map((entry) {
-              var trimmed = entry.trim().toLowerCase();
-              while (trimmed.endsWith('.')) {
-                trimmed = trimmed.substring(0, trimmed.length - 1);
-              }
-              return trimmed;
-            });
-        final servers = line
-            .substring(sep + 1)
-            .split(';')
-            .map((entry) => entry.trim());
-        if (servers.contains(magicDnsServer) &&
-            namespaces.contains(expectedSuffix)) {
-          configured = true;
-          break;
-        }
-      }
-    }
-    return (
-      state: configured ? MagicDnsState.configured : MagicDnsState.missing,
-      interface: null,
-    );
+    if (!supported) return;
+    return _resetAndroid(zone: zone);
   }
 
   /// The EasyTier interface of one network: the configured TUN name when that
@@ -216,14 +95,4 @@ final class MagicDnsSystem {
       return null;
     }
   }
-
-  static String _checked(String value, RegExp pattern, String name) {
-    if (!pattern.hasMatch(value)) {
-      throw ArgumentError.value(value, name, 'unsafe for a system command');
-    }
-    return value;
-  }
-
-  /// Single-quotes [value] for the one shell command that runs two tools.
-  static String _quote(String value) => "'${value.replaceAll("'", "'\\''")}'";
 }

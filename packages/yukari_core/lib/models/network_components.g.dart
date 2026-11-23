@@ -112,3 +112,70 @@ Map<String, dynamic> _$ManagedCredentialToJson(ManagedCredential instance) =>
       'allowedProxyCidrs': instance.allowedProxyCidrs,
       'reusable': instance.reusable,
     };
+
+DnsRecord _$DnsRecordFromJson(Map<String, dynamic> json) => DnsRecord(
+  name: json['name'] as String,
+  type: $enumDecode(_$DnsRecordTypeEnumMap, json['type']),
+  value: json['value'] as String,
+  ttl: (json['ttl'] as num?)?.toInt(),
+);
+
+Map<String, dynamic> _$DnsRecordToJson(DnsRecord instance) => <String, dynamic>{
+  'name': instance.name,
+  'type': _$DnsRecordTypeEnumMap[instance.type]!,
+  'value': instance.value,
+  'ttl': instance.ttl,
+};
+
+const _$DnsRecordTypeEnumMap = {
+  DnsRecordType.a: 'A',
+  DnsRecordType.aaaa: 'AAAA',
+  DnsRecordType.aname: 'ANAME',
+  DnsRecordType.caa: 'CAA',
+  DnsRecordType.cert: 'CERT',
+  DnsRecordType.cname: 'CNAME',
+  DnsRecordType.csync: 'CSYNC',
+  DnsRecordType.hinfo: 'HINFO',
+  DnsRecordType.https: 'HTTPS',
+  DnsRecordType.mx: 'MX',
+  DnsRecordType.naptr: 'NAPTR',
+  DnsRecordType.ns: 'NS',
+  DnsRecordType.openpgpkey: 'OPENPGPKEY',
+  DnsRecordType.ptr: 'PTR',
+  DnsRecordType.soa: 'SOA',
+  DnsRecordType.srv: 'SRV',
+  DnsRecordType.sshfp: 'SSHFP',
+  DnsRecordType.svcb: 'SVCB',
+  DnsRecordType.tlsa: 'TLSA',
+  DnsRecordType.txt: 'TXT',
+};
+
+DnsZone _$DnsZoneFromJson(Map<String, dynamic> json) => DnsZone(
+  origin: json['origin'] as String,
+  ttl: (json['ttl'] as num?)?.toInt(),
+  records:
+      (json['records'] as List<dynamic>?)
+          ?.map((e) => DnsRecord.fromJson(e as Map<String, dynamic>))
+          .toList() ??
+      const [],
+);
+
+Map<String, dynamic> _$DnsZoneToJson(DnsZone instance) => <String, dynamic>{
+  'origin': instance.origin,
+  'ttl': instance.ttl,
+  'records': instance.records.map((e) => e.toJson()).toList(),
+};
+
+DnsConfig _$DnsConfigFromJson(Map<String, dynamic> json) => DnsConfig(
+  domain: json['domain'] as String?,
+  zones:
+      (json['zones'] as List<dynamic>?)
+          ?.map((e) => DnsZone.fromJson(e as Map<String, dynamic>))
+          .toList() ??
+      const [],
+);
+
+Map<String, dynamic> _$DnsConfigToJson(DnsConfig instance) => <String, dynamic>{
+  'domain': instance.domain,
+  'zones': instance.zones.map((e) => e.toJson()).toList(),
+};

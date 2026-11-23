@@ -47,6 +47,7 @@ final class Instance {
             natType: Peer.natTypeOf(myNodeInfo['stun_info']),
             connectionType: PeerConnectionType.local,
             virtualIpv4: Peer.ipv4FromInet(myNodeInfo['virtual_ipv4']),
+            virtualIpv6: Peer.ipv6FromInet(myNodeInfo['virtual_ipv6']),
           )
         : null;
     final pairs =
