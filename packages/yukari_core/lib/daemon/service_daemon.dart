@@ -16,10 +16,10 @@ import 'network_policy.dart';
 /// The background service: serves [backend] to the app over IPC and starts
 /// the networks marked [Network.autoStart] when it comes up.
 ///
-/// It also configures the system DNS for the Magic DNS networks it runs: this
-/// process has the privileges Linux needs, so the app never has to prompt for
-/// them. Networks are read from [store], which the app owns; the service never
-/// writes it and only starts networks saved there.
+/// It also configures the system DNS for platforms EasyTier cannot configure
+/// itself (the Android root service): Windows and Linux are handled natively by
+/// EasyTier. Networks are read from [store], which the app owns; the service
+/// never writes it and only starts networks saved there.
 final class ServiceDaemon {
   ServiceDaemon({
     required this.store,

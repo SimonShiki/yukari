@@ -50,7 +50,7 @@
   "magicDnsServer": "DNS 服务器",
   "magicDnsName": "魔法 DNS 名称",
   "magicDnsNameUnknown": "使用本机主机名",
-  "magicDnsStartAutomatic": "启动此网络后，EasyTier 会自动在其接口上设置本机 DNS。",
+  "magicDnsStartAutomatic": "启动此网络后，EasyTier 会自动配置本机系统 DNS。",
   "magicDnsStartManual": "启动此网络后，在其节点页面配置系统 DNS。",
   "magicDnsDismiss": "关闭",
   "magicDnsMissing": "系统 DNS 尚未将 {zone} 的查询交给魔法 DNS 服务器。",

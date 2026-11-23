@@ -8,6 +8,7 @@ String _messageFor(
 ) {
   final l10n = context.l10n;
   final automatic = controller.system.automatic;
+  final isWindows = controller.system.platform == MagicDnsPlatform.windows;
   final base = magicDnsZoneBase(controller.zone.value);
   return switch (state) {
     // A configured or off network never builds the card; these are defensive.
@@ -15,7 +16,7 @@ String _messageFor(
     MagicDnsState.notRunning =>
       automatic ? l10n.magicDnsStartAutomatic : l10n.magicDnsStartManual,
     MagicDnsState.missing =>
-      automatic ? l10n.magicDnsWindowsMissing : l10n.magicDnsMissing(base),
+      isWindows ? l10n.magicDnsWindowsMissing : l10n.magicDnsMissing(base),
     MagicDnsState.unsupported => l10n.magicDnsNoResolved,
     MagicDnsState.noInterface => l10n.magicDnsNoInterface,
     MagicDnsState.failed => l10n.magicDnsFailed(controller.error.value ?? ''),
@@ -71,13 +72,14 @@ Widget? _commandsFor(
 }) {
   final l10n = context.l10n;
   final system = controller.system;
+  final isWindows = system.platform == MagicDnsPlatform.windows;
   final (label, lines) = switch (state) {
     MagicDnsState.unsupported => (
       l10n.magicDnsManual,
       system.resolvConfLines(zone: zone),
     ),
     MagicDnsState.missing || MagicDnsState.failed => (
-      system.automatic ? l10n.magicDnsWindowsTest : l10n.magicDnsManual,
+      isWindows ? l10n.magicDnsWindowsTest : l10n.magicDnsManual,
       system.manualCommands(
         zone: zone,
         interfaceName: controller.interfaceName.value,
@@ -91,10 +93,11 @@ Widget? _commandsFor(
 }
 
 /// Whether another TUN proxy can be blamed for the missing names. EasyTier
-/// sets its own interface DNS on Windows, so a running FlClash-style proxy is
+/// sets NRPT policies on Windows, so a running FlClash-style proxy is
 /// the usual reason the card appears there.
 bool _showsConflict(MagicDnsController controller, MagicDnsState state) =>
-    controller.system.automatic && state == MagicDnsState.missing;
+    controller.system.platform == MagicDnsPlatform.windows &&
+    state == MagicDnsState.missing;
 
 /// One `label  value` line of the card.
 class _ValueLine extends StatelessWidget {

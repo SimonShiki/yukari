@@ -127,7 +127,7 @@ void main() {
     expect(find.text(strings.magicDnsTitle), findsOneWidget);
     expect(_shows(tester, '100.100.100.101'), isTrue);
     expect(_shows(tester, 'laptop.et.net'), isTrue);
-    expect(find.text(strings.magicDnsStartManual), findsOneWidget);
+    expect(find.text(strings.magicDnsStartAutomatic), findsOneWidget);
     expect(find.text(strings.magicDnsApply), findsNothing);
     expect(command.runs, isEmpty);
   });
@@ -519,8 +519,8 @@ void main() {
   testWidgets('Windows with its automatic DNS shows no card', (tester) async {
     final command = FakeSystemCommand(
       runHandler: (_, _) => ok(
-        'Ethernet adapter EasyTier:\n'
-        '   DNS Servers . . . . . . . . . . . : 100.100.100.101\n',
+        'et.net=100.100.100.101\n'
+        '.et.net=100.100.100.101\n',
       ),
     );
     await _seed(tester, network: _network(), running: true);
@@ -533,7 +533,7 @@ void main() {
 
   testWidgets('Windows without its DNS explains the conflict', (tester) async {
     final command = FakeSystemCommand(
-      runHandler: (_, _) => ok('DNS Servers . . . : 8.8.8.8'),
+      runHandler: (_, _) => ok('.et.net=8.8.8.8\n'),
     );
     await _seed(tester, network: _network(), running: true);
 
@@ -547,6 +547,7 @@ void main() {
       isTrue,
       reason: 'the direct query bypasses the system resolver',
     );
+    expect(_shows(tester, 'Get-DnsClientNrptPolicy -Effective'), isTrue);
     expect(command.elevated, isEmpty);
   });
 
@@ -557,8 +558,8 @@ void main() {
     final command = FakeSystemCommand(
       runHandler: (_, _) => ok(
         configured
-            ? 'DNS Servers . . . . . . . . . . . : 100.100.100.101'
-            : 'DNS Servers . . . . . . . . . . . : 8.8.8.8',
+            ? 'et.net=100.100.100.101\n.et.net=100.100.100.101\n'
+            : '.et.net=8.8.8.8\n',
       ),
     );
     await _seed(tester, network: _network(), running: true);

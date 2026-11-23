@@ -2,10 +2,11 @@ part of 'magic_dns.dart';
 
 /// The platforms Yukari ships on, as far as the system DNS setup goes.
 enum MagicDnsPlatform {
-  /// The app points systemd-resolved at the EasyTier interface.
+  /// EasyTier configures systemd-resolved over D-Bus; Yukari offers an
+  /// elevated `resolvectl` fallback when D-Bus is unavailable.
   linux,
 
-  /// EasyTier writes the DNS servers of its own TUN interface itself.
+  /// EasyTier writes NRPT policies for Magic DNS zones itself.
   windows,
 
   /// The root service sends the zone's lookups into the EasyTier tunnel,

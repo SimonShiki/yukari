@@ -56,7 +56,7 @@
   "magicDnsServer": "DNS server",
   "magicDnsName": "Magic DNS name",
   "magicDnsNameUnknown": "Uses this device's hostname",
-  "magicDnsStartAutomatic": "Start this network. EasyTier then sets this machine's DNS on its own interface.",
+  "magicDnsStartAutomatic": "Start this network. EasyTier then configures this machine's system DNS automatically.",
   "magicDnsStartManual": "Start this network, then configure the system DNS from its peers tab.",
   "magicDnsDismiss": "Dismiss",
   "magicDnsMissing": "System DNS does not send {zone} to the Magic DNS server yet.",
