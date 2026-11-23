@@ -20,6 +20,7 @@ const _rule = [
   'string',
   '--algo',
   'bm',
+  '--icase',
   '--hex-string',
   '|02|et|03|net|00|',
   '-j',
@@ -30,7 +31,7 @@ const _rule = [
 
 /// The same rule as the kernel prints it, for the chain fake.
 const _zoneRule =
-    '-p udp --dport 53 -m string --algo bm --hex-string '
+    '-p udp --dport 53 -m string --algo bm --icase --hex-string '
     '|02|et|03|net|00| -j DNAT --to-destination 100.100.100.101:53';
 
 /// The virtual IPv4 the service hands the probe so it can find its own TUN.
@@ -130,6 +131,7 @@ void main() {
     test('spells the zone as the wire bytes of its labels', () {
       expect(magicDnsZoneHex('et.net.'), '|02|et|03|net|00|');
       expect(magicDnsZoneHex('corp.internal'), '|04|corp|08|internal|00|');
+      expect(magicDnsZoneHex('Example.Test.'), '|07|example|04|test|00|');
     });
 
     test('refuses a zone that is not a plain DNS name', () {
@@ -138,7 +140,10 @@ void main() {
       expect(magicDnsZoneHex('et net'), isNull);
       expect(magicDnsZoneHex('et.net; reboot'), isNull);
       expect(magicDnsZoneHex('-et.net'), isNull);
+      expect(magicDnsZoneHex('et.net..'), isNull);
       expect(magicDnsZoneHex('${'a' * 64}.net'), isNull);
+      expect(magicDnsZoneHex('${'a' * 60}.${'b' * 60}'), isNotNull);
+      expect(magicDnsZoneHex('${'a' * 63}.${'b' * 63}'), isNull);
     });
 
     test('matches the zone labels only, never a name that contains them', () {
@@ -190,6 +195,31 @@ void main() {
 
       expect(probe.state, MagicDnsState.missing);
       expect(probe.interface, 'et_12_xoih');
+    });
+
+    test('finds an IPv6-only tunnel by its assigned address', () async {
+      final command = FakeSystemCommand(
+        runHandler: (executable, arguments) {
+          if (executable == 'ip' && arguments.firstOrNull == '-6') {
+            return ok('33: et_v6    inet6 fd00::2/64 scope global et_v6');
+          }
+          return androidHost()(executable, arguments);
+        },
+      );
+
+      final probe = await androidSystem(command)
+          .probe(zone: 'et.net.', interfaceName: '', address: 'fd00::2/64');
+
+      expect(probe.state, MagicDnsState.missing);
+      expect(probe.interface, 'et_v6');
+      expect(
+        command.runs.any(
+          (run) =>
+              run.$1 == 'ip' &&
+              run.$2.join(' ') == '-6 -o addr show to fd00::2',
+        ),
+        isTrue,
+      );
     });
 
     test('reports missing when the jump from OUTPUT is gone', () async {

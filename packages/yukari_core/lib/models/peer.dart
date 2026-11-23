@@ -86,10 +86,16 @@ final class Peer {
     final stats = connection['stats'] as Map<String, Object?>?;
     var fecActive = false;
     var fecRecovered = 0;
+    final protocols = <NodeProtocol>{};
     for (final conn in connections) {
       if (conn['fec'] case final Map<String, Object?> fec) {
         if (fec['active'] == true) fecActive = true;
         fecRecovered += _int(fec['recovered']);
+      }
+      if (conn['tunnel'] case {'tunnel_type': final String type}) {
+        if (_protocolFromName(type) case final protocol?) {
+          protocols.add(protocol);
+        }
       }
     }
 
@@ -109,9 +115,7 @@ final class Peer {
         _identityTypeNames,
         connection['peer_identity_type'],
       ),
-      latency: stats?['latency_us'] == null
-          ? null
-          : _int(stats?['latency_us']),
+      latency: stats?['latency_us'] == null ? null : _int(stats?['latency_us']),
       rxBytes: _int(stats?['rx_bytes']),
       txBytes: _int(stats?['tx_bytes']),
       rxPackets: _int(stats?['rx_packets']),
@@ -121,14 +125,7 @@ final class Peer {
         _secureAuthLevelNames,
         connection['secure_auth_level'],
       ),
-      protocols: {
-        ...connections
-            .map((connection) => connection['tunnel'] as Map<String, Object?>?)
-            .whereType<Map<String, Object?>>()
-            .map((tunnel) => tunnel['tunnel_type'] as String? ?? '')
-            .map(_protocolFromName)
-            .whereType<NodeProtocol>(),
-      }.toList(),
+      protocols: protocols.toList(growable: false),
     );
   }
 
@@ -141,18 +138,36 @@ final class Peer {
 
   /// Formats an `Ipv4Inet` message, whose address is a big-endian integer.
   static String? ipv4FromInet(Object? inet) {
+    if (inet is String && inet.isNotEmpty) {
+      return _validatedCidr(inet, 32)?.split('/').first;
+    }
     if (inet case {'address': {'addr': final int addr}}) {
-      return [24, 16, 8, 0].map((shift) => (addr >> shift) & 0xff).join('.');
+      return _ipv4Host(addr);
     }
     return null;
   }
 
+  /// Formats an `Ipv4Inet` protobuf message, including its network prefix.
+  static String? ipv4CidrFromInet(Object? inet) {
+    if (inet is String && inet.isNotEmpty) return _validatedCidr(inet, 32);
+    if (inet case {'address': {'addr': final int addr}}) {
+      final host = _ipv4Host(addr);
+      if (inet case {'network_length': final int length}) {
+        return length >= 0 && length <= 32 ? '$host/$length' : null;
+      }
+      return host;
+    }
+    return null;
+  }
+
+  static String _ipv4Host(int addr) =>
+      '${(addr >> 24) & 0xff}.${(addr >> 16) & 0xff}.'
+      '${(addr >> 8) & 0xff}.${addr & 0xff}';
+
   /// Formats an `Ipv6Inet` message, whose address consists of four 32-bit parts.
   static String? ipv6FromInet(Object? inet) {
     if (inet is String && inet.isNotEmpty) {
-      final host = inet.split('/').first.trim();
-      final parsed = InternetAddress.tryParse(host);
-      return parsed?.type == InternetAddressType.IPv6 ? parsed!.address : null;
+      return _validatedCidr(inet, 128)?.split('/').first;
     }
     if (inet case {
       'address': {
@@ -162,18 +177,56 @@ final class Peer {
         'part4': final int p4,
       },
     }) {
-      final bytes = Uint8List(16);
-      final parts = [p1, p2, p3, p4];
-      for (var i = 0; i < 4; i++) {
-        final part = parts[i];
-        bytes[i * 4] = (part >> 24) & 0xff;
-        bytes[i * 4 + 1] = (part >> 16) & 0xff;
-        bytes[i * 4 + 2] = (part >> 8) & 0xff;
-        bytes[i * 4 + 3] = part & 0xff;
-      }
-      return InternetAddress.fromRawAddress(bytes).address;
+      return _ipv6Host(p1, p2, p3, p4);
     }
     return null;
+  }
+
+  /// Formats an `Ipv6Inet` protobuf message, including its network prefix.
+  static String? ipv6CidrFromInet(Object? inet) {
+    if (inet is String && inet.isNotEmpty) {
+      return _validatedCidr(inet, 128);
+    }
+    if (inet case {
+      'address': {
+        'part1': final int p1,
+        'part2': final int p2,
+        'part3': final int p3,
+        'part4': final int p4,
+      },
+    }) {
+      final host = _ipv6Host(p1, p2, p3, p4);
+      if (inet case {'network_length': final int length}) {
+        return length >= 0 && length <= 128 ? '$host/$length' : null;
+      }
+      return host;
+    }
+    return null;
+  }
+
+  static String _ipv6Host(int p1, int p2, int p3, int p4) {
+    final bytes = Uint8List(16);
+    ByteData.sublistView(bytes)
+      ..setUint32(0, p1)
+      ..setUint32(4, p2)
+      ..setUint32(8, p3)
+      ..setUint32(12, p4);
+    return InternetAddress.fromRawAddress(bytes).address;
+  }
+
+  static String? _validatedCidr(String value, int maxPrefix) {
+    final parts = value.trim().split('/');
+    if (parts.length > 2) return null;
+    final address = InternetAddress.tryParse(parts.first);
+    if (address == null ||
+        (maxPrefix == 32) != (address.type == InternetAddressType.IPv4)) {
+      return null;
+    }
+    if (parts.length == 1) return address.address;
+    final prefix = int.tryParse(parts.last);
+    return prefix != null && prefix >= 0 && prefix <= maxPrefix
+        ? '${address.address}/$prefix'
+        : null;
   }
 
   // EasyTier serializes protobuf messages with serde: 64-bit integers become

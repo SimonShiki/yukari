@@ -3,6 +3,7 @@ import 'dart:collection';
 import 'package:toml/toml.dart';
 
 import 'package:yukari_core/models/models.dart';
+import 'package:yukari_core/utils/dns_name.dart';
 
 /// Converts EasyTier TOML [tomlContent] into an editable [Network].
 Network parseEasyTierConfig(String tomlContent) {
@@ -55,6 +56,9 @@ Network parseEasyTierConfig(String tomlContent) {
   if (dhcp is bool) {
     network.dhcp = dhcp;
   } else if (dhcp is String) {
+    if (dhcp.trim().isEmpty) {
+      throw const FormatException('dhcp CIDR cannot be empty');
+    }
     network.dhcp = true;
     network.dhcpIpv4Cidr = dhcp;
   }
@@ -63,12 +67,17 @@ Network parseEasyTierConfig(String tomlContent) {
   if (dhcpv6 is bool) {
     network.dhcpv6 = dhcpv6;
   } else if (dhcpv6 is String) {
+    if (dhcpv6.trim().isEmpty) {
+      throw const FormatException('dhcpv6 CIDR cannot be empty');
+    }
     network.dhcpv6 = true;
     network.dhcpIpv6Cidr = dhcpv6;
   }
 
-  if (config['dns'] is Map) {
-    network.dns = _parseDns(config['dns'] as Map);
+  final rawDns = config['dns'];
+  if (rawDns != null) {
+    if (rawDns is! Map) throw const FormatException('dns must be a table');
+    network.dns = _parseDns(rawDns);
   }
 
   if (config['listeners'] is List) {
@@ -216,11 +225,10 @@ final class _TrackingMap extends MapBase<dynamic, dynamic> {
 
 List<Node> _parsePeers(List<dynamic> peers) => [
   for (final peer in peers)
-    if (peer is Map && peer['uri'] is String)
-      if (Uri.tryParse(peer['uri'] as String) case final Uri url
-          when isValidNodeUrl(peer['uri'] as String))
+    if (peer case {'uri': final String uri})
+      if (Uri.tryParse(uri) case final Uri url when isValidNodeUrl(uri, url))
         Node(
-          name: peer['uri'] as String,
+          name: uri,
           url: url,
           publicKey: peer['peer_public_key']?.toString(),
         ),
@@ -294,33 +302,45 @@ ManagedCredential _parseManagedCredential(Map<dynamic, dynamic> data) =>
       reusable: data['reusable'] as bool? ?? true,
     );
 
-DnsConfig _parseDns(Map<dynamic, dynamic> data) {
+DnsConfig _parseDns(Map<dynamic, dynamic> source) {
+  final data = _TrackingMap(source);
   final rawDomain = data['domain'];
+  if (rawDomain != null && rawDomain is! String) {
+    throw const FormatException('dns.domain must be a string');
+  }
   final domain = rawDomain is String && rawDomain.trim().isNotEmpty
       ? rawDomain.trim()
       : null;
   final rawZones = data['zone'];
   final zones = <DnsZone>[];
+  if (rawZones != null && rawZones is! List) {
+    throw const FormatException('dns.zone must be an array of tables');
+  }
   if (rawZones is List) {
     for (final entry in rawZones) {
       if (entry is! Map) {
         throw const FormatException('DNS zone entry must be a map');
       }
-      final origin = entry['origin']?.toString().trim() ?? '';
+      final zone = _TrackingMap(entry);
+      final origin = zone['origin']?.toString().trim() ?? '';
       if (origin.isEmpty) {
         throw const FormatException('DNS zone origin cannot be empty');
       }
-      final ttl = entry['ttl'] as int?;
+      final ttl = _parseDnsTtl(zone['ttl']);
       final records = <DnsRecord>[];
-      final rawRecords = entry['records'];
+      final rawRecords = zone['records'];
+      if (rawRecords != null && rawRecords is! List) {
+        throw const FormatException('DNS records must be an array');
+      }
       if (rawRecords is List) {
         for (final rawRecord in rawRecords) {
           if (rawRecord is! Map) {
             throw const FormatException('DNS record entry must be a map');
           }
-          final name = rawRecord['name']?.toString().trim() ?? '';
-          final value = rawRecord['value']?.toString() ?? '';
-          final typeText = rawRecord['type']?.toString() ?? '';
+          final record = _TrackingMap(rawRecord);
+          final name = record['name']?.toString().trim() ?? '';
+          final value = record['value']?.toString() ?? '';
+          final typeText = record['type']?.toString() ?? '';
           final type = DnsRecordType.tryParse(typeText);
           if (name.isEmpty || value.trim().isEmpty || type == null) {
             throw FormatException('Invalid DNS record: $rawRecord');
@@ -330,15 +350,38 @@ DnsConfig _parseDns(Map<dynamic, dynamic> data) {
               name: name,
               type: type,
               value: value,
-              ttl: rawRecord['ttl'] as int?,
+              ttl: _parseDnsTtl(record['ttl']),
             ),
           );
+          if (record.unread.isNotEmpty) {
+            throw FormatException(
+              'Unknown DNS record keys: ${record.unread.keys.join(', ')}',
+            );
+          }
         }
+      }
+      if (zone.unread.isNotEmpty) {
+        throw FormatException(
+          'Unknown DNS zone keys: ${zone.unread.keys.join(', ')}',
+        );
       }
       zones.add(DnsZone(origin: origin, ttl: ttl, records: records));
     }
   }
+  if (data.unread.isNotEmpty) {
+    throw FormatException('Unknown DNS keys: ${data.unread.keys.join(', ')}');
+  }
   return DnsConfig(domain: domain, zones: zones);
+}
+
+int? _parseDnsTtl(Object? value) {
+  if (value == null) return null;
+  if (value is! int || value < 0 || value > 2147483647) {
+    throw const FormatException(
+      'DNS TTL must be an integer from 0 to 2147483647',
+    );
+  }
+  return value;
 }
 
 NetworkFlags _parseFlags(_TrackingMap data) {
@@ -410,7 +453,7 @@ NetworkFlags _parseFlags(_TrackingMap data) {
     encryptionAlgorithm: parseEncryptionAlgorithm(data['encryption_algorithm']),
     disableSymmetricHolePunching:
         data['disable_sym_hole_punching'] as bool? ?? false,
-    dnsZone: data['tld_dns_zone']?.toString() ?? 'et.net.',
+    dnsZone: data['tld_dns_zone']?.toString() ?? defaultDnsDomain,
     quicListenPort: data['quic_listen_port'] as int?,
     needP2p: data['need_p2p'] as bool? ?? false,
     instanceReceiveBpsLimit: data['instance_recv_bps_limit'] is String

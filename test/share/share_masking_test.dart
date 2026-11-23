@@ -592,6 +592,7 @@ void main() {
     expect(network.flags.noTun, isTrue);
     expect(network.flags.acceptDns, isFalse);
     expect(network.flags.dnsZone, 'home.example.com.');
+    expect(network.dns?.domain, 'home.example.com.');
   });
 
   test('imports a share without configs at the defaults', () {
@@ -601,6 +602,7 @@ void main() {
     expect(network.flags.noTun, defaults.noTun);
     expect(network.flags.acceptDns, defaults.acceptDns);
     expect(network.flags.dnsZone, defaults.dnsZone);
+    expect(network.dns, isNull);
   });
 }
 

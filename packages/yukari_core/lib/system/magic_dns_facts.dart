@@ -12,10 +12,7 @@ bool magicDnsRequested(NetworkFlags flags) => flags.acceptDns && !flags.noTun;
 
 /// [zone] without its trailing dot, as DNS tools spell it.
 String magicDnsZoneBase(String zone) {
-  final trimmed = zone.trim();
-  return trimmed.endsWith('.')
-      ? trimmed.substring(0, trimmed.length - 1)
-      : trimmed;
+  return normalizeDnsName(zone);
 }
 
 /// The IPv4 address inside [cidr], such as `10.126.126.2` for
@@ -44,12 +41,15 @@ String magicDnsNameOf({required String host, required String zone}) =>
 /// Null when [zone] is not a plain DNS name, so an unusable zone never
 /// reaches a rule.
 String? magicDnsZoneHex(String zone) {
+  if (zone.trim().endsWith('..')) return null;
   final base = magicDnsZoneBase(zone);
   if (!_zoneName.hasMatch(base)) return null;
+  if (base.length + 2 > 128) return null;
   final pattern = StringBuffer();
   for (final label in base.split('.')) {
     if (label.length > 63) return null;
     pattern.write('|${label.length.toRadixString(16).padLeft(2, '0')}|$label');
   }
-  return '$pattern|00|';
+  pattern.write('|00|');
+  return pattern.toString().toLowerCase();
 }

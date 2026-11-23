@@ -31,9 +31,10 @@ class DnsZoneCard extends StatelessWidget {
     final theme = Theme.of(context);
     final colors = theme.colorScheme;
     final summary = [
-      l10n.advancedDnsRecordCount(zone.records.length),
+      if (zone.records.isNotEmpty)
+        l10n.advancedDnsRecordCount(zone.records.length),
       if (zone.ttl case final int ttl) l10n.advancedDnsTtlSeconds(ttl),
-    ].join(' • ');
+    ].join(' · ');
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -51,7 +52,7 @@ class DnsZoneCard extends StatelessWidget {
             ),
           ),
           headline: OverflowText(zone.origin),
-          supportingText: Text(summary),
+          supportingText: summary.isEmpty ? null : Text(summary),
           trailing: Row(
             mainAxisSize: MainAxisSize.min,
             children: [

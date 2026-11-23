@@ -68,6 +68,10 @@ void main() {
       tester.getRect(find.text('me')).top,
       lessThan(tester.getRect(find.text('peer-b')).top),
     );
+    // Both virtual address families are selectable.
+    expect(find.widgetWithText(SelectableText, '10.144.0.1'), findsOneWidget);
+    expect(find.widgetWithText(SelectableText, '10.144.0.2'), findsOneWidget);
+    expect(find.widgetWithText(SelectableText, 'fd00::2'), findsOneWidget);
     // One badge per protocol, and the identity and security tags.
     expect(find.text('TCP'), findsOneWidget);
     expect(find.text(strings.peerCredential), findsOneWidget);
@@ -397,9 +401,9 @@ void main() {
     expect(find.text(strings.peerLocal), findsOneWidget);
     expect(find.text('P2P'), findsOneWidget);
 
-    // Both virtual addresses, and the peer's latency in milliseconds.
-    expect(find.text('10.144.0.2'), findsOneWidget);
-    expect(find.text('10.144.0.1'), findsOneWidget);
+    // Both virtual addresses are selectable, and the peer's latency is in ms.
+    expect(find.widgetWithText(SelectableText, '10.144.0.2'), findsOneWidget);
+    expect(find.widgetWithText(SelectableText, '10.144.0.1'), findsOneWidget);
     expect(find.text('0 ms'), findsOneWidget);
 
     final heights = [
@@ -533,6 +537,7 @@ final Map<String, Object?> _instance = {
         'ipv4_addr': {
           'address': {'addr': (10 << 24) | (144 << 16) | 2},
         },
+        'ipv6_addr': 'fd00::2/64',
         'stun_info': {'udp_nat_type': 'PortRestricted'},
       },
       'peer': {

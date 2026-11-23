@@ -7,8 +7,8 @@ enum NodeProtocol { tcp, udp, ws, wss, quic, wg }
 
 /// Whether a connection URL has a scheme, a host and a usable port.
 /// Paths and queries belong to the connection; fragments do not.
-bool isValidNodeUrl(String value) {
-  final url = Uri.tryParse(value);
+bool isValidNodeUrl(String value, [Uri? parsed]) {
+  final url = parsed ?? Uri.tryParse(value);
   if (url == null ||
       RegExp(r'^[A-Za-z][A-Za-z0-9+.-]*://[^/?#]*:0+(?=[/?#]|$)')
           .hasMatch(value)) {

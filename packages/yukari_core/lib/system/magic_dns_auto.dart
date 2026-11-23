@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import '../models/models.dart';
+import '../utils/dns_name.dart';
 import 'magic_dns.dart';
 
 /// Configures the system DNS for Magic DNS automatically.
@@ -48,7 +49,7 @@ final class MagicDnsAuto implements MagicDnsSetup {
   /// How long each of those waits is.
   final Duration retryDelay;
 
-  /// The virtual IPv4 EasyTier assigned to the instance running [networkId].
+  /// The virtual address EasyTier assigned to the instance running [networkId].
   ///
   /// A network configured for DHCP has no address of its own until its
   /// instance reports one, so this is read again on every attempt. Null reads
@@ -66,53 +67,28 @@ final class MagicDnsAuto implements MagicDnsSetup {
   @override
   Future<String?> start(String networkId, Network network) async {
     if (!appliesTo(network)) return null;
+    if ((network.dns?.zones.length ?? 0) > maxStaticDnsZones) return null;
     final zones = network.magicDnsZones;
     if (zones.isEmpty) return null;
     final primaryZone = zones.first;
     final deviceName = network.flags.deviceName;
     try {
       for (var attempt = 0; attempt < attempts; attempt++) {
-        final address = await assignedAddress?.call(networkId) ?? network.ipv4;
+        final address =
+            await assignedAddress?.call(networkId) ??
+            network.ipv4 ??
+            network.ipv6;
         final probe = await system.probe(
           zone: primaryZone,
           interfaceName: deviceName,
           address: address,
         );
         switch (probe.state) {
-          case MagicDnsState.configured:
-            // Nothing was installed for the primary zone, but any extra
-            // static zones still need their redirects; remembering them all
-            // lets revert() clean them up when this network stops.
-            if (probe.interface case final interface?) {
-              final installed = <String>[primaryZone];
-              for (final extra in zones.skip(1)) {
-                final extraProbe = await system.probe(
-                  zone: extra,
-                  interfaceName: deviceName,
-                  address: address,
-                );
-                if (extraProbe.state == MagicDnsState.missing) {
-                  await system.apply(
-                    zone: extra,
-                    interfaceName: deviceName,
-                    address: address,
-                  );
-                  installed.add(extra);
-                } else if (extraProbe.state == MagicDnsState.configured) {
-                  installed.add(extra);
-                }
-              }
-              _configured[networkId] = (interface: interface, zones: installed);
-            }
-            return null;
-          case MagicDnsState.unsupported:
-            return null;
-          case MagicDnsState.missing:
-            // The interface the probe resolved is the one apply configures:
-            // both read the same hints through the same helper.
+          case MagicDnsState.configured || MagicDnsState.missing:
             final interface = probe.interface;
             if (interface == null) return null;
             final installed = <String>[];
+            var appliedAny = false;
             for (final zone in zones) {
               final currentProbe = zone == primaryZone
                   ? probe
@@ -127,6 +103,7 @@ final class MagicDnsAuto implements MagicDnsSetup {
                   interfaceName: deviceName,
                   address: address,
                 );
+                appliedAny = true;
                 installed.add(zone);
               } else if (currentProbe.state == MagicDnsState.configured) {
                 installed.add(zone);
@@ -135,7 +112,9 @@ final class MagicDnsAuto implements MagicDnsSetup {
             if (installed.isNotEmpty) {
               _configured[networkId] = (interface: interface, zones: installed);
             }
-            return interface;
+            return appliedAny ? interface : null;
+          case MagicDnsState.unsupported:
+            return null;
           case MagicDnsState.noInterface:
             // The network just started: its TUN device and the address it
             // owns may still be coming up.
@@ -156,10 +135,14 @@ final class MagicDnsAuto implements MagicDnsSetup {
     if (configured == null) return;
     try {
       for (final zone in configured.zones) {
-        await system.reset(
-          interfaceName: configured.interface,
-          zone: zone,
+        final claimedByOther = _configured.values.any(
+          (other) => other.zones.any(
+            (otherZone) =>
+                normalizeDnsName(otherZone) == normalizeDnsName(zone),
+          ),
         );
+        if (claimedByOther) continue;
+        await system.reset(interfaceName: configured.interface, zone: zone);
       }
     } catch (_) {
       // Nothing is left to revert, such as after the interface is gone.

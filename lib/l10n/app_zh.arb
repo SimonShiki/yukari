@@ -489,6 +489,7 @@
   "validationHostEmpty": "主机不能为空",
   "validationHost": "请输入有效的 IP 地址或主机名",
   "validationDns": "请输入域名，例如 et.net.",
+  "validationDnsZoneLimit": "每个网络最多可定义 16 个 DNS 区域。",
   "validationNodeUrl": "请输入包含协议、主机和有效端口的完整连接 URL",
   "validationSocks": "格式应为 socks5://host:port",
   "validationSocket": "请输入带端口的 IP 地址，例如 0.0.0.0:22022",

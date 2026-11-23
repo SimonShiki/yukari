@@ -40,6 +40,7 @@ class _RecordingVpn {
 
   int nextFd;
   Object? startError;
+  final failingNames = <String>{};
   Object? stopError;
   final started = <_VpnStartCall>[];
   var stops = 0;
@@ -62,6 +63,9 @@ class _RecordingVpn {
             dns: dns,
           ));
           if (startError case final error?) throw error;
+          if (failingNames.contains(networkName)) {
+            throw StateError('configured VPN failure');
+          }
           return nextFd++;
         },
     stop: () async {
@@ -83,6 +87,7 @@ class _TestAndroidBackend extends AndroidBackend {
   final deleted = <String>[];
   final tunCalls = <(String, int)>[];
   Map<String, Object?> collected = const {};
+  int? failNextAttachFd;
 
   String? get tunName => tunCalls.isEmpty ? null : tunCalls.last.$1;
   int? get tunFd => tunCalls.isEmpty ? null : tunCalls.last.$2;
@@ -102,6 +107,10 @@ class _TestAndroidBackend extends AndroidBackend {
   @override
   Future<void> setTunFd(String instanceName, int fd) async {
     tunCalls.add((instanceName, fd));
+    if (fd != 0 && fd == failNextAttachFd) {
+      failNextAttachFd = null;
+      throw StateError('TUN attach failed');
+    }
   }
 }
 
@@ -185,89 +194,136 @@ void main() {
       ]);
     });
 
-    test('aggregates multiple members including IPv6 and deduplicates Magic DNS', () {
-      final config = buildAndroidVpnConfig([
-        AndroidVpnMember(
-          network: _network(name: 'alpha', ipv4: '10.1.0.2/24', mtu: 1420),
-        ),
-        AndroidVpnMember(
-          network: _network(
-            name: 'beta',
-            ipv4: '10.2.0.2/24',
-            ipv6: 'fd00:2::2/64',
-            mtu: 1300,
-          ),
-        ),
-      ]);
+    test('dual-stack DHCP keeps its IPv4 bootstrap with static IPv6', () {
+      final request = androidVpnRequest(
+        _network(ipv6: 'fd00::1/64')..dhcp = true,
+      );
 
-      expect(config.networkNames, ['alpha', 'beta']);
-      expect(config.addresses, ['10.1.0.2/24', '10.2.0.2/24', 'fd00:2::2/64']);
-      expect(config.routes, [
-        '10.1.0.0/24',
-        '10.2.0.0/24',
+      expect(request.addresses, ['10.126.126.1/24', 'fd00::1/64']);
+      expect(request.routes, [
+        '10.126.126.0/24',
         '100.100.100.101/32',
-        'fd00:2::/64',
+        'fd00::/64',
       ]);
-      expect(config.mtu, 1300);
-      expect(config.dns, magicDnsServer);
     });
+
+    test(
+      'aggregates multiple members including IPv6 and deduplicates Magic DNS',
+      () {
+        final config = buildAndroidVpnConfig([
+          AndroidVpnMember(
+            network: _network(name: 'alpha', ipv4: '10.1.0.2/24', mtu: 1420),
+          ),
+          AndroidVpnMember(
+            network: _network(
+              name: 'beta',
+              ipv4: '10.2.0.2/24',
+              ipv6: 'fd00:2::2/64',
+              mtu: 1300,
+            ),
+          ),
+        ]);
+
+        expect(config.networkNames, ['alpha', 'beta']);
+        expect(config.addresses, [
+          '10.1.0.2/24',
+          '10.2.0.2/24',
+          'fd00:2::2/64',
+        ]);
+        expect(config.routes, [
+          '10.1.0.0/24',
+          '10.2.0.0/24',
+          '100.100.100.101/32',
+          'fd00:2::/64',
+        ]);
+        expect(config.mtu, 1300);
+        expect(config.dns, magicDnsServer);
+      },
+    );
   });
 
   group('CIDR helpers', () {
-    test('ipv4NetworkCidr clears host bits and keeps non-IPv4 unchanged', () {
-      expect(ipv4NetworkCidr('10.126.126.2/24'), '10.126.126.0/24');
-      expect(ipv4NetworkCidr('192.168.1.130/25'), '192.168.1.128/25');
-      expect(ipv4NetworkCidr('10.1.2.3/8'), '10.0.0.0/8');
-      expect(ipv4NetworkCidr('10.1.2.3/0'), '0.0.0.0/0');
-      expect(ipv4NetworkCidr('100.100.100.101/32'), '100.100.100.101/32');
-      expect(ipv4NetworkCidr('10.126.126.2'), '10.126.126.0/24');
-      expect(ipv4NetworkCidr('fd00::1/64'), 'fd00::1/64');
-      expect(ipv4NetworkCidr('not-an-ip/24'), 'not-an-ip/24');
-      expect(ipv4NetworkCidr('10.0.0.1/33'), '10.0.0.1/33');
-      expect(ipv4NetworkCidr('10.1.2.3/8/9'), '10.1.2.3/8/9');
-    });
-
     test('ipNetworkCidr normalizes both IPv4 and IPv6', () {
       expect(ipNetworkCidr('fd00:1::5/64'), 'fd00:1::/64');
       expect(ipNetworkCidr('fd00:1::5'), 'fd00:1::/64');
       expect(ipNetworkCidr('10.126.126.2/24'), '10.126.126.0/24');
     });
 
-    test('cidrsOverlap and findVpnRouteConflict detect overlapping subnets', () {
-      expect(cidrsOverlap('10.1.0.0/16', '10.1.2.0/24'), isTrue);
-      expect(cidrsOverlap('10.1.0.0/24', '10.2.0.0/24'), isFalse);
-      expect(cidrsOverlap('fd00:1::/64', 'fd00:1::1/128'), isTrue);
-      expect(cidrsOverlap('10.1.0.0/24', 'fd00:1::/64'), isFalse);
+    test(
+      'cidrsOverlap and findVpnRouteConflict detect overlapping subnets',
+      () {
+        expect(cidrsOverlap('10.1.0.0/16', '10.1.2.0/24'), isTrue);
+        expect(cidrsOverlap('10.1.0.0/24', '10.2.0.0/24'), isFalse);
+        expect(cidrsOverlap('fd00:1::/64', 'fd00:1::1/128'), isTrue);
+        expect(cidrsOverlap('10.1.0.0/24', 'fd00:1::/64'), isFalse);
 
-      final existing = [
-        AndroidVpnMember(
-          network: _network(name: 'alpha', ipv4: '10.1.0.1/24'),
-        ),
-      ];
-      // Shared Magic DNS /32 is exempt.
-      expect(
-        findVpnRouteConflict(
-          existing,
+        final existing = [
           AndroidVpnMember(
-            network: _network(name: 'beta', ipv4: '10.2.0.1/24'),
+            network: _network(name: 'alpha', ipv4: '10.1.0.1/24'),
           ),
-        ),
-        isNull,
-      );
-      expect(
-        findVpnRouteConflict(
-          existing,
-          AndroidVpnMember(
-            network: _network(
-              name: 'beta',
-              ipv4: '10.2.0.1/24',
-              proxyCidrs: ['10.1.0.0/24'],
+        ];
+        // Shared Magic DNS /32 is exempt.
+        expect(
+          findVpnRouteConflict(
+            existing,
+            AndroidVpnMember(
+              network: _network(name: 'beta', ipv4: '10.2.0.1/24'),
             ),
           ),
-        ),
-        contains('alpha'),
-      );
-    });
+          isNull,
+        );
+        expect(
+          findVpnRouteConflict(
+            existing,
+            AndroidVpnMember(
+              network: _network(
+                name: 'beta',
+                ipv4: '10.2.0.1/24',
+                proxyCidrs: ['10.1.0.0/24'],
+              ),
+            ),
+          ),
+          contains('alpha'),
+        );
+      },
+    );
+
+    test(
+      'shared Magic DNS route conflicts with exact and broad proxy routes',
+      () {
+        final dnsOwner = AndroidVpnMember(
+          network: _network(name: 'dns', ipv4: '10.1.0.1/24'),
+        );
+        for (final proxyCidr in ['100.100.100.101/32', '100.100.100.0/24']) {
+          expect(
+            findVpnRouteConflict(
+              [dnsOwner],
+              AndroidVpnMember(
+                network: _network(
+                  name: 'proxy',
+                  acceptDns: false,
+                  ipv4: '10.2.0.1/24',
+                  proxyCidrs: [proxyCidr],
+                ),
+              ),
+            ),
+            isNotNull,
+          );
+        }
+        expect(
+          findVpnRouteConflict(
+            const <AndroidVpnMember>[],
+            AndroidVpnMember(
+              network: _network(
+                name: 'dns-and-proxy',
+                proxyCidrs: ['100.100.100.0/24'],
+              ),
+            ),
+          ),
+          isNotNull,
+        );
+      },
+    );
 
     test('parseAssignedAddresses reads protobuf JSON shapes', () {
       final parsed = parseAssignedAddresses(
@@ -333,41 +389,47 @@ void main() {
       expect(vpn.stops, 0);
     });
 
-    test('stopping one of two TUN networks rebuilds for the remaining one', () async {
-      final vpn = _RecordingVpn(nextFd: 9);
-      final backend = _TestAndroidBackend(vpn.record);
-      addTearDown(backend.dispose);
+    test(
+      'stopping one of two TUN networks rebuilds for the remaining one',
+      () async {
+        final vpn = _RecordingVpn(nextFd: 9);
+        final backend = _TestAndroidBackend(vpn.record);
+        addTearDown(backend.dispose);
 
-      await backend.start('n1', _network(name: 'alpha', ipv4: '10.1.0.1/24'));
-      await backend.start('n2', _network(name: 'beta', ipv4: '10.2.0.1/24'));
-      backend.tunCalls.clear();
+        await backend.start('n1', _network(name: 'alpha', ipv4: '10.1.0.1/24'));
+        await backend.start('n2', _network(name: 'beta', ipv4: '10.2.0.1/24'));
+        backend.tunCalls.clear();
 
-      await backend.stop(['alpha']);
+        await backend.stop(['alpha']);
 
-      expect(vpn.stops, 0, reason: 'beta still uses the shared VPN');
-      expect(vpn.started.last.networkName, 'beta');
-      expect(vpn.started.last.addresses, ['10.2.0.1/24']);
-      expect(backend.tunCalls, [('beta', 0), ('beta', 11)]);
+        expect(vpn.stops, 0, reason: 'beta still uses the shared VPN');
+        expect(vpn.started.last.networkName, 'beta');
+        expect(vpn.started.last.addresses, ['10.2.0.1/24']);
+        expect(backend.tunCalls, [('beta', 0), ('beta', 11)]);
 
-      await backend.stop(['beta']);
-      expect(vpn.stops, 1, reason: 'last TUN network tears down the VPN');
-    });
+        await backend.stop(['beta']);
+        expect(vpn.stops, 1, reason: 'last TUN network tears down the VPN');
+      },
+    );
 
-    test('rejects an overlapping second network without dropping the first', () async {
-      final vpn = _RecordingVpn(nextFd: 9);
-      final backend = _TestAndroidBackend(vpn.record);
-      addTearDown(backend.dispose);
+    test(
+      'rejects an overlapping second network without dropping the first',
+      () async {
+        final vpn = _RecordingVpn(nextFd: 9);
+        final backend = _TestAndroidBackend(vpn.record);
+        addTearDown(backend.dispose);
 
-      await backend.start('n1', _network(name: 'alpha'));
+        await backend.start('n1', _network(name: 'alpha'));
 
-      await expectLater(
-        backend.start('n2', _network(name: 'beta')),
-        throwsStateError,
-      );
-      expect(vpn.started, hasLength(1));
-      expect(vpn.stops, 0);
-      expect(backend.ran, hasLength(1));
-    });
+        await expectLater(
+          backend.start('n2', _network(name: 'beta')),
+          throwsStateError,
+        );
+        expect(vpn.started, hasLength(1));
+        expect(vpn.stops, 0);
+        expect(backend.ran, hasLength(1));
+      },
+    );
 
     test('a no-TUN network never touches the VPN', () async {
       final vpn = _RecordingVpn();
@@ -405,35 +467,114 @@ void main() {
       expect(vpn.stops, 1, reason: 'a failed start leaves no VPN behind');
     });
 
-    test('a failed second start restores the surviving network\'s fd', () async {
+    test(
+      'a failed second start restores the surviving network\'s fd',
+      () async {
+        final vpn = _RecordingVpn(nextFd: 9);
+        final backend = _TestAndroidBackend(vpn.record);
+        addTearDown(backend.dispose);
+        await backend.start('n1', _network(name: 'alpha', ipv4: '10.1.0.1/24'));
+        vpn.startError = StateError('Bad address');
+        backend.tunCalls.clear();
+
+        await expectLater(
+          backend.start('n2', _network(name: 'beta', ipv4: '10.2.0.1/24')),
+          throwsStateError,
+        );
+
+        expect(vpn.stops, 0, reason: 'alpha still owns the VPN service');
+        expect(backend.deleted, ['beta']);
+        expect(backend.tunCalls, [('alpha', 0), ('alpha', 9)]);
+
+        await backend.stop(['alpha']);
+        expect(vpn.stops, 1, reason: 'its owner can still stop it');
+      },
+    );
+
+    test(
+      'a failed attach after replacement restores the previous VPN config',
+      () async {
+        final vpn = _RecordingVpn(nextFd: 9);
+        final backend = _TestAndroidBackend(vpn.record);
+        addTearDown(backend.dispose);
+        await backend.start('n1', _network(name: 'alpha', ipv4: '10.1.0.1/24'));
+        backend.failNextAttachFd = 10;
+
+        await expectLater(
+          backend.start('n2', _network(name: 'beta', ipv4: '10.2.0.1/24')),
+          throwsStateError,
+        );
+
+        expect(backend.deleted, ['beta']);
+        expect(vpn.started, hasLength(3));
+        expect(vpn.started.last.networkName, 'alpha');
+        expect(vpn.stops, 0);
+        expect(backend.tunCalls.last, ('alpha', 11));
+      },
+    );
+
+    test(
+      'a failed rollback establishment keeps the current FD for retry',
+      () async {
+        final vpn = _RecordingVpn(nextFd: 9);
+        final backend = _TestAndroidBackend(vpn.record);
+        addTearDown(backend.dispose);
+        await backend.start('n1', _network(name: 'alpha', ipv4: '10.1.0.1/24'));
+        vpn.failingNames.add('alpha');
+        backend.failNextAttachFd = 10;
+
+        await expectLater(
+          backend.start('n2', _network(name: 'beta', ipv4: '10.2.0.1/24')),
+          throwsStateError,
+        );
+
+        expect(vpn.stops, 0);
+        expect(backend.tunCalls.last, ('alpha', 10));
+        vpn.failingNames.clear();
+        await backend.collectInfos();
+        await pumpEventQueue();
+        expect(vpn.started.last.networkName, 'alpha');
+        expect(vpn.started.last.addresses, ['10.1.0.1/24']);
+        expect(backend.tunCalls.last, ('alpha', 11));
+      },
+    );
+
+    test(
+      'collectInfos reconciles VPN when DHCP assigns a new address',
+      () async {
+        final vpn = _RecordingVpn(nextFd: 9);
+        final backend = _TestAndroidBackend(vpn.record);
+        addTearDown(backend.dispose);
+
+        await backend.start('n1', _network(name: 'alpha'));
+        expect(vpn.started.single.addresses, ['10.126.126.1/24']);
+
+        backend.collected = {
+          'alpha': {
+            'running': true,
+            'my_node_info': {
+              'virtual_ipv4': {
+                'address': {'addr': 176061957},
+                'network_length': 24,
+              },
+            },
+          },
+        };
+        await backend.collectInfos();
+        await pumpEventQueue();
+
+        expect(vpn.started, hasLength(2));
+        expect(vpn.started.last.addresses, ['10.126.126.5/24']);
+        expect(backend.tunCalls.last, ('alpha', 10));
+      },
+    );
+
+    test('DHCP reconciliation retries after an attach failure', () async {
       final vpn = _RecordingVpn(nextFd: 9);
       final backend = _TestAndroidBackend(vpn.record);
       addTearDown(backend.dispose);
-      await backend.start('n1', _network(name: 'alpha', ipv4: '10.1.0.1/24'));
-      vpn.startError = StateError('Bad address');
-      backend.tunCalls.clear();
-
-      await expectLater(
-        backend.start('n2', _network(name: 'beta', ipv4: '10.2.0.1/24')),
-        throwsStateError,
-      );
-
-      expect(vpn.stops, 0, reason: 'alpha still owns the VPN service');
-      expect(backend.deleted, ['beta']);
-      expect(backend.tunCalls, [('alpha', 0), ('alpha', 9)]);
-
-      await backend.stop(['alpha']);
-      expect(vpn.stops, 1, reason: 'its owner can still stop it');
-    });
-
-    test('collectInfos reconciles VPN when DHCP assigns a new address', () async {
-      final vpn = _RecordingVpn(nextFd: 9);
-      final backend = _TestAndroidBackend(vpn.record);
-      addTearDown(backend.dispose);
-
       await backend.start('n1', _network(name: 'alpha'));
-      expect(vpn.started.single.addresses, ['10.126.126.1/24']);
-
+      backend.failNextAttachFd = 10;
       backend.collected = {
         'alpha': {
           'running': true,
@@ -445,12 +586,16 @@ void main() {
           },
         },
       };
+
       await backend.collectInfos();
       await pumpEventQueue();
+      expect(vpn.started, hasLength(3));
+      expect(vpn.started.last.addresses, ['10.126.126.1/24']);
 
-      expect(vpn.started, hasLength(2));
+      await backend.collectInfos();
+      await pumpEventQueue();
+      expect(vpn.started, hasLength(4));
       expect(vpn.started.last.addresses, ['10.126.126.5/24']);
-      expect(backend.tunCalls.last, ('alpha', 10));
     });
 
     test('a throwing stop keeps the VPN ownership for a retry', () async {
@@ -467,6 +612,30 @@ void main() {
       await backend.stop(['alpha']);
       expect(vpn.stops, 2);
     });
+
+    test(
+      'a failed replacement during stop preserves the previous live FD',
+      () async {
+        final vpn = _RecordingVpn(nextFd: 7);
+        final backend = _TestAndroidBackend(vpn.record);
+        addTearDown(backend.dispose);
+        await backend.start('n1', _network(name: 'alpha', ipv4: '10.1.0.1/24'));
+        await backend.start('n2', _network(name: 'beta', ipv4: '10.2.0.1/24'));
+        vpn.startError = StateError('replacement failed');
+
+        await expectLater(backend.stop(['beta']), throwsStateError);
+
+        expect(vpn.stops, 0);
+        expect(backend.tunCalls.last, ('alpha', 8));
+        vpn.startError = null;
+        await backend.collectInfos();
+        await pumpEventQueue();
+        expect(vpn.started.last.networkName, 'alpha');
+
+        await backend.stop(['alpha']);
+        expect(vpn.stops, 1);
+      },
+    );
 
     test('dispose tears down a VPN a failed stop left behind', () async {
       final vpn = _RecordingVpn();

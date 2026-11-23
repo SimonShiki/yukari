@@ -2,22 +2,18 @@ part of 'network_editor_controller.dart';
 
 /// Magic DNS domain, static zones, and records edited in place.
 extension NetworkEditorDns on NetworkEditorController {
-  static String _zoneKey(String origin) {
-    var normalized = origin.trim().toLowerCase();
-    while (normalized.endsWith('.')) {
-      normalized = normalized.substring(0, normalized.length - 1);
-    }
-    return normalized;
-  }
-
   /// Sets the Magic DNS root domain and keeps legacy `flags.dnsZone` synced.
   void setDnsDomain(String domain) {
     final trimmed = domain.trim();
     update((n) {
       n.flags.dnsZone = trimmed;
       if (n.dns != null) {
-        n.dns!.domain = trimmed;
-      } else if (trimmed != 'et.net.') {
+        if (isDefaultDnsDomain(trimmed) && n.dns!.zones.isEmpty) {
+          n.dns = null;
+        } else {
+          n.dns!.domain = isDefaultDnsDomain(trimmed) ? null : trimmed;
+        }
+      } else if (!isDefaultDnsDomain(trimmed)) {
         n.dns = DnsConfig(domain: trimmed);
       }
     });
@@ -25,14 +21,18 @@ extension NetworkEditorDns on NetworkEditorController {
 
   /// Adds [zone], or replaces the zone stored under [previousOrigin].
   void setDnsZone(DnsZone zone, {String? previousOrigin}) {
-    final key = _zoneKey(previousOrigin ?? zone.origin);
+    final key = normalizeDnsName(previousOrigin ?? zone.origin);
     update((n) {
       final legacy = n.flags.dnsZone.trim();
       final dns = n.dns ??= DnsConfig(
-        domain: legacy.isNotEmpty && legacy != 'et.net.' ? legacy : null,
+        domain: legacy.isNotEmpty && !isDefaultDnsDomain(legacy)
+            ? legacy
+            : null,
       );
       final zones = [...dns.zones];
-      final index = zones.indexWhere((existing) => _zoneKey(existing.origin) == key);
+      final index = zones.indexWhere(
+        (existing) => normalizeDnsName(existing.origin) == key,
+      );
       if (index < 0) {
         zones.add(zone);
       } else {
@@ -45,17 +45,17 @@ extension NetworkEditorDns on NetworkEditorController {
 
   /// Removes the static DNS zone matching [origin].
   void removeDnsZone(String origin) {
-    final key = _zoneKey(origin);
+    final key = normalizeDnsName(origin);
     update((n) {
       final dns = n.dns;
       if (dns == null) return;
       dns.zones = [
         for (final zone in dns.zones)
-          if (_zoneKey(zone.origin) != key) zone,
+          if (normalizeDnsName(zone.origin) != key) zone,
       ];
       final domain = dns.domain?.trim();
       if (dns.zones.isEmpty &&
-          (domain == null || domain.isEmpty || domain == 'et.net.')) {
+          (domain == null || domain.isEmpty || isDefaultDnsDomain(domain))) {
         n.dns = null;
       }
     });
@@ -64,12 +64,12 @@ extension NetworkEditorDns on NetworkEditorController {
 
   /// Adds [record] to [zoneOrigin], or replaces the record at [index].
   void setDnsRecord(String zoneOrigin, DnsRecord record, {int? index}) {
-    final key = _zoneKey(zoneOrigin);
+    final key = normalizeDnsName(zoneOrigin);
     update((n) {
       final dns = n.dns;
       if (dns == null) return;
       final zoneIndex = dns.zones.indexWhere(
-        (existing) => _zoneKey(existing.origin) == key,
+        (existing) => normalizeDnsName(existing.origin) == key,
       );
       if (zoneIndex < 0) return;
       final zone = dns.zones[zoneIndex];
@@ -86,12 +86,12 @@ extension NetworkEditorDns on NetworkEditorController {
 
   /// Removes the record at [index] from [zoneOrigin].
   void removeDnsRecord(String zoneOrigin, int index) {
-    final key = _zoneKey(zoneOrigin);
+    final key = normalizeDnsName(zoneOrigin);
     update((n) {
       final dns = n.dns;
       if (dns == null) return;
       final zoneIndex = dns.zones.indexWhere(
-        (existing) => _zoneKey(existing.origin) == key,
+        (existing) => normalizeDnsName(existing.origin) == key,
       );
       if (zoneIndex < 0) return;
       final zone = dns.zones[zoneIndex];
@@ -103,6 +103,7 @@ extension NetworkEditorDns on NetworkEditorController {
   }
 
   void _syncDnsZones() {
+    if (_disposed) return;
     dnsZones.value = List.unmodifiable(working.peek()?.dns?.zones ?? const []);
   }
 }

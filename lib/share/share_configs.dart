@@ -1,11 +1,10 @@
 import 'package:yukari_core/models/network.dart';
+import 'package:yukari_core/models/network_components.dart';
 import 'package:yukari_core/models/network_flags.dart';
+import 'package:yukari_core/utils/dns_name.dart';
 
 import '../utils/validator.dart';
 import 'share_document.dart';
-
-/// The zone a network runs Magic DNS under until the user changes it.
-final String _defaultDnsZone = NetworkFlags().dnsZone;
 
 /// The non-essential config of a shared network: how it runs, not who it is.
 ///
@@ -86,7 +85,12 @@ void applyConfigs(Network network, SharedConfigs configs) {
     ..acceptDns = configs.acceptDns;
   if (configs.dnsZone case final zone?) {
     network.flags.dnsZone = zone;
-    if (network.dns != null) network.dns!.domain = zone;
+    if (isDefaultDnsDomain(zone) && (network.dns?.zones.isEmpty ?? true)) {
+      network.dns = null;
+    } else {
+      final dns = network.dns ??= DnsConfig();
+      dns.domain = zone;
+    }
   }
 }
 
@@ -94,7 +98,7 @@ void applyConfigs(Network network, SharedConfigs configs) {
 /// the receiver would refuse.
 String? _zoneToShare(String zone) {
   final text = zone.trim();
-  if (text == _defaultDnsZone || !_shareableZone(text)) return null;
+  if (isDefaultDnsDomain(text) || !_shareableZone(text)) return null;
   return text;
 }
 

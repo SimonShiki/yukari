@@ -117,20 +117,12 @@ final class LogEntry {
   static String text(Object? value, {String none = 'none'}) => switch (value) {
     null => none,
     {'url': final Object url} => '$url',
-    {'address': {'addr': _}} => _inetText(Peer.ipv4FromInet(value), value),
-    {'address': {'part1': _}} => _inetText(Peer.ipv6FromInet(value), value),
+    {'address': {'addr': _}} => Peer.ipv4CidrFromInet(value) ?? '$value',
+    {'address': {'part1': _}} => Peer.ipv6CidrFromInet(value) ?? '$value',
     List<Object?> list when list.isEmpty => none,
     List<Object?> list => list.map((item) => text(item, none: none)).join(', '),
     _ => '$value',
   };
-
-  static String _inetText(String? host, Object value) {
-    if (host == null) return '$value';
-    if (value case {'network_length': final int len}) {
-      return '$host/$len';
-    }
-    return host;
-  }
 
   static Iterable<(String, String)> _flatten(String path, Object? value) sync* {
     switch (value) {
