@@ -61,7 +61,9 @@ final class MagicDnsAuto implements MagicDnsSetup {
 
   @override
   bool appliesTo(Network network) =>
-      system.configurable && magicDnsRequested(network.flags);
+      system.configurable &&
+      !system.automatic &&
+      magicDnsRequested(network.flags);
 
   @override
   Future<String?> start(String networkId, Network network) async {

@@ -12,9 +12,15 @@ void main() {
       final command = FakeSystemCommand(
         runHandler: linuxHost(configured: () => true),
       );
+      final system = linuxSystem(command);
 
-      final probe = await linuxSystem(command)
-          .probe(zone: 'et.net.', interfaceName: '', address: address);
+      expect(system.automatic, isTrue);
+      expect(system.configurable, isTrue);
+      final probe = await system.probe(
+        zone: 'et.net.',
+        interfaceName: '',
+        address: address,
+      );
 
       expect(probe.state, MagicDnsState.configured);
       expect(probe.interface, 'et_12_xoih');
@@ -101,7 +107,7 @@ void main() {
   group('Linux apply and reset', () {
     const address = '10.126.126.2/24';
 
-    test('apply authors one elevated shell command for both steps', () async {
+    test('apply authors one elevated shell command for all steps', () async {
       final command = FakeSystemCommand(runHandler: linuxHost());
 
       await linuxSystem(command)
@@ -117,6 +123,14 @@ void main() {
       expect(
         arguments.last,
         contains("resolvectl domain 'et_12_xoih' '~et.net'"),
+      );
+      expect(
+        arguments.last,
+        contains("resolvectl dnsovertls 'et_12_xoih' no"),
+      );
+      expect(
+        arguments.last,
+        contains("resolvectl dnssec 'et_12_xoih' no"),
       );
     });
 
@@ -203,11 +217,11 @@ void main() {
   });
 
   group('Windows', () {
-    test('Windows configures its own DNS, and the probe only reads', () async {
+    test('Windows configures its own NRPT DNS, and the probe only reads', () async {
       final command = FakeSystemCommand(
         runHandler: (executable, arguments) => ok(
-          'Ethernet adapter EasyTier:\n'
-          '   DNS Servers . . . . . . . . . . . : 100.100.100.101\n',
+          'et.net=100.100.100.101\n'
+          '.et.net=100.100.100.101\n',
         ),
       );
       final system = windowsSystem(command);
@@ -219,18 +233,43 @@ void main() {
       expect(probe.state, MagicDnsState.configured);
       expect(probe.interface, isNull);
       expect(command.elevated, isEmpty);
-      expect(command.runs.single.$1, 'ipconfig');
+      expect(command.runs.single.$1, 'powershell.exe');
     });
 
-    test('an ipconfig without the server reports missing', () async {
+    test('matches combined rules and normalizes case and trailing dots', () async {
       final command = FakeSystemCommand(
-        runHandler: (_, _) => ok('DNS Servers: 8.8.8.8'),
+        runHandler: (_, _) => ok('ET.NET.,.ET.NET.=8.8.8.8; 100.100.100.101\n'),
       );
 
       final probe = await windowsSystem(command)
           .probe(zone: 'et.net.', interfaceName: '');
 
+      expect(probe.state, MagicDnsState.configured);
+    });
+
+    test('reports missing when NRPT output is empty or non-matching', () async {
+      for (final result in [
+        ok(''),
+        ok('.et.net=8.8.8.8\n'),
+        ok('.other.net=100.100.100.101\n'),
+        ok('et.net=100.100.100.101\n'),
+        failed(),
+      ]) {
+        final command = FakeSystemCommand(runHandler: (_, _) => result);
+        final probe = await windowsSystem(command)
+            .probe(zone: 'et.net.', interfaceName: '');
+        expect(probe.state, MagicDnsState.missing);
+      }
+    });
+
+    test('fails closed without invoking PowerShell on invalid zones', () async {
+      final command = FakeSystemCommand();
+
+      final probe = await windowsSystem(command)
+          .probe(zone: 'bad zone', interfaceName: '');
+
       expect(probe.state, MagicDnsState.missing);
+      expect(command.runs, isEmpty);
     });
   });
 
@@ -261,6 +300,8 @@ void main() {
       expect(system.manualCommands(zone: 'et.net.', interfaceName: 'et_12'), [
         'sudo resolvectl dns et_12 100.100.100.101',
         'sudo resolvectl domain et_12 ~et.net',
+        'sudo resolvectl dnsovertls et_12 no',
+        'sudo resolvectl dnssec et_12 no',
       ]);
       expect(
         system.manualCommands(zone: 'et.net.', interfaceName: ''),
@@ -277,12 +318,15 @@ void main() {
       ]);
     });
 
-    test('gives Windows a direct query to test the server', () {
+    test('gives Windows a direct query and NRPT command to test the server', () {
       final system = windowsSystem(FakeSystemCommand());
 
       expect(
         system.manualCommands(zone: 'et.net.', interfaceName: ''),
-        contains('nslookup <hostname>.et.net 100.100.100.101'),
+        [
+          'nslookup <hostname>.et.net 100.100.100.101',
+          'Get-DnsClientNrptPolicy -Effective',
+        ],
       );
     });
   });

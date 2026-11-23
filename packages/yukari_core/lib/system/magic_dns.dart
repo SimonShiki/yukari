@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 
 import '../models/models.dart';
@@ -17,11 +18,12 @@ const magicDnsDefaultZone = 'et.net.';
 
 /// The system DNS side of EasyTier Magic DNS.
 ///
-/// Windows lets EasyTier set the DNS servers of its own interface, so it is
-/// only read here. Linux has no such setup in EasyTier and is configured
-/// through systemd-resolved's `resolvectl`, with administrator rights. The
-/// Android root service redirects the zone's own lookups into the tunnel
-/// instead; see `MagicDnsAndroid`.
+/// Windows lets EasyTier set NRPT rules via `DnsPolicyConfig`, and Linux lets
+/// EasyTier configure `systemd-resolved` over D-Bus; both are read here, with
+/// Linux keeping an elevated `resolvectl` fallback when D-Bus setup is not
+/// available (e.g. unprivileged in-app runs). The Android root service
+/// redirects the zone's own lookups into the tunnel instead; see
+/// `MagicDnsAndroid`.
 final class MagicDnsSystem {
   MagicDnsSystem({MagicDnsPlatform? platform, SystemCommand? command})
     : platform = platform ?? _runningPlatform(),
@@ -32,10 +34,12 @@ final class MagicDnsSystem {
   final SystemCommand _command;
 
   /// Whether EasyTier configures this platform's system DNS itself.
-  bool get automatic => platform == MagicDnsPlatform.windows;
+  bool get automatic =>
+      platform == MagicDnsPlatform.windows ||
+      platform == MagicDnsPlatform.linux;
 
-  /// Whether this process configures this platform's system DNS: the app on
-  /// Linux, the root service on Android.
+  /// Whether this process configures this platform's system DNS: the manual
+  /// fallback on Linux, and the root service on Android.
   bool get configurable =>
       platform == MagicDnsPlatform.linux ||
       platform == MagicDnsPlatform.android;
@@ -60,7 +64,9 @@ final class MagicDnsSystem {
     if (!supported) {
       return (state: MagicDnsState.unsupported, interface: null);
     }
-    if (automatic) return _probeWindows();
+    if (platform == MagicDnsPlatform.windows) {
+      return _probeWindows(zone: zone);
+    }
     if (platform == MagicDnsPlatform.android) {
       return _probeAndroid(
         zone: zone,
@@ -117,7 +123,9 @@ final class MagicDnsSystem {
     await _command.runElevated('sh', [
       '-c',
       'resolvectl dns ${_quote(name)} $magicDnsServer && '
-          'resolvectl domain ${_quote(name)} ${_quote('~$base')}',
+          'resolvectl domain ${_quote(name)} ${_quote('~$base')} && '
+          'resolvectl dnsovertls ${_quote(name)} no && '
+          'resolvectl dnssec ${_quote(name)} no',
     ]);
   }
 
@@ -131,15 +139,51 @@ final class MagicDnsSystem {
     await _command.runElevated('resolvectl', ['revert', name]);
   }
 
-  /// Windows lists every interface's DNS servers in `ipconfig /all`, which
-  /// needs no elevation; EasyTier writes their own, so nothing is written
-  /// here.
-  Future<MagicDnsProbe> _probeWindows() async {
-    final ipconfig = await _try('ipconfig', ['/all']);
-    final configured =
-        ipconfig != null &&
-        ipconfig.exitCode == 0 &&
-        ipconfig.stdout.contains(magicDnsServer);
+  static const _windowsNrptQuery =
+      r'Get-DnsClientNrptPolicy -Effective | '
+      r'ForEach-Object { ($_.Namespace -join ",") + "=" + ($_.NameServers -join ";") }';
+
+  /// Windows routes Magic DNS zones through NRPT policies via PowerShell,
+  /// which needs no elevation to read; EasyTier writes its own, so nothing is
+  /// written here.
+  Future<MagicDnsProbe> _probeWindows({required String zone}) async {
+    final base = magicDnsZoneBase(zone).toLowerCase();
+    if (!_zoneName.hasMatch(base)) {
+      return (state: MagicDnsState.missing, interface: null);
+    }
+    final nrpt = await _try('powershell.exe', [
+      '-NoProfile',
+      '-NonInteractive',
+      '-Command',
+      _windowsNrptQuery,
+    ]);
+    var configured = false;
+    if (nrpt != null && nrpt.exitCode == 0) {
+      final expectedSuffix = '.$base';
+      for (final line in LineSplitter.split(nrpt.stdout)) {
+        final sep = line.indexOf('=');
+        if (sep < 0) continue;
+        final namespaces = line
+            .substring(0, sep)
+            .split(',')
+            .map((entry) {
+              var trimmed = entry.trim().toLowerCase();
+              while (trimmed.endsWith('.')) {
+                trimmed = trimmed.substring(0, trimmed.length - 1);
+              }
+              return trimmed;
+            });
+        final servers = line
+            .substring(sep + 1)
+            .split(';')
+            .map((entry) => entry.trim());
+        if (servers.contains(magicDnsServer) &&
+            namespaces.contains(expectedSuffix)) {
+          configured = true;
+          break;
+        }
+      }
+    }
     return (
       state: configured ? MagicDnsState.configured : MagicDnsState.missing,
       interface: null,

@@ -18,16 +18,18 @@ extension MagicDnsManual on MagicDnsSystem {
     // itself: the app has no command to offer.
     if (platform == MagicDnsPlatform.android) return const [];
     final base = magicDnsZoneBase(zone);
-    if (automatic) {
+    if (platform == MagicDnsPlatform.windows) {
       return [
         'nslookup ${name ?? '<hostname>.$base'} $magicDnsServer',
-        'ipconfig /all',
+        'Get-DnsClientNrptPolicy -Effective',
       ];
     }
     final tun = interfaceName.isEmpty ? '<easytier-tun>' : interfaceName;
     return [
       'sudo resolvectl dns $tun $magicDnsServer',
       'sudo resolvectl domain $tun ~$base',
+      'sudo resolvectl dnsovertls $tun no',
+      'sudo resolvectl dnssec $tun no',
     ];
   }
 
