@@ -12,44 +12,41 @@ Network parseEasyTierConfig(String tomlContent) {
 
   final network = Network();
 
-  if (config['hostname'] is String) {
-    network.hostname = config['hostname'] as String;
+  if (config['hostname'] case final String hostname) {
+    network.hostname = hostname;
   }
 
-  if (config['network_identity'] is Map) {
-    final identity = config['network_identity'] as Map;
-    if (identity['network_name'] is String) {
-      network.networkName = identity['network_name'] as String;
+  if (config['network_identity'] case final Map<dynamic, dynamic> identity) {
+    if (identity['network_name'] case final String name) {
+      network.networkName = name;
     }
-    if (identity['network_secret'] is String) {
-      network.networkSecret = identity['network_secret'] as String;
+    if (identity['network_secret'] case final String secret) {
+      network.networkSecret = secret;
     }
   }
 
-  if (config['netns'] is String) {
-    network.netNamespace = config['netns'] as String;
+  if (config['netns'] case final String netns) {
+    network.netNamespace = netns;
   }
 
-  if (config['ipv4'] is String) {
-    network.ipv4 = config['ipv4'] as String;
+  if (config['ipv4'] case final String ipv4) {
+    network.ipv4 = ipv4;
   }
 
-  if (config['ipv6'] is String) {
-    network.ipv6 = config['ipv6'] as String;
+  if (config['ipv6'] case final String ipv6) {
+    network.ipv6 = ipv6;
   }
 
-  if (config['ipv6_public_addr_provider'] is bool) {
-    network.ipv6PublicAddressProvider =
-        config['ipv6_public_addr_provider'] as bool;
+  if (config['ipv6_public_addr_provider'] case final bool provider) {
+    network.ipv6PublicAddressProvider = provider;
   }
 
-  if (config['ipv6_public_addr_auto'] is bool) {
-    network.ipv6PublicAddressAuto = config['ipv6_public_addr_auto'] as bool;
+  if (config['ipv6_public_addr_auto'] case final bool auto) {
+    network.ipv6PublicAddressAuto = auto;
   }
 
-  if (config['ipv6_public_addr_prefix'] is String) {
-    network.ipv6PublicAddressPrefix =
-        config['ipv6_public_addr_prefix'] as String;
+  if (config['ipv6_public_addr_prefix'] case final String prefix) {
+    network.ipv6PublicAddressPrefix = prefix;
   }
 
   final dhcp = config['dhcp'];
@@ -80,104 +77,90 @@ Network parseEasyTierConfig(String tomlContent) {
     network.dns = _parseDns(rawDns);
   }
 
-  if (config['listeners'] is List) {
-    network.listeners = (config['listeners'] as List)
-        .map((e) => Uri.parse(e.toString()))
-        .toList();
+  if (config['listeners'] case final List<dynamic> listeners) {
+    network.listeners = [
+      for (final item in listeners) Uri.parse(item.toString()),
+    ];
   }
 
-  if (config['mapped_listeners'] is List) {
-    network.mappedListeners = (config['mapped_listeners'] as List)
-        .map((e) => Uri.parse(e.toString()))
-        .toList();
+  if (config['mapped_listeners'] case final List<dynamic> mappedListeners) {
+    network.mappedListeners = [
+      for (final item in mappedListeners) Uri.parse(item.toString()),
+    ];
   }
 
-  if (config['exit_nodes'] is List) {
-    network.exitNodes = (config['exit_nodes'] as List)
-        .map((e) => e.toString())
-        .toList();
+  if (config['exit_nodes'] case final List<dynamic> exitNodes) {
+    network.exitNodes = _stringList(exitNodes);
   }
 
-  if (config['peer'] is List) {
-    network.nodes = _parsePeers(config['peer'] as List);
+  if (config['peer'] case final List<dynamic> peers) {
+    network.nodes = _parsePeers(peers);
   }
 
-  if (config['proxy_network'] is List) {
-    network.proxyNetworks = (config['proxy_network'] as List)
-        .map((e) => _parseProxyNetwork(e as Map))
-        .toList();
+  if (config['proxy_network'] case final List<dynamic> proxies) {
+    network.proxyNetworks = [
+      for (final item in proxies) _parseProxyNetwork(item as Map),
+    ];
   }
 
-  if (config['routes'] is List) {
-    network.routes = (config['routes'] as List)
-        .map((e) => e.toString())
-        .toList();
+  if (config['routes'] case final List<dynamic> routes) {
+    network.routes = _stringList(routes);
   }
 
-  if (config['socks5_proxy'] is String) {
-    network.socks5Proxy = Uri.parse(config['socks5_proxy'] as String);
+  if (config['socks5_proxy'] case final String proxy) {
+    network.socks5Proxy = Uri.parse(proxy);
   }
 
-  if (config['port_forward'] is List) {
-    network.portForwards = (config['port_forward'] as List)
-        .map((e) => _parsePortForward(e as Map))
-        .toList();
+  if (config['port_forward'] case final List<dynamic> forwards) {
+    network.portForwards = [
+      for (final item in forwards) _parsePortForward(item as Map),
+    ];
   }
 
-  if (config['vpn_portal_config'] is Map) {
-    network.vpnPortal = _parseVpnPortal(config['vpn_portal_config'] as Map);
+  if (config['vpn_portal_config'] case final Map<dynamic, dynamic> portal) {
+    network.vpnPortal = _parseVpnPortal(portal);
   }
 
-  if (config['secure_mode'] is Map) {
-    network.secureMode = _parseSecureMode(config['secure_mode'] as Map);
+  if (config['secure_mode'] case final Map<dynamic, dynamic> secureMode) {
+    network.secureMode = _parseSecureMode(secureMode);
   }
 
-  if (config['acl'] is Map) {
-    network.acl = Map<String, Object?>.from(config['acl'] as Map);
+  if (config['acl'] case final Map<dynamic, dynamic> acl) {
+    network.acl = Map<String, Object?>.from(acl);
   }
 
-  if (config['tcp_whitelist'] is List) {
-    network.tcpWhitelist = (config['tcp_whitelist'] as List)
-        .map((e) => e.toString())
-        .toList();
+  if (config['tcp_whitelist'] case final List<dynamic> whitelist) {
+    network.tcpWhitelist = _stringList(whitelist);
   }
 
-  if (config['udp_whitelist'] is List) {
-    network.udpWhitelist = (config['udp_whitelist'] as List)
-        .map((e) => e.toString())
-        .toList();
+  if (config['udp_whitelist'] case final List<dynamic> whitelist) {
+    network.udpWhitelist = _stringList(whitelist);
   }
 
-  if (config['stun_servers'] is List) {
-    network.stunServers = (config['stun_servers'] as List)
-        .map((e) => e.toString())
-        .toList();
+  if (config['stun_servers'] case final List<dynamic> servers) {
+    network.stunServers = _stringList(servers);
   }
 
-  if (config['tcp_stun_servers'] is List) {
-    network.tcpStunServers = (config['tcp_stun_servers'] as List)
-        .map((e) => e.toString())
-        .toList();
+  if (config['tcp_stun_servers'] case final List<dynamic> servers) {
+    network.tcpStunServers = _stringList(servers);
   }
 
-  if (config['stun_servers_v6'] is List) {
-    network.stunServersV6 = (config['stun_servers_v6'] as List)
-        .map((e) => e.toString())
-        .toList();
+  if (config['stun_servers_v6'] case final List<dynamic> servers) {
+    network.stunServersV6 = _stringList(servers);
   }
 
-  if (config['credential_file'] is String) {
-    network.credentialFile = config['credential_file'] as String;
+  if (config['credential_file'] case final String credentialFile) {
+    network.credentialFile = credentialFile;
   }
 
-  if (config['managed_credentials'] is List) {
-    network.managedCredentials = (config['managed_credentials'] as List)
-        .map((e) => _parseManagedCredential(e as Map))
-        .toList();
+  if (config['managed_credentials'] case final List<dynamic> credentials) {
+    network.managedCredentials = [
+      for (final item in credentials) _parseManagedCredential(item as Map),
+    ];
   }
 
-  if (config['flags'] is Map) {
-    final flags = _TrackingMap(config['flags'] as Map);
+  if (config['flags'] case final Map<dynamic, dynamic> rawFlags) {
+    final flags = _TrackingMap(rawFlags);
     network.flags = _parseFlags(flags);
     network.additionalFlags = flags.unread;
   }
@@ -245,12 +228,13 @@ NodeProtocol? _parseNodeProtocol(String scheme) =>
       _ => null,
     };
 
+List<String> _stringList(Object? value) =>
+    value is List ? [for (final item in value) item.toString()] : [];
+
 ProxyNetwork _parseProxyNetwork(Map<dynamic, dynamic> data) => ProxyNetwork(
   cidr: data['cidr'].toString(),
   mappedCidr: data['mapped_cidr']?.toString(),
-  allow: data['allow'] is List
-      ? (data['allow'] as List).map((e) => e.toString()).toList()
-      : [],
+  allow: _stringList(data['allow']),
 );
 
 PortForward _parsePortForward(Map<dynamic, dynamic> data) => PortForward(
@@ -264,9 +248,10 @@ VpnPortal _parseVpnPortal(Map<dynamic, dynamic> data) => VpnPortal(
   wireguardListen: data['wireguard_listen'].toString(),
   wireguardPrivateKey: data['wireguard_private_key']?.toString(),
   clients: data['clients'] is List
-      ? (data['clients'] as List)
-            .map((e) => _parseVpnPortalClient(e as Map<dynamic, dynamic>))
-            .toList()
+      ? [
+          for (final item in data['clients'] as List)
+            _parseVpnPortalClient(item as Map<dynamic, dynamic>),
+        ]
       : [],
 );
 
@@ -274,9 +259,7 @@ VpnPortalClient _parseVpnPortalClient(Map<dynamic, dynamic> data) =>
     VpnPortalClient(
       name: data['name'].toString(),
       virtualIp: data['virtual_ip'].toString(),
-      groups: data['groups'] is List
-          ? (data['groups'] as List).map((e) => e.toString()).toList()
-          : [],
+      groups: _stringList(data['groups']),
     );
 
 SecureMode _parseSecureMode(Map<dynamic, dynamic> data) => SecureMode(
@@ -290,15 +273,9 @@ ManagedCredential _parseManagedCredential(Map<dynamic, dynamic> data) =>
       id: data['credential_id'].toString(),
       secret: data['credential_secret'].toString(),
       expiryUnix: data['expiry_unix'] as int,
-      groups: data['groups'] is List
-          ? (data['groups'] as List).map((e) => e.toString()).toList()
-          : [],
+      groups: _stringList(data['groups']),
       allowRelay: data['allow_relay'] as bool? ?? false,
-      allowedProxyCidrs: data['allowed_proxy_cidrs'] is List
-          ? (data['allowed_proxy_cidrs'] as List)
-                .map((e) => e.toString())
-                .toList()
-          : [],
+      allowedProxyCidrs: _stringList(data['allowed_proxy_cidrs']),
       reusable: data['reusable'] as bool? ?? true,
     );
 
@@ -408,11 +385,17 @@ NetworkFlags _parseFlags(_TrackingMap data) {
     };
   }
 
+  int? parseOptionalInt(Object? value) => switch (value) {
+    String text => int.tryParse(text),
+    int number => number,
+    _ => null,
+  };
+
   return NetworkFlags(
-    defaultProtocol: data['default_protocol'] is String
-        ? _parseNodeProtocol(data['default_protocol'] as String) ??
-              NodeProtocol.tcp
-        : NodeProtocol.tcp,
+    defaultProtocol: switch (data['default_protocol']) {
+      String protocol => _parseNodeProtocol(protocol) ?? NodeProtocol.tcp,
+      _ => NodeProtocol.tcp,
+    },
     deviceName: data['dev_name']?.toString() ?? '',
     enableEncryption: data['enable_encryption'] as bool? ?? true,
     enableIpv6: data['enable_ipv6'] as bool? ?? true,
@@ -430,9 +413,10 @@ NetworkFlags _parseFlags(_TrackingMap data) {
     disableTcpHolePunching: data['disable_tcp_hole_punching'] as bool? ?? false,
     disableUdpHolePunching: data['disable_udp_hole_punching'] as bool? ?? false,
     multiThread: data['multi_thread'] as bool? ?? true,
-    compressionAlgorithm: data['data_compress_algo'] is String
-        ? parseCompressionAlgorithm(data['data_compress_algo'] as String)
-        : CompressionAlgorithm.none,
+    compressionAlgorithm: switch (data['data_compress_algo']) {
+      String algorithm => parseCompressionAlgorithm(algorithm),
+      _ => CompressionAlgorithm.none,
+    },
     bindDevice: data['bind_device'] as bool? ?? true,
     enableKcpProxy: data['enable_kcp_proxy'] as bool? ?? false,
     disableKcpInput: data['disable_kcp_input'] as bool? ?? false,
@@ -446,9 +430,7 @@ NetworkFlags _parseFlags(_TrackingMap data) {
     disableRelayQuic: data['disable_relay_quic'] as bool? ?? false,
     enableRelayForeignNetworkQuic:
         data['enable_relay_foreign_network_quic'] as bool? ?? false,
-    foreignRelayBpsLimit: data['foreign_relay_bps_limit'] is String
-        ? int.tryParse(data['foreign_relay_bps_limit'] as String)
-        : data['foreign_relay_bps_limit'] as int?,
+    foreignRelayBpsLimit: parseOptionalInt(data['foreign_relay_bps_limit']),
     multiThreadCount: data['multi_thread_count'] as int? ?? 2,
     encryptionAlgorithm: parseEncryptionAlgorithm(data['encryption_algorithm']),
     disableSymmetricHolePunching:
@@ -456,9 +438,9 @@ NetworkFlags _parseFlags(_TrackingMap data) {
     dnsZone: data['tld_dns_zone']?.toString() ?? defaultDnsDomain,
     quicListenPort: data['quic_listen_port'] as int?,
     needP2p: data['need_p2p'] as bool? ?? false,
-    instanceReceiveBpsLimit: data['instance_recv_bps_limit'] is String
-        ? int.tryParse(data['instance_recv_bps_limit'] as String)
-        : data['instance_recv_bps_limit'] as int?,
+    instanceReceiveBpsLimit: parseOptionalInt(
+      data['instance_recv_bps_limit'],
+    ),
     disableUpnp: data['disable_upnp'] as bool? ?? false,
     disableRelayData: data['disable_relay_data'] as bool? ?? false,
     preferPeerRelay: data['prefer_peer_relay'] as bool? ?? false,

@@ -90,11 +90,11 @@ final class BroadcastCapture {
       _capture,
       buildUdpBroadcastBpf(
         physicalSrcIpv4s: _targets.isEmpty
-            ? []
+            ? const []
             : [for (final item in _physical) item.ipv4],
-        directedBroadcastIpv4s: [
-          for (final item in _physical) item.directedBroadcast,
-        ],
+        directedBroadcastIpv4s: _targets.isEmpty
+            ? const []
+            : [for (final item in _physical) item.directedBroadcast],
         excludedIfindexes: _excluded,
       ),
     );
@@ -177,6 +177,8 @@ final class BroadcastCapture {
     return false;
   }
 
+  static final int _ethIpProtocol = networkUint16(ethIp);
+
   void _drainPackets() {
     for (var i = 0; i < 64; i++) {
       _senderLength.value = sizeOf<SockAddrLl>();
@@ -191,7 +193,7 @@ final class BroadcastCapture {
       if (length < 0) return;
       final source = _sender.ref;
       if (source.packetType != packetOutgoing ||
-          source.protocol != networkUint16(ethIp) ||
+          source.protocol != _ethIpProtocol ||
           _excluded.contains(source.ifindex)) {
         continue;
       }

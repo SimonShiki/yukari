@@ -104,31 +104,41 @@ LinuxIpv4Interface? findRelayTun(
   VirtualRelayTarget? previous,
   bool followsDhcp = false,
 }) {
-  final tuns = interfaces.where(
+  final tuns = [
+    for (final device in interfaces)
+      if (device.isTunnel &&
+          device.flags & _up != 0 &&
+          device.ipv4 != 0 &&
+          !device.isLoopback &&
+          !isIpv4Multicast(device.ipv4) &&
+          device.ipv4 != limitedBroadcast)
+        device,
+  ];
+  LinuxIpv4Interface? uniqueWhere(bool Function(LinuxIpv4Interface) test) {
+    LinuxIpv4Interface? found;
+    for (final device in tuns) {
+      if (!test(device)) continue;
+      if (found != null) return null;
+      found = device;
+    }
+    return found;
+  }
+
+  final exact = uniqueWhere(
     (device) =>
-        device.isTunnel &&
-        device.flags & _up != 0 &&
-        device.ipv4 != 0 &&
-        !device.isLoopback &&
-        !isIpv4Multicast(device.ipv4) &&
-        device.ipv4 != limitedBroadcast,
+        device.name == name && (address == null || device.ipv4 == address),
   );
-  final named = tuns.where((device) => device.name == name);
-  final exact = named.where(
-    (device) => address == null || device.ipv4 == address,
-  );
-  if (exact.length == 1) return exact.single;
+  if (exact != null) return exact;
   if (previous != null && followsDhcp) {
-    final sameLink = tuns.where(
+    final sameLink = uniqueWhere(
       (device) =>
           device.index == previous.tunIfindex &&
           device.name == previous.tunName,
     );
-    if (sameLink.length == 1) return sameLink.single;
+    if (sameLink != null) return sameLink;
   }
   if (address != null) {
-    final owned = tuns.where((device) => device.ipv4 == address);
-    if (owned.length == 1) return owned.single;
+    return uniqueWhere((device) => device.ipv4 == address);
   }
   return null;
 }

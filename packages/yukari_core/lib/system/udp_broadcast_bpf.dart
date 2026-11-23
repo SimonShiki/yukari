@@ -45,7 +45,7 @@ List<SockFilterInstruction> buildUdpBroadcastBpf({
   const maxInstructions = 4096;
   if (base.length + 1 > maxInstructions) return const [_drop];
 
-  final sources = physicalSrcIpv4s.toSet().toList();
+  final sources = physicalSrcIpv4s.toSet();
   final destinations = directedBroadcastIpv4s.toSet();
   if (base.length + 2 * (sources.length + destinations.length) + 15 >
       maxInstructions) {
@@ -56,8 +56,8 @@ List<SockFilterInstruction> buildUdpBroadcastBpf({
   return [
     ...base,
     const SockFilterInstruction(0x20, 0, 0, 12),
-    for (var i = 0; i < sources.length; i++) ...[
-      SockFilterInstruction(0x15, 0, 1, sources[i]),
+    for (final (i, source) in sources.indexed) ...[
+      SockFilterInstruction(0x15, 0, 1, source),
       // JA has a 32-bit displacement, unlike the conditional branches.
       SockFilterInstruction(0x05, 0, 0, 2 * (sources.length - i - 1) + 1),
     ],

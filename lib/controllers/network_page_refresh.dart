@@ -6,12 +6,12 @@ extension NetworkPageRefresh on NetworkPageController {
   void start() {
     addCleanup(
       effect(() {
-        final ids = saved.networks.value.keys.toList();
+        final networks = saved.networks.value;
         final selected = selectedId.peek();
-        if (ids.isEmpty) {
+        if (networks.isEmpty) {
           if (selected != null) selectedId.value = null;
-        } else if (selected == null || !ids.contains(selected)) {
-          selectedId.value = ids.first;
+        } else if (selected == null || !networks.containsKey(selected)) {
+          selectedId.value = networks.keys.first;
         }
       }),
     );
@@ -92,7 +92,8 @@ extension NetworkPageRefresh on NetworkPageController {
 
   NetworkCardData _card(String id, Network network, {required bool settled}) {
     final transition = transitions.value[id];
-    final running = instances.value.containsKey(id);
+    final instance = instances.value[id];
+    final running = instance != null;
     final busy =
         deleting.value.contains(id) ||
         transition == NetworkTransition.starting ||
@@ -103,7 +104,7 @@ extension NetworkPageRefresh on NetworkPageController {
       NetworkTransition.failed => InstanceStatus.failed,
       null =>
         settled
-            ? instances.value[id]?.status ?? InstanceStatus.stopped
+            ? instance?.status ?? InstanceStatus.stopped
             : InstanceStatus.unknown,
     };
     return NetworkCardData(

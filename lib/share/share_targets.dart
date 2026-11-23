@@ -1,4 +1,5 @@
 import 'package:yukari_core/models/bookmark.dart';
+import 'package:yukari_core/models/network.dart';
 
 import '../constants/builtin_bookmarks.dart';
 import '../signals/bookmarks.dart' as saved;
@@ -42,11 +43,42 @@ ShareTarget resolveShareItems(
 }) {
   if (ids.isEmpty) return _unavailable(_missingFor(kind));
 
-  final missing = _missingReason(kind, ids);
-  if (missing != null) return _unavailable(missing);
+  if (kind == ShareKind.network) {
+    final resolved = <Network>[];
+    var selfPeer = false;
+    var configs = false;
+    for (final id in ids) {
+      final network = networks.latestNetwork(id);
+      if (network == null) {
+        return _unavailable(ShareUnavailableReason.networkMissing);
+      }
+      if (network.nodes.isEmpty) {
+        return _unavailable(ShareUnavailableReason.networkWithoutPeers);
+      }
+      resolved.add(network);
+      selfPeer = selfPeer || selfPeerForShare(network) != null;
+      configs = configs || configsOf(network) != null;
+    }
+    return _validated(
+      () => [
+        for (final network in resolved) shareNetwork(network, options: options),
+      ],
+      (selfPeer: selfPeer, configs: configs),
+    );
+  }
+
+  final available = [...builtinBookmarks, ...saved.bookmarks.peek()];
+  final resolved = <Bookmark>[];
+  for (final id in ids) {
+    final bookmark = available.where((item) => item.id == id).firstOrNull;
+    if (bookmark == null) {
+      return _unavailable(ShareUnavailableReason.bookmarkMissing);
+    }
+    resolved.add(bookmark);
+  }
   return _validated(
-    () => [for (final id in ids) _documentFor(kind, id, options)],
-    _extrasFor(kind, ids),
+    () => [for (final bookmark in resolved) shareBookmark(bookmark)],
+    noShareExtras,
   );
 }
 
@@ -66,66 +98,6 @@ ShareUnavailableReason _missingFor(ShareKind kind) => switch (kind) {
 
 ShareTarget _unavailable(ShareUnavailableReason reason) =>
     (documents: const <ShareDocument>[], reason: reason, extras: noShareExtras);
-
-/// Why one of [ids] has nothing to share, or null when every id resolves.
-ShareUnavailableReason? _missingReason(ShareKind kind, List<String> ids) {
-  for (final id in ids) {
-    final reason = switch (kind) {
-      ShareKind.network => _networkReason(id),
-      ShareKind.node =>
-        _bookmarkNamed(id) == null
-            ? ShareUnavailableReason.bookmarkMissing
-            : null,
-    };
-    if (reason != null) return reason;
-  }
-  return null;
-}
-
-ShareUnavailableReason? _networkReason(String id) {
-  final network = networks.latestNetwork(id);
-  if (network == null) return ShareUnavailableReason.networkMissing;
-  if (network.nodes.isEmpty) {
-    return ShareUnavailableReason.networkWithoutPeers;
-  }
-  return null;
-}
-
-/// The extras [ids] can still add: a node share offers none, and a bundle
-/// offers an option when any of its networks can honour it.
-ShareExtras _extrasFor(ShareKind kind, List<String> ids) {
-  if (kind != ShareKind.network) return noShareExtras;
-  var selfPeer = false;
-  var configs = false;
-  for (final id in ids) {
-    final network = networks.latestNetwork(id);
-    if (network == null) continue;
-    selfPeer = selfPeer || selfPeerForShare(network) != null;
-    configs = configs || configsOf(network) != null;
-  }
-  return (selfPeer: selfPeer, configs: configs);
-}
-
-/// The document [id] shares; [_missingReason] has already established that one
-/// exists.
-///
-/// A store that lost the target in between is a [StateError], which
-/// [_validated] reports as unsupported rather than as missing.
-ShareDocument _documentFor(ShareKind kind, String id, ShareOptions options) {
-  if (kind == ShareKind.network) {
-    final network = networks.latestNetwork(id);
-    if (network == null) throw StateError('Share target $id is missing');
-    return shareNetwork(network, options: options);
-  }
-  final bookmark = _bookmarkNamed(id);
-  if (bookmark == null) throw StateError('Share target $id is missing');
-  return shareBookmark(bookmark);
-}
-
-Bookmark? _bookmarkNamed(String id) => [
-  ...builtinBookmarks,
-  ...saved.bookmarks.peek(),
-].where((bookmark) => bookmark.id == id).firstOrNull;
 
 /// The documents [build] makes when they round-trip through the receiver's own
 /// validator, else [ShareUnavailableReason.unsupported].

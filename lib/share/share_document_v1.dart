@@ -34,11 +34,12 @@ List<SharedPeer> _legacyPeer(Object? entry, String field) {
     if (!protocols.contains(protocol)) protocols.add(protocol);
   }
 
+  final publicKey = _sharedText(entry['publicKey'], 'publicKey', _maxKeyLength);
   return [
     for (final protocol in protocols)
       SharedPeer(
         url: Uri(scheme: protocol.name, host: host, port: port, path: path),
-        publicKey: _sharedText(entry['publicKey'], 'publicKey', _maxKeyLength),
+        publicKey: publicKey,
       ),
   ];
 }

@@ -15,6 +15,14 @@ String magicDnsZoneBase(String zone) {
   return normalizeDnsName(zone);
 }
 
+/// The address inside [cidr], such as `10.126.126.2` for `10.126.126.2/24`;
+/// null when [cidr] is not an IP address with an optional prefix.
+InternetAddress? magicDnsIpAddress(String? cidr) {
+  final parts = cidr?.split('/');
+  if (parts == null || parts.length > 2) return null;
+  return InternetAddress.tryParse(parts.first);
+}
+
 /// The IPv4 address inside [cidr], such as `10.126.126.2` for
 /// `10.126.126.2/24`; null when [cidr] is not an IPv4 address with an
 /// optional prefix.
@@ -22,9 +30,7 @@ String magicDnsZoneBase(String zone) {
 /// A network's virtual IPv4 is user-written configuration, so anything that
 /// does not parse never reaches an `ip` command.
 String? magicDnsIpv4Host(String? cidr) {
-  final parts = cidr?.split('/') ?? const <String>[];
-  if (parts.isEmpty || parts.length > 2) return null;
-  final address = InternetAddress.tryParse(parts.first);
+  final address = magicDnsIpAddress(cidr);
   return address?.type == InternetAddressType.IPv4 ? address!.address : null;
 }
 

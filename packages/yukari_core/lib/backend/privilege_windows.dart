@@ -107,7 +107,8 @@ String quoteArgument(String argument) {
   }
   final buffer = StringBuffer('"');
   var backslashes = 0;
-  for (final char in argument.split('')) {
+  for (var i = 0; i < argument.length; i++) {
+    final char = argument[i];
     if (char == r'\') {
       backslashes++;
       continue;

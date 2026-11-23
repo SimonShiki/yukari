@@ -105,12 +105,10 @@ String _serialize(Network network) {
 }
 
 Map<String, Object?>? _dns(Network network) {
-  final domain = network.dns?.domain?.trim();
-  final legacy = network.flags.dnsZone.trim();
-  final explicitDomain = domain != null && domain.isNotEmpty
+  final domain = network.effectiveDnsDomain;
+  final explicitDomain = !isDefaultDnsDomain(domain) ||
+          (network.dns?.domain?.trim().isNotEmpty ?? false)
       ? domain
-      : legacy.isNotEmpty && !isDefaultDnsDomain(legacy)
-      ? legacy
       : null;
   final zones = network.dns?.zones ?? const <DnsZone>[];
   if (explicitDomain == null && zones.isEmpty) return null;

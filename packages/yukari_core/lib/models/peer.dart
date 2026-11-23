@@ -115,7 +115,10 @@ final class Peer {
         _identityTypeNames,
         connection['peer_identity_type'],
       ),
-      latency: stats?['latency_us'] == null ? null : _int(stats?['latency_us']),
+      latency: switch (stats?['latency_us']) {
+        null => null,
+        final value => _int(value),
+      },
       rxBytes: _int(stats?['rx_bytes']),
       txBytes: _int(stats?['tx_bytes']),
       rxPackets: _int(stats?['rx_packets']),
@@ -139,7 +142,7 @@ final class Peer {
   /// Formats an `Ipv4Inet` message, whose address is a big-endian integer.
   static String? ipv4FromInet(Object? inet) {
     if (inet is String && inet.isNotEmpty) {
-      return _validatedCidr(inet, 32)?.split('/').first;
+      return _validatedCidr(inet, 32, includePrefix: false);
     }
     if (inet case {'address': {'addr': final int addr}}) {
       return _ipv4Host(addr);
@@ -167,7 +170,7 @@ final class Peer {
   /// Formats an `Ipv6Inet` message, whose address consists of four 32-bit parts.
   static String? ipv6FromInet(Object? inet) {
     if (inet is String && inet.isNotEmpty) {
-      return _validatedCidr(inet, 128)?.split('/').first;
+      return _validatedCidr(inet, 128, includePrefix: false);
     }
     if (inet case {
       'address': {
@@ -214,7 +217,11 @@ final class Peer {
     return InternetAddress.fromRawAddress(bytes).address;
   }
 
-  static String? _validatedCidr(String value, int maxPrefix) {
+  static String? _validatedCidr(
+    String value,
+    int maxPrefix, {
+    bool includePrefix = true,
+  }) {
     final parts = value.trim().split('/');
     if (parts.length > 2) return null;
     final address = InternetAddress.tryParse(parts.first);
@@ -224,9 +231,8 @@ final class Peer {
     }
     if (parts.length == 1) return address.address;
     final prefix = int.tryParse(parts.last);
-    return prefix != null && prefix >= 0 && prefix <= maxPrefix
-        ? '${address.address}/$prefix'
-        : null;
+    if (prefix == null || prefix < 0 || prefix > maxPrefix) return null;
+    return includePrefix ? '${address.address}/$prefix' : address.address;
   }
 
   // EasyTier serializes protobuf messages with serde: 64-bit integers become

@@ -41,8 +41,7 @@ bool _matchesFilters(BookmarksController controller, Bookmark bookmark) {
     return false;
   }
   if (controller.tags.value.isNotEmpty) {
-    final own = {for (final tag in bookmark.tags) trimmedOrNull(tag)}
-      ..remove(null);
+    final own = {for (final tag in bookmark.tags) ?trimmedOrNull(tag)};
     if (!own.containsAll(controller.tags.value)) return false;
   }
   return bookmarkMatches(bookmark, controller.query.value);

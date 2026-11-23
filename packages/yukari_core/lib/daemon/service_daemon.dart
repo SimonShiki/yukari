@@ -131,16 +131,27 @@ final class ServiceDaemon {
 
   /// Clears relay and DNS state while the TUN devices still exist.
   Future<void> _stop(List<String> names) async {
-    _runningNames.removeWhere((_, name) => names.contains(name));
+    final stopped = <String, String>{};
+    _runningNames.removeWhere((id, name) {
+      if (!names.contains(name)) return false;
+      stopped[id] = name;
+      return true;
+    });
     for (final MapEntry(:key, :value) in _relayStarts.entries.toList()) {
       if (!names.contains(value.name)) continue;
       _relayStarts.remove(key);
       await _stopBroadcastRelays(key);
     }
-    for (final MapEntry(:key, :value) in (await _savedNetworks()).entries) {
-      if (!names.contains(value.networkName)) continue;
+    if (stopped.length < names.toSet().length) {
+      for (final MapEntry(:key, :value) in (await _savedNetworks()).entries) {
+        if (names.contains(value.networkName)) {
+          stopped.putIfAbsent(key, () => value.networkName);
+        }
+      }
+    }
+    for (final MapEntry(:key, :value) in stopped.entries) {
       _dnsStopping.add(key);
-      await _revertDns(key, value.networkName);
+      await _revertDns(key, value);
     }
     await backend.stop(names);
   }

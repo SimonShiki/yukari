@@ -127,21 +127,19 @@ class HomeController with SignalScope {
   // -- NAT card -------------------------------------------------------------
 
   late final Signal<bool> probing = own(false);
-  late final Computed<NatType?> natType = derive(
-    () => _reportedNat() ?? _probeResult.value?.natType,
-  );
-  late final Computed<bool> natReportedByEasytier = derive(
-    () => _reportedNat() != null,
-  );
-
-  /// The NAT type the first running instance reports, or null when none does.
-  NatType? _reportedNat() {
+  late final Computed<NatType?> _reportedNatType = derive(() {
     for (final instance in _running.value) {
       final nat = instance.myself?.natType;
       if (nat != null && nat != NatType.unknown) return nat;
     }
     return null;
-  }
+  });
+  late final Computed<NatType?> natType = derive(
+    () => _reportedNatType.value ?? _probeResult.value?.natType,
+  );
+  late final Computed<bool> natReportedByEasytier = derive(
+    () => _reportedNatType.value != null,
+  );
 
   // -- Traffic card ---------------------------------------------------------
 

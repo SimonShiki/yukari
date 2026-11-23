@@ -11,5 +11,4 @@ String normalizeDnsName(String value) {
   return normalized;
 }
 
-bool isDefaultDnsDomain(String value) =>
-    normalizeDnsName(value) == normalizeDnsName(defaultDnsDomain);
+bool isDefaultDnsDomain(String value) => normalizeDnsName(value) == 'et.net';

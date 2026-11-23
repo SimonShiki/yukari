@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:yukari_core/models/network.dart';
 import 'package:yukari_core/models/network_components.dart';
@@ -43,16 +44,18 @@ String? validateCidr(String value, InternetAddressType type) {
 /// host addresses, as required by EasyTier's DHCP allocator.
 String? validateDhcpIpv4Cidr(String value) {
   if (value.isEmpty) return null;
-  final networkError = validateIpv4Network(value);
-  if (networkError != null) return networkError;
-  final prefix = int.tryParse(value.split('/').last);
-  return prefix != null && prefix <= 30
-      ? null
-      : l10n.value.validationDhcpIpv4Cidr;
+  final prefix = _ipv4NetworkPrefix(value);
+  if (prefix == null) return l10n.value.validationIpv4Network(value);
+  return prefix <= 30 ? null : l10n.value.validationDhcpIpv4Cidr;
 }
 
 /// An IPv6 network such as `fd00::/64`, without host bits.
-String? validateIpv6Network(String value) {
+String? validateIpv6Network(String value) =>
+    _ipv6NetworkPrefix(value) != null
+    ? null
+    : l10n.value.validationIpv6Network(value);
+
+int? _ipv6NetworkPrefix(String value) {
   final parts = value.split('/');
   final address = parts.length == 2 ? InternetAddress.tryParse(parts[0]) : null;
   final prefix = parts.length == 2 ? int.tryParse(parts[1]) : null;
@@ -65,20 +68,17 @@ String? validateIpv6Network(String value) {
       (acc, byte) => (acc << 8) | BigInt.from(byte),
     );
     final shift = 128 - prefix;
-    if ((bits >> shift) << shift == bits) return null;
+    if ((bits >> shift) << shift == bits) return prefix;
   }
-  return l10n.value.validationIpv6Network(value);
+  return null;
 }
 
 /// A DHCPv6 subnet must be an IPv6 network address with prefix `/0` to `/126`.
 String? validateDhcpIpv6Cidr(String value) {
   if (value.isEmpty) return null;
-  final networkError = validateIpv6Network(value);
-  if (networkError != null) return networkError;
-  final prefix = int.tryParse(value.split('/').last);
-  return prefix != null && prefix <= 126
-      ? null
-      : l10n.value.validationDhcpIpv6Cidr;
+  final prefix = _ipv6NetworkPrefix(value);
+  if (prefix == null) return l10n.value.validationIpv6Network(value);
+  return prefix <= 126 ? null : l10n.value.validationDhcpIpv6Cidr;
 }
 
 String? validateIntRange(String value, String label, int min, int max) {
@@ -130,15 +130,14 @@ String? validateDnsOrigin(
 }) {
   final origin = value.trim();
   if (origin.isEmpty) return l10n.value.validationDnsOriginEmpty;
-  final normalized = normalizeDnsName(origin);
-  if (normalized.isEmpty || !isValidDnsZoneText(origin)) {
+  if (!isValidDnsZoneText(origin)) {
     return l10n.value.validationDns;
   }
-  final existing = existingOrigins.toList();
-  if (existing.length >= maxStaticDnsZones) {
+  if (existingOrigins.length >= maxStaticDnsZones) {
     return l10n.value.validationDnsZoneLimit;
   }
-  if (existing.map(normalizeDnsName).contains(normalized)) {
+  final normalized = normalizeDnsName(origin);
+  if (existingOrigins.any((existing) => normalizeDnsName(existing) == normalized)) {
     return l10n.value.validationDnsOriginExists;
   }
   return null;
@@ -195,9 +194,9 @@ String? validateDnsRecordValue(String value, DnsRecordType type) {
 
 bool _validDnsRdata(String value, DnsRecordType type) {
   bool dnsName(String text) => text == '.' || isValidDnsZoneText(text);
-  bool number(String text) {
+  bool number(String text, [int max = 4294967295]) {
     final parsed = int.tryParse(text);
-    return parsed != null && parsed >= 0 && parsed <= 4294967295;
+    return parsed != null && parsed >= 0 && parsed <= max;
   }
 
   bool txtStrings() {
@@ -217,15 +216,10 @@ bool _validDnsRdata(String value, DnsRecordType type) {
     DnsRecordType.ns ||
     DnsRecordType.ptr => dnsName(value),
     DnsRecordType.mx =>
-      fields.length == 2 &&
-          number(fields[0]) &&
-          int.parse(fields[0]) <= 65535 &&
-          dnsName(fields[1]),
+      fields.length == 2 && number(fields[0], 65535) && dnsName(fields[1]),
     DnsRecordType.srv =>
       fields.length == 4 &&
-          fields
-              .take(3)
-              .every((field) => number(field) && int.parse(field) <= 65535) &&
+          fields.take(3).every((field) => number(field, 65535)) &&
           dnsName(fields[3]),
     DnsRecordType.txt => txtStrings(),
     DnsRecordType.soa =>
@@ -302,7 +296,12 @@ String? validateIp(String value) => InternetAddress.tryParse(value) == null
     : null;
 
 /// An IPv4 network such as `10.0.0.0/24`, without host bits.
-String? validateIpv4Network(String value) {
+String? validateIpv4Network(String value) =>
+    _ipv4NetworkPrefix(value) != null
+    ? null
+    : l10n.value.validationIpv4Network(value);
+
+int? _ipv4NetworkPrefix(String value) {
   final parts = value.split('/');
   final address = parts.length == 2 ? InternetAddress.tryParse(parts[0]) : null;
   final prefix = parts.length == 2 ? int.tryParse(parts[1]) : null;
@@ -310,21 +309,24 @@ String? validateIpv4Network(String value) {
       prefix != null &&
       prefix >= 0 &&
       prefix <= 32) {
-    final bits = address!.rawAddress.fold(0, (bits, byte) => bits << 8 | byte);
-    if (bits & ((1 << (32 - prefix)) - 1) == 0) return null;
+    final bits = ByteData.sublistView(address!.rawAddress).getUint32(0);
+    if (bits & ((1 << (32 - prefix)) - 1) == 0) return prefix;
   }
-  return l10n.value.validationIpv4Network(value);
+  return null;
 }
 
 /// `cidr` or `cidr->mapped_cidr` of the same size.
 String? validateProxyNetwork(String value) {
   final proxy = parseProxyNetwork(value);
   final mapped = proxy.mappedCidr;
-  return validateIpv4Network(proxy.cidr) ??
-      (mapped == null ? null : validateIpv4Network(mapped)) ??
-      (mapped == null || mapped.split('/')[1] == proxy.cidr.split('/')[1]
-          ? null
-          : l10n.value.validationMappedNetwork(value));
+  final cidrPrefix = _ipv4NetworkPrefix(proxy.cidr);
+  if (cidrPrefix == null) return l10n.value.validationIpv4Network(proxy.cidr);
+  if (mapped == null) return null;
+  final mappedPrefix = _ipv4NetworkPrefix(mapped);
+  if (mappedPrefix == null) return l10n.value.validationIpv4Network(mapped);
+  return mappedPrefix == cidrPrefix
+      ? null
+      : l10n.value.validationMappedNetwork(value);
 }
 
 /// An IP address with port, e.g. `0.0.0.0:22022` or `[::]:22022`.

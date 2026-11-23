@@ -4,8 +4,8 @@ import 'package:yukari_core/models/network_components.dart';
 
 /// The trimmed, non-empty lines of [text].
 List<String> splitLines(String text) => [
-  for (final line in text.split('\n'))
-    if (line.trim().isNotEmpty) line.trim(),
+  for (final raw in text.split('\n'))
+    if (raw.trim() case final line when line.isNotEmpty) line,
 ];
 
 /// `cidr`, or `cidr->mapped_cidr` for a remapped network.

@@ -81,27 +81,20 @@ final class MagicDnsSystem {
       final link = await _try('ip', ['link', 'show', configuredName]);
       if (link != null && link.exitCode == 0) return configuredName;
     }
-    final host = _magicDnsIpHost(address);
+    final host = magicDnsIpAddress(address);
     if (host == null) return null;
-    final family = host.$1 == InternetAddressType.IPv4 ? '-4' : '-6';
+    final family = host.type == InternetAddressType.IPv4 ? '-4' : '-6';
     final owned = await _try('ip', [
       family,
       '-o',
       'addr',
       'show',
       'to',
-      host.$2,
+      host.address,
     ]);
     if (owned == null || owned.exitCode != 0) return null;
     final name = _link.firstMatch(owned.stdout)?.group(1);
     return name != null && _interface.hasMatch(name) ? name : null;
-  }
-
-  (InternetAddressType, String)? _magicDnsIpHost(String? cidr) {
-    final parts = cidr?.split('/') ?? const <String>[];
-    if (parts.isEmpty || parts.length > 2) return null;
-    final address = InternetAddress.tryParse(parts.first);
-    return address == null ? null : (address.type, address.address);
   }
 
   Future<CommandResult?> _try(String executable, List<String> arguments) async {

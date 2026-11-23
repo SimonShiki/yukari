@@ -1,9 +1,10 @@
 import 'dart:async';
 import 'dart:io';
+import 'dart:typed_data';
 
 import '../backend/privilege.dart';
 import '../models/models.dart';
-import 'magic_dns.dart' show magicDnsIpv4Host;
+import 'magic_dns.dart' show magicDnsIpAddress;
 import 'udp_broadcast_interfaces.dart';
 import 'udp_broadcast_packet.dart';
 import 'udp_broadcast_worker.dart';
@@ -129,9 +130,7 @@ final class UdpBroadcastRelayAuto implements UdpBroadcastRelaySetup {
 }
 
 int? _ipv4(String? address) {
-  final host = magicDnsIpv4Host(address);
-  if (host == null) return null;
-  final parts = InternetAddress.tryParse(host)?.rawAddress;
-  if (parts == null || parts.length != 4) return null;
-  return parts.fold<int>(0, (ip, octet) => (ip << 8) | octet);
+  final parsed = magicDnsIpAddress(address);
+  if (parsed?.type != InternetAddressType.IPv4) return null;
+  return ByteData.sublistView(parsed!.rawAddress).getUint32(0);
 }

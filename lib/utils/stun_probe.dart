@@ -158,6 +158,7 @@ final class _StunSocket {
     final id = Uint8List.fromList([
       for (var i = 0; i < 12; i++) _random.nextInt(256),
     ]);
+    final key = _hex(id);
     final message = BytesBuilder()
       ..add(_uint16(0x0001))
       ..add(_uint16(change == 0 ? 0 : 8))
@@ -171,7 +172,7 @@ final class _StunSocket {
     }
     final bytes = message.takeBytes();
     final reply = Completer<Uint8List>();
-    _pending[_hex(id)] = reply;
+    _pending[key] = reply;
     _socket.send(bytes, server, port);
     final resend = Timer(timeout ~/ 3, () => _socket.send(bytes, server, port));
     try {
@@ -181,7 +182,7 @@ final class _StunSocket {
       return null;
     } finally {
       resend.cancel();
-      _pending.remove(_hex(id));
+      _pending.remove(key);
     }
   }
 
@@ -221,11 +222,8 @@ _Response? _parse(Uint8List bytes, (InternetAddress, int) server) {
   return endpoint == null ? null : _Response(server, endpoint, canChange);
 }
 
-InternetAddress _ipv4(int value) => InternetAddress.fromRawAddress(
-  Uint8List.fromList(
-    [24, 16, 8, 0].map((shift) => value >> shift & 0xff).toList(),
-  ),
-);
+InternetAddress _ipv4(int value) =>
+    InternetAddress.fromRawAddress(_uint32(value));
 
 Uint8List _uint16(int value) =>
     Uint8List(2)..buffer.asByteData().setUint16(0, value);

@@ -106,17 +106,22 @@ AndroidVpnConfig androidVpnRequest(Network network) =>
 
 /// Aggregates [members] into one Android `VpnService` configuration.
 AndroidVpnConfig buildAndroidVpnConfig(Iterable<AndroidVpnMember> members) {
-  final list = members.toList();
   final addresses = <String>{};
   final routes = <String>{};
   final names = <String>[];
   var magicDns = false;
   int? minMtu;
 
-  for (final member in list) {
+  for (final member in members) {
     names.add(member.network.networkName);
-    addresses.addAll(member.effectiveAddresses);
-    routes.addAll(member.claimedRoutes);
+    final memberAddresses = member.effectiveAddresses;
+    addresses.addAll(memberAddresses);
+    for (final address in memberAddresses) {
+      routes.add(ipNetworkCidr(address));
+    }
+    for (final proxy in member.network.proxyNetworks) {
+      routes.add(ipNetworkCidr(proxy.cidr));
+    }
     magicDns |= magicDnsRequested(member.network.flags);
     final mtu = member.network.flags.mtu;
     if (minMtu == null || mtu < minMtu) minMtu = mtu;
@@ -137,11 +142,10 @@ String? findVpnRouteConflict(
   Iterable<AndroidVpnMember> existing,
   AndroidVpnMember candidate,
 ) {
-  final members = existing.toList();
   final candidateRoutes = candidate.claimedRoutes;
   final magicDnsInUse =
       magicDnsRequested(candidate.network.flags) ||
-      members.any((member) => magicDnsRequested(member.network.flags));
+      existing.any((member) => magicDnsRequested(member.network.flags));
 
   if (magicDnsInUse) {
     for (final route in candidateRoutes) {
@@ -150,7 +154,7 @@ String? findVpnRouteConflict(
       }
     }
   }
-  for (final member in members) {
+  for (final member in existing) {
     if (member.network.networkName == candidate.network.networkName) continue;
     final existingRoutes = member.claimedRoutes;
     for (final existingRoute in existingRoutes) {

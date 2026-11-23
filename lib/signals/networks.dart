@@ -49,7 +49,7 @@ Iterable<String> networkNames({String? exceptId}) => {
       entry.value.networkName,
       latestNetwork(entry.key)!.networkName,
     ],
-}.toList();
+};
 
 /// Adds the network as [key].
 ///

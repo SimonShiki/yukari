@@ -134,14 +134,12 @@ final class MagicDnsAuto implements MagicDnsSetup {
     final configured = _configured.remove(networkId);
     if (configured == null) return;
     try {
+      final claimed = {
+        for (final other in _configured.values)
+          for (final otherZone in other.zones) normalizeDnsName(otherZone),
+      };
       for (final zone in configured.zones) {
-        final claimedByOther = _configured.values.any(
-          (other) => other.zones.any(
-            (otherZone) =>
-                normalizeDnsName(otherZone) == normalizeDnsName(zone),
-          ),
-        );
-        if (claimedByOther) continue;
+        if (claimed.contains(normalizeDnsName(zone))) continue;
         await system.reset(interfaceName: configured.interface, zone: zone);
       }
     } catch (_) {
