@@ -310,38 +310,29 @@ void main() {
     expect(backend.starts, 2);
   });
 
-  test('a limited backend takes one TUN network and any no-TUN one', () async {
+  test('the tray starts multiple TUN and no-TUN networks together', () async {
     final tun = Network()..networkName = 'alpha';
     final secondTun = Network()..networkName = 'beta';
     final noTun = (Network()..networkName = 'gamma')..flags.noTun = true;
     await seedWith({'n1': tun, 'n2': secondTun, 'n3': noTun});
-    final backend = FakeBackend(maxTunInstances: 1);
+    final backend = FakeBackend();
     final platform = FakeTrayPlatform();
     await controller(platform, backend: backend).start();
     await pumpEventQueue();
 
-    // n1 already holds the only TUN slot.
     backend.started['n1'] = tun;
     await running.refreshInstances(backend);
     await pumpEventQueue();
     expect(platform.item('network:n1')!.checked, isTrue);
 
     platform.item('network:n2')!.onSelected!();
-    await pumpEventQueue();
-    expect(
-      backend.started.containsKey('n2'),
-      isFalse,
-      reason: 'the one TUN slot is taken',
-    );
-    expect(
-      platform.item('network:n1')!.checked,
-      isTrue,
-      reason: 'the running network is untouched by the refusal',
-    );
+    await eventually(() => platform.item('network:n2')!.checked == true);
+    expect(backend.started.containsKey('n2'), isTrue);
 
     platform.item('network:n3')!.onSelected!();
     await eventually(() => platform.item('network:n3')!.checked == true);
     expect(backend.started.containsKey('n1'), isTrue);
+    expect(backend.started.containsKey('n2'), isTrue);
     expect(backend.started.containsKey('n3'), isTrue);
 
     platform.item('network:n1')!.onSelected!();

@@ -396,6 +396,14 @@
   "homeNoRunningNetwork": "没有正在运行的网络。",
   "homeTrafficTotals": "已接收 {received} · 已发送 {sent}",
   "androidNotificationPeers": "{count} 个节点",
+  "androidNotificationNetworks": "{count} 个网络",
+  "@androidNotificationNetworks": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "homeNoNetworks": "暂无网络",
   "homeCreateNetworkHint": "点击创建网络。",
   "homeStartNetworkHint": "启动网络以连接。",
@@ -531,7 +539,6 @@
   "controllerSaveConfig": "保存 EasyTier 配置文件",
   "controllerFileUnavailable": "无法访问所选文件。",
   "controllerReorderFailed": "无法调整网络顺序，请重试。",
-  "controllerOneNetwork": "一次只能运行一个网络。",
   "logCopyJson": "复制为 JSON",
   "logBackToTop": "回到顶部",
   "validationRange": "{label}必须是 {min} 到 {max} 之间的数字",
@@ -652,14 +659,6 @@
   "@controllerExportFailed": {
     "placeholders": {
       "error": {
-        "type": "String"
-      }
-    }
-  },
-  "controllerNetworkLimit": "一次最多只能运行 {limit} 个网络。",
-  "@controllerNetworkLimit": {
-    "placeholders": {
-      "limit": {
         "type": "String"
       }
     }

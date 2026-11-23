@@ -7,6 +7,7 @@ import android.content.Intent
 import android.net.VpnService
 import android.os.Build
 import android.os.ParcelFileDescriptor
+import android.system.OsConstants
 
 class YukariVpnService : VpnService() {
     companion object {
@@ -20,8 +21,13 @@ class YukariVpnService : VpnService() {
         @JvmStatic
         var onTunFailed: ((String) -> Unit)? = null
 
+        /** Reports when the system revokes VPN permission / replaces the VPN. */
+        @JvmStatic
+        var onVpnRevoked: (() -> Unit)? = null
+
         const val EXTRA_NETWORK_NAME = "network_name"
         const val EXTRA_IPV4_ADDR = "ipv4_addr"
+        const val EXTRA_ADDRESSES = "addresses"
         const val EXTRA_MTU = "mtu"
         const val EXTRA_ROUTES = "routes"
         const val EXTRA_DNS = "dns"
@@ -32,7 +38,11 @@ class YukariVpnService : VpnService() {
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         networkName = intent?.getStringExtra(EXTRA_NETWORK_NAME) ?: "Yukari"
-        val ipv4Addr = intent?.getStringExtra(EXTRA_IPV4_ADDR) ?: "10.144.144.1/24"
+        val addresses = intent?.getStringArrayExtra(EXTRA_ADDRESSES)
+            ?.filter { it.isNotBlank() }
+            ?.toTypedArray()
+            ?.takeIf { it.isNotEmpty() }
+            ?: arrayOf(intent?.getStringExtra(EXTRA_IPV4_ADDR) ?: "10.126.126.1/24")
         val mtu = intent?.getIntExtra(EXTRA_MTU, 1420) ?: 1420
         val routes = intent?.getStringArrayExtra(EXTRA_ROUTES) ?: arrayOf()
         val dns = intent?.getStringExtra(EXTRA_DNS)
@@ -48,17 +58,21 @@ class YukariVpnService : VpnService() {
             ),
         )
 
+        val previousInterface = vpnInterface
         try {
-            vpnInterface = createVpnInterface(ipv4Addr, mtu, routes, dns)
-            val fd = vpnInterface?.fd ?: throw IllegalStateException("Failed to get TUN fd")
+            val nextInterface = createVpnInterface(addresses, mtu, routes, dns)
+            vpnInterface = nextInterface
+            previousInterface?.close()
 
-            onTunFdReady?.invoke(fd)
+            onTunFdReady?.invoke(nextInterface.fd)
             instance = this
         } catch (e: Exception) {
             onTunFailed?.invoke(e.message ?: "Could not establish the VPN")
-            clearForegroundNotification()
-            stopSelf()
-            return START_NOT_STICKY
+            if (previousInterface == null) {
+                clearForegroundNotification()
+                stopSelf()
+                return START_NOT_STICKY
+            }
         }
 
         return START_STICKY
@@ -77,7 +91,7 @@ class YukariVpnService : VpnService() {
     }
 
     private fun createVpnInterface(
-        ipv4Addr: String,
+        addresses: Array<String>,
         mtu: Int,
         routes: Array<String>,
         dns: String?
@@ -86,9 +100,14 @@ class YukariVpnService : VpnService() {
             .setSession("Yukari")
             .setBlocking(false)
             .setMtu(mtu)
+            .allowFamily(OsConstants.AF_INET6)
 
-        val ipParts = ipv4Addr.split("/")
-        builder.addAddress(ipParts[0], ipParts.getOrElse(1) { "24" }.toInt())
+        addresses.forEach { addr ->
+            val ipParts = addr.split("/")
+            val defaultPrefix = if (ipParts[0].contains(':')) 64 else 24
+            val prefix = ipParts.getOrNull(1)?.toIntOrNull() ?: defaultPrefix
+            builder.addAddress(ipParts[0], prefix)
+        }
 
         dns?.let { builder.addDnsServer(it) }
 
@@ -115,13 +134,18 @@ class YukariVpnService : VpnService() {
 
     override fun onDestroy() {
         vpnInterface?.close()
+        vpnInterface = null
         instance = null
         super.onDestroy()
     }
 
     override fun onRevoke() {
         vpnInterface?.close()
+        vpnInterface = null
         instance = null
+        clearForegroundNotification()
+        onVpnRevoked?.invoke()
+        stopSelf()
         super.onRevoke()
     }
 }

@@ -7,6 +7,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:signals/signals.dart';
 import 'package:yukari_core/backend/backend.dart';
 import 'package:yukari_core/models/models.dart';
+import 'package:yukari/signals/instances.dart' as running;
 import 'package:yukari/signals/networks.dart' as saved;
 import 'package:yukari/system/android_system_ui.dart';
 
@@ -408,22 +409,46 @@ void main() {
     },
   );
 
-  test('a tile tap leaves a network the backend has no room for', () async {
-    SharedPreferences.setMockInitialValues({'android.lastBootedNetwork': 'n2'});
-    // The store shows the running instance as stopped, so the tile cannot see
-    // it, while the backend still holds its single TUN slot.
-    backend = _TestBackend(maxTunInstances: 1, notRunning: true);
+  test('shows multiple running networks on the tile and notification and stops all', () async {
+    backend = _TestBackend(peerCount: 1);
+    backends.value = backend;
+    await startUi();
+
+    await backend.start('n1', saved.networks.value['n1']!);
+    await backend.start('n2', saved.networks.value['n2']!);
+    await running.refreshInstances(backend);
+    await pumpEventQueue();
+    await sendAction('toggle');
+    // Both running before toggle -> toggle stops both.
+    expect(backend.stopped, unorderedEquals(['alpha', 'beta']));
+
+    backend.stopped.clear();
+    await backend.start('n1', saved.networks.value['n1']!);
+    await backend.start('n2', saved.networks.value['n2']!);
+    await running.refreshInstances(backend);
+    await pumpEventQueue();
+    await sendAction('stop');
+    expect(backend.stopped, unorderedEquals(['alpha', 'beta']));
+  });
+
+  test('tile and notification summarize two running networks', () async {
+    backend = _TestBackend(peerCount: 1);
     backends.value = backend;
     backend.started['n1'] = saved.networks.value['n1']!;
+    backend.started['n2'] = saved.networks.value['n2']!;
     await startUi();
-    await pumpEventQueue();
 
-    await sendAction('toggle');
+    expect(lastArguments('setTileState'), {
+      'active': true,
+      'label': '2 networks',
+    });
+    final notification = lastArguments('updateNotification');
+    expect(notification['title'], '2 networks');
+    expect(notification['text'], '4 peers · ↓ 0 B/s  ↑ 0 B/s');
 
-    expect(backend.started.keys, [
-      'n1',
-    ], reason: 'the one TUN slot is taken, so beta was not booted');
-    expect(methodCalls('openApp'), isEmpty);
+    await sendAction('stop');
+    expect(backend.stopped, unorderedEquals(['alpha', 'beta']));
+    expect(lastArguments('setTileState'), {'active': false, 'label': 'Yukari'});
   });
 
   test('the tile turns the background service off', () async {
@@ -473,16 +498,9 @@ void main() {
 /// A backend that reports the networks it started, each with [peerCount]
 /// peers, like EasyTier as they connect.
 class _TestBackend extends FakeBackend {
-  _TestBackend({
-    this.peerCount = 0,
-    this.notRunning = false,
-    super.maxTunInstances,
-  });
+  _TestBackend({this.peerCount = 0});
 
   final int peerCount;
-
-  /// Whether every instance it reports is not running.
-  final bool notRunning;
 
   @override
   Future<Map<String, String>> collectInfos() async => {
@@ -491,7 +509,7 @@ class _TestBackend extends FakeBackend {
         ...instanceInfo(
           peers: [for (var i = 0; i < peerCount; i++) instancePeer()],
         ),
-        'running': !notRunning,
+        'running': true,
       }),
   };
 }

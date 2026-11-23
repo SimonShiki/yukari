@@ -23,33 +23,35 @@ extension _AndroidSystemUiActions on AndroidSystemUi {
     }
   }
 
-  /// Stops the running network, else boots the network [_bootLast] picks.
+  /// Stops every running network, else boots the network [_bootLast] picks.
   Future<void> _toggle({required bool fromTile}) async {
     if (_kind == BackendKind.service) return _toggleService();
-    final entry = await _currentInstance();
-    if (entry != null) return _stopInstance(entry);
+    final entries = await _currentInstances();
+    if (entries.isNotEmpty) return _stopInstances(entries);
     await _bootLast(fromTile: fromTile);
   }
 
-  /// Stops the running network, as the notification's Stop action asks.
+  /// Stops every running network, as the notification's Stop action asks.
   Future<void> _stop() async {
     if (_kind == BackendKind.service) return;
-    final entry = await _currentInstance();
-    if (entry != null) await _stopInstance(entry);
+    final entries = await _currentInstances();
+    if (entries.isNotEmpty) await _stopInstances(entries);
   }
 
-  /// The running instance, after one collection when the store has not
-  /// answered yet: the app may have just started to run this action.
-  Future<MapEntry<String, Instance>?> _currentInstance() async {
+  /// Running instances, after one collection when the store has not answered
+  /// yet: the app may have just started to run this action.
+  Future<List<MapEntry<String, Instance>>> _currentInstances() async {
     if (!running.instancesLoaded.peek()) await _refresh();
-    return _runningEntry(running.instances.peek());
+    return _runningEntries(running.instances.peek());
   }
 
-  Future<void> _stopInstance(MapEntry<String, Instance> entry) async {
+  Future<void> _stopInstances(List<MapEntry<String, Instance>> entries) async {
     try {
-      await _backend.stop([entry.value.network.networkName]);
+      await _backend.stop([
+        for (final entry in entries) entry.value.network.networkName,
+      ]);
       // The store outlives this listener, so a settled stop shows at once.
-      running.forgetInstances([entry.key]);
+      running.forgetInstances([for (final entry in entries) entry.key]);
       await running.refreshInstances(_backend);
     } catch (_) {
       // A tile or notification tap has no UI to report to: the next
@@ -80,18 +82,13 @@ extension _AndroidSystemUiActions on AndroidSystemUi {
     }
   }
 
-  /// Whether [network] may start now. A network the backend has no room for
-  /// cannot start at all, so the tile leaves it alone; the VPN consent dialog
-  /// needs the app in the foreground, so a background tile tap asks for the
-  /// consent without a dialog, and the app is brought forward when that is not
-  /// enough.
+  /// Whether [network] may start now. The VPN consent dialog needs the app in
+  /// the foreground, so a background tile tap asks for the consent without a
+  /// dialog, and the app is brought forward when that is not enough.
   Future<bool> _mayStartSilently(
     Network network, {
     required bool fromTile,
   }) async {
-    if (!_backend.canStart(network, running.instances.peek().values)) {
-      return false;
-    }
     if (network.flags.noTun) return true;
     if (!fromTile || _foreground) {
       return await _backend.tunAccess(network) == TunAccess.granted;

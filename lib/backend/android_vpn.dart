@@ -7,7 +7,7 @@ import 'package:flutter/services.dart';
 typedef AndroidVpn = ({
   Future<int> Function({
     required String networkName,
-    required String ipv4,
+    required List<String> addresses,
     required int mtu,
     required List<String> routes,
     String? dns,
@@ -26,6 +26,22 @@ final AndroidVpn systemAndroidVpn = (
 
 class AndroidVpnService {
   static const _channel = MethodChannel('top.simonshiki.yukari/vpn');
+  static Future<void> Function()? _revokeHandler;
+
+  /// Registers a callback for OS-driven VPN revocations (`VpnService.onRevoke`).
+  static void setRevokeHandler(Future<void> Function()? handler) {
+    _revokeHandler = handler;
+    if (!Platform.isAndroid) return;
+    _channel.setMethodCallHandler(
+      handler == null
+          ? null
+          : (call) async {
+              if (call.method == 'onRevoked') {
+                await _revokeHandler?.call();
+              }
+            },
+    );
+  }
 
   /// Asks the system for VPN permission and answers whether it was granted.
   static Future<bool> requestVpnPermission() =>
@@ -35,10 +51,10 @@ class AndroidVpnService {
   /// asking the user: the check the background actions may run.
   static Future<bool> hasVpnPermission() => _invokeBool('hasVpnPermission');
 
-  /// Starts the VPN service and returns the TUN file descriptor on success.
+  /// Starts or updates the VPN service and returns the TUN file descriptor.
   static Future<int> startVpn({
     required String networkName,
-    required String ipv4,
+    required List<String> addresses,
     required int mtu,
     required List<String> routes,
     String? dns,
@@ -51,7 +67,7 @@ class AndroidVpnService {
       'startVpn',
       {
         'networkName': networkName,
-        'ipv4': ipv4,
+        'addresses': addresses,
         'mtu': mtu,
         'routes': routes,
         'dns': dns,
