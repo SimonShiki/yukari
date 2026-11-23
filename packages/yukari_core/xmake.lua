@@ -75,7 +75,7 @@ package("easytier-ffi")
     set_homepage("https://github.com/EasyTier/EasyTier")
     set_license("LGPL-3.0")
     add_urls("https://github.com/EasyTier/EasyTier.git", {submodules = false})
-    add_versions(easytier_version, "24e0303fc55e4e645a11818954dd5b712fb94510")
+    add_versions(easytier_version, "45a6b6f1769f95590a396f4962e58d654b6e0380")
     add_deps("protobuf-tools 35.1", {host = true, private = true})
 
     if is_plat("windows") then
