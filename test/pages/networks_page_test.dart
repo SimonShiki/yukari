@@ -13,7 +13,6 @@ import 'package:yukari/pages/networks/networks_page.dart';
 import 'package:yukari/share/share_document.dart';
 import 'package:yukari/share/share_routes.dart';
 import 'package:yukari/signals/networks.dart' as saved;
-import 'package:yukari_core/storage/network_store.dart';
 import 'package:yukari/pages/networks/widgets/network_card/network_card_list.dart';
 import 'package:yukari/widgets/selection/selection_fab_menu.dart';
 
@@ -411,16 +410,6 @@ void main() {
     expect(navigated, [shareSendPath(ShareKind.network, 'n1')]);
   });
 
-  /// A saved network with one peer, so the sender can share it.
-  Network shareableNetwork(String name) => Network()
-    ..networkName = name
-    ..nodes = [
-      Node(
-        url: Uri(scheme: 'tcp', host: 'relay.example.com', port: 11010),
-        name: 'peer',
-      ),
-    ];
-
   testWidgets('the app bar offers selection while there are networks', (
     tester,
   ) async {
@@ -541,15 +530,6 @@ void main() {
     // The sender is what the user asked for, so the list stops selecting.
     expect(controller.selection.selecting.value, isFalse);
   });
-
-  /// A saved network store whose writes all fail, as a full disk would.
-  Future<void> seedWithFailingWrites() async {
-    final store = await seedWith({
-      'n1': Network()..networkName = 'alpha',
-      'n2': Network()..networkName = 'beta',
-    });
-    await saved.init(NetworkStore(store.file, readOnly: true));
-  }
 
   /// Pumps the list over two seeded networks and selects both.
   Future<NetworkPageController> pumpSelecting(

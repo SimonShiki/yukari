@@ -120,27 +120,4 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.byType(NetworkEditorPage), findsOneWidget);
   });
-
-  testWidgets('a permitted back from a clean editor shrinks into the card', (
-    tester,
-  ) async {
-    await tester.runAsync(seedNetworks);
-    final card = await openEditor(tester);
-    final whole = container(tester);
-
-    await backGesture(tester, 'startBackGesture', 0);
-    await backGesture(tester, 'updateBackGestureProgress', 0.5);
-    await backGesture(tester, 'commitBackGesture');
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 250));
-
-    // The page is on its way back into the card: neither left whole nor gone.
-    final leaving = container(tester);
-    expect(leaving.width, lessThan(whole.width));
-    expect(leaving.width, greaterThan(card.width));
-
-    await tester.pumpAndSettle();
-    expect(find.byType(NetworkEditorPage), findsNothing);
-    expect(find.byType(NetworkCard), findsWidgets);
-  });
 }

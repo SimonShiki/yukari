@@ -1,16 +1,18 @@
-/// EasyTier information of one running instance, shared by the tray and the
-/// Android system UI tests.
+/// EasyTier information of one running instance, shared across tests.
 Map<String, Object?> instanceInfo({
+  String hostname = 'alpha',
+  String natType = 'Unknown',
+  String virtualIpv4 = '10.144.0.2',
   List<Map<String, Object?>> peers = const [],
 }) => {
   'running': true,
   'my_node_info': {
     'peer_id': 1,
-    'hostname': 'alpha',
+    'hostname': hostname,
     'virtual_ipv4': {
-      'address': {'addr': _ipv4('10.144.0.2')},
+      'address': {'addr': _ipv4(virtualIpv4)},
     },
-    'stun_info': {'udp_nat_type': 'Unknown'},
+    'stun_info': {'udp_nat_type': natType},
   },
   'peer_route_pairs': peers,
 };

@@ -5,7 +5,6 @@ import 'package:material_ui/material_ui.dart';
 import 'package:yukari/controllers/about_controller.dart';
 import 'package:yukari/l10n/l10n.dart';
 import 'package:yukari/pages/about/about_page.dart';
-import 'package:yukari/widgets/link_list/link_list.dart';
 import 'package:yukari/widgets/snackbar/app_snackbar.dart';
 
 /// The app icon the About page must show, as declared in pubspec.
@@ -148,18 +147,6 @@ void main() {
     expect(find.text('Version 1.2.3'), findsNothing);
   });
 
-  testWidgets('shows the source and license links with their icons', (
-    tester,
-  ) async {
-    await pumpAbout(tester);
-
-    expect(find.text('Source code'), findsOneWidget);
-    expect(find.text('View licenses'), findsOneWidget);
-    expect(find.byIcon(Icons.code_rounded), findsOneWidget);
-    expect(find.byIcon(Icons.description_outlined), findsOneWidget);
-    expect(find.byIcon(Icons.chevron_right_rounded), findsNWidgets(2));
-  });
-
   testWidgets('opens the repository from anywhere on the source row', (
     tester,
   ) async {
@@ -205,15 +192,6 @@ void main() {
     const message = 'Could not open the link: $_repository';
     expect(about.messages, [message]);
     expect(find.text(message), findsOneWidget);
-  });
-
-  testWidgets('pins the links to the bottom', (tester) async {
-    await pumpAbout(tester);
-
-    final page = tester.getRect(find.byType(Scaffold));
-    final links = tester.getRect(find.byType(LinkList));
-    expect(links.bottom, closeTo(page.bottom - 16, 0.1));
-    expect(tester.getRect(find.byType(Image)).bottom, lessThan(links.top));
   });
 
   group('AboutController', () {

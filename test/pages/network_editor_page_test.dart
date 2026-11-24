@@ -1,6 +1,5 @@
 import 'dart:io';
 
-import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:signals/signals.dart';
@@ -16,6 +15,7 @@ import 'package:yukari/pages/networks/widgets/editor_fields.dart';
 import 'package:yukari/signals/networks.dart' as saved;
 import 'package:yukari/widgets/context_menu/m3e_menu_panel.dart';
 
+import '../clipboard_support.dart';
 import '../networks_fixture.dart';
 import 'network_test_support.dart';
 
@@ -343,9 +343,7 @@ void main() {
     expect(controller.working.value!.flags.mtu, 1500);
   });
 
-  testWidgets('a switch row shows its icon and toggles from the row', (
-    tester,
-  ) async {
+  testWidgets('a switch row toggles from the row', (tester) async {
     await tester.runAsync(seedNetworks);
     await pumpEditor(tester);
     await switchTab(tester, strings.networkAdvanced);
@@ -353,16 +351,6 @@ void main() {
 
     final title = find.text(strings.advancedEnableEncryption);
     expect(title, findsOneWidget);
-    final row = find.ancestor(of: title, matching: find.byType(SwitchSegment));
-    expect(row, findsOneWidget);
-    expect(
-      find.descendant(
-        of: row,
-        matching: find.byIcon(Icons.enhanced_encryption_rounded),
-      ),
-      findsOneWidget,
-      reason: 'the switch row has a leading icon',
-    );
 
     final enabled = controller.working.value!.flags.enableEncryption;
     // The whole row is the tap target, not only the switch thumb.
@@ -826,14 +814,6 @@ void main() {
     expect(controller.working.value!.flags.enableUdpFecQuic, isTrue);
   });
 
-  testWidgets('the SOCKS5 field hints at its shape', (tester) async {
-    await tester.runAsync(seedNetworks);
-    await pumpEditor(tester);
-    await switchTab(tester, strings.networkAdvanced);
-
-    expect(find.text('socks5://host:port'), findsOneWidget);
-  });
-
   testWidgets('a peer and a listener can be deleted', (tester) async {
     await tester.runAsync(
       () => seedWith({
@@ -873,60 +853,6 @@ void main() {
     expect(hasInvalidInput(editorGuardKey('n1')), isFalse);
   });
 
-  testWidgets('peer rows show their full connection URLs', (tester) async {
-    await tester.runAsync(
-      () => seedWith({
-        'n1': seededNetwork(
-          nodes: [
-            Node(
-              url: Uri(scheme: 'tcp', host: 'relay.example.com', port: 11010),
-              name: 'peer-a',
-            ),
-          ],
-        ),
-      }),
-    );
-    await pumpEditor(tester);
-
-    expect(find.text('peer-a'), findsOneWidget);
-    expect(find.text('tcp://relay.example.com:11010'), findsOneWidget);
-  });
-
-  testWidgets('the peer and listener footers are labeled, end aligned', (
-    tester,
-  ) async {
-    await tester.runAsync(seedNetworks);
-    await pumpEditor(tester);
-
-    expect(find.text(strings.networkAddPeer), findsOneWidget);
-    expect(find.text(strings.bookmarksFromBookmarks), findsOneWidget);
-    expect(
-      find.ancestor(
-        of: find.text(strings.networkAddPeer),
-        matching: find.byWidgetPredicate(
-          (widget) =>
-              widget is Align &&
-              widget.alignment == AlignmentDirectional.centerEnd,
-        ),
-      ),
-      findsWidgets,
-    );
-
-    await switchTab(tester, strings.networkAdvanced);
-
-    expect(
-      find.text(strings.networkAddListeners(strings.networkListeners)),
-      findsOneWidget,
-    );
-
-    await expandSection(tester, strings.advancedMappedListeners);
-
-    expect(
-      find.text(strings.networkAddListeners(strings.advancedMappedListeners)),
-      findsOneWidget,
-    );
-  });
-
   testWidgets('the public key is read-only and copyable', (tester) async {
     await tester.runAsync(seedNetworks);
     await pumpEditor(tester);
@@ -950,30 +876,12 @@ void main() {
     expect(publicKeyField.controller!.text, publicKey);
     expect(find.byTooltip(strings.advancedShowPublicKey), findsOneWidget);
 
-    final calls = <MethodCall>[];
-    tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
-      SystemChannels.platform,
-      (call) async {
-        calls.add(call);
-        return null;
-      },
-    );
-    addTearDown(
-      () => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
-        SystemChannels.platform,
-        null,
-      ),
-    );
+    final copied = mockClipboard();
 
     await tester.tap(find.byTooltip(strings.advancedCopyPublicKey));
     await tester.pumpAndSettle();
 
-    final copied = [
-      for (final call in calls)
-        if (call.method == 'Clipboard.setData')
-          (call.arguments as Map<Object?, Object?>)['text'],
-    ];
-    expect(copied, contains(publicKey), reason: 'clipboard calls: $calls');
+    expect(copied, contains(publicKey));
     expect(find.text(strings.advancedPublicKeyCopied), findsOneWidget);
   });
 

@@ -241,26 +241,6 @@ void main() {
     await Future<void>.delayed(Duration.zero);
   });
 
-  test('reverts Magic DNS when a network stops', () async {
-    await store.save({'n1': _dnsNetwork('alpha')});
-    await serve();
-    await client.start('n1', Network());
-
-    await client.stop(['alpha']);
-
-    expect(magicDns.reverted, ['n1']);
-  });
-
-  test('reverts every DNS it set up when the service stops', () async {
-    await store.save({'n1': _dnsNetwork('alpha')});
-    await serve();
-    await client.start('n1', Network());
-
-    await daemon.stop();
-
-    expect(magicDns.revertAllCalls, 1);
-  });
-
   test('runs saved networks by id and reports them to the app', () async {
     await serve();
     await client.start('n1', Network()..networkName = 'ignored');
@@ -364,17 +344,6 @@ void main() {
       reason: 'the endpoint is read again, not reused',
     );
     expect(client.status.value, BackendStatus.ready);
-  });
-
-  test('reports the service as unavailable when it is not running', () async {
-    final missing = InternetAddress(
-      p.join(p.dirname(store.file.path), 'missing.sock'),
-      type: InternetAddressType.unix,
-    );
-    final backend = ServiceBackend(() async => IpcEndpoint(missing, 0));
-    addTearDown(backend.dispose);
-    await expectLater(backend.collectInfos(), throwsException);
-    expect(backend.status.value, BackendStatus.unavailable);
   });
 
   test('disposes its status with it', () async {

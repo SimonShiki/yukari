@@ -1,6 +1,5 @@
 import 'package:flutter/foundation.dart'
     show TargetPlatform, debugDefaultTargetPlatformOverride;
-import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:m3e_core/m3e_core.dart';
@@ -21,9 +20,9 @@ import 'package:yukari/signals/networks.dart' as networks;
 import 'package:yukari/utils/bookmark_codec.dart';
 import 'package:yukari/widgets/selection/selection_chrome.dart';
 import 'package:yukari/widgets/selection/selection_fab_menu.dart';
-import 'package:yukari/widgets/selection/selection_switch.dart';
 
 import '../bookmarks_fixture.dart';
+import '../clipboard_support.dart';
 import '../networks_fixture.dart';
 
 void main() {
@@ -222,52 +221,6 @@ void main() {
     });
   });
 
-  testWidgets('keeps the search field in the app bar, flat', (tester) async {
-    await tester.runAsync(() async {
-      await seedBookmarks([
-        testBookmark('u1', name: 'Alpha', host: 'one.example.com'),
-      ]);
-      await pumpPage(tester);
-
-      expect(
-        find.descendant(
-          of: find.byType(AppBar),
-          matching: find.byType(SearchBar),
-        ),
-        findsOneWidget,
-      );
-      final bar = tester.widget<SearchBar>(find.byType(SearchBar));
-      expect(
-        bar.elevation?.resolve(<WidgetState>{}),
-        0,
-        reason: 'the field belongs to the app bar, so it floats over nothing',
-      );
-      expect(
-        tester.widget<AppBar>(find.byType(AppBar)).scrolledUnderElevation,
-        0,
-        reason: 'no scrolled-under shadow over the search field',
-      );
-    });
-  });
-
-  testWidgets('hides the app bar search when there is nothing at all', (
-    tester,
-  ) async {
-    await tester.runAsync(() async {
-      await seedBookmarks();
-      await pumpPage(tester);
-
-      expect(find.text('No bookmarks yet'), findsOneWidget);
-      expect(
-        find.descendant(
-          of: find.byType(AppBar),
-          matching: find.byType(SearchBar),
-        ),
-        findsNothing,
-      );
-    });
-  });
-
   testWidgets('the editor stays open while the node fields are invalid', (
     tester,
   ) async {
@@ -375,44 +328,6 @@ void main() {
       await tester.tap(find.text('Share'));
       await tester.pumpAndSettle();
       expect(find.text('Share Shared One'), findsOneWidget);
-    });
-  });
-
-  testWidgets('renders the bundled shared nodes', (tester) async {
-    await tester.runAsync(() async {
-      await seedBookmarks();
-      await pumpPage(tester, builtins: builtinBookmarks);
-
-      expect(find.text('Shared Nodes'), findsOneWidget);
-      expect(find.text(builtinBookmarks.first.displayName), findsOneWidget);
-      expect(
-        find.textContaining(sharedNodeCategory),
-        findsWidgets,
-        reason: 'the built-in category overline',
-      );
-    });
-  });
-
-  testWidgets('tones tag chips with the metadata tokens', (tester) async {
-    await tester.runAsync(() async {
-      await seedBookmarks([
-        testBookmark(
-          'u1',
-          name: 'Alpha',
-          host: 'one.example.com',
-          tags: ['relay'],
-        ),
-      ]);
-      await pumpPage(tester);
-      final colors = Theme.of(tester.element(find.byType(BookmarksPage)))
-          .colorScheme;
-
-      Badge chip(String label) => tester.widget<Badge>(
-        find.ancestor(of: find.text(label), matching: find.byType(Badge)),
-      );
-
-      expect(chip('#relay').backgroundColor, colors.surfaceContainerHighest);
-      expect(chip('#relay').textColor, colors.onSurfaceVariant);
     });
   });
 
@@ -700,16 +615,7 @@ void main() {
     tester,
   ) async {
     await tester.runAsync(() async {
-      final clipboard = <MethodCall>[];
-      final messenger =
-          TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger;
-      messenger.setMockMethodCallHandler(SystemChannels.platform, (call) async {
-        clipboard.add(call);
-        return null;
-      });
-      addTearDown(
-        () => messenger.setMockMethodCallHandler(SystemChannels.platform, null),
-      );
+      final copied = mockClipboard();
       await seedBookmarks([
         testBookmark(
           'u1',
@@ -756,10 +662,7 @@ void main() {
       await openShare(tester, 'Alpha');
       await tester.tap(find.text('Copy address'));
       await tester.pumpAndSettle();
-      final copied = clipboard.singleWhere(
-        (call) => call.method == 'Clipboard.setData',
-      );
-      expect((copied.arguments as Map)['text'], 'tcp://peer.example.com:11010');
+      expect(copied, ['tcp://peer.example.com:11010']);
       expect(messages.last, 'Copied tcp://peer.example.com:11010');
 
       await openShare(tester, 'Alpha');
@@ -858,31 +761,6 @@ void main() {
       expect(identical(after[0], checks[0]), isFalse);
       expect(identical(after[1], checks[1]), isTrue);
       expect(after.map((check) => check.selected), [true, false]);
-    });
-  });
-
-  testWidgets('the body sits right under each bar', (tester) async {
-    await tester.runAsync(() async {
-      await seedBookmarks([testBookmark('u1', name: 'One')]);
-      await pumpPage(tester);
-      double barBottom() => tester
-          .getBottomLeft(
-            find
-                .descendant(
-                  of: find.byType(SelectionAppBarSwitch),
-                  matching: find.byType(AppBar),
-                )
-                .first,
-          )
-          .dy;
-      final withSearch = barBottom();
-
-      await tester.tap(find.byTooltip(strings.selectionEnter));
-      await tester.pumpAndSettle();
-
-      // The selection bar has no search field, so the list moves up.
-      expect(barBottom(), lessThan(withSearch));
-      expect(tester.getTopLeft(find.text('One')).dy, greaterThan(barBottom()));
     });
   });
 

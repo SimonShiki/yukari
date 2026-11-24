@@ -138,16 +138,6 @@ void main() {
     },
   );
 
-  /// A saved network with one peer, so the sender can share it.
-  Network shareable(String name) => Network()
-    ..networkName = name
-    ..nodes = [
-      Node(
-        url: Uri(scheme: 'tcp', host: 'relay.example.com', port: 11010),
-        name: 'peer',
-      ),
-    ];
-
   test('nothing can be selected while no network exists', () async {
     await seedWith({});
     final controller = build(backend: FakeBackend(), messages: <String>[]);
@@ -192,26 +182,11 @@ void main() {
     expect(selection.selecting.value, isFalse);
   });
 
-  test('a selection shares as one bundle path and leaves selection', () async {
-    await seedWith({'n1': shareable('alpha'), 'n2': shareable('beta')});
-    final controller = build(backend: FakeBackend(), messages: <String>[]);
-    controller.start();
-    addTearDown(controller.dispose);
-
-    controller.selection
-      ..enter()
-      ..select(['n2', 'n1']);
-
-    expect(
-      controller.selectionShareRoute(),
-      shareSendPaths(ShareKind.network, ['n1', 'n2']),
-    );
-    expect(controller.selection.selecting.value, isFalse);
-    expect(controller.selection.ids.value, isEmpty);
-  });
-
-  test('the selection share opens the bundle above the shell', () async {
-    await seedWith({'n1': shareable('alpha'), 'n2': shareable('beta')});
+  test('the selection shares as one bundle path and leaves selection', () async {
+    await seedWith({
+      'n1': shareableNetwork('alpha'),
+      'n2': shareableNetwork('beta'),
+    });
     final pushed = <String>[];
     final controller = build(
       backend: FakeBackend(),
@@ -223,18 +198,20 @@ void main() {
 
     controller.selection
       ..enter()
-      ..select(['n1', 'n2']);
+      ..select(['n2', 'n1']);
     controller.openSelectionShare();
 
     expect(pushed, [
       shareSendPaths(ShareKind.network, ['n1', 'n2']),
     ]);
+    expect(controller.selection.selecting.value, isFalse);
+    expect(controller.selection.ids.value, isEmpty);
   });
 
   test('a selection past one bundle names the limit', () async {
     await seedWith({
       for (var index = 0; index <= shareMaxBundleItems; index++)
-        'n$index': shareable('network-$index'),
+        'n$index': shareableNetwork('network-$index'),
     });
     final messages = <String>[];
     final controller = build(backend: FakeBackend(), messages: messages);
@@ -256,7 +233,7 @@ void main() {
 
   test('a selection with a network that cannot be shared reports it', () async {
     await seedWith({
-      'n1': shareable('alpha'),
+      'n1': shareableNetwork('alpha'),
       'n2': Network()..networkName = 'beta',
     });
     final messages = <String>[];
@@ -359,23 +336,6 @@ void main() {
     expect(messages, isEmpty);
   });
 
-  test('a failed start is marked and reported', () async {
-    await seedNetworks();
-    final backend = FakeBackend()..startError = StateError('no tun');
-    final messages = <String>[];
-    final controller = build(backend: backend, messages: messages);
-    controller.start();
-    addTearDown(controller.dispose);
-    await controller.refresh();
-
-    await controller.toggle('n1', true);
-
-    expect(controller.transitions.value['n1'], NetworkTransition.failed);
-    expect(controller.cards.value.first.status, InstanceStatus.failed);
-    // A failed start can be retried.
-    expect(controller.cards.value.first.onToggle, isNotNull);
-  });
-
   test('a failed start can be retried, and its marker cleared', () async {
     await seedNetworks();
     final backend = _FlakyStartBackend();
@@ -388,6 +348,7 @@ void main() {
 
     expect(backend.starts, 1);
     expect(controller.transitions.value['n1'], NetworkTransition.failed);
+    expect(controller.cards.value.first.status, InstanceStatus.failed);
     // The retry stays available while the failure is on screen.
     expect(controller.cards.value.first.onToggle, isNotNull);
 
@@ -462,7 +423,7 @@ void main() {
     'a delete the store refuses keeps the network and is reported',
     () async {
       final messages = <String>[];
-      await _seedWithFailingWrites();
+      await seedWithFailingWrites();
       final controller = build(backend: FakeBackend(), messages: messages);
       addTearDown(controller.dispose);
 
@@ -568,7 +529,7 @@ void main() {
 
   test('a selection delete the store refuses is reported once', () async {
     final messages = <String>[];
-    await _seedWithFailingWrites();
+    await seedWithFailingWrites();
     final controller = build(backend: FakeBackend(), messages: messages);
     addTearDown(controller.dispose);
     await controller.refresh();
@@ -587,7 +548,7 @@ void main() {
     'reorder reports a store failure, and moves a network otherwise',
     () async {
       final messages = <String>[];
-      await _seedWithFailingWrites();
+      await seedWithFailingWrites();
       final failing = build(backend: FakeBackend(), messages: messages);
       addTearDown(failing.dispose);
 
@@ -1246,17 +1207,6 @@ class _GatedStopBackend extends FakeBackend {
     await gate.future;
     throw Exception('stuck');
   }
-}
-
-/// Seeds `n1`/`n2` into a store whose writes fail from now on.
-Future<void> _seedWithFailingWrites() async {
-  final store = await seedWith({
-    'n1': Network()..networkName = 'alpha',
-    'n2': Network()..networkName = 'beta',
-  });
-  // A directory where the store writes makes every save fail.
-  store.file.deleteSync();
-  Directory(store.file.path).createSync(recursive: true);
 }
 
 /// A backend whose first start fails and whose second succeeds.

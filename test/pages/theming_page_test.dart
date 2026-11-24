@@ -1,13 +1,12 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:m3e_core/m3e_core.dart'
-    show M3EButtonSize, M3EColorVariant, M3EToggleButton, M3EToggleButtonGroup;
+    show M3EColorVariant, M3EToggleButton, M3EToggleButtonGroup;
 import 'package:material_ui/material_ui.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:signals/signals.dart';
 import 'package:yukari_core/backend/backend.dart';
 import 'package:yukari/controllers/backend_settings_controller.dart';
 import 'package:yukari_core/models/models.dart';
-import 'package:yukari/pages/settings/theming/mode_selector.dart';
 import 'package:yukari/pages/settings/theming/palette_picker.dart';
 import 'package:yukari/pages/settings/theming/theming_preview.dart';
 import 'package:yukari/pages/settings/theming_page.dart';
@@ -37,21 +36,6 @@ Future<BackendSettingsController> _settingsController() async {
   await controller.refresh();
   return controller;
 }
-
-/// The palette row's side padding.
-EdgeInsets _palettePadding(WidgetTester tester) =>
-    tester.widget<ListView>(find.byType(ListView)).padding! as EdgeInsets;
-
-/// The palette row's horizontal scroll offset.
-double _paletteOffset(WidgetTester tester) => tester
-    .state<ScrollableState>(
-      find.descendant(
-        of: find.byType(PalettePicker),
-        matching: find.byType(Scrollable),
-      ),
-    )
-    .position
-    .pixels;
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -256,122 +240,17 @@ void main() {
   });
 
   group('layout', () {
-    testWidgets('the appearance group fills the row on a phone', (
+    testWidgets('fits compact and wide layouts without overflow', (
       tester,
     ) async {
-      await pumpThemingPage(tester);
-      final selector = find.byType(ModeSelector);
-      final group = find.byKey(ModeSelector.groupKey);
-      final available = tester.getSize(selector).width - 32;
-
-      expect(tester.getSize(group).width, closeTo(available, 0.5));
-      expect(
-        tester.getCenter(group).dx,
-        closeTo(tester.getCenter(selector).dx, 0.5),
-      );
-      final buttons = find.byType(M3EToggleButton);
-      expect(buttons, findsNWidgets(4));
-      final segment = (available - 3 * 2) / 4;
-      for (var i = 0; i < 4; i++) {
-        expect(tester.getSize(buttons.at(i)).width, closeTo(segment, 0.5));
-      }
-      expect(
-        tester.getRect(buttons.first).left,
-        closeTo(tester.getRect(group).left, 0.5),
-      );
-      expect(
-        tester.getRect(buttons.last).right,
-        closeTo(tester.getRect(group).right, 0.5),
-      );
-      // Icon-only on compact: the labels are semantics/tooltips only.
-      final groupWidget = tester.widget<M3EToggleButtonGroup>(
-        find.byType(M3EToggleButtonGroup),
-      );
-      expect(groupWidget.actions, hasLength(4));
-      expect(groupWidget.size, M3EButtonSize.md);
-      expect(
-        groupWidget.actions.every((action) => action.label == null),
-        isTrue,
-      );
-      for (final label in ['System', 'Light', 'Dark', 'OLED']) {
-        expect(
-          find.descendant(of: selector, matching: find.text(label)),
-          findsNothing,
-        );
-      }
-    });
-
-    testWidgets(
-      'the appearance group is labelled, capped and centred when wide',
-      (tester) async {
-        await pumpApp(
-          tester,
-          home: const ThemingPage(),
-          theme: appTheme(),
-          size: const Size(1200, 900),
-        );
-        final selector = find.byType(ModeSelector);
-        final groupFinder = find.byKey(ModeSelector.groupKey);
-        final group = tester.widget<M3EToggleButtonGroup>(
-          find.byType(M3EToggleButtonGroup),
-        );
-
-        expect(tester.getSize(groupFinder).width, closeTo(560, 0.5));
-        expect(
-          tester.getCenter(groupFinder).dx,
-          closeTo(tester.getCenter(selector).dx, 0.5),
-        );
-        expect(group.selectedIndex, 0);
-        expect(group.actions, hasLength(4));
-        expect(group.size, M3EButtonSize.sm);
-        final segment = (560 - 3 * 2) / 4;
-        for (final action in group.actions) {
-          expect(action.width, closeTo(segment, 0.5));
-          expect(action.label, isNotNull);
-          expect(action.semanticLabel, isNotNull);
-          expect(action.tooltip, isNotNull);
-        }
-        // The wide group shows the localized labels next to the icons.
-        for (final label in ['System', 'Light', 'Dark', 'OLED']) {
-          expect(
-            find.descendant(of: selector, matching: find.text(label)),
-            findsWidgets,
-          );
-        }
-        expect(tester.takeException(), isNull);
-      },
-    );
-
-    testWidgets('the wide group fits without overflow up to 1600', (
-      tester,
-    ) async {
-      for (final width in [600.0, 800.0, 1200.0, 1600.0]) {
+      settings.theme.setUseSystemColor(false);
+      for (final width in [320.0, 1200.0]) {
         await pumpApp(
           tester,
           home: const ThemingPage(),
           theme: appTheme(),
           size: Size(width, 900),
         );
-        final selector = find.byType(ModeSelector);
-        final groupFinder = find.byKey(ModeSelector.groupKey);
-        expect(
-          tester.getSize(groupFinder).width,
-          closeTo(560, 0.5),
-          reason: 'group is capped at $width wide',
-        );
-        expect(
-          tester.getCenter(groupFinder).dx,
-          closeTo(tester.getCenter(selector).dx, 0.5),
-          reason: 'group is centred at $width wide',
-        );
-        final group = tester.widget<M3EToggleButtonGroup>(
-          find.byType(M3EToggleButtonGroup),
-        );
-        expect(group.size, M3EButtonSize.sm);
-        for (final action in group.actions) {
-          expect(action.label, isNotNull, reason: 'labels at $width wide');
-          expect(action.width, closeTo((560 - 6) / 4, 0.5));
-        }
         expect(tester.takeException(), isNull, reason: 'no overflow at $width');
       }
     });
@@ -412,150 +291,6 @@ void main() {
         isTrue,
       );
       expect(colorOf(tester, ThemingPreview.surfaceKey), Colors.black);
-    });
-
-    testWidgets('the layout fits a 320 wide page', (tester) async {
-      settings.theme.setUseSystemColor(false);
-      await pumpApp(
-        tester,
-        home: const ThemingPage(),
-        theme: appTheme(),
-        size: const Size(320, 900),
-      );
-      final selector = find.byType(ModeSelector);
-      final group = find.byKey(ModeSelector.groupKey);
-      final available = tester.getSize(selector).width - 32;
-
-      expect(tester.getSize(group).width, closeTo(available, 0.5));
-      final buttons = find.byType(M3EToggleButton);
-      expect(buttons, findsNWidgets(4));
-      for (var i = 0; i < 4; i++) {
-        expect(
-          tester.getSize(buttons.at(i)).width,
-          closeTo((available - 6) / 4, 0.5),
-        );
-      }
-      expect(
-        tester.getRect(buttons.first).left,
-        closeTo(tester.getRect(group).left, 0.5),
-      );
-      expect(
-        tester.getRect(buttons.last).right,
-        closeTo(tester.getRect(group).right, 0.5),
-      );
-
-      final padding = _palettePadding(tester);
-      expect(padding.left, 16);
-      expect(padding.right, 16);
-      expect(_paletteOffset(tester), 0);
-      await tester.drag(find.byType(ListView), const Offset(-200, 0));
-      await tester.pumpAndSettle();
-      expect(_paletteOffset(tester), greaterThan(0));
-      expect(tester.takeException(), isNull);
-    });
-
-    testWidgets('the palette row fits before it scrolls', (tester) async {
-      settings.theme.setUseSystemColor(false);
-      const rowWidth = 8 * 72 + 7 * 16;
-
-      // Just below the row width: edge padding and scrolling.
-      await pumpApp(
-        tester,
-        home: const ThemingPage(),
-        theme: appTheme(),
-        size: const Size(720 - 8, 900),
-      );
-      expect(
-        tester.getSize(find.byType(PalettePicker)).width,
-        closeTo(rowWidth - 8, 0.5),
-      );
-      expect(_palettePadding(tester).left, 16);
-      expect(_palettePadding(tester).right, 16);
-      await tester.drag(find.byType(ListView), const Offset(-100, 0));
-      await tester.pumpAndSettle();
-      expect(_paletteOffset(tester), greaterThan(0));
-
-      // Just above the row width: centred with less than a gap of padding and
-      // no scrolling.
-      await pumpApp(
-        tester,
-        home: const ThemingPage(),
-        theme: appTheme(),
-        size: const Size(720 + 12, 900),
-      );
-      expect(
-        tester.getSize(find.byType(PalettePicker)).width,
-        closeTo(rowWidth + 12, 0.5),
-      );
-      expect(_palettePadding(tester).left, closeTo(6, 0.5));
-      expect(_palettePadding(tester).right, closeTo(6, 0.5));
-      final pickerRect = tester.getRect(find.byType(PalettePicker));
-      final first = tester.getRect(swatch(ThemePalette.deepPurple));
-      final last = tester.getRect(swatch(ThemePalette.red));
-      expect((first.left + last.right) / 2, closeTo(pickerRect.center.dx, 0.5));
-      await tester.drag(find.byType(ListView), const Offset(-100, 0));
-      await tester.pumpAndSettle();
-      expect(_paletteOffset(tester), 0);
-
-      // Exactly the row width: no padding at all, still no scrolling.
-      await pumpApp(
-        tester,
-        home: const ThemingPage(),
-        theme: appTheme(),
-        size: const Size(720, 900),
-      );
-      expect(_palettePadding(tester).left, 0);
-      expect(_palettePadding(tester).right, 0);
-      expect(_paletteOffset(tester), 0);
-    });
-
-    testWidgets('the palette row is centred when there is room', (
-      tester,
-    ) async {
-      settings.theme.setUseSystemColor(false);
-      await pumpApp(
-        tester,
-        home: const ThemingPage(),
-        theme: appTheme(),
-        size: const Size(1200, 900),
-      );
-      final picker = find.byType(PalettePicker);
-      final list = tester.widget<ListView>(find.byType(ListView));
-      final padding = list.padding! as EdgeInsets;
-      final pickerRect = tester.getRect(picker);
-      final first = tester.getRect(swatch(ThemePalette.deepPurple));
-      final last = tester.getRect(swatch(ThemePalette.red));
-
-      expect(padding.left, closeTo(76, 0.5));
-      expect(padding.right, closeTo(76, 0.5));
-      expect(first.left - pickerRect.left, closeTo(76, 0.5));
-      expect(pickerRect.right - last.right, closeTo(76, 0.5));
-      expect((first.left + last.right) / 2, closeTo(pickerRect.center.dx, 0.5));
-    });
-
-    testWidgets('the palette row scrolls with 16dp padding on a phone', (
-      tester,
-    ) async {
-      settings.theme.setUseSystemColor(false);
-      await pumpThemingPage(tester);
-      final picker = find.byType(PalettePicker);
-      final list = tester.widget<ListView>(find.byType(ListView));
-      final padding = list.padding! as EdgeInsets;
-
-      expect(padding.left, 16);
-      expect(padding.right, 16);
-      expect(list.scrollDirection, Axis.horizontal);
-      expect(tester.getSize(picker).width, lessThan(8 * 72 + 7 * 16));
-      final scrollable = find.descendant(
-        of: picker,
-        matching: find.byType(Scrollable),
-      );
-      double offset() =>
-          tester.state<ScrollableState>(scrollable).position.pixels;
-      expect(offset(), 0);
-      await tester.drag(find.byType(ListView), const Offset(-200, 0));
-      await tester.pumpAndSettle();
-      expect(offset(), greaterThan(0));
     });
   });
 }

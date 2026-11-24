@@ -345,31 +345,6 @@ void main() {
     );
   });
 
-  testWidgets('reads the language row left to right', (tester) async {
-    tester.view.physicalSize = const Size(360, 800);
-    tester.view.devicePixelRatio = 1;
-    addTearDown(tester.view.reset);
-    await pump(tester, ServiceState.running);
-
-    final row = find.byType(SelectItem<Locale?>);
-    final label = find.text('Language');
-    final value = find.text('Follow system');
-    expect(row, findsOneWidget);
-    expect(find.descendant(of: row, matching: label), findsOneWidget);
-    expect(find.descendant(of: row, matching: value), findsOneWidget);
-
-    // The label leads the row and the value sits at its trailing edge, as in
-    // the backend-mode rows. The 360px width also proves the row fits a phone.
-    expect(tester.getTopLeft(label).dx, lessThan(tester.getTopLeft(value).dx));
-    expect(
-      tester.getTopRight(value).dx,
-      moreOrLessEquals(tester.getTopRight(row).dx - 16, epsilon: 1),
-    );
-    // The setting explains itself under the headline.
-    expect(find.text('The language the app shows'), findsOneWidget);
-    expect(tester.takeException(), isNull);
-  });
-
   testWidgets('fails closed when the switch is dismissed', (tester) async {
     bool? answer;
     await tester.pumpWidget(

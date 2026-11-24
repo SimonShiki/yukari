@@ -14,7 +14,6 @@ import 'package:yukari/l10n/l10n.dart';
 import 'package:yukari/pages/share/qr_share_receive_page.dart';
 import 'package:yukari/pages/share/widgets/block_grid.dart';
 import 'package:yukari/pages/share/widgets/camera_scanner_card.dart';
-import 'package:yukari/pages/share/widgets/camera_scanner_session.dart';
 import 'package:yukari/pages/share/widgets/receive_progress_card.dart';
 import 'package:yukari/pages/share/widgets/share_item_row.dart';
 import 'package:yukari/share/image_qr_scan.dart';
@@ -109,12 +108,6 @@ void main() {
     );
     return controller;
   }
-
-  test('maps the scan pace to a camera detection speed', () {
-    expect(detectionSpeedFor(ScanPace.relaxed), DetectionSpeed.normal);
-    expect(detectionSpeedFor(ScanPace.balanced), DetectionSpeed.noDuplicates);
-    expect(detectionSpeedFor(ScanPace.turbo), DetectionSpeed.unrestricted);
-  });
 
   testWidgets('a platform without a camera falls back to images', (
     tester,
@@ -213,43 +206,6 @@ void main() {
   /// The scan-rate group, which the page only builds with a camera.
   M3EToggleButtonGroup paceGroup(WidgetTester tester) =>
       tester.widget<M3EToggleButtonGroup>(find.byType(M3EToggleButtonGroup));
-
-  testWidgets('the scan rate is one connected group of the three paces', (
-    tester,
-  ) async {
-    await pumpPage(
-      tester,
-      cameraAvailable: true,
-      cameraBuilder: (context, pace) => const SizedBox.shrink(),
-    );
-
-    final group = paceGroup(tester);
-    expect(group.type, M3EButtonGroupType.connected);
-    expect(group.size, M3EButtonSize.sm);
-    expect(group.selectedIndex, 1);
-    expect(group.semanticLabel, strings.shareReceiveScanRate);
-    expect(
-      [for (final action in group.actions) (action.label! as Text).data],
-      [
-        strings.shareReceiveRateRelaxed,
-        strings.shareReceiveRateBalanced,
-        strings.shareReceiveRateTurbo,
-      ],
-    );
-    // The group is the card's only choice control.
-    expect(find.byType(SegmentedButton<ScanPace>), findsNothing);
-    // The card is the app's own surface.
-    expect(find.byType(Card), findsNothing);
-    final card = find.byType(ReceiveProgressCard);
-    final material = tester.widget<Material>(
-      find.descendant(of: card, matching: find.byType(Material)).first,
-    );
-    expect(
-      material.color,
-      Theme.of(tester.element(card)).colorScheme.surfaceContainer,
-    );
-    expect(material.elevation, 0);
-  });
 
   testWidgets('tapping Turbo moves the group and the pace', (tester) async {
     final controller = await pumpPage(

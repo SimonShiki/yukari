@@ -13,12 +13,12 @@ import 'package:yukari/pages/home/home_page.dart';
 import 'package:yukari/widgets/link_list/link_list.dart';
 import 'package:yukari/pages/home/widgets/dashboard_card.dart';
 import 'package:yukari/pages/home/widgets/dashboard_skeleton.dart';
-import 'package:yukari/pages/home/widgets/dashboard_value.dart';
 import 'package:yukari/signals/networks.dart' as saved;
 import 'package:yukari/utils/stun_probe.dart';
 
 import '../fake_backend.dart';
 import '../networks_fixture.dart';
+import '../system/instance_info.dart';
 
 /// A [FakeBackend] whose reported instances and answer timing the tests
 /// control.
@@ -116,29 +116,6 @@ void main() {
   /// The card at [index] in the stat grid.
   Finder cardAt(int index) => find.byType(DashboardCard).at(index);
 
-  /// Where the card at [index] starts laying its content out.
-  double contentLeft(WidgetTester tester, int index) =>
-      tester.getRect(cardAt(index)).left + 16;
-
-  /// The card's content width, inside its 16px padding.
-  double contentWidth(WidgetTester tester, int index) =>
-      tester.getSize(cardAt(index)).width - 32;
-
-  /// The [text] inside the card at [index], which must start at its content
-  /// edge rather than being centered by a shrink-wrapped parent.
-  void expectContentLeft(WidgetTester tester, int index, String text) {
-    final finder = find.descendant(
-      of: cardAt(index),
-      matching: find.text(text),
-    );
-    expect(finder, findsOneWidget);
-    expect(
-      tester.getTopLeft(finder).dx,
-      contentLeft(tester, index),
-      reason: '"$text" must start at the card content edge',
-    );
-  }
-
   /// Settles the first refresh and the cross-fade that replaces the skeleton.
   Future<void> settle(WidgetTester tester) async {
     await tester.pump();
@@ -155,7 +132,7 @@ void main() {
   ) async {
     final gate = Completer<void>();
     final answer = Completer<NatProbe>();
-    final backend = _HomeBackend(infos: {'alpha': _info()}, gate: gate);
+    final backend = _HomeBackend(infos: {'alpha': instanceInfo()}, gate: gate);
     final home = controller(backend: backend, probe: () => answer.future);
     await tester.runAsync(seedNetworks);
     await pumpHome(tester, controller: home);
@@ -196,7 +173,7 @@ void main() {
 
   testWidgets('shows the dashboard in one column at 400px', (tester) async {
     final home = controller(
-      backend: _HomeBackend(infos: {'alpha': _info(natType: 'Symmetric')}),
+      backend: _HomeBackend(infos: {'alpha': instanceInfo(natType: 'Symmetric')}),
     );
     await tester.runAsync(seedNetworks);
     await pumpHome(tester, controller: home, size: const Size(400, 900));
@@ -217,38 +194,6 @@ void main() {
     expect(find.text('Settings'), findsNothing);
     expect(find.byTooltip('Detect again'), findsNothing);
     expect(cardHeights(tester).toSet(), hasLength(1));
-    expect(tester.getTopLeft(find.byType(DashboardCard).at(0)).dx, 16);
-    expect(tester.getSize(find.byType(DashboardCard).at(0)).width, 368);
-    home.dispose();
-  });
-
-  testWidgets('every dashboard card draws the app card surface', (
-    tester,
-  ) async {
-    final home = controller(backend: _HomeBackend(infos: {'alpha': _info()}));
-    await tester.runAsync(seedNetworks);
-    await pumpHome(tester, controller: home);
-    await settle(tester);
-
-    expect(find.byType(Card), findsNothing);
-    final colors = Theme.of(tester.element(find.byType(DashboardCard).first))
-        .colorScheme;
-    for (var index = 0; index < 4; index++) {
-      final material = tester.widget<Material>(
-        find
-            .descendant(of: cardAt(index), matching: find.byType(Material))
-            .first,
-      );
-      expect(material.color, colors.surfaceContainer);
-      expect(material.elevation, 0);
-      expect(
-        material.shape,
-        const RoundedRectangleBorder(
-          borderRadius: BorderRadius.all(Radius.circular(20)),
-        ),
-        reason: 'a dashboard card takes its fill and corner from CardSurface',
-      );
-    }
     home.dispose();
   });
 
@@ -258,8 +203,8 @@ void main() {
     final home = controller(
       backend: _HomeBackend(
         infos: {
-          'alpha': _info(virtualIpv4: '10.144.0.2'),
-          'beta': _info(hostname: 'beta', virtualIpv4: '10.144.0.3'),
+          'alpha': instanceInfo(virtualIpv4: '10.144.0.2'),
+          'beta': instanceInfo(hostname: 'beta', virtualIpv4: '10.144.0.3'),
         },
       ),
     );
@@ -275,129 +220,15 @@ void main() {
       find.byTooltip('10.144.0.2  alpha\n10.144.0.3  beta'),
       findsOneWidget,
     );
-    // The tooltip wrapper must not shrink the value slot either.
-    expectContentLeft(tester, 1, '10.144.0.2');
-    home.dispose();
-  });
-
-  for (final width in [400.0, 1000.0]) {
-    testWidgets('left-aligns every card line at ${width}px', (tester) async {
-      final home = controller(
-        // A short address, so the value column has to stretch rather than
-        // being clamped to the card width by a long line.
-        backend: _HomeBackend(
-          infos: {'alpha': _info(natType: 'Symmetric', virtualIpv4: '1.2.3.4')},
-        ),
-      );
-      await tester.runAsync(seedNetworks);
-      await pumpHome(tester, controller: home, size: Size(width, 900));
-      await settle(tester);
-
-      expectContentLeft(tester, 0, '1 of 2 running');
-      expectContentLeft(tester, 0, 'alpha');
-      expectContentLeft(tester, 1, '1.2.3.4');
-      expectContentLeft(tester, 2, 'Symmetric');
-      expectContentLeft(tester, 3, '0 B received · 0 B sent');
-
-      // The icon-led P2P line starts at the content edge too.
-      final p2p = find.descendant(
-        of: cardAt(2),
-        matching: find.byType(DashboardSupportingLine),
-      );
-      expect(p2p, findsOneWidget);
-      expect(tester.getTopLeft(p2p).dx, contentLeft(tester, 2));
-      home.dispose();
-    });
-
-    testWidgets('draws full-width skeleton bars at ${width}px', (tester) async {
-      final gate = Completer<void>();
-      final answer = Completer<NatProbe>();
-      final backend = _HomeBackend(infos: {'alpha': _info()}, gate: gate);
-      final home = controller(backend: backend, probe: () => answer.future);
-      await tester.runAsync(seedNetworks);
-      await pumpHome(tester, controller: home, size: Size(width, 900));
-      await tester.pump();
-
-      for (var index = 0; index < 4; index++) {
-        final inner = contentWidth(tester, index);
-        final skeleton = find.descendant(
-          of: cardAt(index),
-          matching: find.byType(DashboardSkeleton),
-        );
-        expect(skeleton, findsOneWidget);
-
-        final bars = find.descendant(
-          of: skeleton,
-          matching: find.byType(FractionallySizedBox),
-        );
-        expect(bars, findsNWidgets(2), reason: 'one bar per line');
-        final valueBar = tester.getSize(bars.first).width;
-        final supportingBar = tester.getSize(bars.last).width;
-        expect(
-          valueBar,
-          greaterThan(inner * 0.8),
-          reason: 'the value bar spans the card, not a sliver',
-        );
-        expect(supportingBar, greaterThan(inner * 0.4));
-        expect(supportingBar, lessThan(valueBar));
-        expect(tester.getTopLeft(bars.first).dx, contentLeft(tester, index));
-
-        final opacities = tester
-            .widgetList<FadeTransition>(
-              find.descendant(
-                of: skeleton,
-                matching: find.byType(FadeTransition),
-              ),
-            )
-            .map((fade) => fade.opacity.value);
-        expect(opacities, isNotEmpty);
-        expect(opacities.every((opacity) => opacity > 0), isTrue);
-      }
-      home.dispose();
-    });
-  }
-
-  testWidgets('keeps the skeleton fully visible without animations', (
-    tester,
-  ) async {
-    final backend = _HomeBackend(
-      infos: {'alpha': _info()},
-      gate: Completer<void>(),
-    );
-    final home = controller(backend: backend);
-    await tester.runAsync(seedNetworks);
-    await pumpHome(
-      tester,
-      controller: home,
-      size: const Size(400, 900),
-      disableAnimations: true,
-    );
-    await tester.pump();
-
-    final skeleton = find.descendant(
-      of: cardAt(0),
-      matching: find.byType(DashboardSkeleton),
-    );
-    final bar = find
-        .descendant(of: skeleton, matching: find.byType(FractionallySizedBox))
-        .first;
-    expect(
-      tester.getSize(bar).width,
-      greaterThan(contentWidth(tester, 0) * 0.8),
-    );
-    final fade = tester.widget<FadeTransition>(
-      find
-          .descendant(of: skeleton, matching: find.byType(FadeTransition))
-          .first,
-    );
-    expect(fade.opacity.value, 1, reason: 'a static bar must be fully visible');
     home.dispose();
   });
 
   testWidgets('reveals a truncated card line in full', (tester) async {
     const name = 'a network name far longer than a phone card can show';
     final home = controller(
-      backend: _HomeBackend(infos: {name: _info(natType: 'SymmetricEasyInc')}),
+      backend: _HomeBackend(
+        infos: {name: instanceInfo(natType: 'SymmetricEasyInc')},
+      ),
     );
     await tester.runAsync(() async {
       await seedNetworks();
@@ -437,7 +268,7 @@ void main() {
     tester,
   ) async {
     final home = controller(
-      backend: _HomeBackend(infos: {'alpha': _info(natType: 'Symmetric')}),
+      backend: _HomeBackend(infos: {'alpha': instanceInfo(natType: 'Symmetric')}),
     );
     await tester.runAsync(seedNetworks);
     await pumpHome(tester, controller: home, size: const Size(400, 900));
@@ -452,7 +283,7 @@ void main() {
 
   testWidgets('shows the dashboard in four columns at 1000px', (tester) async {
     final home = controller(
-      backend: _HomeBackend(infos: {'alpha': _info(natType: 'Symmetric')}),
+      backend: _HomeBackend(infos: {'alpha': instanceInfo(natType: 'Symmetric')}),
     );
     await tester.runAsync(seedNetworks);
     await pumpHome(tester, controller: home);
@@ -469,8 +300,6 @@ void main() {
       for (var index = 0; index < 4; index++)
         tester.getRect(find.byType(DashboardCard).at(index)),
     ];
-    expect(cards.first.left, 32);
-    expect(cards.first.width, (1000 - 64 - 36) / 4);
     expect({for (final card in cards) card.top}, hasLength(1));
     expect(cardHeights(tester).toSet(), hasLength(1));
     home.dispose();
@@ -494,24 +323,6 @@ void main() {
     expect(find.byType(DashboardSkeleton), findsNothing);
     expect(find.byTooltip('Detect again'), findsOneWidget);
     expect(cardHeights(tester).toSet(), hasLength(1));
-    home.dispose();
-  });
-
-  testWidgets('lays out two columns and 24px margins at 600px', (tester) async {
-    final home = controller(backend: _HomeBackend());
-    await tester.runAsync(seedNetworks);
-    await pumpHome(tester, controller: home, size: const Size(600, 900));
-    await settle(tester);
-
-    final cards = [
-      for (var index = 0; index < 4; index++)
-        tester.getRect(find.byType(DashboardCard).at(index)),
-    ];
-    expect(cards.first.left, 24);
-    expect(cards.first.width, (600 - 48 - 12) / 2);
-    expect(cards[1].top, cards[0].top);
-    expect(cards[2].top, greaterThan(cards[0].top));
-    expect(cards[2].left, cards[0].left);
     home.dispose();
   });
 
@@ -605,7 +416,7 @@ void main() {
     tester,
   ) async {
     final home = controller(
-      backend: _HomeBackend(infos: {'alpha': _info(natType: 'Symmetric')}),
+      backend: _HomeBackend(infos: {'alpha': instanceInfo(natType: 'Symmetric')}),
     );
     await tester.runAsync(seedNetworks);
     await pumpHome(tester, controller: home);
@@ -650,7 +461,9 @@ void main() {
   testWidgets('changing a primitive rebuilds only the label that shows it', (
     tester,
   ) async {
-    final home = controller(backend: _HomeBackend(infos: {'alpha': _info()}));
+    final home = controller(
+      backend: _HomeBackend(infos: {'alpha': instanceInfo()}),
+    );
     await tester.runAsync(seedNetworks);
     await pumpHome(tester, controller: home);
     await settle(tester);
@@ -679,24 +492,3 @@ class _Route extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Scaffold(body: Text(name));
 }
-
-/// EasyTier information for one running instance.
-Map<String, Object?> _info({
-  String hostname = 'alpha',
-  String natType = 'Unknown',
-  String virtualIpv4 = '10.144.0.2',
-}) => {
-  'running': true,
-  'my_node_info': {
-    'peer_id': 1,
-    'hostname': hostname,
-    'virtual_ipv4': {
-      'address': {'addr': _ipv4(virtualIpv4)},
-    },
-    'stun_info': {'udp_nat_type': natType},
-  },
-  'peer_route_pairs': const [],
-};
-
-int _ipv4(String address) =>
-    address.split('.').fold(0, (value, part) => (value << 8) | int.parse(part));

@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'dart:io';
 
 import 'package:yukari_core/models/network.dart';
+import 'package:yukari_core/models/node.dart';
 import 'package:yukari/signals/instances.dart' as running;
 import 'package:yukari/signals/networks.dart' as saved;
 import 'package:yukari_core/storage/network_store.dart';
@@ -38,6 +39,27 @@ Future<void> seedNetworks() => seedWith({
   'n1': Network()..networkName = 'alpha',
   'n2': Network()..networkName = 'beta',
 });
+
+/// A saved network named [name] with one peer, so it can be shared.
+Network shareableNetwork(String name) => Network()
+  ..networkName = name
+  ..nodes = [
+    Node(
+      url: Uri(scheme: 'tcp', host: 'relay.example.com', port: 11010),
+      name: 'peer',
+    ),
+  ];
+
+/// Seeds `n1`/`n2` into a store whose writes fail from now on.
+Future<void> seedWithFailingWrites() async {
+  final store = await seedWith({
+    'n1': Network()..networkName = 'alpha',
+    'n2': Network()..networkName = 'beta',
+  });
+  // A directory where the store writes makes every save fail.
+  store.file.deleteSync();
+  Directory(store.file.path).createSync(recursive: true);
+}
 
 /// The network `id` as persisted in the store.
 ///

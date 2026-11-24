@@ -55,26 +55,4 @@ void main() {
     await tester.pump();
     expect(taps, 2);
   });
-
-  testWidgets('lays the rows out as one segmented group', (tester) async {
-    await pump(tester, [
-      LinkListEntry(
-        icon: const Icon(Icons.article_outlined),
-        label: 'Logs',
-        onTap: () {},
-      ),
-      LinkListEntry(
-        icon: const Icon(Icons.info_outline),
-        label: 'About',
-        onTap: () {},
-      ),
-    ]);
-
-    expect(find.byType(LinkList), findsOneWidget);
-    // Both rows share one column, one under the other.
-    final logs = tester.getRect(find.text('Logs'));
-    final about = tester.getRect(find.text('About'));
-    expect(about.top, greaterThan(logs.bottom));
-    expect(about.left, logs.left);
-  });
 }

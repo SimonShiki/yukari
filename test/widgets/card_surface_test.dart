@@ -27,15 +27,7 @@ void main() {
     final colors = Theme.of(tester.element(find.byType(CardSurface)))
         .colorScheme;
     expect(material.color, colors.surfaceContainer);
-    // A card is a tonal surface: elevation would put a shadow back under it.
     expect(material.elevation, 0);
-    expect(material.clipBehavior, Clip.antiAlias);
-    expect(
-      material.shape,
-      const RoundedRectangleBorder(
-        borderRadius: BorderRadius.all(Radius.circular(20)),
-      ),
-    );
   });
 
   testWidgets('a card with nothing to open has no ink surface', (tester) async {

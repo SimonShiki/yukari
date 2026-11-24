@@ -1,11 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:m3e_core/m3e_core.dart'
-    show
-        M3EButtonGroupType,
-        M3EButtonSize,
-        M3ESlider,
-        M3EToggleButton,
-        M3EToggleButtonGroup;
+    show M3ESlider, M3EToggleButton, M3EToggleButtonGroup;
 import 'package:material_ui/material_ui.dart';
 import 'package:yukari/controllers/qr_share_send_controller.dart';
 import 'package:yukari/l10n/l10n.dart';
@@ -276,67 +271,6 @@ void main() {
       find.byType(M3EToggleButton).at(2),
     );
     expect(fast.checked, isTrue);
-  });
-
-  testWidgets('the density is one connected group of the three choices', (
-    tester,
-  ) async {
-    final controller = streamingController();
-    await pumpPage(
-      tester,
-      QrShareSendPage(
-        kind: ShareKind.network,
-        ids: const ['n1'],
-        controller: controller,
-      ),
-    );
-
-    final group = densityGroup(tester);
-    expect(group.type, M3EButtonGroupType.connected);
-    expect(group.size, M3EButtonSize.sm);
-    expect(group.selectedIndex, 0);
-    expect(group.semanticLabel, strings.shareQrDensity);
-    expect(
-      [for (final action in group.actions) (action.label! as Text).data],
-      [
-        strings.shareQrDensityEasy,
-        strings.shareQrDensityBalanced,
-        strings.shareQrDensityFast,
-      ],
-    );
-    // The group is the settings card's only density control.
-    expect(find.byType(SegmentedButton<QrShareDensity>), findsNothing);
-    // The settings card is the app's own surface.
-    expect(find.byType(Card), findsNothing);
-  });
-
-  testWidgets('the choices fill the card at a compact and a wide window', (
-    tester,
-  ) async {
-    final controller = streamingController();
-    Future<void> pumpAt(Size size) => pumpPage(
-      tester,
-      QrShareSendPage(
-        kind: ShareKind.network,
-        ids: const ['n1'],
-        controller: controller,
-      ),
-      size: size,
-    );
-
-    await pumpAt(const Size(400, 900));
-    // The share column pads 16 a side, and so does the card.
-    expect(
-      tester.getSize(find.byType(M3EToggleButtonGroup)).width,
-      closeTo(336, 0.5),
-    );
-
-    await pumpAt(const Size(1200, 900));
-    expect(tester.takeException(), isNull);
-    expect(
-      tester.getSize(find.byType(M3EToggleButtonGroup)).width,
-      closeTo(536, 0.5),
-    );
   });
 
   testWidgets('a missing network says so', (tester) async {

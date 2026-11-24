@@ -1,6 +1,5 @@
 import 'dart:ui' show Locale;
 
-import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:yukari/l10n/l10n.dart';
 import 'package:yukari/constants/builtin_bookmarks.dart';
@@ -14,6 +13,7 @@ import 'package:yukari/signals/bookmarks.dart' as saved;
 import 'package:yukari/utils/bookmark_codec.dart';
 
 import '../bookmarks_fixture.dart';
+import '../clipboard_support.dart';
 import '../networks_fixture.dart';
 
 /// A lowercase v4 UUID, as [BookmarksActions.compose] generates.
@@ -587,16 +587,7 @@ void main() {
 
   group('sharing', () {
     test('copies the address and reports it', () async {
-      final calls = <MethodCall>[];
-      final messenger =
-          TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger;
-      messenger.setMockMethodCallHandler(SystemChannels.platform, (call) async {
-        calls.add(call);
-        return null;
-      });
-      addTearDown(
-        () => messenger.setMockMethodCallHandler(SystemChannels.platform, null),
-      );
+      final copied = mockClipboard();
       await seedBookmarks();
       final controller = controllerFor(builtins: []);
 
@@ -604,11 +595,7 @@ void main() {
         testBookmark('u1', host: 'peer.example.com', port: 11010),
       );
 
-      expect(calls.single.method, 'Clipboard.setData');
-      expect(
-        (calls.single.arguments as Map)['text'],
-        'tcp://peer.example.com:11010',
-      );
+      expect(copied, ['tcp://peer.example.com:11010']);
       expect(messages.single, 'Copied tcp://peer.example.com:11010');
     });
 
