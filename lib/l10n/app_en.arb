@@ -31,7 +31,7 @@
   "advancedNetNamespace": "Network Namespace (Optional)",
   "advancedNetNamespaceHelper": "Linux network namespace name",
   "advancedNoTun": "Disable TUN Mode",
-  "advancedNoTunSubtitle": "Run without a virtual network device; Needs a SOCKS5 proxy to reach other peers.",
+  "advancedNoTunSubtitle": "Run without a virtual network device; needs a SOCKS5 proxy to reach other peers.",
   "advancedNoTunNeedsTun": "Magic DNS and UDP Broadcast Relay require a TUN device.",
   "advancedNetworkFlags": "Network Flags",
   "advancedNetworkFlagsDescription": "Protocol and performance settings",
@@ -42,14 +42,14 @@
   "advancedLatencyFirst": "Latency First",
   "advancedLatencyFirstSubtitle": "Route by lowest total latency instead of hops",
   "advancedMultiThread": "Multi-Threading",
-  "advancedMultiThreadSubtitle": "Use multiple threads for processing",
+  "advancedMultiThreadSubtitle": "Process network traffic across multiple threads",
   "advancedKcpProxy": "KCP Proxy",
-  "advancedKcpProxySubtitle": "Carry TCP over KCP for lower latency and speed",
+  "advancedKcpProxySubtitle": "Carry TCP over KCP for lower latency and higher throughput",
   "advancedQuicProxy": "QUIC Proxy",
-  "advancedQuicProxySubtitle": "Carry TCP over QUIC for lower latency and speed",
+  "advancedQuicProxySubtitle": "Carry TCP over QUIC for lower latency and higher throughput",
   "advancedMagicDns": "Magic DNS",
   "advancedMagicDnsSubtitle": "Reach peers by name; changes system DNS settings",
-  "advancedMagicDnsNeedsTun": "Magic DNS needs the TUN device; the two options cannot both be on.",
+  "advancedMagicDnsNeedsTun": "Magic DNS requires a TUN device and cannot be used with Disable TUN Mode.",
   "advancedDnsSuffix": "DNS Suffix",
   "advancedDnsSuffixHelper": "Peers are named <hostname>.<suffix>",
   "advancedMtuHelper": "Maximum Transmission Unit (576-65535)",
@@ -58,7 +58,7 @@
   "advancedTuning": "Tuning",
   "advancedTuningDescription": "Protocols, algorithms and resource limits",
   "advancedDefaultProtocol": "Default Protocol",
-  "advancedDefaultProtocolHelper": "Used for peers given without a protocol",
+  "advancedDefaultProtocolHelper": "Used for peers specified without a protocol",
   "advancedEncryptionAlgorithm": "Encryption Algorithm",
   "advancedEncryptionAlgorithmHelper": "Must match on every peer",
   "advancedXorInsecure": "XOR (insecure)",
@@ -73,7 +73,7 @@
   "advancedSmoltcp": "User-Space Network Stack",
   "advancedSmoltcpSubtitle": "Use smoltcp when system firewalls block subnet or KCP proxying",
   "advancedSocketMark": "Socket Mark",
-  "advancedSocketMarkHelper": "Linux only; SO_MARK for policy routing of underlay sockets. Needs CAP_NET_ADMIN",
+  "advancedSocketMarkHelper": "(Linux only) SO_MARK for policy routing of underlay sockets. Needs CAP_NET_ADMIN",
   "advancedRelay": "Relay",
   "advancedRelayDescription": "Forwarding traffic for other peers and networks",
   "advancedRelayWhitelist": "Relay Network Whitelist",
@@ -83,13 +83,13 @@
   "advancedDisableRelayData": "Disable Data Relay",
   "advancedDisableRelayDataSubtitle": "Carry no data packets for other peers",
   "advancedPreferPeerRelay": "Prefer Peer Relay",
-  "advancedPreferPeerRelaySubtitle": "Prefer credential peers already relaying to a destination",
+  "advancedPreferPeerRelaySubtitle": "Prefer authenticated peers already relaying to a destination",
   "advancedDisableRelayKcp": "Disable KCP Relay",
-  "advancedDisableRelayKcpSubtitle": "Do not relay KCP packets, to save bandwidth",
+  "advancedDisableRelayKcpSubtitle": "Do not relay KCP packets to save bandwidth",
   "advancedRelayForeignKcp": "Relay Foreign Network KCP",
   "advancedRelayForeignKcpSubtitle": "Relay KCP packets of other networks when serving as a shared node",
   "advancedDisableRelayQuic": "Disable QUIC Relay",
-  "advancedDisableRelayQuicSubtitle": "Do not relay QUIC packets, to save bandwidth",
+  "advancedDisableRelayQuicSubtitle": "Do not relay QUIC packets to save bandwidth",
   "advancedRelayForeignQuic": "Relay Foreign Network QUIC",
   "advancedRelayForeignQuicSubtitle": "Relay QUIC packets of other networks when serving as a shared node",
   "advancedForeignRelayLimit": "Foreign Relay Limit",
@@ -106,7 +106,7 @@
   "advancedP2pOnly": "P2P Only",
   "advancedP2pOnlySubtitle": "Only talk to peers with a direct connection, never relay",
   "advancedLazyP2p": "Lazy P2P",
-  "advancedLazyP2pSubtitle": "Connect directly to a peer only once traffic targets it",
+  "advancedLazyP2pSubtitle": "Connect directly to a peer only when traffic is sent to it",
   "advancedNeedP2p": "Need P2P",
   "advancedNeedP2pSubtitle": "Ask peers to connect to this node directly, even if lazy",
   "advancedDisableUdpHolePunching": "Disable UDP Hole Punching",
@@ -136,17 +136,17 @@
   "advancedPortForwardingHelper": "Forward a local port to an address in the virtual network",
   "advancedStunServers": "STUN Servers",
   "advancedStunDescription": "STUN servers for NAT traversal. Leave empty for defaults",
-  "advancedStunServersHelper": "UDP STUN servers, also used for TCP when that is empty",
+  "advancedStunServersHelper": "UDP STUN servers, also used for TCP when TCP STUN Servers is empty",
   "advancedTcpStunServers": "TCP STUN Servers",
   "advancedTcpStunServersHelper": "STUN servers queried over TCP",
   "advancedIpv6StunServers": "IPv6 STUN Servers",
-  "advancedIpv6StunServersHelper": "STUN servers queried over IPv6. Off when empty while STUN Servers is set",
+  "advancedIpv6StunServersHelper": "STUN servers queried over IPv6. Disabled when left empty if STUN Servers is set",
   "advancedPublicIpv6": "Public IPv6",
   "advancedPublicIpv6Description": "Give peers public IPv6 addresses from a shared subnet",
   "advancedAutoPublicIpv6": "Auto Public IPv6",
   "advancedAutoPublicIpv6Subtitle": "Get a public IPv6 address from a peer sharing its subnet",
   "advancedSharePublicIpv6": "Share Public IPv6 Subnet",
-  "advancedSharePublicIpv6Subtitle": "Linux only; hand out addresses from this node’s subnet",
+  "advancedSharePublicIpv6Subtitle": "(Linux only) Hand out addresses from this node's subnet",
   "advancedSharedSubnet": "Shared Subnet (Optional)",
   "advancedSharedSubnetHelper": "Subnet to share. Leave empty to detect it from routes",
   "advancedVpnPortal": "VPN Portal",
@@ -161,7 +161,7 @@
   "advancedAccessControl": "Access Control",
   "advancedAccessControlDescription": "Restrict other networks and open ports",
   "advancedPrivateMode": "Private Mode",
-  "advancedPrivateModeSubtitle": "Refuse handshakes and relaying for nodes of other networks or with another secret",
+  "advancedPrivateModeSubtitle": "Refuse handshakes and relaying for nodes from other networks or with a different secret",
   "advancedTcpWhitelist": "TCP Port Whitelist",
   "advancedTcpWhitelistHint": "80 or 8000-9000",
   "advancedTcpWhitelistHelper": "TCP ports peers may reach. Leave empty to allow all",
@@ -327,7 +327,7 @@
       }
     }
   },
-  "networkTunWindows": "\"{name}\" needs administrator privileges to create its TUN device. You can:\n\n• Restart Yukari as administrator.\n• Turn on \"Disable TUN mode\" for this network.",
+  "networkTunWindows": "\"{name}\" needs administrator privileges to create its TUN device. You can:\n\n• Restart Yukari as administrator.\n• Turn on \"Disable TUN Mode\" for this network.",
   "@networkTunWindows": {
     "placeholders": {
       "name": {
@@ -335,7 +335,7 @@
       }
     }
   },
-  "networkTunRoot": "\"{name}\" needs root privileges to create its TUN device. You can:\n\n• Restart Yukari as root.\n• Turn on \"Disable TUN mode\" for this network.",
+  "networkTunRoot": "\"{name}\" needs root privileges to create its TUN device. You can:\n\n• Restart Yukari as root.\n• Turn on \"Disable TUN Mode\" for this network.",
   "@networkTunRoot": {
     "placeholders": {
       "name": {
@@ -359,7 +359,7 @@
     }
   },
   "homeRunningInApp": "Running in app mode",
-  "homeRunningAsService": "Running as service mode",
+  "homeRunningAsService": "Running in service mode",
   "homeReady": "Ready",
   "homeConnecting": "Connecting",
   "homeUnreachable": "Unreachable",
@@ -445,7 +445,7 @@
   "settingsModeService": "Service",
   "settingsModeAppDescription": "Run networks inside Yukari. Requires administrator or root privileges.",
   "settingsModeAppVpnDescription": "It uses the system VPN, which has some limitations.",
-  "settingsModeServiceDescription": "Run networks as system service. Can start on boot and work without Yukari app.",
+  "settingsModeServiceDescription": "Run networks as a system service. Can start on boot and keep running after Yukari closes.",
   "settingsWorkingMode": "Working mode",
   "settingsNeedsRoot": "Needs root.",
   "settingsServiceUnreachable": "Cannot reach the service. Start or reinstall it.",
@@ -486,7 +486,7 @@
   "settingsInstall": "Install",
   "settingsUpdate": "Update",
   "settingsInstalling": "Installing",
-  "settingsServiceVersions": "Running Version {version}; The latest is {latest}",
+  "settingsServiceVersions": "Running version {version}; latest is {latest}",
   "@settingsServiceVersions": {
     "placeholders": {
       "version": {
@@ -1026,7 +1026,7 @@
   "bookmarksSectionMine": "My Bookmarks",
   "bookmarksEmpty": "No bookmarks yet",
   "bookmarksEmptyDescription": "Save a node from a network, or add one here to reuse it in every network.",
-  "bookmarksNoResults": "No bookmarks match",
+  "bookmarksNoResults": "No matching bookmarks",
   "bookmarksNoResultsDescription": "Try another search, or clear the filters.",
   "bookmarksAdd": "Add Bookmark",
   "bookmarksEditNamed": "Edit {name}",
@@ -1048,7 +1048,7 @@
       }
     }
   },
-  "bookmarksDeleteConfirmDescription": "It leaves this list only; networks that already use the node keep their peer.",
+  "bookmarksDeleteConfirmDescription": "This only removes it from your bookmarks; networks already using it will keep the peer.",
   "bookmarksDeleteSelected": "{count, plural, other{Delete {count} bookmarks?}}",
   "@bookmarksDeleteSelected": {
     "description": "Asks before deleting a whole selection of bookmarks",
@@ -1058,7 +1058,7 @@
       }
     }
   },
-  "bookmarksDeleteSelectedDescription": "They leave this list only; networks that already use the nodes keep their peers.",
+  "bookmarksDeleteSelectedDescription": "This only removes them from your bookmarks; networks already using them will keep their peers.",
   "bookmarksName": "Name (Optional)",
   "bookmarksNameHelper": "Shown in this list; defaults to the address",
   "bookmarksDescription": "Description (Optional)",
@@ -1087,7 +1087,7 @@
   "bookmarksShowQrSubtitle": "Let another device scan this node",
   "bookmarksCopyAddress": "Copy address",
   "bookmarksExportJson": "Export as JSON",
-  "bookmarksExportJsonSubtitle": "A file you can import in another Yukari",
+  "bookmarksExportJsonSubtitle": "A file you can import on another device running Yukari",
   "bookmarksExportFile": "Export bookmarks",
   "bookmarksImportFile": "Import from file",
   "bookmarksExported": "Bookmarks exported",
@@ -1194,7 +1194,7 @@
       }
     }
   },
-  "peersEmptyWarning": "This network has no initial peers, so it may not find anyone. Add a public node so it connects correctly.",
+  "peersEmptyWarning": "This network has no initial peers, so it may not find anyone. Add a public node so it can connect.",
   "peersEmptyAddPublic": "Add a Public Node",
   "peersEmptyBrowse": "Browse Bookmarks",
   "peersEmptyNoPublic": "No public nodes are bundled yet. Add a peer, or save one as a bookmark.",
@@ -1226,7 +1226,7 @@
   "shareSendNetworkMissing": "That network no longer exists.",
   "shareSendNodeMissing": "That bookmark no longer exists.",
   "shareSendNoPeers": "Add a peer to this network first, so the other device can connect.",
-  "shareSendUnsupported": "This share cannot be sent as it is.",
+  "shareSendUnsupported": "This item cannot be shared as is.",
   "shareSendIncludeSelf": "Add this device as a peer",
   "shareSendIncludeSelfHint": "The other device connects to you first, so it can start without another peer.",
   "shareSendIncludeConfigs": "Include network configs",
@@ -1299,7 +1299,7 @@
   "shareReceiveCameraHint": "Point the camera at the other device's QR code.",
   "shareReceiveTorch": "Flashlight",
   "shareReceiveSwitchCamera": "Switch camera",
-  "shareReceiveNoCamera": "No camera scanner on this platform. Scan a screenshot or a GIF instead.",
+  "shareReceiveNoCamera": "Camera scanning isn't available on this platform. Scan a screenshot or GIF instead.",
   "shareReceiveScanImage": "Scan an image",
   "shareReceiveImageScanning": "Scanning frame {done} of {total}",
   "@shareReceiveImageScanning": {
@@ -1348,7 +1348,7 @@
   "shareReceiveRateTurbo": "Turbo",
   "shareReceiveRateHint": "Relaxed saves battery; Turbo reads frames as fast as the camera allows.",
   "shareReceiveDifferentShare": "A different share started; the previous progress was dropped.",
-  "shareReceiveInvalid": "That is not a Yukari share.",
+  "shareReceiveInvalid": "Not a valid Yukari share.",
   "shareReceiveComplete": "Transfer complete",
   "shareReceiveAddNetwork": "Add network",
   "shareReceiveSaveNode": "Save node",
@@ -1369,7 +1369,7 @@
       }
     }
   },
-  "shareReceiveAddSummary": "Added {added}, duplicates {duplicates}, failed {failed}",
+  "shareReceiveAddSummary": "Added {added} · {duplicates} duplicates · {failed} failed",
   "@shareReceiveAddSummary": {
     "placeholders": {
       "added": {
@@ -1435,7 +1435,7 @@
       }
     }
   },
-  "selectionTooMany": "{count} items cannot be shared at once; share at most {max}.",
+  "selectionTooMany": "You can share up to {max} items at once ({count} selected).",
   "@selectionTooMany": {
     "placeholders": {
       "count": {
@@ -1484,7 +1484,7 @@
   "@settingsPageTransitions": {
     "description": "Switch that allows swiping between top pages on compact layouts and animating the switch"
   },
-  "settingsPageTransitionsDescription": "Swipe between pages on compact layouts, and animate the switch",
+  "settingsPageTransitionsDescription": "Swipe between top-level pages on compact layouts, and animate the switch",
   "settingsBehavior": "Behavior",
   "@settingsBehavior": {
     "description": "Settings section that holds what the app does around launch"
@@ -1645,7 +1645,7 @@
   "advancedDnsEditRecord": "Edit record",
   "advancedDnsDeleteRecord": "Delete record",
   "advancedDnsRecordName": "Record Name",
-  "advancedDnsRecordNameHelper": "Use @ for the zone apex, a relative label, or a FQDN",
+  "advancedDnsRecordNameHelper": "Use @ for the zone apex, a relative label, or an FQDN",
   "advancedDnsRecordType": "Record Type",
   "advancedDnsRecordValue": "Record Value",
   "advancedDnsRecordValueHelper": "DNS RDATA in presentation format"

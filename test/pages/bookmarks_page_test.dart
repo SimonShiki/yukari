@@ -575,7 +575,7 @@ void main() {
 
       await tester.enterText(find.byType(SearchBar), 'zzz');
       await tester.pumpAndSettle();
-      expect(find.text('No bookmarks match'), findsOneWidget);
+      expect(find.text('No matching bookmarks'), findsOneWidget);
       expect(
         find.text('Try another search, or clear the filters.'),
         findsOneWidget,
@@ -585,7 +585,7 @@ void main() {
       await tester.tap(find.widgetWithText(TextButton, 'Clear filters'));
       await tester.pumpAndSettle();
       expect(find.text('Alpha'), findsOneWidget);
-      expect(find.text('No bookmarks match'), findsNothing);
+      expect(find.text('No matching bookmarks'), findsNothing);
     });
   });
 
@@ -647,7 +647,7 @@ void main() {
       expect(find.text('Delete Alpha?'), findsOneWidget);
       expect(
         find.text(
-          'It leaves this list only; networks that already use the node keep their peer.',
+          'This only removes it from your bookmarks; networks already using it will keep the peer.',
         ),
         findsOneWidget,
       );

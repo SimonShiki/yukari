@@ -197,7 +197,7 @@ void main() {
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
     await pump(tester, ServiceState.running);
-    final detail = find.textContaining('Run networks as system service');
+    final detail = find.textContaining('Run networks as a system service');
     final paragraph = tester.renderObject<RenderParagraph>(detail);
     expect(paragraph.didExceedMaxLines, isFalse);
     expect(paragraph.size.height, greaterThan(paragraph.preferredLineHeight));
@@ -522,7 +522,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(
       find.text(
-        'Swipe between pages on compact layouts, and animate the switch',
+        'Swipe between top-level pages on compact layouts, and animate the switch',
       ),
       findsOneWidget,
     );
