@@ -7,6 +7,7 @@
   <a href="https://github.com/SimonShiki/yukari/actions/workflows/ci.yml"><img src="https://github.com/SimonShiki/yukari/actions/workflows/ci.yml/badge.svg?branch=trunk" alt="CI"></a>
   <a href="https://github.com/SimonShiki/yukari/releases"><img src="https://img.shields.io/github/v/release/SimonShiki/yukari?label=release" alt="Latest release"></a>
   <a href="./LICENSE"><img src="https://img.shields.io/badge/licence-AGPL--3.0--only-479cff" alt="Licence: AGPL-3.0-only"></a>
+  <a href="https://hosted.weblate.org/engage/yukari/"><img src="https://hosted.weblate.org/widget/yukari/flutter/svg-badge.svg" alt="Translation status"></a>
   <img src="https://img.shields.io/badge/platform-Windows%20%7C%20Linux%20%7C%20Android-52298c" alt="Windows, Linux and Android">
 </p>
 
