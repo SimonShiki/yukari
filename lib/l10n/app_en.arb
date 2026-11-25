@@ -1,17 +1,53 @@
 {
   "@@locale": "en",
   "commonCancel": "Cancel",
+  "@commonCancel": {
+    "description": "Dialog or action button label to cancel the current operation"
+  },
   "commonSave": "Save",
+  "@commonSave": {
+    "description": "Button label to save changes"
+  },
   "commonDelete": "Delete",
+  "@commonDelete": {
+    "description": "Button or menu label to delete an item"
+  },
   "commonCreate": "Create",
+  "@commonCreate": {
+    "description": "Button label to create a new item"
+  },
   "commonStart": "Start",
+  "@commonStart": {
+    "description": "Action label to start a virtual network instance"
+  },
   "commonStop": "Stop",
+  "@commonStop": {
+    "description": "Action label to stop a running virtual network instance"
+  },
   "commonRetry": "Retry",
+  "@commonRetry": {
+    "description": "Button label to retry a failed operation"
+  },
   "commonGoBack": "Go Back",
+  "@commonGoBack": {
+    "description": "Button label to navigate back to the previous screen"
+  },
   "navHome": "Home",
+  "@navHome": {
+    "description": "Primary navigation destination label for the Home screen"
+  },
   "navNetworks": "Networks",
+  "@navNetworks": {
+    "description": "Primary navigation destination label for the Networks list screen"
+  },
   "navBookmarks": "Bookmarks",
+  "@navBookmarks": {
+    "description": "Primary navigation destination label for the Bookmarks screen"
+  },
   "navSettings": "Settings",
+  "@navSettings": {
+    "description": "Primary navigation destination label for the Settings screen"
+  },
   "settingsInterface": "Interface",
   "settingsLanguage": "Language",
   "settingsLanguageSystem": "Follow system",
@@ -20,7 +56,7 @@
   },
   "languageName": "English",
   "@languageName": {
-    "description": "The name of this language, written in this language, shown in the language picker"
+    "description": "The autonym of this language (its own name written in this language, e.g. Deutsch, 日本語, 简体中文), shown in the language picker. Do not translate the word English literally."
   },
   "advancedNetworkServices": "Network Services",
   "advancedNetworkServicesDescription": "SOCKS5, virtual device and namespace",
@@ -48,6 +84,9 @@
   "advancedQuicProxy": "QUIC Proxy",
   "advancedQuicProxySubtitle": "Carry TCP over QUIC for lower latency and higher throughput",
   "advancedMagicDns": "Magic DNS",
+  "@advancedMagicDns": {
+    "description": "Feature name for EasyTier Magic DNS (resolving peer hostnames to virtual IPs)"
+  },
   "advancedMagicDnsSubtitle": "Reach peers by name; changes system DNS settings",
   "advancedMagicDnsNeedsTun": "Magic DNS requires a TUN device and cannot be used with Disable TUN Mode.",
   "advancedDnsSuffix": "DNS Suffix",
@@ -56,6 +95,9 @@
   "advancedMappedListeners": "Mapped Listeners",
   "advancedMappedListenersDescription": "Public addresses peers use to reach this node",
   "advancedTuning": "Tuning",
+  "@advancedTuning": {
+    "description": "Section title in Advanced network settings for protocol, encryption, compression, and thread tuning"
+  },
   "advancedTuningDescription": "Protocols, algorithms and resource limits",
   "advancedDefaultProtocol": "Default Protocol",
   "advancedDefaultProtocolHelper": "Used for peers specified without a protocol",
@@ -65,6 +107,9 @@
   "advancedCompression": "Compression",
   "advancedCompressionHelper": "Compress traffic sent to peers",
   "advancedCompressionNone": "None",
+  "@advancedCompressionNone": {
+    "description": "Dropdown option meaning traffic compression is disabled"
+  },
   "advancedThreadCount": "Thread Count",
   "advancedThreadCountHelper": "Worker threads when multi-threading is on",
   "advancedThreadCountName": "Thread count",
@@ -75,6 +120,9 @@
   "advancedSocketMark": "Socket Mark",
   "advancedSocketMarkHelper": "(Linux only) SO_MARK for policy routing of underlay sockets. Needs CAP_NET_ADMIN",
   "advancedRelay": "Relay",
+  "@advancedRelay": {
+    "description": "Section title in Advanced network settings for relaying traffic on behalf of other peers/networks"
+  },
   "advancedRelayDescription": "Forwarding traffic for other peers and networks",
   "advancedRelayWhitelist": "Relay Network Whitelist",
   "advancedRelayWhitelistHelper": "Networks to relay, separated by spaces; wildcards allowed. Leave empty to relay none",
@@ -120,6 +168,9 @@
   "advancedBindDevice": "Bind to Physical Device Only",
   "advancedBindDeviceSubtitle": "Never connect to peers through other virtual networks",
   "advancedRouting": "Routing",
+  "@advancedRouting": {
+    "description": "Section title in Advanced network settings for subnet proxy, manual routes, and exit nodes"
+  },
   "advancedRoutingDescription": "Share local networks and choose where traffic goes",
   "advancedSubnetProxy": "Subnet Proxy",
   "advancedSubnetProxyHint": "192.168.1.0/24 or 192.168.1.0/24->10.1.1.0/24",
@@ -156,9 +207,15 @@
   "advancedWireguardListen": "WireGuard Listen Address",
   "advancedWireguardListenHelper": "Local address WireGuard clients connect to",
   "advancedStartup": "Startup",
+  "@advancedStartup": {
+    "description": "Section title in Advanced network settings for startup flags and access control"
+  },
   "advancedStartOnBoot": "Start on boot",
   "advancedStartOnBootSubtitle": "The background service runs it at system startup",
   "advancedAccessControl": "Access Control",
+  "@advancedAccessControl": {
+    "description": "Section title in Advanced network settings for network whitelist and private mode"
+  },
   "advancedAccessControlDescription": "Restrict other networks and open ports",
   "advancedPrivateMode": "Private Mode",
   "advancedPrivateModeSubtitle": "Refuse handshakes and relaying for nodes from other networks or with a different secret",
@@ -169,6 +226,9 @@
   "advancedUdpWhitelistHint": "53 or 5000-6000",
   "advancedUdpWhitelistHelper": "UDP ports peers may reach. Leave empty to allow all",
   "advancedSecurity": "Security",
+  "@advancedSecurity": {
+    "description": "Section title in Advanced network settings for encryption and security options"
+  },
   "advancedSecurityDescription": "Node key pair and peer authentication",
   "advancedSecureMode": "Secure Mode",
   "advancedSecureModeSubtitle": "Authenticate peers with this node's key pair",
@@ -186,18 +246,39 @@
   "networkDeleteTitle": "Delete network?",
   "networkPrivileges": "Privileges required",
   "networkRestart": "Restart",
+  "@networkRestart": {
+    "description": "Action label to restart a running network instance"
+  },
   "networkEdit": "Edit Network",
   "networkMissing": "Network not found",
   "networkMissingDescription": "It may have been deleted.",
   "networkBasic": "Basic",
+  "@networkBasic": {
+    "description": "Tab or section label for basic network settings"
+  },
   "networkAdvanced": "Advanced",
+  "@networkAdvanced": {
+    "description": "Tab or section label for advanced network settings"
+  },
   "networkTitle": "Network",
   "networkPeers": "Peers",
+  "@networkPeers": {
+    "description": "Tab or section label showing connected peers in a network"
+  },
   "networkLogs": "Logs",
+  "@networkLogs": {
+    "description": "Tab or section label showing runtime logs of a network instance"
+  },
   "networkDiscardTitle": "Discard invalid changes?",
   "networkDiscardDescription": "Some fields contain invalid values that were not saved. Leaving will discard them.",
   "networkKeepEditing": "Keep Editing",
+  "@networkKeepEditing": {
+    "description": "Dialog button label to stay in the network editor and keep unsaved changes"
+  },
   "networkDiscard": "Discard",
+  "@networkDiscard": {
+    "description": "Dialog button label to discard unsaved changes in the network editor"
+  },
   "networkCreate": "Create Network",
   "networkCreateHeading": "Create a new network",
   "networkCreateDescription": "You'll be able to configure all settings after creation",
@@ -207,6 +288,9 @@
   "networkAdd": "Add network",
   "networkCloseMenu": "Close network menu",
   "networkIdentity": "Network",
+  "@networkIdentity": {
+    "description": "Section title for network name and secret"
+  },
   "networkName": "Network Name",
   "networkNameHelper": "Unique identifier for this network",
   "networkHostname": "Hostname (Optional)",

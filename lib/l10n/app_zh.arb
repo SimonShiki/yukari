@@ -256,87 +256,16 @@
   "networkFilterErrors": "错误",
   "networkFilterConnections": "连接",
   "networkCreateFailed": "创建网络失败：{error}",
-  "@networkCreateFailed": {
-    "placeholders": {
-      "error": {
-        "type": "String"
-      }
-    }
-  },
   "networkEditNamed": "编辑 {name}",
-  "@networkEditNamed": {
-    "placeholders": {
-      "name": {
-        "type": "String"
-      }
-    }
-  },
   "networkDeleteDescription": "删除“{name}”？其正在运行的实例将被停止。此操作无法撤销。",
-  "@networkDeleteDescription": {
-    "placeholders": {
-      "name": {
-        "type": "String"
-      }
-    }
-  },
   "networkDeleteSelectedTitle": "{count, plural, other{删除 {count} 个网络？}}",
-  "@networkDeleteSelectedTitle": {
-    "description": "Asks before deleting a whole selection of networks",
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
   "networkDeleteSelectedDescription": "其正在运行的实例将被停止。此操作无法撤销。",
   "networkEditPeerNamed": "编辑节点 {id}",
-  "@networkEditPeerNamed": {
-    "placeholders": {
-      "id": {
-        "type": "String"
-      }
-    }
-  },
   "networkEditListenerNamed": "编辑监听器 {address}",
-  "@networkEditListenerNamed": {
-    "placeholders": {
-      "address": {
-        "type": "String"
-      }
-    }
-  },
   "networkAddListeners": "添加{title}",
-  "@networkAddListeners": {
-    "placeholders": {
-      "title": {
-        "type": "String"
-      }
-    }
-  },
   "networkNoListeners": "尚未配置{title}",
-  "@networkNoListeners": {
-    "placeholders": {
-      "title": {
-        "type": "String"
-      }
-    }
-  },
   "networkTunWindows": "“{name}”需要管理员权限才能创建 TUN 设备。您可以：\n\n• 以管理员身份重启 Yukari。\n• 为此网络启用“禁用 TUN 模式”。",
-  "@networkTunWindows": {
-    "placeholders": {
-      "name": {
-        "type": "String"
-      }
-    }
-  },
   "networkTunRoot": "“{name}”需要 root 权限才能创建 TUN 设备。您可以：\n\n• 以 root 身份重启 Yukari。\n• 为此网络启用“禁用 TUN 模式”。",
-  "@networkTunRoot": {
-    "placeholders": {
-      "name": {
-        "type": "String"
-      }
-    }
-  },
   "networkTunServiceOption": "\n• 在设置中使用服务模式，以完整权限在后台运行网络。",
   "homeIpAddress": "IP 地址",
   "homePublicIp": "公网 IP",
@@ -357,13 +286,6 @@
   "homeTrafficTotals": "已接收 {received} · 已发送 {sent}",
   "androidNotificationPeers": "{count} 个节点",
   "androidNotificationNetworks": "{count} 个网络",
-  "@androidNotificationNetworks": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
   "homeNoNetworks": "暂无网络",
   "homeCreateNetworkHint": "点击创建网络。",
   "homeStartNetworkHint": "启动网络以连接。",
@@ -434,29 +356,8 @@
   "cardFailed": "失败",
   "cardUnknown": "未知",
   "cardStart": "启动 {name}",
-  "@cardStart": {
-    "placeholders": {
-      "name": {
-        "type": "String"
-      }
-    }
-  },
   "cardStop": "停止 {name}",
-  "@cardStop": {
-    "placeholders": {
-      "name": {
-        "type": "String"
-      }
-    }
-  },
   "cardMoreOptions": "{name} 的更多选项",
-  "@cardMoreOptions": {
-    "placeholders": {
-      "name": {
-        "type": "String"
-      }
-    }
-  },
   "commonEdit": "编辑",
   "cardExport": "导出",
   "cardLog": "日志",
@@ -473,13 +374,6 @@
   "peerSecretVerified": "密钥已验证",
   "peerSecretVerifiedDescription": "流量已加密，且此节点已证明持有网络密钥。",
   "networkOnePerLine": "{helper}。每行一项",
-  "@networkOnePerLine": {
-    "placeholders": {
-      "helper": {
-        "type": "String"
-      }
-    }
-  },
   "validationNetworkEmpty": "网络名称不能为空",
   "validationNetworkExists": "网络名称已存在",
   "validationHostnameLength": "主机名不能超过 32 个字符",
@@ -503,434 +397,56 @@
   "logCopyJson": "复制为 JSON",
   "logBackToTop": "回到顶部",
   "validationRange": "{label}必须是 {min} 到 {max} 之间的数字",
-  "@validationRange": {
-    "placeholders": {
-      "label": {
-        "type": "String"
-      },
-      "min": {
-        "type": "String"
-      },
-      "max": {
-        "type": "String"
-      }
-    }
-  },
   "validationStun": "无效的 STUN 服务器：{value}",
-  "@validationStun": {
-    "placeholders": {
-      "value": {
-        "type": "String"
-      }
-    }
-  },
   "validationIp": "无效的 IP 地址：{value}",
-  "@validationIp": {
-    "placeholders": {
-      "value": {
-        "type": "String"
-      }
-    }
-  },
   "validationIpv4Network": "无效的 IPv4 网络：{value}",
-  "@validationIpv4Network": {
-    "placeholders": {
-      "value": {
-        "type": "String"
-      }
-    }
-  },
   "validationMappedNetwork": "映射网络的前缀长度必须相同：{value}",
-  "@validationMappedNetwork": {
-    "placeholders": {
-      "value": {
-        "type": "String"
-      }
-    }
-  },
   "validationPortForward": "无效的端口转发：{value}",
-  "@validationPortForward": {
-    "placeholders": {
-      "value": {
-        "type": "String"
-      }
-    }
-  },
   "validationPortRange": "无效的端口或范围：{value}",
-  "@validationPortRange": {
-    "placeholders": {
-      "value": {
-        "type": "String"
-      }
-    }
-  },
   "controllerCheckService": "无法检查服务：{error}",
-  "@controllerCheckService": {
-    "placeholders": {
-      "error": {
-        "type": "String"
-      }
-    }
-  },
   "controllerStopNetworks": "无法停止正在运行的网络：{error}",
-  "@controllerStopNetworks": {
-    "placeholders": {
-      "error": {
-        "type": "String"
-      }
-    }
-  },
   "controllerSave": "保存失败：{error}",
-  "@controllerSave": {
-    "placeholders": {
-      "error": {
-        "type": "String"
-      }
-    }
-  },
   "controllerRefresh": "刷新网络失败：{error}",
-  "@controllerRefresh": {
-    "placeholders": {
-      "error": {
-        "type": "String"
-      }
-    }
-  },
   "controllerImportInvalid": "无法导入“{name}”：{error}",
-  "@controllerImportInvalid": {
-    "placeholders": {
-      "name": {
-        "type": "String"
-      },
-      "error": {
-        "type": "String"
-      }
-    }
-  },
   "controllerImportFailed": "导入配置失败：{error}",
-  "@controllerImportFailed": {
-    "placeholders": {
-      "error": {
-        "type": "String"
-      }
-    }
-  },
   "controllerExported": "配置已导出",
   "controllerExportFailed": "导出配置失败：{error}",
-  "@controllerExportFailed": {
-    "placeholders": {
-      "error": {
-        "type": "String"
-      }
-    }
-  },
   "controllerDeleteFailed": "无法删除 {name}，请重试。",
-  "@controllerDeleteFailed": {
-    "placeholders": {
-      "name": {
-        "type": "String"
-      }
-    }
-  },
   "controllerDeleteSelectedFailed": "无法删除所选网络，请重试。",
   "controllerServiceInstall": "无法安装服务：{error}",
-  "@controllerServiceInstall": {
-    "placeholders": {
-      "error": {
-        "type": "String"
-      }
-    }
-  },
   "controllerServiceStart": "无法启动服务：{error}",
-  "@controllerServiceStart": {
-    "placeholders": {
-      "error": {
-        "type": "String"
-      }
-    }
-  },
   "controllerServiceStop": "无法停止服务：{error}",
-  "@controllerServiceStop": {
-    "placeholders": {
-      "error": {
-        "type": "String"
-      }
-    }
-  },
   "controllerServiceUninstall": "无法卸载服务：{error}",
-  "@controllerServiceUninstall": {
-    "placeholders": {
-      "error": {
-        "type": "String"
-      }
-    }
-  },
   "controllerNetworkRun": "无法启动 {name}：{error}",
-  "@controllerNetworkRun": {
-    "placeholders": {
-      "name": {
-        "type": "String"
-      },
-      "error": {
-        "type": "String"
-      }
-    }
-  },
   "controllerNetworkStop": "无法停止 {name}：{error}",
-  "@controllerNetworkStop": {
-    "placeholders": {
-      "name": {
-        "type": "String"
-      },
-      "error": {
-        "type": "String"
-      }
-    }
-  },
   "logTunDeviceReady": "TUN 设备已就绪：{a}",
-  "@logTunDeviceReady": {
-    "placeholders": {
-      "a": {
-        "type": "String"
-      }
-    }
-  },
   "logTunDeviceError": "TUN 设备错误：{a}",
-  "@logTunDeviceError": {
-    "placeholders": {
-      "a": {
-        "type": "String"
-      }
-    }
-  },
   "logPeerAdded": "节点 {a} 已加入",
-  "@logPeerAdded": {
-    "placeholders": {
-      "a": {
-        "type": "String"
-      }
-    }
-  },
   "logPeerRemoved": "节点 {a} 已离开",
-  "@logPeerRemoved": {
-    "placeholders": {
-      "a": {
-        "type": "String"
-      }
-    }
-  },
   "logPeerConnAdded": "已通过 {b} 连接到节点 {a}",
-  "@logPeerConnAdded": {
-    "placeholders": {
-      "a": {
-        "type": "String"
-      },
-      "b": {
-        "type": "String"
-      }
-    }
-  },
   "logPeerConnRemoved": "已断开与节点 {a} 的连接（{b} {c}）",
-  "@logPeerConnRemoved": {
-    "placeholders": {
-      "a": {
-        "type": "String"
-      },
-      "b": {
-        "type": "String"
-      },
-      "c": {
-        "type": "String"
-      }
-    }
-  },
   "logListenerAdded": "正在监听 {a}",
-  "@logListenerAdded": {
-    "placeholders": {
-      "a": {
-        "type": "String"
-      }
-    }
-  },
   "logListenerAddFailed": "无法监听 {a}：{b}",
-  "@logListenerAddFailed": {
-    "placeholders": {
-      "a": {
-        "type": "String"
-      },
-      "b": {
-        "type": "String"
-      }
-    }
-  },
   "logListenerAcceptFailed": "监听器 {a} 失败：{b}",
-  "@logListenerAcceptFailed": {
-    "placeholders": {
-      "a": {
-        "type": "String"
-      },
-      "b": {
-        "type": "String"
-      }
-    }
-  },
   "logListenerPortMappingEstablished": "已通过 {c} 将 {a} 映射到 {b}",
-  "@logListenerPortMappingEstablished": {
-    "placeholders": {
-      "a": {
-        "type": "String"
-      },
-      "b": {
-        "type": "String"
-      },
-      "c": {
-        "type": "String"
-      }
-    }
-  },
   "logConnecting": "正在连接 {a}",
-  "@logConnecting": {
-    "placeholders": {
-      "a": {
-        "type": "String"
-      }
-    }
-  },
   "logConnectError": "无法连接 {a}（{b}）：{c}",
-  "@logConnectError": {
-    "placeholders": {
-      "a": {
-        "type": "String"
-      },
-      "b": {
-        "type": "String"
-      },
-      "c": {
-        "type": "String"
-      }
-    }
-  },
   "logConnectionAccepted": "已在 {a} 接受来自 {b} 的连接",
-  "@logConnectionAccepted": {
-    "placeholders": {
-      "a": {
-        "type": "String"
-      },
-      "b": {
-        "type": "String"
-      }
-    }
-  },
   "logConnectionError": "{a} 上的连接 {b} 失败：{c}",
-  "@logConnectionError": {
-    "placeholders": {
-      "a": {
-        "type": "String"
-      },
-      "b": {
-        "type": "String"
-      },
-      "c": {
-        "type": "String"
-      }
-    }
-  },
   "logVpnPortalStarted": "VPN 门户已启动：{a}",
-  "@logVpnPortalStarted": {
-    "placeholders": {
-      "a": {
-        "type": "String"
-      }
-    }
-  },
   "logVpnPortalClientConnected": "VPN 客户端 {a} 已连接",
-  "@logVpnPortalClientConnected": {
-    "placeholders": {
-      "a": {
-        "type": "String"
-      }
-    }
-  },
   "logVpnPortalClientDisconnected": "VPN 客户端 {a} 已断开连接",
-  "@logVpnPortalClientDisconnected": {
-    "placeholders": {
-      "a": {
-        "type": "String"
-      }
-    }
-  },
   "logDhcpIpv4Changed": "DHCP IPv4 已从 {a} 更改为 {b}",
-  "@logDhcpIpv4Changed": {
-    "placeholders": {
-      "a": {
-        "type": "String"
-      },
-      "b": {
-        "type": "String"
-      }
-    }
-  },
   "logDhcpIpv4Conflicted": "DHCP IPv4 {a} 发生冲突",
-  "@logDhcpIpv4Conflicted": {
-    "placeholders": {
-      "a": {
-        "type": "String"
-      }
-    }
-  },
   "logPublicIpv6Changed": "公网 IPv6 已从 {a} 更改为 {b}",
-  "@logPublicIpv6Changed": {
-    "placeholders": {
-      "a": {
-        "type": "String"
-      },
-      "b": {
-        "type": "String"
-      }
-    }
-  },
   "logPublicIpv6RoutesUpdated": "IPv6 路由已更新：+{a} −{b}",
-  "@logPublicIpv6RoutesUpdated": {
-    "placeholders": {
-      "a": {
-        "type": "String"
-      },
-      "b": {
-        "type": "String"
-      }
-    }
-  },
   "logProxyCidrsUpdated": "代理 CIDR 已更新：+{a} −{b}",
-  "@logProxyCidrsUpdated": {
-    "placeholders": {
-      "a": {
-        "type": "String"
-      },
-      "b": {
-        "type": "String"
-      }
-    }
-  },
   "logPortForwardAdded": "已添加端口转发",
   "logConfigPatched": "配置已更新",
   "logCredentialChanged": "凭据已更改",
   "logUnknown": "无法识别的日志条目",
   "logUdpRelayStarted": "UDP 广播中继已通过 {backend} 启动",
-  "@logUdpRelayStarted": {
-    "placeholders": {
-      "backend": {
-        "type": "String"
-      }
-    }
-  },
   "logUdpRelayFailed": "UDP 广播中继失败：{error}",
-  "@logUdpRelayFailed": {
-    "placeholders": {
-      "error": {
-        "type": "String"
-      }
-    }
-  },
   "logNone": "无",
   "bookmarksSearchClear": "清除搜索",
   "bookmarksSearchHint": "搜索书签",
@@ -943,34 +459,11 @@
   "bookmarksNoResultsDescription": "换个关键词，或清除筛选条件。",
   "bookmarksAdd": "添加书签",
   "bookmarksEditNamed": "编辑 {name}",
-  "@bookmarksEditNamed": {
-    "description": "Accessibility label of a bookmark row that opens it for editing",
-    "placeholders": {
-      "name": {
-        "type": "String"
-      }
-    }
-  },
   "bookmarksEdit": "编辑书签",
   "bookmarksDelete": "删除",
   "bookmarksDeleteConfirm": "删除 {name}？",
-  "@bookmarksDeleteConfirm": {
-    "placeholders": {
-      "name": {
-        "type": "String"
-      }
-    }
-  },
   "bookmarksDeleteConfirmDescription": "只会从书签列表中移除；已使用该节点的网络仍保留该节点。",
   "bookmarksDeleteSelected": "{count, plural, other{删除 {count} 个书签？}}",
-  "@bookmarksDeleteSelected": {
-    "description": "Asks before deleting a whole selection of bookmarks",
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
   "bookmarksDeleteSelectedDescription": "只会从书签列表中移除；已使用这些节点的网络仍保留这些节点。",
   "bookmarksName": "名称（可选）",
   "bookmarksNameHelper": "显示在列表中；留空则使用地址",
@@ -989,13 +482,6 @@
   "bookmarksNoNetworksDescription": "请先创建网络，再把这个节点添加进去。",
   "bookmarksShare": "分享",
   "bookmarksShareTitle": "分享 {name}",
-  "@bookmarksShareTitle": {
-    "placeholders": {
-      "name": {
-        "type": "String"
-      }
-    }
-  },
   "bookmarksShowQr": "显示二维码",
   "bookmarksShowQrSubtitle": "让另一台设备扫描此节点",
   "bookmarksCopyAddress": "复制地址",
@@ -1006,107 +492,23 @@
   "bookmarksExported": "书签已导出",
   "bookmarksImportNothingNew": "没有新的书签可导入",
   "bookmarksImported": "已导入 {count} 个书签",
-  "@bookmarksImported": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
   "bookmarksImportInvalid": "不是有效的书签文件：{reason}",
-  "@bookmarksImportInvalid": {
-    "placeholders": {
-      "reason": {
-        "type": "String"
-      }
-    }
-  },
   "bookmarksImportFailed": "导入失败：{error}",
-  "@bookmarksImportFailed": {
-    "placeholders": {
-      "error": {
-        "type": "String"
-      }
-    }
-  },
   "bookmarksExportFailed": "导出失败：{error}",
-  "@bookmarksExportFailed": {
-    "placeholders": {
-      "error": {
-        "type": "String"
-      }
-    }
-  },
   "bookmarksFileUnavailable": "无法读取该文件",
   "bookmarksCopied": "已复制 {address}",
-  "@bookmarksCopied": {
-    "placeholders": {
-      "address": {
-        "type": "String"
-      }
-    }
-  },
   "bookmarksSaveFailed": "无法保存书签：{error}",
-  "@bookmarksSaveFailed": {
-    "placeholders": {
-      "error": {
-        "type": "String"
-      }
-    }
-  },
   "bookmarksDeleteFailed": "无法删除书签：{error}",
-  "@bookmarksDeleteFailed": {
-    "placeholders": {
-      "error": {
-        "type": "String"
-      }
-    }
-  },
   "bookmarksDeleteSelectedFailed": "无法删除所选书签：{error}",
-  "@bookmarksDeleteSelectedFailed": {
-    "placeholders": {
-      "error": {
-        "type": "String"
-      }
-    }
-  },
   "bookmarksAlreadyInNetwork": "已在 {name} 中",
-  "@bookmarksAlreadyInNetwork": {
-    "placeholders": {
-      "name": {
-        "type": "String"
-      }
-    }
-  },
   "bookmarksAddedToNetwork": "已添加到 {name}",
-  "@bookmarksAddedToNetwork": {
-    "placeholders": {
-      "name": {
-        "type": "String"
-      }
-    }
-  },
   "bookmarksAddToNetworkFailed": "无法添加该节点：{error}",
-  "@bookmarksAddToNetworkFailed": {
-    "placeholders": {
-      "error": {
-        "type": "String"
-      }
-    }
-  },
   "bookmarksSaved": "已保存到书签",
   "bookmarksRemoved": "已从书签中移除",
   "bookmarksFromBookmarks": "从书签添加",
   "bookmarksPickerTitle": "从书签添加",
   "bookmarksPickerEmpty": "没有可添加的书签",
   "bookmarksPickerAdd": "添加 {count} 个",
-  "@bookmarksPickerAdd": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
   "peersEmptyWarning": "该网络没有初始节点，可能无法发现其他节点。添加一个公共节点即可正常连接。",
   "peersEmptyAddPublic": "添加公共节点",
   "peersEmptyBrowse": "浏览书签",
@@ -1120,21 +522,7 @@
   "shareKindNode": "节点",
   "shareSendTitle": "通过二维码分享",
   "shareSendPeerCount": "{count, plural, other{{count} 个初始节点}}",
-  "@shareSendPeerCount": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
   "shareItems": "{count, plural, other{{count} 项}}",
-  "@shareItems": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
   "shareSendSecretIncluded": "包含网络密钥",
   "shareSendNetworkMissing": "该网络已不存在。",
   "shareSendNodeMissing": "该书签已不存在。",
@@ -1147,30 +535,10 @@
   "shareIncludesConfigs": "已包含网络配置",
   "shareQrHint": "保持屏幕明亮，将摄像头置于 20–30 厘米处，直到另一台设备接收完成。",
   "shareQrFrameStats": "第 {frame} 帧 · {blocks, plural, other{{blocks} 块}} · {bytes}",
-  "@shareQrFrameStats": {
-    "placeholders": {
-      "frame": {
-        "type": "int"
-      },
-      "blocks": {
-        "type": "int"
-      },
-      "bytes": {
-        "type": "String"
-      }
-    }
-  },
   "shareQrPlay": "播放",
   "shareQrPause": "暂停",
   "shareQrFrameRate": "帧率",
   "shareQrFps": "{fps} 帧/秒",
-  "@shareQrFps": {
-    "placeholders": {
-      "fps": {
-        "type": "int"
-      }
-    }
-  },
   "shareQrFrameRateHint": "多数摄像头需要两次曝光才能稳定识别一帧：15 帧/秒最稳妥，24 帧/秒需要稳定握持。",
   "shareQrDensity": "二维码密度",
   "shareQrDensityEasy": "易扫",
@@ -1180,34 +548,10 @@
   "shareQrDensityRestart": "更改密度会重新开始传输。",
   "shareQrSecretWarning": "任何扫描此二维码的人都能加入该网络。",
   "shareQrFrameSemanticLabel": "分享二维码第 {frame} 帧",
-  "@shareQrFrameSemanticLabel": {
-    "placeholders": {
-      "frame": {
-        "type": "int"
-      }
-    }
-  },
   "shareQrExportGif": "导出为 GIF",
   "shareQrGifExporting": "正在编码第 {done}/{total} 帧",
-  "@shareQrGifExporting": {
-    "placeholders": {
-      "done": {
-        "type": "int"
-      },
-      "total": {
-        "type": "int"
-      }
-    }
-  },
   "shareQrGifSaved": "GIF 已保存",
   "shareQrGifFailed": "导出 GIF 失败：{error}",
-  "@shareQrGifFailed": {
-    "placeholders": {
-      "error": {
-        "type": "String"
-      }
-    }
-  },
   "shareReceiveTitle": "接收分享",
   "shareReceiveCameraHint": "将摄像头对准另一台设备的二维码。",
   "shareReceiveTorch": "闪光灯",
@@ -1215,45 +559,11 @@
   "shareReceiveNoCamera": "当前平台不支持摄像头扫码，请改为扫描截图或 GIF。",
   "shareReceiveScanImage": "扫描图片",
   "shareReceiveImageScanning": "正在扫描第 {done}/{total} 帧",
-  "@shareReceiveImageScanning": {
-    "placeholders": {
-      "done": {
-        "type": "int"
-      },
-      "total": {
-        "type": "int"
-      }
-    }
-  },
   "shareReceiveImageEmpty": "图片中没有二维码。",
   "shareReceiveImageFailed": "无法读取该图片：{error}",
-  "@shareReceiveImageFailed": {
-    "placeholders": {
-      "error": {
-        "type": "String"
-      }
-    }
-  },
   "shareReceiveWaiting": "等待第一帧",
   "shareReceiveProgress": "已解码 {decoded}/{total} 块",
-  "@shareReceiveProgress": {
-    "placeholders": {
-      "decoded": {
-        "type": "int"
-      },
-      "total": {
-        "type": "int"
-      }
-    }
-  },
   "shareReceiveFrames": "{count, plural, other{{count} 帧已接收}}",
-  "@shareReceiveFrames": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
   "shareReceiveSpeed": "接收速度",
   "shareReceiveScanRate": "扫描速率",
   "shareReceiveRateRelaxed": "省电",
@@ -1267,60 +577,12 @@
   "shareReceiveSaveNode": "保存节点",
   "shareReceiveScanAnother": "继续扫描",
   "shareReceiveAddAll": "添加全部 {count} 项",
-  "@shareReceiveAddAll": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
   "shareReceiveAddedAll": "已添加 {count} 项",
-  "@shareReceiveAddedAll": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
   "shareReceiveAddSummary": "已添加 {added} 项，重复 {duplicates} 项，失败 {failed} 项",
-  "@shareReceiveAddSummary": {
-    "placeholders": {
-      "added": {
-        "type": "int"
-      },
-      "duplicates": {
-        "type": "int"
-      },
-      "failed": {
-        "type": "int"
-      }
-    }
-  },
   "shareReceiveNetworkAdded": "已添加 {name}",
-  "@shareReceiveNetworkAdded": {
-    "placeholders": {
-      "name": {
-        "type": "String"
-      }
-    }
-  },
   "shareReceiveNodeSaved": "已将 {address} 保存到书签",
-  "@shareReceiveNodeSaved": {
-    "placeholders": {
-      "address": {
-        "type": "String"
-      }
-    }
-  },
   "shareReceiveNodeExists": "该节点已在书签中",
   "shareReceiveAddFailed": "添加分享失败：{error}",
-  "@shareReceiveAddFailed": {
-    "placeholders": {
-      "error": {
-        "type": "String"
-      }
-    }
-  },
   "sharePreviewSecret": "网络密钥",
   "sharePreviewSecretIncluded": "已包含",
   "sharePreviewPeers": "初始节点",
@@ -1328,60 +590,22 @@
   "selectionEnter": "选择",
   "selectionExit": "退出选择",
   "selectionSelected": "{count, plural, other{已选择 {count} 项}}",
-  "@selectionSelected": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
   "selectionSelectAll": "全选",
   "selectionDeselectAll": "取消全选",
   "selectionShare": "分享",
   "selectionDelete": "删除",
   "selectionActions": "选择操作",
   "selectionUnavailable": "{count, plural, other{所选项中有 {count} 项无法分享}}",
-  "@selectionUnavailable": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
   "selectionTooMany": "一次最多分享 {max} 项，当前选中 {count} 项。",
-  "@selectionTooMany": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      },
-      "max": {
-        "type": "int"
-      }
-    }
-  },
   "cardShareQr": "通过二维码分享",
   "bookmarksScanQr": "扫描二维码",
   "advancedCopyPublicKey": "复制公钥",
   "advancedPublicKeyCopied": "公钥已复制",
   "aboutTitle": "关于",
   "aboutVersion": "版本 {version}",
-  "@aboutVersion": {
-    "placeholders": {
-      "version": {
-        "type": "String"
-      }
-    }
-  },
   "aboutSourceCode": "源代码",
   "aboutLicenses": "查看许可证",
   "aboutOpenFailed": "无法打开链接：{error}",
-  "@aboutOpenFailed": {
-    "placeholders": {
-      "error": {
-        "type": "String"
-      }
-    }
-  },
   "settingsLanguageDescription": "应用显示的语言",
   "settingsUseSystemColor": "使用系统颜色",
   "settingsUseSystemColorDescription": "跟随系统壁纸生成配色",
