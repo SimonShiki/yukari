@@ -77,6 +77,12 @@ Sign off every commit with `git commit -s`. The sign-off states that you wrote t
 
 Keep one change per commit where you can. A commit that fixes a bug and reformats a file in the same diff makes the fix hard to find later.
 
+## Translating
+
+Translations are managed on [Hosted Weblate](https://hosted.weblate.org/engage/yukari/). Please contribute or review translations there instead of editing `.arb` or `strings.xml` files by hand — Weblate syncs updates back as pull requests automatically.
+
+`lib/l10n/app_en.arb` is the source template that owns `@` descriptions and placeholder schemas; other `.arb` files should only contain `@@locale` and translated strings.
+
 ## Reporting a bug
 
 Open an issue and include:
