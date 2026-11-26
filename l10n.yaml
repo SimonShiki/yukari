@@ -4,3 +4,4 @@ output-dir: lib/l10n/generated
 output-localization-file: app_localizations.dart
 preferred-supported-locales: [en]
 nullable-getter: false
+header: '// ignore_for_file: deprecated_member_use'

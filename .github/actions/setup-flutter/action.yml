@@ -9,7 +9,7 @@ runs:
       if: runner.os != 'Linux' || runner.arch != 'ARM64'
       with:
         channel: stable
-        flutter-version: 3.47.7
+        flutter-version: 3.50.1
         cache: true
         pub-cache: true
 
@@ -21,20 +21,20 @@ runs:
       uses: actions/cache@v4
       with:
         path: |
-          ${{ runner.tool_cache }}/flutter-3.47.7
+          ${{ runner.tool_cache }}/flutter-3.50.1
           ~/.pub-cache
-        key: flutter-${{ runner.os }}-${{ runner.arch }}-3.47.7-${{ hashFiles('pubspec.lock') }}
+        key: flutter-${{ runner.os }}-${{ runner.arch }}-3.50.1-${{ hashFiles('pubspec.lock') }}
         restore-keys: |
-          flutter-${{ runner.os }}-${{ runner.arch }}-3.47.7-
+          flutter-${{ runner.os }}-${{ runner.arch }}-3.50.1-
 
     - name: Install Flutter SDK (Linux ARM64)
       if: runner.os == 'Linux' && runner.arch == 'ARM64'
       shell: bash
       run: |
-        flutter_dir="${{ runner.tool_cache }}/flutter-3.47.7"
+        flutter_dir="${{ runner.tool_cache }}/flutter-3.50.1"
         if [ ! -x "$flutter_dir/bin/flutter" ]; then
           rm -rf "$flutter_dir"
-          git clone --depth 1 --branch 3.47.7 https://github.com/flutter/flutter.git "$flutter_dir"
+          git clone --depth 1 --branch 3.50.1 https://github.com/flutter/flutter.git "$flutter_dir"
         fi
         echo "$flutter_dir/bin" >> "$GITHUB_PATH"
         echo "$flutter_dir/bin/cache/dart-sdk/bin" >> "$GITHUB_PATH"
