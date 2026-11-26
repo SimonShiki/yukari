@@ -149,10 +149,10 @@ packages:
     dependency: transitive
     description:
       name: cnativeapi
-      sha256: c43703998995e132b0656d2b8a95ed2bedc6b22ccee2c827bcdc075e0330e319
+      sha256: "49662734cdf3dd1707b1ee35102ac1754e0ab3d450a2d30b066730f219dacc86"
       url: "https://pub.dev"
     source: hosted
-    version: "0.5.10"
+    version: "0.6.2"
   code_assets:
     dependency: transitive
     description:
@@ -633,18 +633,18 @@ packages:
     dependency: transitive
     description:
       name: nativeapi
-      sha256: "118045bb549cb6fabad472a3a22a537e7310bbf20097350f5027808b4a5853ce"
+      sha256: "339b7a91a27ce5c33659cab92cf8e76736142985433652f91a63cc5348135bfb"
       url: "https://pub.dev"
     source: hosted
-    version: "0.5.10"
+    version: "0.6.2"
   nativeapi_flutter:
     dependency: "direct main"
     description:
       name: nativeapi_flutter
-      sha256: "357a405c69212f5157da1bd3be183a53c2b841d0de0eb51f4a3947913712aec4"
+      sha256: b0507253748ba9690a295bc162208a91d348809185409e5aee7b09e77ab5d8a3
       url: "https://pub.dev"
     source: hosted
-    version: "0.5.10"
+    version: "0.6.2"
   objective_c:
     dependency: transitive
     description:
@@ -1055,10 +1055,10 @@ packages:
     dependency: "direct main"
     description:
       name: tray_manager
-      sha256: "30c67f4f27a9b2ad56606b369b75256fd9ef25851b66788597d4df3fbbfa536a"
+      sha256: "3a6ceacfdbe35e42049bb34334f30d73e5f1e73f5f04495b299a8c10b6ec5217"
       url: "https://pub.dev"
     source: hosted
-    version: "0.8.3"
+    version: "0.9.1"
   typed_data:
     dependency: transitive
     description:
@@ -1245,4 +1245,4 @@ packages:
     version: "0.2.4"
 sdks:
   dart: ">=3.14.0 <4.0.0"
-  flutter: ">=3.47.0"
+  flutter: ">=3.50.0"
