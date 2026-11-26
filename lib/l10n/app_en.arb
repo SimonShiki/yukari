@@ -1732,5 +1732,60 @@
   "advancedDnsRecordNameHelper": "Use @ for the zone apex, a relative label, or an FQDN",
   "advancedDnsRecordType": "Record Type",
   "advancedDnsRecordValue": "Record Value",
-  "advancedDnsRecordValueHelper": "DNS RDATA in presentation format"
+  "advancedDnsRecordValueHelper": "DNS RDATA in presentation format",
+  "networkEmptyDropDescription": "Add a network to get connected, or drop a .toml config file here.",
+  "@networkEmptyDropDescription": {
+    "description": "Empty state description on platforms that support dropping .toml config files onto the Networks page"
+  },
+  "networkDropTitle": "Drop to import",
+  "@networkDropTitle": {
+    "description": "Heading shown on the drop overlay when dragging a file over the Networks page"
+  },
+  "networkDropDescription": "Release a .toml config file to add a network.",
+  "@networkDropDescription": {
+    "description": "Supporting text shown on the drop overlay when dragging a file over the Networks page"
+  },
+  "controllerImportDropTomlOnly": "Drop a .toml config file to import.",
+  "@controllerImportDropTomlOnly": {
+    "description": "Message shown when a non-file drop such as plain text lands on the Networks page"
+  },
+  "controllerImportNotToml": "\"{name}\" is not a .toml config file.",
+  "@controllerImportNotToml": {
+    "description": "Message shown when a dropped file does not have a .toml extension",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "controllerImportBatchSuccess": "{count, plural, =1{Imported 1 network} other{Imported {count} networks}}",
+  "@controllerImportBatchSuccess": {
+    "description": "Summary message shown after importing multiple dropped config files",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "controllerImportBatchPartial": "{imported, plural, =1{Imported 1 network} other{Imported {imported} networks}}; {failed} failed",
+  "@controllerImportBatchPartial": {
+    "description": "Summary message shown when some dropped config files imported and others failed",
+    "placeholders": {
+      "imported": {
+        "type": "int"
+      },
+      "failed": {
+        "type": "int"
+      }
+    }
+  },
+  "controllerImportBatchFailed": "{count, plural, =1{Could not import 1 file} other{Could not import {count} files}}",
+  "@controllerImportBatchFailed": {
+    "description": "Summary message shown when all dropped files failed to import",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  }
 }

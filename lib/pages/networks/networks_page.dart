@@ -16,6 +16,7 @@ import 'network_create_menu.dart';
 import 'network_editor_page.dart';
 import 'network_instance_page.dart';
 import 'network_page_dialogs.dart';
+import 'widgets/network_drop_zone.dart';
 import 'widgets/networks_list_pane.dart';
 
 /// The networks list, with the selected network beside it on wide windows.
@@ -136,29 +137,32 @@ class _NetworksPageState extends State<NetworksPage>
           ),
           menu: wide ? null : NetworkCreateMenu(controller: _controller),
         ),
-        body: SafeArea(
-          child: Row(
-            children: [
-              Expanded(
-                child: NetworksListPane(
-                  controller: _controller,
-                  wide: wide,
-                  onSelect: (cards, index, {fromCard = false}) =>
-                      _select(cards, index, wide: wide, fromCard: fromCard),
+        body: NetworkDropZone(
+          controller: _controller,
+          child: SafeArea(
+            child: Row(
+              children: [
+                Expanded(
+                  child: NetworksListPane(
+                    controller: _controller,
+                    wide: wide,
+                    onSelect: (cards, index, {fromCard = false}) =>
+                        _select(cards, index, wide: wide, fromCard: fromCard),
+                  ),
                 ),
-              ),
-              if (wide)
-                SignalBuilder(
-                  builder: (context) {
-                    final id = _controller.selectedId.value;
-                    if (id == null) return const SizedBox.shrink();
-                    return _detailPane(
-                      id,
-                      running: _controller.selectionRunning.value,
-                    );
-                  },
-                ),
-            ],
+                if (wide)
+                  SignalBuilder(
+                    builder: (context) {
+                      final id = _controller.selectedId.value;
+                      if (id == null) return const SizedBox.shrink();
+                      return _detailPane(
+                        id,
+                        running: _controller.selectionRunning.value,
+                      );
+                    },
+                  ),
+              ],
+            ),
           ),
         ),
       ),

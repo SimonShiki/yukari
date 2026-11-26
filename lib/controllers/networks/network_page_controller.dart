@@ -115,6 +115,9 @@ class NetworkPageController with SignalScope {
   /// Whether a refresh is running; the refresh action is disabled meanwhile.
   late final Signal<bool> refreshing = own(false);
 
+  /// Whether a file drag is hovering over the networks page drop zone.
+  late final Signal<bool> draggingConfig = own(false);
+
   /// Whether the backend answered at least once: the cards stay unknown until
   /// the first successful collection.
   ReadonlySignal<bool> get loaded => running.instancesLoaded;

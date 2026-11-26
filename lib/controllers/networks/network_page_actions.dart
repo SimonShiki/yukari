@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:file_picker/file_picker.dart';
+import 'package:path/path.dart' as p;
 import 'package:uuid/uuid.dart';
 
 import 'package:yukari_core/bindings/easytier_ffi_native.dart' show parseConfig;
@@ -157,20 +158,10 @@ extension NetworkPageActions on NetworkPageController {
     start ? await _start(id, network) : await _stop(id, network);
   }
 
-  /// Imports a TOML config the user picked as a new network.
-  Future<void> importFromFile() async {
-    final picked = await readPickedConfig(pickConfig, showMessage);
-    if (picked == null) return;
-    try {
-      final network = parseImportedConfig(picked.content, validateConfig);
-      await saved.addNetwork(const Uuid().v4(), network);
-    } on _InvalidConfig catch (error) {
-      showMessage(
-        l10n.value.controllerImportInvalid(picked.name, error.message),
-      );
-    } catch (error) {
-      showMessage(l10n.value.controllerImportFailed('$error'));
-    }
+  /// Sets whether a config file drag is hovering over the page.
+  void setDraggingConfig(bool dragging) {
+    if (isDisposed || draggingConfig.peek() == dragging) return;
+    draggingConfig.value = dragging;
   }
 
   Future<void> _start(String id, Network network) async {
