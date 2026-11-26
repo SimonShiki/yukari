@@ -86,7 +86,16 @@ jobs:
           if-no-files-found: error
 
   linux:
-    runs-on: ubuntu-latest
+    name: Linux (${{ matrix.arch }})
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: x86_64
+            runner: ubuntu-latest
+          - arch: arm64
+            runner: ubuntu-26.04-arm
+    runs-on: ${{ matrix.runner }}
 
     steps:
       - name: Checkout repository
@@ -98,7 +107,9 @@ jobs:
         # libnotify-dev is what the local_notifier plugin pkg-configs for.
         run: |
           sudo apt-get update
-          sudo apt-get install -y libgtk-3-dev libxi-dev libx11-dev libnotify-dev libarchive-tools rpm
+          sudo apt-get install -y \
+            clang cmake ninja-build pkg-config xz-utils \
+            libgtk-3-dev libxi-dev libx11-dev libnotify-dev libarchive-tools rpm
 
       - name: Get dependencies
         run: flutter pub get
@@ -115,7 +126,7 @@ jobs:
       - name: Upload the packages
         uses: actions/upload-artifact@v4
         with:
-          name: linux
+          name: linux-${{ matrix.arch }}
           path: build/packages/*
           if-no-files-found: error
 

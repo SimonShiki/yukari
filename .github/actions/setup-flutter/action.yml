@@ -6,8 +6,38 @@ runs:
   steps:
     # The version pubspec.lock was resolved with; bump it together.
     - uses: subosito/flutter-action@v2
+      if: runner.os != 'Linux' || runner.arch != 'ARM64'
       with:
         channel: stable
         flutter-version: 3.47.7
         cache: true
         pub-cache: true
+
+    # Flutter publishes no Linux ARM64 archive, so subosito/flutter-action
+    # cannot resolve one there. Clone the tag and let the tool bootstrap the
+    # Linux ARM64 Dart SDK and engine artifacts itself.
+    - name: Cache Flutter SDK (Linux ARM64)
+      if: runner.os == 'Linux' && runner.arch == 'ARM64'
+      uses: actions/cache@v4
+      with:
+        path: |
+          ${{ runner.tool_cache }}/flutter-3.47.7
+          ~/.pub-cache
+        key: flutter-${{ runner.os }}-${{ runner.arch }}-3.47.7-${{ hashFiles('pubspec.lock') }}
+        restore-keys: |
+          flutter-${{ runner.os }}-${{ runner.arch }}-3.47.7-
+
+    - name: Install Flutter SDK (Linux ARM64)
+      if: runner.os == 'Linux' && runner.arch == 'ARM64'
+      shell: bash
+      run: |
+        flutter_dir="${{ runner.tool_cache }}/flutter-3.47.7"
+        if [ ! -x "$flutter_dir/bin/flutter" ]; then
+          rm -rf "$flutter_dir"
+          git clone --depth 1 --branch 3.47.7 https://github.com/flutter/flutter.git "$flutter_dir"
+        fi
+        echo "$flutter_dir/bin" >> "$GITHUB_PATH"
+        echo "$flutter_dir/bin/cache/dart-sdk/bin" >> "$GITHUB_PATH"
+        echo "FLUTTER_ROOT=$flutter_dir" >> "$GITHUB_ENV"
+        "$flutter_dir/bin/flutter" precache --linux
+        "$flutter_dir/bin/flutter" --version

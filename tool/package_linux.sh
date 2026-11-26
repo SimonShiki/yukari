@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Packages the bundle `flutter build linux --release` leaves in
-# build/linux/x64/release/bundle into the .deb, .rpm, AppImage and pacman
+# build/linux/<arch>/release/bundle into the .deb, .rpm, AppImage and pacman
 # archives the release workflow publishes. Run from anywhere, in the repo root.
 #
 # Needs dpkg-deb (dpkg), rpmbuild (rpm), bsdtar (libarchive-tools) and xz.
@@ -10,9 +10,30 @@ export LC_ALL=C
 root=$(cd "$(dirname "$0")/.." && pwd)
 cd "$root"
 
+case $(uname -m) in
+  x86_64 | amd64)
+    flutter_arch=x64
+    deb_arch=amd64
+    rpm_arch=x86_64
+    pacman_arch=x86_64
+    appimage_arch=x86_64
+    ;;
+  aarch64 | arm64)
+    flutter_arch=arm64
+    deb_arch=arm64
+    rpm_arch=aarch64
+    pacman_arch=aarch64
+    appimage_arch=aarch64
+    ;;
+  *)
+    echo "error: unsupported Linux architecture: $(uname -m)" >&2
+    exit 1
+    ;;
+esac
+
 version=$(sed -n 's/^version: \([^+]*\).*/\1/p' pubspec.yaml)
 [[ -n $version ]] || { echo "error: pubspec.yaml declares no version" >&2; exit 1; }
-bundle=build/linux/x64/release/bundle
+bundle=build/linux/$flutter_arch/release/bundle
 [[ -f $bundle/yukari ]] || { echo "error: $bundle is missing; run flutter build linux --release" >&2; exit 1; }
 
 work=$root/build/linux-package
@@ -45,7 +66,7 @@ cp -a "$usr" "$work/deb/"
 cat > "$work/deb/DEBIAN/control" <<EOF
 Package: yukari
 Version: $version
-Architecture: amd64
+Architecture: $deb_arch
 Maintainer: top.simonshiki
 Installed-Size: $(du -sk "$usr" | cut -f1)
 Section: net
@@ -55,7 +76,7 @@ License: AGPL-3.0-only
 Description: Cross-platform decentralized networking tool
  Yukari is a GUI for EasyTier, a decentralized networking tool.
 EOF
-dpkg-deb --build --root-owner-group "$work/deb" "$out/yukari_${version}_amd64.deb"
+dpkg-deb --build --root-owner-group "$work/deb" "$out/yukari_${version}_${deb_arch}.deb"
 
 cat > "$work/yukari.spec" <<EOF
 %global debug_package %{nil}
@@ -64,7 +85,7 @@ Version: $version
 Release: 1
 Summary: Cross-platform decentralized networking tool
 License: AGPL-3.0-only
-BuildArch: x86_64
+BuildArch: $rpm_arch
 Requires: gtk3
 
 %description
@@ -82,7 +103,7 @@ cp -a $usr %{buildroot}/
 EOF
 mkdir -p "$work/rpmbuild"/{BUILD,BUILDROOT,RPMS,SOURCES,SPECS,SRPMS}
 rpmbuild -bb "$work/yukari.spec" --define "_topdir $work/rpmbuild"
-mv "$work/rpmbuild/RPMS/x86_64/"*.rpm "$out/"
+mv "$work/rpmbuild/RPMS/$rpm_arch/"*.rpm "$out/"
 
 # A pacman package, as makepkg builds one: /usr plus .PKGINFO and .MTREE.
 pac=$work/pacman
@@ -97,7 +118,7 @@ url = https://github.com/SimonShiki/yukari
 builddate = $(date +%s)
 packager = top.simonshiki
 size = $(du -sb "$usr" | cut -f1)
-arch = x86_64
+arch = $pacman_arch
 license = AGPL-3.0-only
 depend = gtk3
 depend = libnotify
@@ -107,7 +128,7 @@ owner=(--uid 0 --gid 0 --uname root --gname root)
 (cd "$pac" && bsdtar -czf .MTREE --format=mtree "${owner[@]}" \
   --options='!all,use-set,type,uid,gid,mode,time,size,md5,sha256,link' .PKGINFO usr)
 (cd "$pac" && bsdtar -cf - "${owner[@]}" .PKGINFO .MTREE usr |
-  xz -c > "$out/yukari-$version-1-x86_64.pkg.tar.xz")
+  xz -c > "$out/yukari-$version-1-$pacman_arch.pkg.tar.xz")
 
 appdir=$work/Yukari.AppDir
 mkdir -p "$appdir"
@@ -122,10 +143,11 @@ chmod 755 "$appdir/AppRun"
 
 tools=$root/build/packaging-tools
 mkdir -p "$tools"
-curl -fsSL -o "$tools/appimagetool" \
-  https://github.com/AppImage/appimagetool/releases/download/continuous/appimagetool-x86_64.AppImage
-chmod +x "$tools/appimagetool"
-ARCH=x86_64 VERSION=$version APPIMAGE_EXTRACT_AND_RUN=1 \
-  "$tools/appimagetool" --no-appstream "$appdir" "$out/yukari-$version-x86_64.AppImage"
+appimagetool=$tools/appimagetool-$appimage_arch.AppImage
+curl -fsSL -o "$appimagetool" \
+  "https://github.com/AppImage/appimagetool/releases/download/continuous/appimagetool-$appimage_arch.AppImage"
+chmod +x "$appimagetool"
+ARCH=$appimage_arch VERSION=$version APPIMAGE_EXTRACT_AND_RUN=1 \
+  "$appimagetool" --no-appstream "$appdir" "$out/yukari-$version-$appimage_arch.AppImage"
 
 ls -l "$out"
