@@ -1,8 +1,13 @@
 import 'dart:io';
 
+import 'package:desktop_drop/desktop_drop.dart';
+import 'package:flutter/services.dart' show MethodCall, StandardMethodCodec;
 import 'package:flutter_test/flutter_test.dart';
-import 'package:m3e_core/m3e_core.dart' show M3EDockedToolbar, M3EFabMenu;
+import 'package:m3e_core/m3e_core.dart'
+    show M3EContainer, M3EDockedToolbar, M3EFabMenu;
 import 'package:material_ui/material_ui.dart';
+import 'package:path/path.dart' as p;
+import 'package:signals_flutter/signals_flutter.dart';
 import 'package:yukari/controllers/networks/network_page_controller.dart';
 import 'package:yukari_core/models/models.dart';
 import 'package:yukari/pages/networks/network_editor_page.dart';
@@ -10,6 +15,8 @@ import 'package:yukari/pages/networks/network_instance_page.dart';
 import 'package:yukari/pages/networks/editor_exit_guard.dart';
 import 'package:yukari/pages/networks/network_page_dialogs.dart';
 import 'package:yukari/pages/networks/networks_page.dart';
+import 'package:yukari/pages/networks/widgets/network_drop_overlay.dart';
+import 'package:yukari/pages/networks/widgets/network_drop_zone.dart';
 import 'package:yukari/share/share_document.dart';
 import 'package:yukari/share/share_routes.dart';
 import 'package:yukari/signals/networks.dart' as saved;
@@ -827,6 +834,248 @@ void main() {
     await tester.tap(find.text(strings.commonCancel));
     await tester.pumpAndSettle();
     await dialog;
+  });
+
+  testWidgets('empty state shows drop hint when native drop is supported', (
+    tester,
+  ) async {
+    await tester.runAsync(() => seedWith({}));
+    await pumpList(tester, size: const Size(400, 780));
+
+    expect(
+      find.text(
+        isConfigDropSupported
+            ? strings.networkEmptyDropDescription
+            : strings.networkEmptyDescription,
+      ),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('drag enter and exit toggle the drop overlay without rebuilds', (
+    tester,
+  ) async {
+    await tester.runAsync(seedNetworks);
+    final controller = await pumpList(tester, size: const Size(400, 780));
+    final scaffold = find.descendant(
+      of: find.byType(NetworksPage),
+      matching: find.byType(Scaffold),
+    );
+    final list = find.byType(NetworkCardList);
+    final page = tester.widget(scaffold);
+    final cardList = tester.widget(list);
+
+    final target = tester.widget<DropTarget>(find.byType(DropTarget));
+    expect(target.enable, isTrue);
+    expect(find.text(strings.networkDropTitle), findsNothing);
+    target.onDragEntered?.call(
+      DropEventDetails(localPosition: Offset.zero, globalPosition: Offset.zero),
+    );
+    await tester.pumpAndSettle();
+
+    expect(controller.draggingConfig.value, isTrue);
+    expect(find.text(strings.networkDropTitle), findsOneWidget);
+    expect(find.text(strings.networkDropDescription), findsOneWidget);
+    expect(find.text('.toml'), findsOneWidget);
+    expect(
+      find.descendant(
+        of: find.byType(NetworkDropOverlay),
+        matching: find.byType(M3EContainer),
+      ),
+      findsOneWidget,
+    );
+    expect(
+      tester.widget<Opacity>(
+        find.descendant(
+          of: find.byType(NetworkDropOverlay),
+          matching: find.byType(Opacity),
+        ),
+      ).opacity,
+      1,
+    );
+    expect(identical(tester.widget(scaffold), page), isTrue);
+    expect(identical(tester.widget(list), cardList), isTrue);
+
+    target.onDragExited?.call(
+      DropEventDetails(localPosition: Offset.zero, globalPosition: Offset.zero),
+    );
+    await tester.pumpAndSettle();
+
+    expect(controller.draggingConfig.value, isFalse);
+    expect(find.text(strings.networkDropTitle), findsNothing);
+    expect(identical(tester.widget(scaffold), page), isTrue);
+    expect(identical(tester.widget(list), cardList), isTrue);
+  });
+
+  testWidgets('dropping a config file imports it on narrow and wide layouts', (
+    tester,
+  ) async {
+    final tempDir = Directory.systemTemp.createTempSync('yukari_drop_page_');
+    addTearDown(() => tempDir.deleteSync(recursive: true));
+    final file = File(p.join(tempDir.path, 'gamma.toml'))
+      ..writeAsStringSync('[network_identity]\nnetwork_name = "gamma"\n');
+
+    Future<void> dropFiles(
+      DropTarget target,
+      List<String> paths, {
+      bool Function()? done,
+    }) => tester.runAsync(() async {
+      target.onDragDone?.call(
+        DropDoneDetails(
+          files: [for (final path in paths) DropItemFile(path)],
+          localPosition: Offset.zero,
+          globalPosition: Offset.zero,
+        ),
+      );
+      for (
+        var turn = 0;
+        turn < 100 && !(done?.call() ?? false) && messages.isEmpty;
+        turn++
+      ) {
+        await Future<void>.delayed(const Duration(milliseconds: 5));
+      }
+      await saved.settled();
+    });
+
+    await tester.runAsync(seedNetworks);
+    final controller = await pumpList(tester, size: const Size(400, 780));
+    final target = tester.widget<DropTarget>(find.byType(DropTarget));
+    target.onDragEntered?.call(
+      DropEventDetails(localPosition: Offset.zero, globalPosition: Offset.zero),
+    );
+    await tester.pumpAndSettle();
+
+    await dropFiles(
+      target,
+      [file.path],
+      done: () => saved.networks.value.values.any((n) => n.networkName == 'gamma'),
+    );
+    await tester.pumpAndSettle();
+
+    expect(messages, isEmpty);
+    expect(controller.draggingConfig.value, isFalse);
+    expect(find.text('gamma'), findsOneWidget);
+
+    // Dropping a non-.toml file reports an error message.
+    final badFile = File(p.join(tempDir.path, 'notes.txt'))
+      ..writeAsStringSync('hello');
+    await dropFiles(target, [badFile.path]);
+    expect(messages, [strings.controllerImportNotToml('notes.txt')]);
+    messages.clear();
+
+    final deltaFile = File(p.join(tempDir.path, 'delta.toml'))
+      ..writeAsStringSync('[network_identity]\nnetwork_name = "delta"\n');
+    await tester.runAsync(seedNetworks);
+    final wideController = await pumpList(
+      tester,
+      size: const Size(1000, 800),
+      settle: false,
+    );
+    await tester.runAsync(wideController.refresh);
+    await pumpWide(tester);
+
+    final wideTarget = tester.widget<DropTarget>(find.byType(DropTarget));
+    wideTarget.onDragEntered?.call(
+      DropEventDetails(localPosition: Offset.zero, globalPosition: Offset.zero),
+    );
+    await pumpWide(tester);
+
+    await dropFiles(
+      wideTarget,
+      [deltaFile.path],
+      done: () => saved.networks.value.values.any((n) => n.networkName == 'delta'),
+    );
+    await pumpWide(tester);
+
+    expect(messages, isEmpty);
+    expect(wideController.draggingConfig.value, isFalse);
+    expect(find.text('delta'), findsOneWidget);
+  });
+
+  testWidgets('inactive tab, modal route, or unmount clears drag safely', (
+    tester,
+  ) async {
+    await tester.runAsync(seedNetworks);
+    final controller = NetworkPageController(
+      navigate: (route, id) => navigated.add(id == null ? route : '$route:$id'),
+      showMessage: messages.add,
+      confirmDelete: (_) async => true,
+      showTunPermissionWarning: (_) async {},
+      backend: FakeBackend(),
+    );
+    addTearDown(controller.dispose);
+    controller.start();
+
+    var enabled = true;
+    var showPage = true;
+    late StateSetter setHost;
+    await pumpApp(
+      tester,
+      StatefulBuilder(
+        builder: (context, setState) {
+          setHost = setState;
+          return SignalBuilder(
+            builder: (context) {
+              // Ancestor reads draggingConfig so a synchronous mutation during
+              // DropTarget.didUpdateWidget would fail the build pass.
+              controller.draggingConfig.value;
+              return showPage
+                  ? TickerMode(
+                      enabled: enabled,
+                      child: NetworksPage(controller: controller),
+                    )
+                  : const SizedBox.shrink();
+            },
+          );
+        },
+      ),
+    );
+
+    Future<void> sendDropEnter() async {
+      await tester.binding.defaultBinaryMessenger.handlePlatformMessage(
+        'desktop_drop',
+        const StandardMethodCodec().encodeMethodCall(
+          const MethodCall('entered', [100.0, 200.0]),
+        ),
+        (_) {},
+      );
+      await tester.pumpAndSettle();
+    }
+
+    expect(tester.widget<DropTarget>(find.byType(DropTarget)).enable, isTrue);
+    await sendDropEnter();
+    expect(controller.draggingConfig.value, isTrue);
+
+    setHost(() => enabled = false);
+    await tester.pumpAndSettle();
+
+    expect(tester.widget<DropTarget>(find.byType(DropTarget)).enable, isFalse);
+    expect(controller.draggingConfig.value, isFalse);
+
+    setHost(() => enabled = true);
+    await tester.pumpAndSettle();
+    expect(tester.widget<DropTarget>(find.byType(DropTarget)).enable, isTrue);
+    await sendDropEnter();
+    expect(controller.draggingConfig.value, isTrue);
+
+    showDialog<void>(
+      context: tester.element(find.byType(NetworksPage)),
+      builder: (_) => const AlertDialog(title: Text('Modal')),
+    );
+    await tester.pumpAndSettle();
+
+    expect(tester.widget<DropTarget>(find.byType(DropTarget)).enable, isFalse);
+    expect(controller.draggingConfig.value, isFalse);
+
+    Navigator.of(tester.element(find.byType(AlertDialog))).pop();
+    await tester.pumpAndSettle();
+    await sendDropEnter();
+    expect(controller.draggingConfig.value, isTrue);
+
+    // Unmounting mid-drag also clears draggingConfig without throwing.
+    setHost(() => showPage = false);
+    await tester.pumpAndSettle();
+    expect(controller.draggingConfig.value, isFalse);
   });
 }
 

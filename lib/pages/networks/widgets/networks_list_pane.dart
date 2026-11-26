@@ -7,6 +7,7 @@ import '../../../widgets/empty_state/empty_state.dart';
 import '../../../models/network_card_data.dart';
 import 'network_card/network_card_list.dart';
 import '../network_create_menu.dart';
+import 'network_drop_zone.dart';
 
 /// The reorder the list runs while selecting: it moves nothing.
 ///
@@ -62,7 +63,9 @@ class NetworksListPane extends StatelessWidget {
                   return EmptyState(
                     icon: Icons.hub_outlined,
                     title: context.l10n.networkEmpty,
-                    message: context.l10n.networkEmptyDescription,
+                    message: isConfigDropSupported
+                        ? context.l10n.networkEmptyDropDescription
+                        : context.l10n.networkEmptyDescription,
                   );
                 }
                 final selection = controller.selection;

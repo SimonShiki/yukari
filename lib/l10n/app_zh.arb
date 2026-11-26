@@ -693,5 +693,13 @@
   "advancedDnsRecordNameHelper": "使用 @ 表示区域根域名，或填写相对标签、完整域名 (FQDN)",
   "advancedDnsRecordType": "记录类型",
   "advancedDnsRecordValue": "记录值",
-  "advancedDnsRecordValueHelper": "标准 DNS 文本格式的记录值"
+  "advancedDnsRecordValueHelper": "标准 DNS 文本格式的记录值",
+  "networkEmptyDropDescription": "添加网络以建立连接，或将 .toml 配置文件拖放到此处。",
+  "networkDropTitle": "松开以导入",
+  "networkDropDescription": "松开 .toml 配置文件以添加网络。",
+  "controllerImportDropTomlOnly": "请拖入 .toml 配置文件以导入。",
+  "controllerImportNotToml": "“{name}”不是 .toml 配置文件。",
+  "controllerImportBatchSuccess": "已导入 {count} 个网络",
+  "controllerImportBatchPartial": "已导入 {imported} 个网络，{failed} 个失败",
+  "controllerImportBatchFailed": "无法导入 {count} 个文件"
 }

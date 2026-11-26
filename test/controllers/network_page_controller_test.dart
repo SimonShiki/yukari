@@ -3,6 +3,7 @@ import 'dart:io';
 import 'dart:ui' show Locale;
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:path/path.dart' as p;
 import 'package:yukari/controllers/networks/network_instance_controller.dart';
 import 'package:yukari/controllers/networks/network_page_controller.dart';
 import 'package:yukari/l10n/l10n.dart';
@@ -13,6 +14,7 @@ import 'package:yukari_core/models/models.dart';
 import 'package:yukari/signals/instance_logs.dart';
 import 'package:yukari/signals/instances.dart';
 import 'package:yukari/signals/networks.dart' as saved;
+import 'package:yukari/utils/file_read.dart';
 import 'package:yukari_core/utils/easytier_config_serializer.dart';
 
 import '../fake_backend.dart';
@@ -1143,6 +1145,266 @@ void main() {
 
     await expectLater(exporting, completes);
     expect(messages, isEmpty, reason: 'the page that would show it is gone');
+  });
+
+  group('drag and drop config import', () {
+    late Directory tempDir;
+
+    setUp(() {
+      tempDir = Directory.systemTemp.createTempSync('yukari_drop_ctrl_');
+    });
+
+    tearDown(() {
+      if (tempDir.existsSync()) tempDir.deleteSync(recursive: true);
+    });
+
+    File writeToml(String name, String content) =>
+        File(p.join(tempDir.path, name))..writeAsStringSync(content);
+
+    test('setDraggingConfig updates state and ignores disposed calls', () async {
+      await seedNetworks();
+      final controller = build(backend: FakeBackend(), messages: <String>[]);
+
+      expect(controller.draggingConfig.value, isFalse);
+      controller.setDraggingConfig(true);
+      expect(controller.draggingConfig.value, isTrue);
+      controller.setDraggingConfig(false);
+      expect(controller.draggingConfig.value, isFalse);
+
+      controller.dispose();
+      controller.setDraggingConfig(true);
+      expect(controller.draggingConfig.peek(), isFalse);
+    });
+
+    test('imports a single dropped .toml file silently and clears drag', () async {
+      await seedNetworks();
+      final messages = <String>[];
+      final controller = build(
+        backend: FakeBackend(),
+        messages: messages,
+        validateConfig: (_) {},
+      );
+      addTearDown(controller.dispose);
+      final file = writeToml(
+        'dropped.TOML',
+        '[network_identity]\nnetwork_name = "dropped"\n',
+      );
+
+      controller.setDraggingConfig(true);
+      await controller.importDroppedFiles([file.path]);
+      await saved.settled();
+
+      expect(controller.draggingConfig.value, isFalse);
+      expect(
+        saved.networks.value.values.map((network) => network.networkName),
+        contains('dropped'),
+      );
+      expect(messages, isEmpty);
+    });
+
+    test('reports empty drop, non-toml, missing, oversized, and bad UTF-8', () async {
+      await seedNetworks();
+      final messages = <String>[];
+      final controller = build(
+        backend: FakeBackend(),
+        messages: messages,
+        validateConfig: (_) {},
+      );
+      addTearDown(controller.dispose);
+
+      await controller.importDroppedFiles(const []);
+      expect(messages.single, strings.controllerImportDropTomlOnly);
+
+      messages.clear();
+      await controller.importDroppedFiles(const [
+        'hello',
+        'https://example.com/alpha.toml',
+      ]);
+      expect(messages.single, strings.controllerImportDropTomlOnly);
+
+      messages.clear();
+      final txt = writeToml('notes.txt', 'hello');
+      await controller.importDroppedFiles([txt.path]);
+      expect(messages.single, strings.controllerImportNotToml('notes.txt'));
+
+      messages.clear();
+      final dir = Directory(p.join(tempDir.path, 'dir.toml'))..createSync();
+      await controller.importDroppedFiles([dir.path]);
+      expect(messages.single, strings.controllerFileUnavailable);
+
+      messages.clear();
+      await controller.importDroppedFiles([p.join(tempDir.path, 'missing.toml')]);
+      expect(messages.single, strings.controllerFileUnavailable);
+
+      messages.clear();
+      final huge = File(p.join(tempDir.path, 'huge.toml'))
+        ..writeAsBytesSync(List<int>.filled(maxImportedConfigBytes + 1, 65));
+      await controller.importDroppedFiles([huge.path]);
+      expect(messages.single, contains('huge.toml'));
+
+      messages.clear();
+      final badUtf8 = File(p.join(tempDir.path, 'bad_utf8.toml'))
+        ..writeAsBytesSync(const [0xFF, 0xFE, 0xFD]);
+      await controller.importDroppedFiles([badUtf8.path]);
+      expect(messages.single, contains('bad_utf8.toml'));
+    });
+
+    test('rejects invalid dropped config and duplicate name', () async {
+      await seedNetworks();
+      final messages = <String>[];
+      final duplicate = writeToml(
+        'taken.toml',
+        '[network_identity]\nnetwork_name = "alpha"\n',
+      );
+      final rejected = build(
+        backend: FakeBackend(),
+        messages: messages,
+        validateConfig: (_) {},
+      );
+      addTearDown(rejected.dispose);
+
+      await rejected.importDroppedFiles([duplicate.path]);
+      expect(messages, [
+        strings.controllerImportInvalid(
+          'taken.toml',
+          strings.validationNetworkExists,
+        ),
+      ]);
+
+      messages.clear();
+      final broken = build(
+        backend: FakeBackend(),
+        messages: messages,
+        validateConfig: (_) => throw const FormatException('bad toml'),
+      );
+      addTearDown(broken.dispose);
+      await broken.importDroppedFiles([duplicate.path]);
+      expect(messages.single, contains('taken.toml'));
+      expect(messages.single, contains('FormatException: bad toml'));
+    });
+
+    test('batch drop reports all success, partial, and all failed', () async {
+      await seedNetworks();
+      final messages = <String>[];
+      final controller = build(
+        backend: FakeBackend(),
+        messages: messages,
+        validateConfig: (_) {},
+      );
+      addTearDown(controller.dispose);
+
+      final one = writeToml(
+        'one.toml',
+        '[network_identity]\nnetwork_name = "gamma"\n',
+      );
+      final two = writeToml(
+        'two.toml',
+        '[network_identity]\nnetwork_name = "delta"\n',
+      );
+      await controller.importDroppedFiles([one.path, two.path]);
+      await saved.settled();
+      expect(messages, [strings.controllerImportBatchSuccess(2)]);
+      expect(
+        saved.networks.value.values.map((network) => network.networkName),
+        containsAll(['gamma', 'delta']),
+      );
+
+      messages.clear();
+      final three = writeToml(
+        'three.toml',
+        '[network_identity]\nnetwork_name = "epsilon"\n',
+      );
+      final dup = writeToml(
+        'dup.toml',
+        '[network_identity]\nnetwork_name = "epsilon"\n',
+      );
+      final notToml = writeToml('skip.txt', 'ignored');
+      await controller.importDroppedFiles([three.path, dup.path, notToml.path]);
+      await saved.settled();
+      expect(messages, [strings.controllerImportBatchPartial(1, 2)]);
+
+      messages.clear();
+      await controller.importDroppedFiles([dup.path, notToml.path]);
+      expect(messages, [strings.controllerImportBatchFailed(2)]);
+    });
+
+    test('disposing during dropped import writes no message', () async {
+      await seedNetworks();
+      final messages = <String>[];
+      final controller = build(
+        backend: FakeBackend(),
+        messages: messages,
+        validateConfig: (_) {},
+      );
+      final one = writeToml(
+        'late_one.toml',
+        '[network_identity]\nnetwork_name = "late_one"\n',
+      );
+      final two = writeToml(
+        'late_two.toml',
+        '[network_identity]\nnetwork_name = "late_two"\n',
+      );
+
+      final importing = controller.importDroppedFiles([one.path, two.path]);
+      controller.dispose();
+      await expectLater(importing, completes);
+      expect(messages, isEmpty);
+    });
+
+    test('concurrent drops with duplicate network name save only one', () async {
+      await seedNetworks();
+      final messages = <String>[];
+      final controller = build(
+        backend: FakeBackend(),
+        messages: messages,
+        validateConfig: (_) {},
+      );
+      addTearDown(controller.dispose);
+      final first = writeToml(
+        'first.toml',
+        '[network_identity]\nnetwork_name = "shared_name"\n',
+      );
+      final second = writeToml(
+        'second.toml',
+        '[network_identity]\nnetwork_name = "shared_name"\n',
+      );
+
+      await Future.wait([
+        controller.importDroppedFiles([first.path]),
+        controller.importDroppedFiles([second.path]),
+      ]);
+      await saved.settled();
+
+      expect(
+        saved.networks.value.values
+            .where((network) => network.networkName == 'shared_name')
+            .length,
+        1,
+      );
+      expect(messages, [
+        strings.controllerImportInvalid(
+          'second.toml',
+          strings.validationNetworkExists,
+        ),
+      ]);
+    });
+
+    test('importFromFile reports oversized picked file with details', () async {
+      await seedNetworks();
+      final messages = <String>[];
+      final controller = build(
+        backend: FakeBackend(),
+        messages: messages,
+        pickConfig: () async =>
+            throw const FileTooLargeException('huge.toml', 1024),
+      );
+      addTearDown(controller.dispose);
+
+      await controller.importFromFile();
+
+      expect(messages.single, contains('huge.toml'));
+      expect(messages.single, contains('1 KiB'));
+    });
   });
 }
 
