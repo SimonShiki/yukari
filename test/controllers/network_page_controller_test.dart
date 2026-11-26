@@ -14,6 +14,7 @@ import 'package:yukari_core/models/models.dart';
 import 'package:yukari/signals/instance_logs.dart';
 import 'package:yukari/signals/instances.dart';
 import 'package:yukari/signals/networks.dart' as saved;
+import 'package:yukari/utils/file_read.dart';
 import 'package:yukari_core/utils/easytier_config_serializer.dart';
 
 import '../fake_backend.dart';
@@ -1215,6 +1216,13 @@ void main() {
       expect(messages.single, strings.controllerImportDropTomlOnly);
 
       messages.clear();
+      await controller.importDroppedFiles(const [
+        'hello',
+        'https://example.com/alpha.toml',
+      ]);
+      expect(messages.single, strings.controllerImportDropTomlOnly);
+
+      messages.clear();
       final txt = writeToml('notes.txt', 'hello');
       await controller.importDroppedFiles([txt.path]);
       expect(messages.single, strings.controllerImportNotToml('notes.txt'));
@@ -1328,15 +1336,74 @@ void main() {
         messages: messages,
         validateConfig: (_) {},
       );
-      final file = writeToml(
-        'late.toml',
-        '[network_identity]\nnetwork_name = "late"\n',
+      final one = writeToml(
+        'late_one.toml',
+        '[network_identity]\nnetwork_name = "late_one"\n',
+      );
+      final two = writeToml(
+        'late_two.toml',
+        '[network_identity]\nnetwork_name = "late_two"\n',
       );
 
-      final importing = controller.importDroppedFiles([file.path]);
+      final importing = controller.importDroppedFiles([one.path, two.path]);
       controller.dispose();
       await expectLater(importing, completes);
       expect(messages, isEmpty);
+    });
+
+    test('concurrent drops with duplicate network name save only one', () async {
+      await seedNetworks();
+      final messages = <String>[];
+      final controller = build(
+        backend: FakeBackend(),
+        messages: messages,
+        validateConfig: (_) {},
+      );
+      addTearDown(controller.dispose);
+      final first = writeToml(
+        'first.toml',
+        '[network_identity]\nnetwork_name = "shared_name"\n',
+      );
+      final second = writeToml(
+        'second.toml',
+        '[network_identity]\nnetwork_name = "shared_name"\n',
+      );
+
+      await Future.wait([
+        controller.importDroppedFiles([first.path]),
+        controller.importDroppedFiles([second.path]),
+      ]);
+      await saved.settled();
+
+      expect(
+        saved.networks.value.values
+            .where((network) => network.networkName == 'shared_name')
+            .length,
+        1,
+      );
+      expect(messages, [
+        strings.controllerImportInvalid(
+          'second.toml',
+          strings.validationNetworkExists,
+        ),
+      ]);
+    });
+
+    test('importFromFile reports oversized picked file with details', () async {
+      await seedNetworks();
+      final messages = <String>[];
+      final controller = build(
+        backend: FakeBackend(),
+        messages: messages,
+        pickConfig: () async =>
+            throw const FileTooLargeException('huge.toml', 1024),
+      );
+      addTearDown(controller.dispose);
+
+      await controller.importFromFile();
+
+      expect(messages.single, contains('huge.toml'));
+      expect(messages.single, contains('1 KiB'));
     });
   });
 }

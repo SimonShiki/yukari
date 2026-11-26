@@ -20,6 +20,7 @@ import 'package:yukari_core/utils/easytier_config_serializer.dart';
 
 import '../../utils/file_read.dart';
 import '../../utils/file_save.dart';
+import '../../utils/optimistic_store.dart';
 import '../../utils/validator.dart';
 import 'network_instance_controller.dart';
 import 'network_page_controller.dart';

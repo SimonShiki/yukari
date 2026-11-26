@@ -7,6 +7,7 @@ import 'package:m3e_core/m3e_core.dart'
     show M3EContainer, M3EDockedToolbar, M3EFabMenu;
 import 'package:material_ui/material_ui.dart';
 import 'package:path/path.dart' as p;
+import 'package:signals_flutter/signals_flutter.dart';
 import 'package:yukari/controllers/networks/network_page_controller.dart';
 import 'package:yukari_core/models/models.dart';
 import 'package:yukari/pages/networks/network_editor_page.dart';
@@ -14,6 +15,7 @@ import 'package:yukari/pages/networks/network_instance_page.dart';
 import 'package:yukari/pages/networks/editor_exit_guard.dart';
 import 'package:yukari/pages/networks/network_page_dialogs.dart';
 import 'package:yukari/pages/networks/networks_page.dart';
+import 'package:yukari/pages/networks/widgets/network_drop_overlay.dart';
 import 'package:yukari/pages/networks/widgets/network_drop_zone.dart';
 import 'package:yukari/share/share_document.dart';
 import 'package:yukari/share/share_routes.dart';
@@ -865,6 +867,7 @@ void main() {
 
     final target = tester.widget<DropTarget>(find.byType(DropTarget));
     expect(target.enable, isTrue);
+    expect(find.text(strings.networkDropTitle), findsNothing);
     target.onDragEntered?.call(
       DropEventDetails(localPosition: Offset.zero, globalPosition: Offset.zero),
     );
@@ -882,10 +885,10 @@ void main() {
       findsOneWidget,
     );
     expect(
-      tester.widget<AnimatedOpacity>(
+      tester.widget<Opacity>(
         find.descendant(
           of: find.byType(NetworkDropOverlay),
-          matching: find.byType(AnimatedOpacity),
+          matching: find.byType(Opacity),
         ),
       ).opacity,
       1,
@@ -899,15 +902,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(controller.draggingConfig.value, isFalse);
-    expect(
-      tester.widget<AnimatedOpacity>(
-        find.descendant(
-          of: find.byType(NetworkDropOverlay),
-          matching: find.byType(AnimatedOpacity),
-        ),
-      ).opacity,
-      0,
-    );
+    expect(find.text(strings.networkDropTitle), findsNothing);
     expect(identical(tester.widget(scaffold), page), isTrue);
     expect(identical(tester.widget(list), cardList), isTrue);
   });
@@ -920,6 +915,28 @@ void main() {
     final file = File(p.join(tempDir.path, 'gamma.toml'))
       ..writeAsStringSync('[network_identity]\nnetwork_name = "gamma"\n');
 
+    Future<void> dropFiles(
+      DropTarget target,
+      List<String> paths, {
+      bool Function()? done,
+    }) => tester.runAsync(() async {
+      target.onDragDone?.call(
+        DropDoneDetails(
+          files: [for (final path in paths) DropItemFile(path)],
+          localPosition: Offset.zero,
+          globalPosition: Offset.zero,
+        ),
+      );
+      for (
+        var turn = 0;
+        turn < 100 && !(done?.call() ?? false) && messages.isEmpty;
+        turn++
+      ) {
+        await Future<void>.delayed(const Duration(milliseconds: 5));
+      }
+      await saved.settled();
+    });
+
     await tester.runAsync(seedNetworks);
     final controller = await pumpList(tester, size: const Size(400, 780));
     final target = tester.widget<DropTarget>(find.byType(DropTarget));
@@ -928,25 +945,11 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    await tester.runAsync(() async {
-      target.onDragDone?.call(
-        DropDoneDetails(
-          files: [DropItemFile(file.path)],
-          localPosition: Offset.zero,
-          globalPosition: Offset.zero,
-        ),
-      );
-      for (
-        var turn = 0;
-        turn < 100 &&
-            !saved.networks.value.values.any((n) => n.networkName == 'gamma') &&
-            messages.isEmpty;
-        turn++
-      ) {
-        await Future<void>.delayed(const Duration(milliseconds: 5));
-      }
-      await saved.settled();
-    });
+    await dropFiles(
+      target,
+      [file.path],
+      done: () => saved.networks.value.values.any((n) => n.networkName == 'gamma'),
+    );
     await tester.pumpAndSettle();
 
     expect(messages, isEmpty);
@@ -956,18 +959,7 @@ void main() {
     // Dropping a non-.toml file reports an error message.
     final badFile = File(p.join(tempDir.path, 'notes.txt'))
       ..writeAsStringSync('hello');
-    await tester.runAsync(() async {
-      target.onDragDone?.call(
-        DropDoneDetails(
-          files: [DropItemFile(badFile.path)],
-          localPosition: Offset.zero,
-          globalPosition: Offset.zero,
-        ),
-      );
-      for (var turn = 0; turn < 100 && messages.isEmpty; turn++) {
-        await Future<void>.delayed(const Duration(milliseconds: 5));
-      }
-    });
+    await dropFiles(target, [badFile.path]);
     expect(messages, [strings.controllerImportNotToml('notes.txt')]);
     messages.clear();
 
@@ -988,25 +980,11 @@ void main() {
     );
     await pumpWide(tester);
 
-    await tester.runAsync(() async {
-      wideTarget.onDragDone?.call(
-        DropDoneDetails(
-          files: [DropItemFile(deltaFile.path)],
-          localPosition: Offset.zero,
-          globalPosition: Offset.zero,
-        ),
-      );
-      for (
-        var turn = 0;
-        turn < 100 &&
-            !saved.networks.value.values.any((n) => n.networkName == 'delta') &&
-            messages.isEmpty;
-        turn++
-      ) {
-        await Future<void>.delayed(const Duration(milliseconds: 5));
-      }
-      await saved.settled();
-    });
+    await dropFiles(
+      wideTarget,
+      [deltaFile.path],
+      done: () => saved.networks.value.values.any((n) => n.networkName == 'delta'),
+    );
     await pumpWide(tester);
 
     expect(messages, isEmpty);
@@ -1014,7 +992,7 @@ void main() {
     expect(find.text('delta'), findsOneWidget);
   });
 
-  testWidgets('inactive tab or modal route disables DropTarget and clears drag', (
+  testWidgets('inactive tab, modal route, or unmount clears drag safely', (
     tester,
   ) async {
     await tester.runAsync(seedNetworks);
@@ -1029,15 +1007,25 @@ void main() {
     controller.start();
 
     var enabled = true;
-    late StateSetter setTicker;
+    var showPage = true;
+    late StateSetter setHost;
     await pumpApp(
       tester,
       StatefulBuilder(
         builder: (context, setState) {
-          setTicker = setState;
-          return TickerMode(
-            enabled: enabled,
-            child: NetworksPage(controller: controller),
+          setHost = setState;
+          return SignalBuilder(
+            builder: (context) {
+              // Ancestor reads draggingConfig so a synchronous mutation during
+              // DropTarget.didUpdateWidget would fail the build pass.
+              controller.draggingConfig.value;
+              return showPage
+                  ? TickerMode(
+                      enabled: enabled,
+                      child: NetworksPage(controller: controller),
+                    )
+                  : const SizedBox.shrink();
+            },
           );
         },
       ),
@@ -1058,13 +1046,13 @@ void main() {
     await sendDropEnter();
     expect(controller.draggingConfig.value, isTrue);
 
-    setTicker(() => enabled = false);
+    setHost(() => enabled = false);
     await tester.pumpAndSettle();
 
     expect(tester.widget<DropTarget>(find.byType(DropTarget)).enable, isFalse);
     expect(controller.draggingConfig.value, isFalse);
 
-    setTicker(() => enabled = true);
+    setHost(() => enabled = true);
     await tester.pumpAndSettle();
     expect(tester.widget<DropTarget>(find.byType(DropTarget)).enable, isTrue);
     await sendDropEnter();
@@ -1077,6 +1065,16 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(tester.widget<DropTarget>(find.byType(DropTarget)).enable, isFalse);
+    expect(controller.draggingConfig.value, isFalse);
+
+    Navigator.of(tester.element(find.byType(AlertDialog))).pop();
+    await tester.pumpAndSettle();
+    await sendDropEnter();
+    expect(controller.draggingConfig.value, isTrue);
+
+    // Unmounting mid-drag also clears draggingConfig without throwing.
+    setHost(() => showPage = false);
+    await tester.pumpAndSettle();
     expect(controller.draggingConfig.value, isFalse);
   });
 }

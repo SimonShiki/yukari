@@ -23,8 +23,8 @@ final class FileTooLargeException implements Exception {
 Future<Uint8List> readPickedFile(
   PlatformFile file, {
   required int maxBytes,
-}) => _readBoundedBytes(
-  file.readAsByteStream(),
+}) async => _readBoundedBytes(
+  file.readAsByteStream,
   name: file.name,
   maxBytes: maxBytes,
   knownLength: file.lengthSync(),
@@ -39,7 +39,7 @@ Future<Uint8List> readFileAtPath(String path, {required int maxBytes}) async {
     throw FileSystemException('Not a regular file', path);
   }
   return _readBoundedBytes(
-    file.openRead(),
+    file.openRead,
     name: p.basename(path),
     maxBytes: maxBytes,
     knownLength: stat.size,
@@ -47,7 +47,7 @@ Future<Uint8List> readFileAtPath(String path, {required int maxBytes}) async {
 }
 
 Future<Uint8List> _readBoundedBytes(
-  Stream<List<int>> stream, {
+  Stream<List<int>> Function() openStream, {
   required String name,
   required int maxBytes,
   int? knownLength,
@@ -56,7 +56,7 @@ Future<Uint8List> _readBoundedBytes(
     throw FileTooLargeException(name, maxBytes);
   }
   final bytes = BytesBuilder(copy: false);
-  await for (final chunk in stream) {
+  await for (final chunk in openStream()) {
     if (bytes.length + chunk.length > maxBytes) {
       throw FileTooLargeException(name, maxBytes);
     }
