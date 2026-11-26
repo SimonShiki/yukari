@@ -1,7 +1,7 @@
 import 'package:material_ui/material_ui.dart';
 import 'package:signals_flutter/signals_flutter.dart';
 
-import '../../../controllers/backend_settings_controller.dart';
+import '../../../controllers/settings/backend_settings_controller.dart';
 import '../../../l10n/l10n.dart';
 import '../../../widgets/form_section/form_section.dart';
 import '../../../widgets/form_section/form_segments.dart';

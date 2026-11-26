@@ -4,24 +4,24 @@ import 'dart:io';
 import 'package:signals/signals.dart';
 import 'package:uuid/uuid.dart';
 
-import '../constants/builtin_bookmarks.dart';
+import '../../constants/builtin_bookmarks.dart';
 
 import 'package:yukari_core/backend/privilege.dart';
 import 'package:yukari_core/models/models.dart';
 import 'package:yukari_core/utils/dns_name.dart';
 
-import '../signals/backend.dart' as backends;
-import '../signals/bookmarks.dart' as saved;
-import '../signals/locale.dart';
-import '../signals/networks.dart' as stored;
-import '../utils/crypto_utils.dart';
-import '../utils/line_formats.dart';
+import '../../signals/backend.dart' as backends;
+import '../../signals/bookmarks.dart' as saved;
+import '../../signals/locale.dart';
+import '../../signals/networks.dart' as stored;
+import '../../utils/crypto_utils.dart';
+import '../../utils/line_formats.dart';
 
-part 'network_editor_signals.dart';
+part 'editor_signals.dart';
 
-part 'network_editor_lists.dart';
+part 'editor_lists.dart';
 
-part 'network_editor_dns.dart';
+part 'editor_dns.dart';
 
 /// Which of a network's two listener lists a list editor edits.
 enum ListenerList { local, mapped }
@@ -31,7 +31,7 @@ enum ListenerList { local, mapped }
 ///
 /// The fields bind small primitives of the copy through [select] rather than
 /// the copy itself, so typing in one field rebuilds one segment. The
-/// secure-mode and VPN-portal actions live in `network_editor_security.dart`.
+/// secure-mode and VPN-portal actions live in `editor_security.dart`.
 class NetworkEditorController {
   NetworkEditorController({
     required this.id,

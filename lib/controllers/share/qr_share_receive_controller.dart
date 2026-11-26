@@ -7,17 +7,17 @@ import 'package:flutter/foundation.dart' show listEquals;
 import 'package:flutter/services.dart' show HapticFeedback;
 import 'package:qrs_dart/qrs_dart.dart';
 
-import '../share/image_qr_scan.dart';
-import '../share/share_bundle.dart';
-import '../share/share_document.dart';
-import '../share/share_import.dart';
-import '../share/share_receive_session.dart';
-import '../signals/locale.dart';
-import '../utils/transfer_rate.dart';
+import '../../share/image_qr_scan.dart';
+import '../../share/share_bundle.dart';
+import '../../share/share_document.dart';
+import '../../share/share_import.dart';
+import '../../share/share_receive_session.dart';
+import '../../signals/locale.dart';
+import '../../utils/transfer_rate.dart';
 
-import 'signal_scope.dart';
+import '../signal_scope.dart';
 
-part 'qr_share_receive_actions.dart';
+part 'receive_actions.dart';
 
 /// The receive page's state: feeds payloads into a [ReceiveSession], follows
 /// its progress and turns a completed transfer into the [ShareDocument]s it

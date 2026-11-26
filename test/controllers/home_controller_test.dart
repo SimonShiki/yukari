@@ -2,7 +2,7 @@ import 'dart:async';
 import 'dart:collection';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:yukari/controllers/home_controller.dart';
+import 'package:yukari/controllers/home/home_controller.dart';
 import 'package:yukari_core/models/instance.dart';
 import 'package:yukari_core/models/network.dart';
 import 'package:yukari_core/models/peer.dart';

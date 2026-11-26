@@ -4,7 +4,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:signals_flutter/signals_flutter.dart';
 
-import '../../controllers/qr_share_receive_controller.dart';
+import '../../controllers/share/qr_share_receive_controller.dart';
 import '../../l10n/l10n.dart';
 import '../../share/image_qr_decode.dart' show maxScanImageBytes;
 import '../../utils/file_read.dart';

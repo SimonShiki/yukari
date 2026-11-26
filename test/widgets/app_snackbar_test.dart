@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:signals/signals.dart';
-import 'package:yukari/controllers/network_page_controller.dart';
+import 'package:yukari/controllers/networks/network_page_controller.dart';
 import 'package:yukari/l10n/l10n.dart';
 import 'package:yukari/pages/networks/network_create_menu.dart';
 import 'package:yukari/pages/networks/networks_page.dart';

@@ -2,7 +2,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:signals_flutter/signals_flutter.dart';
 import 'package:yukari_core/models/models.dart';
 
-import '../../../controllers/network_editor_controller.dart';
+import '../../../controllers/networks/network_editor_controller.dart';
 import '../../../widgets/form_section/form_segments.dart';
 import '../../../widgets/select_item/select_item.dart';
 

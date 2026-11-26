@@ -2,7 +2,7 @@ import 'package:m3e_core/m3e_core.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:signals_flutter/signals_flutter.dart';
 
-import '../../../controllers/qr_share_receive_controller.dart';
+import '../../../controllers/share/qr_share_receive_controller.dart';
 import '../../../l10n/l10n.dart';
 import '../../../utils/byte_units.dart';
 import '../../../widgets/card_surface/card_surface.dart';

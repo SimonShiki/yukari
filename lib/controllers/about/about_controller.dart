@@ -2,7 +2,7 @@ import 'package:package_info_plus/package_info_plus.dart';
 import 'package:signals/signals.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-import '../signals/locale.dart';
+import '../../signals/locale.dart';
 
 /// The About page's state: the installed app version, and the repository link.
 ///

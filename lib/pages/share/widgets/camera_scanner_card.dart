@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:material_ui/material_ui.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 
-import '../../../controllers/qr_share_receive_controller.dart';
+import '../../../controllers/share/qr_share_receive_controller.dart';
 import '../../../l10n/l10n.dart';
 import 'camera_scanner_error.dart';
 import 'camera_scanner_session.dart';

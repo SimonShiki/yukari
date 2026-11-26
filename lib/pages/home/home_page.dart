@@ -1,7 +1,7 @@
 import 'package:go_router/go_router.dart';
 import 'package:material_ui/material_ui.dart';
 
-import '../../controllers/home_controller.dart';
+import '../../controllers/home/home_controller.dart';
 import '../../l10n/l10n.dart';
 import '../../widgets/link_list/link_list.dart';
 import '../../widgets/foreground_active.dart';

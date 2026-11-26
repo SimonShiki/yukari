@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
-import 'package:yukari/controllers/network_page_controller.dart';
+import 'package:yukari/controllers/networks/network_page_controller.dart';
 import 'package:yukari/pages/networks/network_editor_page.dart';
 import 'package:yukari/pages/networks/network_instance_page.dart';
 import 'package:yukari/pages/networks/widgets/network_card/network_card.dart';

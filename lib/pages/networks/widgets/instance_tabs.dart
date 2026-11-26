@@ -4,7 +4,7 @@ import 'package:m3e_core/m3e_core.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:signals_flutter/signals_flutter.dart';
 
-import '../../../controllers/network_instance_controller.dart';
+import '../../../controllers/networks/network_instance_controller.dart';
 import '../../../l10n/l10n.dart';
 import '../../../widgets/empty_state/empty_state.dart';
 import 'log_entry/log_entry_list.dart';

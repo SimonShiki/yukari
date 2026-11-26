@@ -1,7 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:yukari/controllers/network_page_controller.dart';
+import 'package:yukari/controllers/networks/network_page_controller.dart';
 
 void main() {
   test('disposing during a create writes no disposed signal', () async {

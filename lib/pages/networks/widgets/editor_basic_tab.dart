@@ -1,7 +1,7 @@
 import 'package:material_ui/material_ui.dart';
 import 'package:signals_flutter/signals_flutter.dart';
 
-import '../../../controllers/network_editor_controller.dart';
+import '../../../controllers/networks/network_editor_controller.dart';
 import '../../../widgets/form_section/section_list.dart';
 import 'editor_identity_section.dart';
 import 'editor_ip_section.dart';

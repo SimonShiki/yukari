@@ -1,16 +1,16 @@
 import 'package:material_ui/material_ui.dart';
 import 'package:signals/signals.dart';
 
-import '../constants/builtin_bookmarks.dart';
+import '../../constants/builtin_bookmarks.dart';
 
 import 'package:yukari_core/models/bookmark.dart';
 
-import '../signals/bookmarks.dart' as saved;
-import '../signals/locale.dart';
-import '../utils/bookmark_search.dart';
-import 'multi_selection.dart';
+import '../../signals/bookmarks.dart' as saved;
+import '../../signals/locale.dart';
+import '../../utils/bookmark_search.dart';
+import '../multi_selection.dart';
 
-import 'signal_scope.dart';
+import '../signal_scope.dart';
 
 part 'bookmarks_filters.dart';
 

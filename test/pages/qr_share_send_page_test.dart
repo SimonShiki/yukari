@@ -2,7 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:m3e_core/m3e_core.dart'
     show M3ESlider, M3EToggleButton, M3EToggleButtonGroup;
 import 'package:material_ui/material_ui.dart';
-import 'package:yukari/controllers/qr_share_send_controller.dart';
+import 'package:yukari/controllers/share/qr_share_send_controller.dart';
 import 'package:yukari/l10n/l10n.dart';
 import 'package:yukari/pages/share/qr_share_send_page.dart';
 import 'package:yukari/pages/share/widgets/qr_matrix_view.dart';

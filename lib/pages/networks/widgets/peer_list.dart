@@ -3,7 +3,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:signals_flutter/signals_flutter.dart';
 import 'package:yukari_core/models/models.dart';
 
-import '../../../controllers/network_editor_controller.dart';
+import '../../../controllers/networks/network_editor_controller.dart';
 import '../../../l10n/l10n.dart';
 import '../../../widgets/card_surface/card_surface.dart';
 import 'bookmark_picker/bookmark_picker_dialog.dart';

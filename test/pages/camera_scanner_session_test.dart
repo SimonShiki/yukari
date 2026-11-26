@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
-import 'package:yukari/controllers/qr_share_receive_controller.dart';
+import 'package:yukari/controllers/share/qr_share_receive_controller.dart';
 import 'package:yukari/pages/share/widgets/camera_scanner_session.dart';
 
 /// The camera texture `MobileScannerPlatform` holds for the whole process, in

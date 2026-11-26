@@ -4,7 +4,7 @@ import 'package:flutter/services.dart';
 
 import 'package:yukari_core/models/models.dart';
 
-import '../utils/crypto_utils.dart';
+import '../../utils/crypto_utils.dart';
 import 'network_editor_controller.dart';
 
 /// The editor's secure-mode and VPN-portal actions.

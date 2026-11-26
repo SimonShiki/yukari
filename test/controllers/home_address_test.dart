@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:yukari/controllers/home_controller.dart';
+import 'package:yukari/controllers/home/home_controller.dart';
 import 'package:yukari_core/models/models.dart';
 
 void main() {

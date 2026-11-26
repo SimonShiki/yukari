@@ -9,7 +9,7 @@ import 'package:yukari/pages/networks/widgets/log_entry/log_summary.dart';
 import 'package:yukari/pages/networks/widgets/peer_card/peer_card.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:signals_flutter/signals_flutter.dart';
-import 'package:yukari/controllers/network_instance_controller.dart';
+import 'package:yukari/controllers/networks/network_instance_controller.dart';
 import 'package:yukari/pages/networks/network_instance_page.dart';
 import 'package:yukari/signals/instance_logs.dart';
 import 'package:yukari/signals/instances.dart';

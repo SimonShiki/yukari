@@ -4,7 +4,7 @@ import 'package:signals_flutter/signals_flutter.dart';
 
 import 'package:yukari_core/backend/service_version.dart';
 
-import '../../../controllers/backend_settings_controller.dart';
+import '../../../controllers/settings/backend_settings_controller.dart';
 import '../../../l10n/l10n.dart';
 
 import 'package:yukari_core/models/backend.dart';

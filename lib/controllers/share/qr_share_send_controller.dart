@@ -7,16 +7,16 @@ import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:qrs_dart/qrs_dart.dart';
 import 'package:signals/signals.dart';
 
-import '../share/share_bundle.dart';
-import '../share/share_document.dart';
-import '../share/share_options.dart';
-import '../share/share_targets.dart';
+import '../../share/share_bundle.dart';
+import '../../share/share_document.dart';
+import '../../share/share_options.dart';
+import '../../share/share_targets.dart';
 
-import 'signal_scope.dart';
+import '../signal_scope.dart';
 
-part 'qr_share_send_gif.dart';
-part 'qr_share_send_options.dart';
-part 'qr_share_send_settings.dart';
+part 'send_gif.dart';
+part 'send_options.dart';
+part 'send_settings.dart';
 
 /// Drives the sender half of "Share via QR": the fountain-coded stream of masked
 /// [ShareDocument]s, its playback and settings, and the GIF export.

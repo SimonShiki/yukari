@@ -9,7 +9,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:qrs_dart/qrs_dart.dart';
 import 'package:yukari_core/models/network.dart';
-import 'package:yukari/controllers/qr_share_receive_controller.dart';
+import 'package:yukari/controllers/share/qr_share_receive_controller.dart';
 import 'package:yukari/l10n/l10n.dart';
 import 'package:yukari/pages/share/qr_share_receive_page.dart';
 import 'package:yukari/pages/share/widgets/block_grid.dart';

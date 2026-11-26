@@ -2,7 +2,7 @@ import 'package:m3e_core/m3e_core.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:signals_flutter/signals_flutter.dart';
 
-import '../../../controllers/theming_controller.dart';
+import '../../../controllers/settings/theming_controller.dart';
 import '../../../l10n/l10n.dart';
 import '../../../widgets/form_section/form_segments.dart';
 import '../../../widgets/select_item/select_item.dart';

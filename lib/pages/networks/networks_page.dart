@@ -2,7 +2,7 @@ import 'package:go_router/go_router.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:signals_flutter/signals_flutter.dart';
 
-import '../../controllers/network_page_controller.dart';
+import '../../controllers/networks/network_page_controller.dart';
 import '../../l10n/l10n.dart';
 import '../../models/network_card_data.dart';
 import 'widgets/network_card/network_card_geometry.dart';

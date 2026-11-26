@@ -3,8 +3,8 @@ import 'dart:io';
 import 'dart:ui' show Locale;
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:yukari/controllers/network_editor_controller.dart';
-import 'package:yukari/controllers/network_editor_security.dart';
+import 'package:yukari/controllers/networks/network_editor_controller.dart';
+import 'package:yukari/controllers/networks/editor_security.dart';
 import 'package:yukari/constants/builtin_bookmarks.dart';
 import 'package:yukari/l10n/l10n.dart';
 import 'package:yukari_core/models/models.dart';

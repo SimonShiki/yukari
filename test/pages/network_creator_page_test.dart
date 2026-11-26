@@ -2,7 +2,7 @@ import 'dart:async';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
-import 'package:yukari/controllers/network_page_controller.dart';
+import 'package:yukari/controllers/networks/network_page_controller.dart';
 import 'package:yukari_core/models/models.dart';
 import 'package:yukari/pages/networks/network_creator_page.dart';
 

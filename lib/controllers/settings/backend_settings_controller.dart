@@ -11,14 +11,14 @@ import 'package:yukari_core/backend/service_version.dart';
 import 'package:yukari_core/backend/ipc/ipc_client.dart';
 import 'package:yukari_core/backend/service_backend.dart';
 
-import '../backend/system/service_control.dart';
+import '../../backend/system/service_control.dart';
 
-import '../signals/backend.dart' as backend_signals;
-import '../signals/locale.dart';
-import '../signals/networks.dart';
-import '../signals/settings.dart';
+import '../../signals/backend.dart' as backend_signals;
+import '../../signals/locale.dart';
+import '../../signals/networks.dart';
+import '../../signals/settings.dart';
 
-import 'signal_scope.dart';
+import '../signal_scope.dart';
 
 part 'backend_service_actions.dart';
 part 'interface_settings_actions.dart';

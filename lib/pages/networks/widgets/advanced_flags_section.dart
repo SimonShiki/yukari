@@ -1,7 +1,7 @@
 import 'package:material_ui/material_ui.dart';
 import 'package:signals_flutter/signals_flutter.dart';
 
-import '../../../controllers/network_editor_controller.dart';
+import '../../../controllers/networks/network_editor_controller.dart';
 import '../../../l10n/l10n.dart';
 import '../../../utils/validator.dart';
 import '../../../widgets/form_section/form_section.dart';

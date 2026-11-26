@@ -1,6 +1,6 @@
 import 'package:material_ui/material_ui.dart';
 
-import '../../../controllers/bookmarks_actions.dart';
+import '../../../controllers/bookmarks/bookmarks_actions.dart';
 import '../../../l10n/l10n.dart';
 import '../../../widgets/dialog/confirm_dialog.dart';
 

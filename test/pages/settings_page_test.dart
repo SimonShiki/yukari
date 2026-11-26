@@ -12,7 +12,7 @@ import 'package:yukari_core/backend/ffi_backend.dart';
 import 'package:yukari_core/backend/service_version.dart';
 import 'package:yukari/backend/system/service_control.dart';
 import 'package:yukari_core/backend/system/system_service.dart';
-import 'package:yukari/controllers/backend_settings_controller.dart';
+import 'package:yukari/controllers/settings/backend_settings_controller.dart';
 import 'package:yukari/l10n/l10n.dart';
 import 'package:yukari_core/models/models.dart';
 import 'package:yukari/pages/settings/settings_page.dart';

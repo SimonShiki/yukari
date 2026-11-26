@@ -2,7 +2,7 @@ import 'dart:async';
 
 import 'package:material_ui/material_ui.dart';
 
-import '../../controllers/backend_settings_controller.dart';
+import '../../controllers/settings/backend_settings_controller.dart';
 import '../../l10n/l10n.dart';
 import '../../widgets/form_section/section_list.dart';
 import '../../widgets/snackbar/app_snackbar.dart';

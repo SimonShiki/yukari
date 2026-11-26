@@ -2,7 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:m3e_core/m3e_core.dart' show M3EColorVariant;
 import 'package:material_ui/material_ui.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:yukari/controllers/theming_controller.dart';
+import 'package:yukari/controllers/settings/theming_controller.dart';
 import 'package:yukari_core/models/models.dart';
 import 'package:yukari/pages/settings/theming/theming_preview.dart';
 import 'package:yukari/signals/settings.dart';

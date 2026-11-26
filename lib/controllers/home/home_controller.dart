@@ -10,16 +10,16 @@ import 'package:yukari_core/backend/ipc/ipc_client.dart';
 import 'package:yukari_core/backend/ipc/ipc_endpoint.dart';
 import 'package:yukari_core/models/models.dart';
 
-import '../signals/backend.dart' as active;
-import '../signals/instances.dart' as running;
-import '../signals/networks.dart';
+import '../../signals/backend.dart' as active;
+import '../../signals/instances.dart' as running;
+import '../../signals/networks.dart';
 
 import 'package:yukari_core/system/magic_dns.dart';
 
-import '../utils/stun_probe.dart';
-import '../utils/traffic_sample.dart';
+import '../../utils/stun_probe.dart';
+import '../../utils/traffic_sample.dart';
 
-import 'signal_scope.dart';
+import '../signal_scope.dart';
 
 part 'home_actions.dart';
 part 'home_address.dart';

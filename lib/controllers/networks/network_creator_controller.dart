@@ -2,8 +2,8 @@ import 'package:signals/signals.dart';
 import 'package:uuid/uuid.dart';
 import 'package:yukari_core/models/network.dart';
 
-import '../signals/locale.dart';
-import '../signals/networks.dart' as saved;
+import '../../signals/locale.dart';
+import '../../signals/networks.dart' as saved;
 
 /// Controller of the create-network page: the id, the store call, the
 /// navigation and the `creating` flag, none of which belong to the widget.

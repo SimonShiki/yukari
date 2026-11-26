@@ -2,7 +2,7 @@ import 'package:m3e_core/m3e_core.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:signals_flutter/signals_flutter.dart';
 
-import '../../../controllers/theming_controller.dart';
+import '../../../controllers/settings/theming_controller.dart';
 import '../../../l10n/l10n.dart';
 
 /// The page's live preview: a mock Yukari screen drawn with the settings'

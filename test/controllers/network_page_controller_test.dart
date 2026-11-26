@@ -3,8 +3,8 @@ import 'dart:io';
 import 'dart:ui' show Locale;
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:yukari/controllers/network_instance_controller.dart';
-import 'package:yukari/controllers/network_page_controller.dart';
+import 'package:yukari/controllers/networks/network_instance_controller.dart';
+import 'package:yukari/controllers/networks/network_page_controller.dart';
 import 'package:yukari/l10n/l10n.dart';
 import 'package:yukari/share/share_bundle.dart';
 import 'package:yukari/share/share_document.dart';

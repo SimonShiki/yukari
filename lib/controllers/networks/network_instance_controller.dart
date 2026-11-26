@@ -6,16 +6,16 @@ import 'package:yukari_core/backend/backend.dart';
 import 'package:yukari_core/models/log_entry.dart';
 import 'package:yukari_core/models/models.dart';
 
-import '../signals/backend.dart' as backends;
-import '../signals/instance_logs.dart';
-import '../signals/instances.dart' as running;
-import '../signals/locale.dart';
-import '../signals/networks.dart' as saved;
-import '../models/peer_card_data.dart';
+import '../../signals/backend.dart' as backends;
+import '../../signals/instance_logs.dart';
+import '../../signals/instances.dart' as running;
+import '../../signals/locale.dart';
+import '../../signals/networks.dart' as saved;
+import '../../models/peer_card_data.dart';
 
-import 'signal_scope.dart';
+import '../signal_scope.dart';
 
-part 'network_instance_logs.dart';
+part 'instance_logs.dart';
 
 /// The tabs of the instance page, and the tab a route asks for.
 enum InstanceTab { peers, logs }

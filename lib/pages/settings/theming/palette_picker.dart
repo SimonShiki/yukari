@@ -4,7 +4,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:signals_flutter/signals_flutter.dart';
 import 'package:yukari_core/models/models.dart';
 
-import '../../../controllers/theming_controller.dart';
+import '../../../controllers/settings/theming_controller.dart';
 import '../../../l10n/l10n.dart';
 
 const _slot = 72.0;

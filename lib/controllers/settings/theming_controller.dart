@@ -4,9 +4,9 @@ import 'package:signals/signals.dart';
 
 import 'package:yukari_core/models/models.dart';
 
-import '../signals/settings.dart';
-import '../signals/system_color.dart';
-import '../utils/theme_provider.dart';
+import '../../signals/settings.dart';
+import '../../signals/system_color.dart';
+import '../../utils/theme_provider.dart';
 
 /// The theming page's signals and actions: the theme settings, and the schemes
 /// they generate for the page's previews.

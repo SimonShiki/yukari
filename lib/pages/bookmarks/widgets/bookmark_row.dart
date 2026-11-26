@@ -3,7 +3,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:signals_flutter/signals_flutter.dart';
 
 import '../../../constants/builtin_bookmarks.dart';
-import '../../../controllers/bookmarks_controller.dart';
+import '../../../controllers/bookmarks/bookmarks_controller.dart';
 import '../../../l10n/l10n.dart';
 
 import 'package:yukari_core/models/bookmark.dart';

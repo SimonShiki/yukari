@@ -4,7 +4,7 @@ import 'package:m3e_core/m3e_core.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:signals_flutter/signals_flutter.dart';
 
-import '../../controllers/about_controller.dart';
+import '../../controllers/about/about_controller.dart';
 import '../../l10n/l10n.dart';
 import '../../widgets/link_list/link_list.dart';
 import '../../widgets/snackbar/app_snackbar.dart';

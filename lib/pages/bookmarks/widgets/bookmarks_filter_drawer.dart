@@ -1,7 +1,7 @@
 import 'package:material_ui/material_ui.dart';
 import 'package:signals_flutter/signals_flutter.dart';
 
-import '../../../controllers/bookmarks_controller.dart';
+import '../../../controllers/bookmarks/bookmarks_controller.dart';
 import '../../../l10n/l10n.dart';
 
 /// The end drawer's filters: one single-select category, multi-select tags and

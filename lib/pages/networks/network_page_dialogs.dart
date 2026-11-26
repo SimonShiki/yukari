@@ -3,7 +3,7 @@ import 'package:material_ui/material_ui.dart';
 
 import 'package:yukari_core/backend/backend.dart';
 
-import '../../controllers/network_page_controller.dart';
+import '../../controllers/networks/network_page_controller.dart';
 import '../../l10n/l10n.dart';
 
 import 'package:yukari_core/models/models.dart';

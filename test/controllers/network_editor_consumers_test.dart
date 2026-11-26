@@ -3,11 +3,11 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:signals/signals.dart';
-import 'package:yukari/controllers/backend_settings_controller.dart';
-import 'package:yukari/controllers/bookmarks_actions.dart';
-import 'package:yukari/controllers/bookmarks_controller.dart';
-import 'package:yukari/controllers/network_editor_controller.dart';
-import 'package:yukari/controllers/network_page_controller.dart';
+import 'package:yukari/controllers/settings/backend_settings_controller.dart';
+import 'package:yukari/controllers/bookmarks/bookmarks_actions.dart';
+import 'package:yukari/controllers/bookmarks/bookmarks_controller.dart';
+import 'package:yukari/controllers/networks/network_editor_controller.dart';
+import 'package:yukari/controllers/networks/network_page_controller.dart';
 import 'package:yukari/system/tray_networks.dart';
 import 'package:yukari_core/backend/backend.dart';
 import 'package:yukari_core/models/models.dart';

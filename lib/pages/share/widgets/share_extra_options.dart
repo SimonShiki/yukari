@@ -1,7 +1,7 @@
 import 'package:material_ui/material_ui.dart';
 import 'package:signals_flutter/signals_flutter.dart';
 
-import '../../../controllers/qr_share_send_controller.dart';
+import '../../../controllers/share/qr_share_send_controller.dart';
 import '../../../l10n/l10n.dart';
 import '../../../widgets/card_surface/card_surface.dart';
 import '../../../widgets/form_section/form_segments.dart';

@@ -6,19 +6,19 @@ import 'package:signals/signals.dart';
 import 'package:yukari_core/backend/backend.dart';
 import 'package:yukari_core/models/models.dart';
 
-import '../l10n/l10n.dart';
-import '../signals/backend.dart' as backends;
-import '../signals/instances.dart' as running;
-import '../signals/locale.dart';
-import '../signals/networks.dart' as saved;
-import '../models/network_card_data.dart';
-import 'multi_selection.dart';
+import '../../l10n/l10n.dart';
+import '../../signals/backend.dart' as backends;
+import '../../signals/instances.dart' as running;
+import '../../signals/locale.dart';
+import '../../signals/networks.dart' as saved;
+import '../../models/network_card_data.dart';
+import '../multi_selection.dart';
 import 'network_instance_controller.dart';
 import 'network_page_actions.dart';
 
 export 'network_page_actions.dart';
 
-import 'signal_scope.dart';
+import '../signal_scope.dart';
 
 part 'network_page_refresh.dart';
 

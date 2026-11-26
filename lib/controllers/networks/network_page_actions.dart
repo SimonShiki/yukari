@@ -6,20 +6,20 @@ import 'package:uuid/uuid.dart';
 import 'package:yukari_core/bindings/easytier_ffi_native.dart' show parseConfig;
 import 'package:yukari_core/models/models.dart';
 
-import '../share/share_document.dart';
-import '../share/share_routes.dart';
-import 'share_selection.dart';
-import '../signals/instance_logs.dart';
-import '../signals/instances.dart';
-import '../signals/locale.dart';
-import '../signals/networks.dart' as saved;
-import '../utils/easytier_config_parser.dart';
+import '../../share/share_document.dart';
+import '../../share/share_routes.dart';
+import '../share_selection.dart';
+import '../../signals/instance_logs.dart';
+import '../../signals/instances.dart';
+import '../../signals/locale.dart';
+import '../../signals/networks.dart' as saved;
+import '../../utils/easytier_config_parser.dart';
 
 import 'package:yukari_core/utils/easytier_config_serializer.dart';
 
-import '../utils/file_read.dart';
-import '../utils/file_save.dart';
-import '../utils/validator.dart';
+import '../../utils/file_read.dart';
+import '../../utils/file_save.dart';
+import '../../utils/validator.dart';
 import 'network_instance_controller.dart';
 import 'network_page_controller.dart';
 

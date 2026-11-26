@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
-import 'package:yukari/controllers/home_controller.dart';
+import 'package:yukari/controllers/home/home_controller.dart';
 import 'package:yukari/l10n/l10n.dart';
 import 'package:yukari/pages/home/home_page.dart';
 import 'package:yukari/signals/networks.dart' as saved;

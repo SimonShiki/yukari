@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:yukari/controllers/backend_settings_controller.dart';
+import 'package:yukari/controllers/settings/backend_settings_controller.dart';
 import 'package:yukari/l10n/l10n.dart';
 import 'package:yukari/pages/settings/settings_page.dart';
 import 'package:yukari/pages/settings/widgets/behavior_section.dart';

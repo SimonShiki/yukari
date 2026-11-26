@@ -7,7 +7,7 @@ import 'package:signals/signals.dart';
 import 'package:yukari_core/backend/backend.dart';
 import 'package:yukari_core/backend/service_backend.dart';
 import 'package:yukari/backend/system/service_control.dart';
-import 'package:yukari/controllers/backend_settings_controller.dart';
+import 'package:yukari/controllers/settings/backend_settings_controller.dart';
 import 'package:yukari_core/models/models.dart';
 import 'package:yukari/signals/backend.dart' as backend_signals;
 import 'package:yukari/signals/settings.dart';

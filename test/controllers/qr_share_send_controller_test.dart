@@ -3,7 +3,7 @@ import 'dart:math';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:qrs_dart/qrs_dart.dart';
-import 'package:yukari/controllers/qr_share_send_controller.dart';
+import 'package:yukari/controllers/share/qr_share_send_controller.dart';
 import 'package:yukari/share/share_bundle.dart';
 import 'package:yukari/share/share_document.dart';
 import 'package:yukari/share/share_options.dart';

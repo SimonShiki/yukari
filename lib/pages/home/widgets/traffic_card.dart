@@ -2,7 +2,7 @@ import 'package:m3e_core/m3e_core.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:signals_flutter/signals_flutter.dart';
 
-import '../../../controllers/home_controller.dart';
+import '../../../controllers/home/home_controller.dart';
 import '../../../l10n/l10n.dart';
 import '../../../utils/byte_units.dart';
 import 'dashboard_card.dart';
