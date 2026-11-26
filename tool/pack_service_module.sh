@@ -6,9 +6,11 @@
 # Dart cannot build Android executables, so the module carries the Linux
 # build of packages/yukari_core/bin/yukari_service.dart for arm64 and x64,
 # with the glibc it needs.
-# The executable is split into the Dart runtime and its snapshot, as the
-# runtime only finds a snapshot appended to itself when the kernel, not the
-# bundled loader, starts it.
+# Dart 3.14's `dart build cli` outputs the runtime (`bin/yukari_service`) and
+# AOT snapshot (`lib/libdartaotyukari_service.so`) separately; we stage them
+# as `bin/dartaotruntime` and `bin/yukari-service.aot` so the bundled loader can
+# pass the snapshot explicitly (the runtime cannot auto-locate it when started
+# via `ld-linux`).
 #
 # Usage: tool/pack_service_module.sh [output.zip]
 #
@@ -62,20 +64,6 @@ copy_needed() {
   done
 }
 
-# Writes the runtime and the snapshot of the Dart executable $1 into $2.
-split_executable() {
-  local size offset magic
-  size=$(stat -c %s "$1")
-  # The executable ends with the snapshot's offset and a magic number.
-  offset=$(tail -c 16 "$1" | head -c 8 | od -An -tu8 | tr -d ' ')
-  magic=$(tail -c 8 "$1" | od -An -tx8 | tr -d ' ')
-  [[ $magic == 00000000f6f6dcdc ]] || die "$1 has no appended snapshot"
-  head -c "$offset" "$1" >"$2/dartaotruntime"
-  tail -c +"$((offset + 1))" "$1" | head -c "$((size - offset - 16))" \
-    >"$2/yukari-service.aot"
-  chmod 755 "$2/dartaotruntime"
-}
-
 cd "$root"
 rm -rf "$work"
 mkdir -p "$work/module"
@@ -95,8 +83,12 @@ for arch in arm64 x64; do
   bundle="$work/$arch/bundle"
   dest="$work/module/$arch"
   mkdir -p "$dest/bin" "$dest/lib"
-  split_executable "$bundle/bin/yukari_service" "$dest/bin"
+  cp "$bundle/bin/yukari_service" "$dest/bin/dartaotruntime"
+  chmod 755 "$dest/bin/dartaotruntime"
   cp "$bundle"/lib/* "$dest/lib/"
+  [[ -f $dest/lib/libdartaotyukari_service.so ]] ||
+    die "$bundle/lib/libdartaotyukari_service.so was not produced"
+  mv "$dest/lib/libdartaotyukari_service.so" "$dest/bin/yukari-service.aot"
 
   loader=$(readelf -l "$dest/bin/dartaotruntime" |
     sed -n 's/.*interpreter: \(.*\)\]/\1/p')
