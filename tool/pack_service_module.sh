@@ -64,6 +64,17 @@ copy_needed() {
   done
 }
 
+expected_machine() {
+  case $1 in
+    arm64) echo "AArch64" ;;
+    x64) echo "Advanced Micro Devices X86-64" ;;
+  esac
+}
+
+elf_machine() {
+  readelf -h "$1" | sed -n 's/^[[:space:]]*Machine:[[:space:]]*//p'
+}
+
 cd "$root"
 rm -rf "$work"
 mkdir -p "$work/module"
@@ -76,18 +87,41 @@ version=$(sed -n 's/^const serviceVersion = \([0-9]*\);$/\1/p' \
 sed -i -e "s/@VERSION@/v$version/" -e "s/@VERSION_CODE@/$version/" \
   "$work/module/module.prop"
 
+dart_version=$(dart --version 2>&1 | sed -n 's/^Dart SDK version: \([^ ]*\).*/\1/p')
+[[ -n $dart_version ]] || die "Dart SDK version was not found"
+
 for arch in arm64 x64; do
   echo "Building the service for linux-$arch"
   (cd packages/yukari_core && dart build cli --target bin/yukari_service.dart \
     --target-os linux --target-arch "$arch" --output "$work/$arch")
   bundle="$work/$arch/bundle"
   dest="$work/module/$arch"
+  machine=$(expected_machine "$arch")
+  runtime="$bundle/bin/yukari_service"
+  # Work around dart-lang/sdk#64942: cross-compiling on Linux in Dart 3.14
+  # copies the host runtime into bundle/bin while downloading the target
+  # runtime into sdk_cache.
+  if [[ $(elf_machine "$runtime") != "$machine" ]]; then
+    for candidate in \
+      "$HOME/.dart/dartdev/sdk_cache/$dart_version/dartaotruntime_linux_$arch" \
+      "${XDG_CONFIG_HOME:-$HOME/.config}/dart/dartdev/sdk_cache/$dart_version/dartaotruntime_linux_$arch"; do
+      if [[ -f $candidate ]]; then
+        runtime=$candidate
+        break
+      fi
+    done
+  fi
+  [[ $(elf_machine "$runtime") == "$machine" ]] ||
+    die "$runtime is not $machine"
+
   mkdir -p "$dest/bin" "$dest/lib"
-  cp "$bundle/bin/yukari_service" "$dest/bin/dartaotruntime"
+  cp "$runtime" "$dest/bin/dartaotruntime"
   chmod 755 "$dest/bin/dartaotruntime"
   cp "$bundle"/lib/* "$dest/lib/"
   [[ -f $dest/lib/libdartaotyukari_service.so ]] ||
     die "$bundle/lib/libdartaotyukari_service.so was not produced"
+  [[ $(elf_machine "$dest/lib/libdartaotyukari_service.so") == "$machine" ]] ||
+    die "$dest/lib/libdartaotyukari_service.so is not $machine"
   mv "$dest/lib/libdartaotyukari_service.so" "$dest/bin/yukari-service.aot"
 
   loader=$(readelf -l "$dest/bin/dartaotruntime" |
